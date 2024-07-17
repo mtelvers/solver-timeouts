@@ -1,0 +1,304 @@
+2024-05-16 06:22.06: New job: test ppx_deriving_variant_string.1.0.1, using opam dev
+                              from https://github.com/ocaml/opam-repository.git#refs/pull/25886/head (16ab772b035c0280db04847319dbd4ebd21c4c90)
+                              on archlinux-ocaml-4.14/amd64
+
+To reproduce locally:
+
+cd $(mktemp -d)
+git clone --recursive "https://github.com/ocaml/opam-repository.git" && cd "opam-repository" && git fetch origin "refs/pull/25886/head" && git reset --hard 16ab772b
+git fetch origin master
+git merge --no-edit 0dc68a8b920a5b579062cfcdbdf841a82e137ebd
+cat > ../Dockerfile <<'END-OF-DOCKERFILE'
+[34mFROM ocaml/opam:archlinux-ocaml-4.14@sha256:3dac736c2d3372803ec299daabdd0f33c43070725d9fa25f86f63a717b8971f8
+USER 1000:1000
+WORKDIR /home/opam
+RUN sudo ln -f /usr/bin/opam-dev /usr/bin/opam
+RUN opam init --reinit -ni
+RUN uname -rs && opam exec -- ocaml -version && opam --version
+ENV OPAMDOWNLOADJOBS="1"
+ENV OPAMERRLOGLEN="0"
+ENV OPAMSOLVERTIMEOUT="500"
+ENV OPAMPRECISETRACKING="1"
+ENV CI="true"
+ENV OPAM_REPO_CI="true"
+RUN rm -rf opam-repository/
+COPY --chown=1000:1000 . opam-repository/
+RUN opam repository set-url --strict default opam-repository/
+RUN opam update --depexts || true
+RUN opam pin add -k version -yn ppx_deriving_variant_string.1.0.1 1.0.1
+RUN opam reinstall ppx_deriving_variant_string.1.0.1; \
+    res=$?; \
+    test "$res" != 31 && exit "$res"; \
+    export OPAMCLI=2.0; \
+    build_dir=$(opam var prefix)/.opam-switch/build; \
+    failed=$(ls "$build_dir"); \
+    partial_fails=""; \
+    for pkg in $failed; do \
+    if opam show -f x-ci-accept-failures: "$pkg" | grep -qF "\"archlinux\""; then \
+    echo "A package failed and has been disabled for CI using the 'x-ci-accept-failures' field."; \
+    fi; \
+    test "$pkg" != 'ppx_deriving_variant_string.1.0.1' && partial_fails="$partial_fails $pkg"; \
+    done; \
+    test "${partial_fails}" != "" && echo "opam-repo-ci detected dependencies failing: ${partial_fails}"; \
+    exit 1
+RUN (opam reinstall --with-test ppx_deriving_variant_string.1.0.1) || true
+RUN opam reinstall --with-test --verbose ppx_deriving_variant_string.1.0.1; \
+    res=$?; \
+    test "$res" != 31 && exit "$res"; \
+    export OPAMCLI=2.0; \
+    build_dir=$(opam var prefix)/.opam-switch/build; \
+    failed=$(ls "$build_dir"); \
+    partial_fails=""; \
+    for pkg in $failed; do \
+    if opam show -f x-ci-accept-failures: "$pkg" | grep -qF "\"archlinux\""; then \
+    echo "A package failed and has been disabled for CI using the 'x-ci-accept-failures' field."; \
+    fi; \
+    test "$pkg" != 'ppx_deriving_variant_string.1.0.1' && partial_fails="$partial_fails $pkg"; \
+    done; \
+    test "${partial_fails}" != "" && echo "opam-repo-ci detected dependencies failing: ${partial_fails}"; \
+    exit 1
+[0m
+END-OF-DOCKERFILE
+docker build -f ../Dockerfile .
+
+2024-05-16 06:22.06: Using cache hint "ocaml/opam:archlinux-ocaml-4.14@sha256:3dac736c2d3372803ec299daabdd0f33c43070725d9fa25f86f63a717b8971f8-ppx_deriving_variant_string.1.0.1-16ab772b035c0280db04847319dbd4ebd21c4c90"
+2024-05-16 06:22.06: Using OBuilder spec:
+((from ocaml/opam:archlinux-ocaml-4.14@sha256:3dac736c2d3372803ec299daabdd0f33c43070725d9fa25f86f63a717b8971f8)
+ (user (uid 1000) (gid 1000))
+ (workdir /home/opam)
+ (run (shell "sudo ln -f /usr/bin/opam-dev /usr/bin/opam"))
+ (run (network host)
+      (shell "opam init --reinit --config .opamrc-sandbox -ni"))
+ (run (shell "uname -rs && opam exec -- ocaml -version && opam --version"))
+ (env OPAMDOWNLOADJOBS 1)
+ (env OPAMERRLOGLEN 0)
+ (env OPAMSOLVERTIMEOUT 500)
+ (env OPAMPRECISETRACKING 1)
+ (env CI true)
+ (env OPAM_REPO_CI true)
+ (run (shell "rm -rf opam-repository/"))
+ (copy (src .) (dst opam-repository/))
+ (run (shell "opam repository set-url --strict default opam-repository/"))
+ (run (network host)
+      (shell "opam update --depexts || true"))
+ (run (shell "opam pin add -k version -yn ppx_deriving_variant_string.1.0.1 1.0.1"))
+ (run (cache (opam-archives (target /home/opam/.opam/download-cache)))
+      (network host)
+      (shell  "opam reinstall ppx_deriving_variant_string.1.0.1;\
+             \n        res=$?;\
+             \n        test \"$res\" != 31 && exit \"$res\";\
+             \n        export OPAMCLI=2.0;\
+             \n        build_dir=$(opam var prefix)/.opam-switch/build;\
+             \n        failed=$(ls \"$build_dir\");\
+             \n        partial_fails=\"\";\
+             \n        for pkg in $failed; do\
+             \n          if opam show -f x-ci-accept-failures: \"$pkg\" | grep -qF \"\\\"archlinux\\\"\"; then\
+             \n            echo \"A package failed and has been disabled for CI using the 'x-ci-accept-failures' field.\";\
+             \n          fi;\
+             \n          test \"$pkg\" != 'ppx_deriving_variant_string.1.0.1' && partial_fails=\"$partial_fails $pkg\";\
+             \n        done;\
+             \n        test \"${partial_fails}\" != \"\" && echo \"opam-repo-ci detected dependencies failing: ${partial_fails}\";\
+             \n        exit 1"))
+ (run (network host)
+      (shell "(opam reinstall --with-test ppx_deriving_variant_string.1.0.1) || true"))
+ (run (shell  "opam reinstall --with-test --verbose ppx_deriving_variant_string.1.0.1;\
+             \n        res=$?;\
+             \n        test \"$res\" != 31 && exit \"$res\";\
+             \n        export OPAMCLI=2.0;\
+             \n        build_dir=$(opam var prefix)/.opam-switch/build;\
+             \n        failed=$(ls \"$build_dir\");\
+             \n        partial_fails=\"\";\
+             \n        for pkg in $failed; do\
+             \n          if opam show -f x-ci-accept-failures: \"$pkg\" | grep -qF \"\\\"archlinux\\\"\"; then\
+             \n            echo \"A package failed and has been disabled for CI using the 'x-ci-accept-failures' field.\";\
+             \n          fi;\
+             \n          test \"$pkg\" != 'ppx_deriving_variant_string.1.0.1' && partial_fails=\"$partial_fails $pkg\";\
+             \n        done;\
+             \n        test \"${partial_fails}\" != \"\" && echo \"opam-repo-ci detected dependencies failing: ${partial_fails}\";\
+             \n        exit 1"))
+)
+
+2024-05-16 06:22.06: Waiting for resource in pool OCluster
+2024-05-16 06:22.06: Waiting for worker…
+2024-05-16 06:22.06: Got resource from pool OCluster
+Building on asteria.caelum.ci.dev
+All commits already cached
+HEAD is now at 0dc68a8b92 Merge pull request #25870 from hannesm/release-tls-v0.17.5
+Updating 0dc68a8b92..16ab772b03
+Fast-forward
+ .../ppx_deriving_variant_string.1.0.1/opam         | 43 ++++++++++++++++++++++
+ 1 file changed, 43 insertions(+)
+ create mode 100644 packages/ppx_deriving_variant_string/ppx_deriving_variant_string.1.0.1/opam
+
+[01;34m(from ocaml/opam:archlinux-ocaml-4.14@sha256:3dac736c2d3372803ec299daabdd0f33c43070725d9fa25f86f63a717b8971f8)[0m
+Unable to find image 'ocaml/opam:archlinux-ocaml-4.14@sha256:3dac736c2d3372803ec299daabdd0f33c43070725d9fa25f86f63a717b8971f8' locally
+docker.io/ocaml/opam@sha256:3dac736c2d3372803ec299daabdd0f33c43070725d9fa25f86f63a717b8971f8: Pulling from ocaml/opam
+9ca4a67f71eb: Pulling fs layer
+9ca4a67f71eb: Verifying Checksum
+9ca4a67f71eb: Download complete
+9ca4a67f71eb: Pull complete
+Digest: sha256:3dac736c2d3372803ec299daabdd0f33c43070725d9fa25f86f63a717b8971f8
+Status: Downloaded newer image for ocaml/opam@sha256:3dac736c2d3372803ec299daabdd0f33c43070725d9fa25f86f63a717b8971f8
+[01;2m[01;35m2024-05-16 06:23.59 ---> saved as "88bef73ca42ccbe27582e072f6bbe7e8959715484f2caacf94056430ca35530a"[0m
+
+[01;34m/: (user (uid 1000) (gid 1000))[0m
+
+[01;34m/: (workdir /home/opam)[0m
+
+[01;34m/home/opam: (run (shell "sudo ln -f /usr/bin/opam-dev /usr/bin/opam"))[0m
+[01;2m[01;35m2024-05-16 06:23.59 ---> saved as "3f06bf497cb2e983904c3df819a3899f985bea3ebad2a89364e3d4388156fc35"[0m
+
+[01;34m/home/opam: (run (network host)
+                 (shell "opam init --reinit --config .opamrc-sandbox -ni"))[0m
+Configuring from /home/opam/.opamrc-sandbox, then /home/opam/.opamrc, and finally from built-in defaults.
+Checking for available remotes: rsync and local, git.
+  - you won't be able to use mercurial repositories unless you install the hg command on your system.
+  - you won't be able to use darcs repositories unless you install the darcs command on your system.
+
+This development version of opam requires an update to the layout of /home/opam/.opam from version 2.0 to version 2.2~beta, which can't be reverted.
+You may want to back it up before going further.
+
+Continue? [y/n] y
+[NOTE] The 'jobs' option was reset, its value was 31 and its new value will vary according to the current number of cores on your machine. You can restore the fixed value using:
+           opam option jobs=31 --global
+Format upgrade done.
+
+<><> Updating repositories ><><><><><><><><><><><><><><><><><><><><><><><><><><>
+[default] synchronised from file:///home/opam/opam-repository
+[01;2m[01;35m2024-05-16 06:24.49 ---> saved as "5d1b6a56053b6e8956cf58011c857246783c9a9b89c7591a4ecaf01ff9fa8195"[0m
+
+[01;34m/home/opam: (run (shell "uname -rs && opam exec -- ocaml -version && opam --version"))[0m
+Linux 5.15.0-107-generic
+The OCaml toplevel, version 4.14.2
+2.2.0~beta3~dev
+[01;2m[01;35m2024-05-16 06:24.49 ---> saved as "87604bbf5ef33a8722648f83872fa433ce58500346fed9dc95e828c266beac5b"[0m
+
+[01;34m/home/opam: (env OPAMDOWNLOADJOBS 1)[0m
+
+[01;34m/home/opam: (env OPAMERRLOGLEN 0)[0m
+
+[01;34m/home/opam: (env OPAMSOLVERTIMEOUT 500)[0m
+
+[01;34m/home/opam: (env OPAMPRECISETRACKING 1)[0m
+
+[01;34m/home/opam: (env CI true)[0m
+
+[01;34m/home/opam: (env OPAM_REPO_CI true)[0m
+
+[01;34m/home/opam: (run (shell "rm -rf opam-repository/"))[0m
+[01;2m[01;35m2024-05-16 06:24.54 ---> saved as "60bdac4eeadbe2607b54af66c2fff713ea43fbaca7f84c5c6cd7f42a83afa01b"[0m
+
+[01;34m/home/opam: (copy (src .) (dst opam-repository/))[0m
+[01;2m[01;35m2024-05-16 06:25.01 ---> saved as "9684997bde726e752cf0afc0fbddd7f44516de69f9c6e6c48f9972e8ea99d3d1"[0m
+
+[01;34m/home/opam: (run (shell "opam repository set-url --strict default opam-repository/"))[0m
+[default] Initialised
+[01;2m[01;35m2024-05-16 06:25.36 ---> saved as "172bfe6516560b1c164990daa1a8004746ab5c5165aa42d40e0bd725df27cad1"[0m
+
+[01;34m/home/opam: (run (network host)
+                 (shell "opam update --depexts || true"))[0m
++ /usr/sbin/sudo "pacman" "-Sy"
+- :: Synchronizing package databases...
+-  core downloading...
+-  extra downloading...
+[01;2m[01;35m2024-05-16 06:25.37 ---> saved as "9d0cc80d05e4b289165d3891f4d3aacc6b486d710db537a26a1f471f3da83513"[0m
+
+[01;34m/home/opam: (run (shell "opam pin add -k version -yn ppx_deriving_variant_string.1.0.1 1.0.1"))[0m
+ppx_deriving_variant_string is now pinned to version 1.0.1
+[01;2m[01;35m2024-05-16 06:25.38 ---> saved as "d2e937ac3e1368200b911e0ac02cad575f362bbff9fac336b5d0dfc252d60686"[0m
+
+[01;34m/home/opam: (run (cache (opam-archives (target /home/opam/.opam/download-cache)))
+                 (network host)
+                 (shell  "opam reinstall ppx_deriving_variant_string.1.0.1;\
+                        \n        res=$?;\
+                        \n        test \"$res\" != 31 && exit \"$res\";\
+                        \n        export OPAMCLI=2.0;\
+                        \n        build_dir=$(opam var prefix)/.opam-switch/build;\
+                        \n        failed=$(ls \"$build_dir\");\
+                        \n        partial_fails=\"\";\
+                        \n        for pkg in $failed; do\
+                        \n          if opam show -f x-ci-accept-failures: \"$pkg\" | grep -qF \"\\\"archlinux\\\"\"; then\
+                        \n            echo \"A package failed and has been disabled for CI using the 'x-ci-accept-failures' field.\";\
+                        \n          fi;\
+                        \n          test \"$pkg\" != 'ppx_deriving_variant_string.1.0.1' && partial_fails=\"$partial_fails $pkg\";\
+                        \n        done;\
+                        \n        test \"${partial_fails}\" != \"\" && echo \"opam-repo-ci detected dependencies failing: ${partial_fails}\";\
+                        \n        exit 1"))[0m
+ppx_deriving_variant_string.1.0.1 is not installed. Install it? [y/n] y
+The following actions will be performed:
+=== install 7 packages
+  ∗ dune                        3.15.2         [required by ppx_deriving_variant_string]
+  ∗ ocaml-compiler-libs         v0.12.4        [required by ppxlib]
+  ∗ ppx_derivers                1.2.1          [required by ppxlib]
+  ∗ ppx_deriving_variant_string 1.0.1 (pinned)
+  ∗ ppxlib                      0.32.1         [required by ppx_deriving_variant_string]
+  ∗ sexplib0                    v0.17.0        [required by ppxlib]
+  ∗ stdlib-shims                0.3.0          [required by ppxlib]
+
+<><> Processing actions <><><><><><><><><><><><><><><><><><><><><><><><><><><><>
+⬇ retrieved dune.3.15.2  (cached)
+⬇ retrieved ocaml-compiler-libs.v0.12.4  (cached)
+⬇ retrieved ppx_derivers.1.2.1  (cached)
+⬇ retrieved ppx_deriving_variant_string.1.0.1  (cached)
+⬇ retrieved ppxlib.0.32.1  (cached)
+⬇ retrieved sexplib0.v0.17.0  (cached)
+⬇ retrieved stdlib-shims.0.3.0  (cached)
+∗ installed dune.3.15.2
+∗ installed ppx_derivers.1.2.1
+∗ installed stdlib-shims.0.3.0
+∗ installed sexplib0.v0.17.0
+∗ installed ocaml-compiler-libs.v0.12.4
+∗ installed ppxlib.0.32.1
+∗ installed ppx_deriving_variant_string.1.0.1
+Done.
+# Run eval $(opam env) to update the current shell environment
+[01;2m[01;35m2024-05-16 06:26.17 ---> saved as "a97f9a7d052a440cc91319661a6f91fc55980b8eb912cb40925a89133daf1e1f"[0m
+
+[01;34m/home/opam: (run (network host)
+                 (shell "(opam reinstall --with-test ppx_deriving_variant_string.1.0.1) || true"))[0m
+[ERROR] Sorry, resolution of the request timed out.
+        Try to specify a more precise request, use a different solver, or increase the allowed time by setting OPAMSOLVERTIMEOUT to a bigger value (currently, it is set to 500.0 seconds).
+[01;2m[01;35m2024-05-16 06:34.47 ---> saved as "e830ea066e80ac0e8b6b820a2b6039130d9ff590da4f215d3fe388d79b40bedd"[0m
+
+[01;34m/home/opam: (run (shell  "opam reinstall --with-test --verbose ppx_deriving_variant_string.1.0.1;\
+                        \n        res=$?;\
+                        \n        test \"$res\" != 31 && exit \"$res\";\
+                        \n        export OPAMCLI=2.0;\
+                        \n        build_dir=$(opam var prefix)/.opam-switch/build;\
+                        \n        failed=$(ls \"$build_dir\");\
+                        \n        partial_fails=\"\";\
+                        \n        for pkg in $failed; do\
+                        \n          if opam show -f x-ci-accept-failures: \"$pkg\" | grep -qF \"\\\"archlinux\\\"\"; then\
+                        \n            echo \"A package failed and has been disabled for CI using the 'x-ci-accept-failures' field.\";\
+                        \n          fi;\
+                        \n          test \"$pkg\" != 'ppx_deriving_variant_string.1.0.1' && partial_fails=\"$partial_fails $pkg\";\
+                        \n        done;\
+                        \n        test \"${partial_fails}\" != \"\" && echo \"opam-repo-ci detected dependencies failing: ${partial_fails}\";\
+                        \n        exit 1"))[0m
+[ERROR] Sorry, resolution of the request timed out.
+        Try to specify a more precise request, use a different solver, or increase the allowed time by setting OPAMSOLVERTIMEOUT to a bigger value (currently, it is set to 500.0 seconds).
+'opam reinstall --with-test --verbose ppx_deriving_variant_string.1.0.1' failed.
+"/usr/bin/env" "bash" "-c" "opam reinstall --with-test --verbose ppx_deriving_variant_string.1.0.1;
+        res=$?;
+        test "$res" != 31 && exit "$res";
+        export OPAMCLI=2.0;
+        build_dir=$(opam var prefix)/.opam-switch/build;
+        failed=$(ls "$build_dir");
+        partial_fails="";
+        for pkg in $failed; do
+          if opam show -f x-ci-accept-failures: "$pkg" | grep -qF "\"archlinux\""; then
+            echo "A package failed and has been disabled for CI using the 'x-ci-accept-failures' field.";
+          fi;
+          test "$pkg" != 'ppx_deriving_variant_string.1.0.1' && partial_fails="$partial_fails $pkg";
+        done;
+        test "${partial_fails}" != "" && echo "opam-repo-ci detected dependencies failing: ${partial_fails}";
+        exit 1" failed with exit status 60
+2024-05-16 06:43.26: Job failed: Failed: Build failed
+2024-05-16 06:43.26: Log analysis:
+2024-05-16 06:43.26: >>> 
+[ERROR] Sorry, resolution of the request timed out.
+ (score = 20)
+2024-05-16 06:43.26: >>> 
+[ERROR] Sorry, resolution of the request timed out.
+ (score = 20)
+2024-05-16 06:43.26: Sorry, resolution of the request timed out.

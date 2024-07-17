@@ -1,0 +1,1189 @@
+2024-07-04 08:48.50: New job: test nanoid.1.0.0 with ocaml-secondary-compiler.4.14.2, using opam dev
+                              from https://github.com/ocaml/opam-repository.git#refs/pull/25928/head (3f2c920b90e20a61c5c90d25ab350fcf660158fd)
+                              on debian-12-ocaml-4.14/amd64
+
+To reproduce locally:
+
+cd $(mktemp -d)
+git clone --recursive "https://github.com/ocaml/opam-repository.git" && cd "opam-repository" && git fetch origin "refs/pull/25928/head" && git reset --hard 3f2c920b
+git fetch origin master
+git merge --no-edit e2171914dc125e7342700114dc6e1579d2bd4436
+cat > ../Dockerfile <<'END-OF-DOCKERFILE'
+[34mFROM ocaml/opam:debian-12-ocaml-4.14@sha256:411c167ab30b2e15a22d9ba7269e6df1d6b24c7d69a5996d4a62bba7180dc074
+USER 1000:1000
+WORKDIR /home/opam
+RUN sudo ln -f /usr/bin/opam-dev /usr/bin/opam
+RUN opam init --reinit -ni
+RUN uname -rs && opam exec -- ocaml -version && opam --version
+ENV OPAMDOWNLOADJOBS="1"
+ENV OPAMERRLOGLEN="0"
+ENV OPAMSOLVERTIMEOUT="500"
+ENV OPAMPRECISETRACKING="1"
+ENV CI="true"
+ENV OPAM_REPO_CI="true"
+RUN rm -rf opam-repository/
+COPY --chown=1000:1000 . opam-repository/
+RUN opam repository set-url --strict default opam-repository/
+RUN opam update --depexts || true
+RUN opam pin add -k version -yn ocaml-secondary-compiler.4.14.2 4.14.2
+RUN opam reinstall ocaml-secondary-compiler.4.14.2; \
+    res=$?; \
+    test "$res" != 31 && exit "$res"; \
+    export OPAMCLI=2.0; \
+    build_dir=$(opam var prefix)/.opam-switch/build; \
+    failed=$(ls "$build_dir"); \
+    partial_fails=""; \
+    for pkg in $failed; do \
+    if opam show -f x-ci-accept-failures: "$pkg" | grep -qF "\"debian-12\""; then \
+    echo "A package failed and has been disabled for CI using the 'x-ci-accept-failures' field."; \
+    fi; \
+    test "$pkg" != 'ocaml-secondary-compiler.4.14.2' && partial_fails="$partial_fails $pkg"; \
+    done; \
+    test "${partial_fails}" != "" && echo "opam-repo-ci detected dependencies failing: ${partial_fails}"; \
+    exit 1
+RUN opam reinstall nanoid.1.0.0; \
+    res=$?; \
+    test "$res" != 31 && exit "$res"; \
+    export OPAMCLI=2.0; \
+    build_dir=$(opam var prefix)/.opam-switch/build; \
+    failed=$(ls "$build_dir"); \
+    partial_fails=""; \
+    for pkg in $failed; do \
+    if opam show -f x-ci-accept-failures: "$pkg" | grep -qF "\"debian-12\""; then \
+    echo "A package failed and has been disabled for CI using the 'x-ci-accept-failures' field."; \
+    fi; \
+    test "$pkg" != 'nanoid.1.0.0' && partial_fails="$partial_fails $pkg"; \
+    done; \
+    test "${partial_fails}" != "" && echo "opam-repo-ci detected dependencies failing: ${partial_fails}"; \
+    exit 1
+RUN (opam reinstall --with-test nanoid.1.0.0) || true
+RUN opam reinstall --with-test --verbose nanoid.1.0.0; \
+    res=$?; \
+    test "$res" != 31 && exit "$res"; \
+    export OPAMCLI=2.0; \
+    build_dir=$(opam var prefix)/.opam-switch/build; \
+    failed=$(ls "$build_dir"); \
+    partial_fails=""; \
+    for pkg in $failed; do \
+    if opam show -f x-ci-accept-failures: "$pkg" | grep -qF "\"debian-12\""; then \
+    echo "A package failed and has been disabled for CI using the 'x-ci-accept-failures' field."; \
+    fi; \
+    test "$pkg" != 'nanoid.1.0.0' && partial_fails="$partial_fails $pkg"; \
+    done; \
+    test "${partial_fails}" != "" && echo "opam-repo-ci detected dependencies failing: ${partial_fails}"; \
+    exit 1
+[0m
+END-OF-DOCKERFILE
+docker build -f ../Dockerfile .
+
+2024-07-04 08:48.50: Using cache hint "ocaml/opam:debian-12-ocaml-4.14@sha256:411c167ab30b2e15a22d9ba7269e6df1d6b24c7d69a5996d4a62bba7180dc074-ocaml-secondary-compiler.4.14.2-nanoid.1.0.0-3f2c920b90e20a61c5c90d25ab350fcf660158fd"
+2024-07-04 08:48.50: Using OBuilder spec:
+((from ocaml/opam:debian-12-ocaml-4.14@sha256:411c167ab30b2e15a22d9ba7269e6df1d6b24c7d69a5996d4a62bba7180dc074)
+ (user (uid 1000) (gid 1000))
+ (workdir /home/opam)
+ (run (shell "sudo ln -f /usr/bin/opam-dev /usr/bin/opam"))
+ (run (network host)
+      (shell "opam init --reinit --config .opamrc-sandbox -ni"))
+ (run (shell "uname -rs && opam exec -- ocaml -version && opam --version"))
+ (env OPAMDOWNLOADJOBS 1)
+ (env OPAMERRLOGLEN 0)
+ (env OPAMSOLVERTIMEOUT 500)
+ (env OPAMPRECISETRACKING 1)
+ (env CI true)
+ (env OPAM_REPO_CI true)
+ (run (shell "rm -rf opam-repository/"))
+ (copy (src .) (dst opam-repository/))
+ (run (shell "opam repository set-url --strict default opam-repository/"))
+ (run (network host)
+      (shell "opam update --depexts || true"))
+ (run (shell "opam pin add -k version -yn ocaml-secondary-compiler.4.14.2 4.14.2"))
+ (run (cache (opam-archives (target /home/opam/.opam/download-cache)))
+      (network host)
+      (shell  "opam reinstall ocaml-secondary-compiler.4.14.2;\
+             \n        res=$?;\
+             \n        test \"$res\" != 31 && exit \"$res\";\
+             \n        export OPAMCLI=2.0;\
+             \n        build_dir=$(opam var prefix)/.opam-switch/build;\
+             \n        failed=$(ls \"$build_dir\");\
+             \n        partial_fails=\"\";\
+             \n        for pkg in $failed; do\
+             \n          if opam show -f x-ci-accept-failures: \"$pkg\" | grep -qF \"\\\"debian-12\\\"\"; then\
+             \n            echo \"A package failed and has been disabled for CI using the 'x-ci-accept-failures' field.\";\
+             \n          fi;\
+             \n          test \"$pkg\" != 'ocaml-secondary-compiler.4.14.2' && partial_fails=\"$partial_fails $pkg\";\
+             \n        done;\
+             \n        test \"${partial_fails}\" != \"\" && echo \"opam-repo-ci detected dependencies failing: ${partial_fails}\";\
+             \n        exit 1"))
+ (run (cache (opam-archives (target /home/opam/.opam/download-cache)))
+      (network host)
+      (shell  "opam reinstall nanoid.1.0.0;\
+             \n        res=$?;\
+             \n        test \"$res\" != 31 && exit \"$res\";\
+             \n        export OPAMCLI=2.0;\
+             \n        build_dir=$(opam var prefix)/.opam-switch/build;\
+             \n        failed=$(ls \"$build_dir\");\
+             \n        partial_fails=\"\";\
+             \n        for pkg in $failed; do\
+             \n          if opam show -f x-ci-accept-failures: \"$pkg\" | grep -qF \"\\\"debian-12\\\"\"; then\
+             \n            echo \"A package failed and has been disabled for CI using the 'x-ci-accept-failures' field.\";\
+             \n          fi;\
+             \n          test \"$pkg\" != 'nanoid.1.0.0' && partial_fails=\"$partial_fails $pkg\";\
+             \n        done;\
+             \n        test \"${partial_fails}\" != \"\" && echo \"opam-repo-ci detected dependencies failing: ${partial_fails}\";\
+             \n        exit 1"))
+ (run (network host)
+      (shell "(opam reinstall --with-test nanoid.1.0.0) || true"))
+ (run (shell  "opam reinstall --with-test --verbose nanoid.1.0.0;\
+             \n        res=$?;\
+             \n        test \"$res\" != 31 && exit \"$res\";\
+             \n        export OPAMCLI=2.0;\
+             \n        build_dir=$(opam var prefix)/.opam-switch/build;\
+             \n        failed=$(ls \"$build_dir\");\
+             \n        partial_fails=\"\";\
+             \n        for pkg in $failed; do\
+             \n          if opam show -f x-ci-accept-failures: \"$pkg\" | grep -qF \"\\\"debian-12\\\"\"; then\
+             \n            echo \"A package failed and has been disabled for CI using the 'x-ci-accept-failures' field.\";\
+             \n          fi;\
+             \n          test \"$pkg\" != 'nanoid.1.0.0' && partial_fails=\"$partial_fails $pkg\";\
+             \n        done;\
+             \n        test \"${partial_fails}\" != \"\" && echo \"opam-repo-ci detected dependencies failing: ${partial_fails}\";\
+             \n        exit 1"))
+)
+
+2024-07-04 08:48.50: Waiting for resource in pool OCluster
+2024-07-05 05:10.55: Waiting for worker…
+2024-07-05 05:13.58: Got resource from pool OCluster
+Building on x86-bm-c14.sw.ocaml.org
+All commits already cached
+Updating files:  92% (29331/31772)Updating files:  93% (29548/31772)Updating files:  94% (29866/31772)Updating files:  95% (30184/31772)Updating files:  96% (30502/31772)Updating files:  97% (30819/31772)Updating files:  98% (31137/31772)Updating files:  99% (31455/31772)Updating files: 100% (31772/31772)Updating files: 100% (31772/31772), done.
+HEAD is now at e2171914dc Merge pull request #26173 from anuragsoni/release-shuttle_http-0.12.0
+Merge made by the 'ort' strategy.
+ packages/base-flambda2/base-flambda2.base/opam     |  8 +++
+ packages/dune-secondary/dune-secondary.3.8.1/opam  | 60 ++++++++++++++++++++++
+ .../menhir-secondary.20210419/opam                 | 34 ++++++++++++
+ .../ocaml-secondary-compiler.4.14.2/opam           | 30 +++++++++++
+ .../ocaml-variants.5.1.1+flambda2/opam             | 46 +++++++++++++++++
+ 5 files changed, 178 insertions(+)
+ create mode 100644 packages/base-flambda2/base-flambda2.base/opam
+ create mode 100644 packages/dune-secondary/dune-secondary.3.8.1/opam
+ create mode 100644 packages/menhir-secondary/menhir-secondary.20210419/opam
+ create mode 100644 packages/ocaml-secondary-compiler/ocaml-secondary-compiler.4.14.2/opam
+ create mode 100644 packages/ocaml-variants/ocaml-variants.5.1.1+flambda2/opam
+
+[01;34m(from ocaml/opam:debian-12-ocaml-4.14@sha256:411c167ab30b2e15a22d9ba7269e6df1d6b24c7d69a5996d4a62bba7180dc074)[0m
+[01;2m[01;35m2024-07-05 05:14.05 ---> using "787c10892c33b358f8712760387399b1ab2c78ae2006c4a10d01c5321d3dba40" from cache[0m
+
+[01;34m/: (user (uid 1000) (gid 1000))[0m
+
+[01;34m/: (workdir /home/opam)[0m
+
+[01;34m/home/opam: (run (shell "sudo ln -f /usr/bin/opam-dev /usr/bin/opam"))[0m
+[01;2m[01;35m2024-07-05 05:14.05 ---> using "f2e5db30f08f69a1d5334ae494aa89668e4020c14e77cf48ca4c893a0b4dfad3" from cache[0m
+
+[01;34m/home/opam: (run (network host)
+                 (shell "opam init --reinit --config .opamrc-sandbox -ni"))[0m
+Configuring from /home/opam/.opamrc-sandbox, then /home/opam/.opamrc, and finally from built-in defaults.
+Checking for available remotes: rsync and local, git.
+  - you won't be able to use mercurial repositories unless you install the hg command on your system.
+  - you won't be able to use darcs repositories unless you install the darcs command on your system.
+
+This development version of opam requires an update to the layout of /home/opam/.opam from version 2.0 to version 2.2~beta, which can't be reverted.
+You may want to back it up before going further.
+
+Continue? [y/n] y
+Format upgrade done.
+
+<><> Updating repositories ><><><><><><><><><><><><><><><><><><><><><><><><><><>
+[default] synchronised from file:///home/opam/opam-repository
+[01;2m[01;35m2024-07-05 05:14.05 ---> using "a815bc554d04fdd08319799ec1b953c5900bc15cf3510abbdde7dbab79abb5dd" from cache[0m
+
+[01;34m/home/opam: (run (shell "uname -rs && opam exec -- ocaml -version && opam --version"))[0m
+Linux 5.15.0-113-generic
+The OCaml toplevel, version 4.14.2
+2.2.0~rc1
+[01;2m[01;35m2024-07-05 05:14.05 ---> using "74dc415daa1c88b68336b71bd1c3b3cc476c5c7e7ba9c14b993dc4ab0d8e0bfb" from cache[0m
+
+[01;34m/home/opam: (env OPAMDOWNLOADJOBS 1)[0m
+
+[01;34m/home/opam: (env OPAMERRLOGLEN 0)[0m
+
+[01;34m/home/opam: (env OPAMSOLVERTIMEOUT 500)[0m
+
+[01;34m/home/opam: (env OPAMPRECISETRACKING 1)[0m
+
+[01;34m/home/opam: (env CI true)[0m
+
+[01;34m/home/opam: (env OPAM_REPO_CI true)[0m
+
+[01;34m/home/opam: (run (shell "rm -rf opam-repository/"))[0m
+[01;2m[01;35m2024-07-05 05:14.05 ---> using "c65cafca8f6f5d24d12a244a9c6ba026d5ea649414ebd308f23285f028433926" from cache[0m
+
+[01;34m/home/opam: (copy (src .) (dst opam-repository/))[0m
+[01;2m[01;35m2024-07-05 05:14.06 ---> using "4b1c040ec3b18c01a102ea251e2800a6afd9b4d11ba9f981d9aab20fabb3124c" from cache[0m
+
+[01;34m/home/opam: (run (shell "opam repository set-url --strict default opam-repository/"))[0m
+[default] Initialised
+[01;2m[01;35m2024-07-05 05:14.06 ---> using "a4b6c3b1d6f7e8404fca269bb0b30e903736f2a438d463235b8c03e839e88f9a" from cache[0m
+
+[01;34m/home/opam: (run (network host)
+                 (shell "opam update --depexts || true"))[0m
++ /usr/bin/sudo "apt-get" "update"
+- Get:1 http://deb.debian.org/debian bookworm InRelease [151 kB]
+- Get:2 http://deb.debian.org/debian bookworm-updates InRelease [55.4 kB]
+- Get:3 http://deb.debian.org/debian-security bookworm-security InRelease [48.0 kB]
+- Get:4 http://deb.debian.org/debian bookworm/main amd64 Packages [8788 kB]
+- Get:5 http://deb.debian.org/debian-security bookworm-security/main amd64 Packages [165 kB]
+- Fetched 9207 kB in 1s (7280 kB/s)
+- Reading package lists...
+[01;2m[01;35m2024-07-05 05:14.06 ---> using "c99b7e717ee3f38a477590e1129120c969b72ecf51912f0c791469e0f85310a6" from cache[0m
+
+[01;34m/home/opam: (run (shell "opam pin add -k version -yn ocaml-secondary-compiler.4.14.2 4.14.2"))[0m
+ocaml-secondary-compiler is now pinned to version 4.14.2
+[01;2m[01;35m2024-07-05 05:14.06 ---> using "51b3799cb9b88ca613427df97d7775ad266ac60f2e5b5f40da01bd3d204c12b0" from cache[0m
+
+[01;34m/home/opam: (run (cache (opam-archives (target /home/opam/.opam/download-cache)))
+                 (network host)
+                 (shell  "opam reinstall ocaml-secondary-compiler.4.14.2;\
+                        \n        res=$?;\
+                        \n        test \"$res\" != 31 && exit \"$res\";\
+                        \n        export OPAMCLI=2.0;\
+                        \n        build_dir=$(opam var prefix)/.opam-switch/build;\
+                        \n        failed=$(ls \"$build_dir\");\
+                        \n        partial_fails=\"\";\
+                        \n        for pkg in $failed; do\
+                        \n          if opam show -f x-ci-accept-failures: \"$pkg\" | grep -qF \"\\\"debian-12\\\"\"; then\
+                        \n            echo \"A package failed and has been disabled for CI using the 'x-ci-accept-failures' field.\";\
+                        \n          fi;\
+                        \n          test \"$pkg\" != 'ocaml-secondary-compiler.4.14.2' && partial_fails=\"$partial_fails $pkg\";\
+                        \n        done;\
+                        \n        test \"${partial_fails}\" != \"\" && echo \"opam-repo-ci detected dependencies failing: ${partial_fails}\";\
+                        \n        exit 1"))[0m
+ocaml-secondary-compiler.4.14.2 is not installed. Install it? [y/n] y
+The following actions will be performed:
+=== install 1 package
+  - install ocaml-secondary-compiler 4.14.2 (pinned)
+
+<><> Processing actions <><><><><><><><><><><><><><><><><><><><><><><><><><><><>
+-> retrieved ocaml-secondary-compiler.4.14.2  (cached)
+-> installed ocaml-secondary-compiler.4.14.2
+Done.
+# Run eval $(opam env) to update the current shell environment
+[01;2m[01;35m2024-07-05 05:14.06 ---> using "0d6e9b7b4ce4a1d88ce10440a42bca5f14802ea63ebe681ad9135e9cf023d7d2" from cache[0m
+
+[01;34m/home/opam: (run (cache (opam-archives (target /home/opam/.opam/download-cache)))
+                 (network host)
+                 (shell  "opam reinstall nanoid.1.0.0;\
+                        \n        res=$?;\
+                        \n        test \"$res\" != 31 && exit \"$res\";\
+                        \n        export OPAMCLI=2.0;\
+                        \n        build_dir=$(opam var prefix)/.opam-switch/build;\
+                        \n        failed=$(ls \"$build_dir\");\
+                        \n        partial_fails=\"\";\
+                        \n        for pkg in $failed; do\
+                        \n          if opam show -f x-ci-accept-failures: \"$pkg\" | grep -qF \"\\\"debian-12\\\"\"; then\
+                        \n            echo \"A package failed and has been disabled for CI using the 'x-ci-accept-failures' field.\";\
+                        \n          fi;\
+                        \n          test \"$pkg\" != 'nanoid.1.0.0' && partial_fails=\"$partial_fails $pkg\";\
+                        \n        done;\
+                        \n        test \"${partial_fails}\" != \"\" && echo \"opam-repo-ci detected dependencies failing: ${partial_fails}\";\
+                        \n        exit 1"))[0m
+nanoid.1.0.0 is not installed. Install it? [y/n] y
+The following actions will be performed:
+=== install 11 packages
+  - install conf-gmp          4      [required by conf-gmp-powm-sec, zarith]
+  - install conf-gmp-powm-sec 3      [required by cryptokit]
+  - install conf-pkg-config   3      [required by conf-zlib]
+  - install conf-zlib         1      [required by cryptokit]
+  - install cryptokit         1.19   [required by nanoid]
+  - install csexp             1.5.2  [required by dune-configurator]
+  - install dune              3.16.0 [required by nanoid]
+  - install dune-configurator 3.16.0 [required by cryptokit]
+  - install nanoid            1.0.0
+  - install ocamlfind         1.9.6  [required by zarith]
+  - install zarith            1.13   [required by cryptokit]
+
+The following system packages will first need to be installed:
+    libgmp-dev pkg-config zlib1g-dev
+
+<><> Handling external dependencies <><><><><><><><><><><><><><><><><><><><><><>
+
+opam believes some required external dependencies are missing. opam can:
+> 1. Run apt-get to install them (may need root/sudo access)
+  2. Display the recommended apt-get command and wait while you run it manually (e.g. in another terminal)
+  3. Continue anyway, and, upon success, permanently register that this external dependency is present, but not detectable
+  4. Abort the installation
+
+[1/2/3/4] 1
+
++ /usr/bin/sudo "apt-get" "install" "-qq" "-yy" "libgmp-dev" "pkg-config" "zlib1g-dev"
+- debconf: delaying package configuration, since apt-utils is not installed
+- Selecting previously unselected package libgmpxx4ldbl:amd64.
+- (Reading database ... (Reading database ... 5%(Reading database ... 10%(Reading database ... 15%(Reading database ... 20%(Reading database ... 25%(Reading database ... 30%(Reading database ... 35%(Reading database ... 40%(Reading database ... 45%(Reading database ... 50%(Reading database ... 55%(Reading database ... 60%(Reading database ... 65%(Reading database ... 70%(Reading database ... 75%(Reading database ... 80%(Reading database ... 85%(Reading database ... 90%(Reading database ... 95%(Reading database ... 100%(Reading database ... 18735 files and directories currently installed.)
+- Preparing to unpack .../0-libgmpxx4ldbl_2%3a6.2.1+dfsg1-1.1_amd64.deb ...
+- Unpacking libgmpxx4ldbl:amd64 (2:6.2.1+dfsg1-1.1) ...
+- Selecting previously unselected package libgmp-dev:amd64.
+- Preparing to unpack .../1-libgmp-dev_2%3a6.2.1+dfsg1-1.1_amd64.deb ...
+- Unpacking libgmp-dev:amd64 (2:6.2.1+dfsg1-1.1) ...
+- Selecting previously unselected package libpkgconf3:amd64.
+- Preparing to unpack .../2-libpkgconf3_1.8.1-1_amd64.deb ...
+- Unpacking libpkgconf3:amd64 (1.8.1-1) ...
+- Selecting previously unselected package pkgconf-bin.
+- Preparing to unpack .../3-pkgconf-bin_1.8.1-1_amd64.deb ...
+- Unpacking pkgconf-bin (1.8.1-1) ...
+- Selecting previously unselected package pkgconf:amd64.
+- Preparing to unpack .../4-pkgconf_1.8.1-1_amd64.deb ...
+- Unpacking pkgconf:amd64 (1.8.1-1) ...
+- Selecting previously unselected package pkg-config:amd64.
+- Preparing to unpack .../5-pkg-config_1.8.1-1_amd64.deb ...
+- Unpacking pkg-config:amd64 (1.8.1-1) ...
+- Selecting previously unselected package zlib1g-dev:amd64.
+- Preparing to unpack .../6-zlib1g-dev_1%3a1.2.13.dfsg-1_amd64.deb ...
+- Unpacking zlib1g-dev:amd64 (1:1.2.13.dfsg-1) ...
+- Setting up libpkgconf3:amd64 (1.8.1-1) ...
+- Setting up libgmpxx4ldbl:amd64 (2:6.2.1+dfsg1-1.1) ...
+- Setting up pkgconf-bin (1.8.1-1) ...
+- Setting up zlib1g-dev:amd64 (1:1.2.13.dfsg-1) ...
+- Setting up libgmp-dev:amd64 (2:6.2.1+dfsg1-1.1) ...
+- Setting up pkgconf:amd64 (1.8.1-1) ...
+- Setting up pkg-config:amd64 (1.8.1-1) ...
+- Processing triggers for libc-bin (2.36-9+deb12u7) ...
+
+<><> Processing actions <><><><><><><><><><><><><><><><><><><><><><><><><><><><>
+-> retrieved conf-gmp.4  (cached)
+-> retrieved conf-gmp-powm-sec.3  (cached)
+-> retrieved cryptokit.1.19  (cached)
+-> retrieved csexp.1.5.2  (cached)
+-> installed conf-pkg-config.3
+-> installed conf-gmp.4
+-> installed conf-zlib.1
+-> installed conf-gmp-powm-sec.3
+-> retrieved dune.3.16.0, dune-configurator.3.16.0  (cached)
+-> retrieved nanoid.1.0.0  (cached)
+-> retrieved ocamlfind.1.9.6  (cached)
+-> retrieved zarith.1.13  (cached)
+-> installed ocamlfind.1.9.6
+-> installed zarith.1.13
+-> installed dune.3.16.0
+-> installed csexp.1.5.2
+-> installed dune-configurator.3.16.0
+-> installed cryptokit.1.19
+-> installed nanoid.1.0.0
+Done.
+# Run eval $(opam env) to update the current shell environment
+[01;2m[01;35m2024-07-05 05:14.58 ---> saved as "2e4d4cee3b983fc0a7bc1c618ec195b5b110770cde4bccd6046417450a64b995"[0m
+
+[01;34m/home/opam: (run (network host)
+                 (shell "(opam reinstall --with-test nanoid.1.0.0) || true"))[0m
+[ERROR] Sorry, resolution of the request timed out.
+        Try to specify a more precise request, use a different solver, or increase the allowed time by setting OPAMSOLVERTIMEOUT to a bigger value (currently, it is set to 500.0 seconds).
+[01;2m[01;35m2024-07-05 05:23.33 ---> saved as "3e7fa3defe367d64bb23a6cf579113061247f0ec04ad28e3f6bad02530abefdb"[0m
+
+[01;34m/home/opam: (run (shell  "opam reinstall --with-test --verbose nanoid.1.0.0;\
+                        \n        res=$?;\
+                        \n        test \"$res\" != 31 && exit \"$res\";\
+                        \n        export OPAMCLI=2.0;\
+                        \n        build_dir=$(opam var prefix)/.opam-switch/build;\
+                        \n        failed=$(ls \"$build_dir\");\
+                        \n        partial_fails=\"\";\
+                        \n        for pkg in $failed; do\
+                        \n          if opam show -f x-ci-accept-failures: \"$pkg\" | grep -qF \"\\\"debian-12\\\"\"; then\
+                        \n            echo \"A package failed and has been disabled for CI using the 'x-ci-accept-failures' field.\";\
+                        \n          fi;\
+                        \n          test \"$pkg\" != 'nanoid.1.0.0' && partial_fails=\"$partial_fails $pkg\";\
+                        \n        done;\
+                        \n        test \"${partial_fails}\" != \"\" && echo \"opam-repo-ci detected dependencies failing: ${partial_fails}\";\
+                        \n        exit 1"))[0m
+The following actions will be performed:
+=== recompile 1 package
+  - recompile nanoid               1.0.0
+=== install 21 packages
+  - install   alcotest             1.0.1    [required by nanoid]
+  - install   astring              0.8.5    [required by alcotest]
+  - install   cmdliner             1.3.0    [required by alcotest]
+  - install   conf-npm             1        [required by nanoid]
+  - install   fmt                  0.9.0    [required by alcotest]
+  - install   js_of_ocaml          5.0.1    [required by nanoid]
+  - install   js_of_ocaml-compiler 5.0.1    [required by js_of_ocaml]
+  - install   menhir               20230608 [required by js_of_ocaml-compiler]
+  - install   menhirLib            20230608 [required by js_of_ocaml-compiler]
+  - install   menhirSdk            20230608 [required by js_of_ocaml-compiler]
+  - install   ocaml-compiler-libs  v0.12.4  [required by ppxlib]
+  - install   ocamlbuild           0.14.3   [required by fmt, astring, uuidm]
+  - install   ppx_derivers         1.2.1    [required by ppxlib]
+  - install   ppxlib               0.32.1   [required by js_of_ocaml]
+  - install   re                   1.11.0   [required by alcotest]
+  - install   seq                  base     [required by re]
+  - install   sexplib0             v0.17.0  [required by ppxlib]
+  - install   stdlib-shims         0.3.0    [required by alcotest]
+  - install   topkg                1.0.7    [required by fmt, astring, uuidm]
+  - install   uuidm                0.9.8    [required by alcotest]
+  - install   yojson               2.2.2    [required by js_of_ocaml-compiler]
+
+The following system packages will first need to be installed:
+    npm
+
+<><> Handling external dependencies <><><><><><><><><><><><><><><><><><><><><><>
+
+opam believes some required external dependencies are missing. opam can:
+> 1. Run apt-get to install them (may need root/sudo access)
+  2. Display the recommended apt-get command and wait while you run it manually (e.g. in another terminal)
+  3. Continue anyway, and, upon success, permanently register that this external dependency is present, but not detectable
+  4. Abort the installation
+
+[1/2/3/4] 1
+
++ /usr/bin/sudo "apt-get" "install" "-qq" "-yy" "npm"
+- W: Tried to start delayed item http://deb.debian.org/debian bookworm/main amd64 libuv1-dev amd64 1.44.2-1+deb12u1, but failed
+- W: Tried to start delayed item http://deb.debian.org/debian bookworm/main amd64 libuv1-dev amd64 1.44.2-1+deb12u1, but failed
+- W: Tried to start delayed item http://deb.debian.org/debian bookworm/main amd64 libuv1-dev amd64 1.44.2-1+deb12u1, but failed
+- W: Tried to start delayed item http://deb.debian.org/debian bookworm/main amd64 libuv1-dev amd64 1.44.2-1+deb12u1, but failed
+- W: Tried to start delayed item http://deb.debian.org/debian bookworm/main amd64 libuv1-dev amd64 1.44.2-1+deb12u1, but failed
+- W: Tried to start delayed item http://deb.debian.org/debian bookworm/main amd64 libuv1-dev amd64 1.44.2-1+deb12u1, but failed
+- W: Tried to start delayed item http://deb.debian.org/debian bookworm/main amd64 libuv1-dev amd64 1.44.2-1+deb12u1, but failed
+- W: Tried to start delayed item http://deb.debian.org/debian bookworm/main amd64 libuv1-dev amd64 1.44.2-1+deb12u1, but failed
+- W: Tried to start delayed item http://deb.debian.org/debian bookworm/main amd64 libuv1-dev amd64 1.44.2-1+deb12u1, but failed
+- W: Tried to start delayed item http://deb.debian.org/debian bookworm/main amd64 libuv1-dev amd64 1.44.2-1+deb12u1, but failed
+- W: Tried to start delayed item http://deb.debian.org/debian bookworm/main amd64 libuv1-dev amd64 1.44.2-1+deb12u1, but failed
+- W: Tried to start delayed item http://deb.debian.org/debian bookworm/main amd64 libuv1-dev amd64 1.44.2-1+deb12u1, but failed
+- W: Tried to start delayed item http://deb.debian.org/debian bookworm/main amd64 libuv1-dev amd64 1.44.2-1+deb12u1, but failed
+- W: Tried to start delayed item http://deb.debian.org/debian bookworm/main amd64 libuv1-dev amd64 1.44.2-1+deb12u1, but failed
+- W: Tried to start delayed item http://deb.debian.org/debian bookworm/main amd64 libuv1-dev amd64 1.44.2-1+deb12u1, but failed
+- W: Tried to start delayed item http://deb.debian.org/debian bookworm/main amd64 libuv1-dev amd64 1.44.2-1+deb12u1, but failed
+- W: Tried to start delayed item http://deb.debian.org/debian bookworm/main amd64 libuv1-dev amd64 1.44.2-1+deb12u1, but failed
+- W: Tried to start delayed item http://deb.debian.org/debian bookworm/main amd64 libuv1-dev amd64 1.44.2-1+deb12u1, but failed
+- W: Tried to start delayed item http://deb.debian.org/debian bookworm/main amd64 libuv1-dev amd64 1.44.2-1+deb12u1, but failed
+- W: Tried to start delayed item http://deb.debian.org/debian bookworm/main amd64 libuv1-dev amd64 1.44.2-1+deb12u1, but failed
+- W: Tried to start delayed item http://deb.debian.org/debian bookworm/main amd64 libuv1-dev amd64 1.44.2-1+deb12u1, but failed
+- W: Tried to start delayed item http://deb.debian.org/debian bookworm/main amd64 libuv1-dev amd64 1.44.2-1+deb12u1, but failed
+- W: Tried to start delayed item http://deb.debian.org/debian bookworm/main amd64 libuv1-dev amd64 1.44.2-1+deb12u1, but failed
+- W: Tried to start delayed item http://deb.debian.org/debian bookworm/main amd64 libuv1-dev amd64 1.44.2-1+deb12u1, but failed
+- W: Tried to start delayed item http://deb.debian.org/debian bookworm/main amd64 libuv1-dev amd64 1.44.2-1+deb12u1, but failed
+- W: Tried to start delayed item http://deb.debian.org/debian bookworm/main amd64 libuv1-dev amd64 1.44.2-1+deb12u1, but failed
+- W: Tried to start delayed item http://deb.debian.org/debian bookworm/main amd64 libuv1-dev amd64 1.44.2-1+deb12u1, but failed
+- W: Tried to start delayed item http://deb.debian.org/debian bookworm/main amd64 libuv1-dev amd64 1.44.2-1+deb12u1, but failed
+- W: Tried to start delayed item http://deb.debian.org/debian bookworm/main amd64 libuv1-dev amd64 1.44.2-1+deb12u1, but failed
+- W: Tried to start delayed item http://deb.debian.org/debian bookworm/main amd64 libuv1-dev amd64 1.44.2-1+deb12u1, but failed
+- W: Tried to start delayed item http://deb.debian.org/debian bookworm/main amd64 libuv1-dev amd64 1.44.2-1+deb12u1, but failed
+- W: Tried to start delayed item http://deb.debian.org/debian bookworm/main amd64 libuv1-dev amd64 1.44.2-1+deb12u1, but failed
+- W: Tried to start delayed item http://deb.debian.org/debian bookworm/main amd64 libuv1-dev amd64 1.44.2-1+deb12u1, but failed
+- W: Tried to start delayed item http://deb.debian.org/debian bookworm/main amd64 libuv1-dev amd64 1.44.2-1+deb12u1, but failed
+- W: Tried to start delayed item http://deb.debian.org/debian bookworm/main amd64 libuv1-dev amd64 1.44.2-1+deb12u1, but failed
+- W: Tried to start delayed item http://deb.debian.org/debian bookworm/main amd64 libuv1-dev amd64 1.44.2-1+deb12u1, but failed
+- W: Tried to start delayed item http://deb.debian.org/debian bookworm/main amd64 libuv1-dev amd64 1.44.2-1+deb12u1, but failed
+- W: Tried to start delayed item http://deb.debian.org/debian bookworm/main amd64 libuv1-dev amd64 1.44.2-1+deb12u1, but failed
+- W: Tried to start delayed item http://deb.debian.org/debian bookworm/main amd64 libuv1-dev amd64 1.44.2-1+deb12u1, but failed
+- W: Tried to start delayed item http://deb.debian.org/debian bookworm/main amd64 libuv1-dev amd64 1.44.2-1+deb12u1, but failed
+- W: Tried to start delayed item http://deb.debian.org/debian bookworm/main amd64 libuv1-dev amd64 1.44.2-1+deb12u1, but failed
+- W: Tried to start delayed item http://deb.debian.org/debian bookworm/main amd64 libuv1-dev amd64 1.44.2-1+deb12u1, but failed
+- W: Tried to start delayed item http://deb.debian.org/debian bookworm/main amd64 libuv1-dev amd64 1.44.2-1+deb12u1, but failed
+- W: Tried to start delayed item http://deb.debian.org/debian bookworm/main amd64 libuv1-dev amd64 1.44.2-1+deb12u1, but failed
+- W: Tried to start delayed item http://deb.debian.org/debian bookworm/main amd64 libuv1-dev amd64 1.44.2-1+deb12u1, but failed
+- W: Tried to start delayed item http://deb.debian.org/debian bookworm/main amd64 libuv1-dev amd64 1.44.2-1+deb12u1, but failed
+- W: Tried to start delayed item http://deb.debian.org/debian bookworm/main amd64 libuv1-dev amd64 1.44.2-1+deb12u1, but failed
+- W: Tried to start delayed item http://deb.debian.org/debian bookworm/main amd64 libuv1-dev amd64 1.44.2-1+deb12u1, but failed
+- W: Tried to start delayed item http://deb.debian.org/debian bookworm/main amd64 libuv1-dev amd64 1.44.2-1+deb12u1, but failed
+- W: Tried to start delayed item http://deb.debian.org/debian bookworm/main amd64 libuv1-dev amd64 1.44.2-1+deb12u1, but failed
+- W: Tried to start delayed item http://deb.debian.org/debian bookworm/main amd64 libuv1-dev amd64 1.44.2-1+deb12u1, but failed
+- W: Tried to start delayed item http://deb.debian.org/debian bookworm/main amd64 libuv1-dev amd64 1.44.2-1+deb12u1, but failed
+- W: Tried to start delayed item http://deb.debian.org/debian bookworm/main amd64 libuv1-dev amd64 1.44.2-1+deb12u1, but failed
+- W: Tried to start delayed item http://deb.debian.org/debian bookworm/main amd64 libuv1-dev amd64 1.44.2-1+deb12u1, but failed
+- W: Tried to start delayed item http://deb.debian.org/debian bookworm/main amd64 libuv1-dev amd64 1.44.2-1+deb12u1, but failed
+- W: Tried to start delayed item http://deb.debian.org/debian bookworm/main amd64 libuv1-dev amd64 1.44.2-1+deb12u1, but failed
+- W: Tried to start delayed item http://deb.debian.org/debian bookworm/main amd64 libuv1-dev amd64 1.44.2-1+deb12u1, but failed
+- W: Tried to start delayed item http://deb.debian.org/debian bookworm/main amd64 libuv1-dev amd64 1.44.2-1+deb12u1, but failed
+- W: Tried to start delayed item http://deb.debian.org/debian bookworm/main amd64 libuv1-dev amd64 1.44.2-1+deb12u1, but failed
+- W: Tried to start delayed item http://deb.debian.org/debian bookworm/main amd64 libuv1-dev amd64 1.44.2-1+deb12u1, but failed
+- W: Tried to start delayed item http://deb.debian.org/debian bookworm/main amd64 libuv1-dev amd64 1.44.2-1+deb12u1, but failed
+- W: Tried to start delayed item http://deb.debian.org/debian bookworm/main amd64 libuv1-dev amd64 1.44.2-1+deb12u1, but failed
+- W: Tried to start delayed item http://deb.debian.org/debian bookworm/main amd64 libuv1-dev amd64 1.44.2-1+deb12u1, but failed
+- W: Tried to start delayed item http://deb.debian.org/debian bookworm/main amd64 libuv1-dev amd64 1.44.2-1+deb12u1, but failed
+- W: Tried to start delayed item http://deb.debian.org/debian bookworm/main amd64 libuv1-dev amd64 1.44.2-1+deb12u1, but failed
+- W: Tried to start delayed item http://deb.debian.org/debian bookworm/main amd64 libuv1-dev amd64 1.44.2-1+deb12u1, but failed
+- W: Tried to start delayed item http://deb.debian.org/debian bookworm/main amd64 libuv1-dev amd64 1.44.2-1+deb12u1, but failed
+- W: Tried to start delayed item http://deb.debian.org/debian bookworm/main amd64 libuv1-dev amd64 1.44.2-1+deb12u1, but failed
+- W: Tried to start delayed item http://deb.debian.org/debian bookworm/main amd64 libuv1-dev amd64 1.44.2-1+deb12u1, but failed
+- W: Tried to start delayed item http://deb.debian.org/debian bookworm/main amd64 libuv1-dev amd64 1.44.2-1+deb12u1, but failed
+- W: Tried to start delayed item http://deb.debian.org/debian bookworm/main amd64 libuv1-dev amd64 1.44.2-1+deb12u1, but failed
+- W: Tried to start delayed item http://deb.debian.org/debian bookworm/main amd64 libuv1-dev amd64 1.44.2-1+deb12u1, but failed
+- W: Tried to start delayed item http://deb.debian.org/debian bookworm/main amd64 libuv1-dev amd64 1.44.2-1+deb12u1, but failed
+- W: Tried to start delayed item http://deb.debian.org/debian bookworm/main amd64 libuv1-dev amd64 1.44.2-1+deb12u1, but failed
+- W: Tried to start delayed item http://deb.debian.org/debian bookworm/main amd64 libuv1-dev amd64 1.44.2-1+deb12u1, but failed
+- W: Tried to start delayed item http://deb.debian.org/debian bookworm/main amd64 libuv1-dev amd64 1.44.2-1+deb12u1, but failed
+- W: Tried to start delayed item http://deb.debian.org/debian bookworm/main amd64 libuv1-dev amd64 1.44.2-1+deb12u1, but failed
+- W: Tried to start delayed item http://deb.debian.org/debian bookworm/main amd64 libuv1-dev amd64 1.44.2-1+deb12u1, but failed
+- W: Tried to start delayed item http://deb.debian.org/debian bookworm/main amd64 libuv1-dev amd64 1.44.2-1+deb12u1, but failed
+- W: Tried to start delayed item http://deb.debian.org/debian bookworm/main amd64 libuv1-dev amd64 1.44.2-1+deb12u1, but failed
+- W: Tried to start delayed item http://deb.debian.org/debian bookworm/main amd64 libuv1-dev amd64 1.44.2-1+deb12u1, but failed
+- W: Tried to start delayed item http://deb.debian.org/debian bookworm/main amd64 libuv1-dev amd64 1.44.2-1+deb12u1, but failed
+- W: Tried to start delayed item http://deb.debian.org/debian bookworm/main amd64 libuv1-dev amd64 1.44.2-1+deb12u1, but failed
+- W: Tried to start delayed item http://deb.debian.org/debian bookworm/main amd64 libuv1-dev amd64 1.44.2-1+deb12u1, but failed
+- W: Tried to start delayed item http://deb.debian.org/debian bookworm/main amd64 libuv1-dev amd64 1.44.2-1+deb12u1, but failed
+- W: Tried to start delayed item http://deb.debian.org/debian bookworm/main amd64 libuv1-dev amd64 1.44.2-1+deb12u1, but failed
+- W: Tried to start delayed item http://deb.debian.org/debian bookworm/main amd64 libuv1-dev amd64 1.44.2-1+deb12u1, but failed
+- W: Tried to start delayed item http://deb.debian.org/debian bookworm/main amd64 libuv1-dev amd64 1.44.2-1+deb12u1, but failed
+- W: Tried to start delayed item http://deb.debian.org/debian bookworm/main amd64 libuv1-dev amd64 1.44.2-1+deb12u1, but failed
+- W: Tried to start delayed item http://deb.debian.org/debian bookworm/main amd64 libuv1-dev amd64 1.44.2-1+deb12u1, but failed
+- W: Tried to start delayed item http://deb.debian.org/debian bookworm/main amd64 libuv1-dev amd64 1.44.2-1+deb12u1, but failed
+- W: Tried to start delayed item http://deb.debian.org/debian bookworm/main amd64 libuv1-dev amd64 1.44.2-1+deb12u1, but failed
+- W: Tried to start delayed item http://deb.debian.org/debian bookworm/main amd64 libuv1-dev amd64 1.44.2-1+deb12u1, but failed
+- W: Tried to start delayed item http://deb.debian.org/debian bookworm/main amd64 libuv1-dev amd64 1.44.2-1+deb12u1, but failed
+- W: Tried to start delayed item http://deb.debian.org/debian bookworm/main amd64 libuv1-dev amd64 1.44.2-1+deb12u1, but failed
+- W: Tried to start delayed item http://deb.debian.org/debian bookworm/main amd64 libuv1-dev amd64 1.44.2-1+deb12u1, but failed
+- W: Tried to start delayed item http://deb.debian.org/debian bookworm/main amd64 libuv1-dev amd64 1.44.2-1+deb12u1, but failed
+- W: Tried to start delayed item http://deb.debian.org/debian bookworm/main amd64 libuv1-dev amd64 1.44.2-1+deb12u1, but failed
+- W: Tried to start delayed item http://deb.debian.org/debian bookworm/main amd64 libuv1-dev amd64 1.44.2-1+deb12u1, but failed
+- W: Tried to start delayed item http://deb.debian.org/debian bookworm/main amd64 libuv1-dev amd64 1.44.2-1+deb12u1, but failed
+- W: Tried to start delayed item http://deb.debian.org/debian bookworm/main amd64 libuv1-dev amd64 1.44.2-1+deb12u1, but failed
+- W: Tried to start delayed item http://deb.debian.org/debian bookworm/main amd64 libuv1-dev amd64 1.44.2-1+deb12u1, but failed
+- W: Tried to start delayed item http://deb.debian.org/debian bookworm/main amd64 libuv1-dev amd64 1.44.2-1+deb12u1, but failed
+- W: Tried to start delayed item http://deb.debian.org/debian bookworm/main amd64 libuv1-dev amd64 1.44.2-1+deb12u1, but failed
+- W: Tried to start delayed item http://deb.debian.org/debian bookworm/main amd64 libuv1-dev amd64 1.44.2-1+deb12u1, but failed
+- W: Tried to start delayed item http://deb.debian.org/debian bookworm/main amd64 libuv1-dev amd64 1.44.2-1+deb12u1, but failed
+- W: Tried to start delayed item http://deb.debian.org/debian bookworm/main amd64 libuv1-dev amd64 1.44.2-1+deb12u1, but failed
+- W: Tried to start delayed item http://deb.debian.org/debian bookworm/main amd64 libuv1-dev amd64 1.44.2-1+deb12u1, but failed
+- W: Tried to start delayed item http://deb.debian.org/debian bookworm/main amd64 libuv1-dev amd64 1.44.2-1+deb12u1, but failed
+- W: Tried to start delayed item http://deb.debian.org/debian bookworm/main amd64 libuv1-dev amd64 1.44.2-1+deb12u1, but failed
+- W: Tried to start delayed item http://deb.debian.org/debian bookworm/main amd64 libuv1-dev amd64 1.44.2-1+deb12u1, but failed
+- W: Tried to start delayed item http://deb.debian.org/debian bookworm/main amd64 libuv1-dev amd64 1.44.2-1+deb12u1, but failed
+- W: Tried to start delayed item http://deb.debian.org/debian bookworm/main amd64 libuv1-dev amd64 1.44.2-1+deb12u1, but failed
+- W: Tried to start delayed item http://deb.debian.org/debian bookworm/main amd64 libuv1-dev amd64 1.44.2-1+deb12u1, but failed
+- W: Tried to start delayed item http://deb.debian.org/debian bookworm/main amd64 libuv1-dev amd64 1.44.2-1+deb12u1, but failed
+- W: Tried to start delayed item http://deb.debian.org/debian bookworm/main amd64 libuv1-dev amd64 1.44.2-1+deb12u1, but failed
+- W: Tried to start delayed item http://deb.debian.org/debian bookworm/main amd64 libuv1-dev amd64 1.44.2-1+deb12u1, but failed
+- W: Tried to start delayed item http://deb.debian.org/debian bookworm/main amd64 libuv1-dev amd64 1.44.2-1+deb12u1, but failed
+- W: Tried to start delayed item http://deb.debian.org/debian bookworm/main amd64 libuv1-dev amd64 1.44.2-1+deb12u1, but failed
+- W: Tried to start delayed item http://deb.debian.org/debian bookworm/main amd64 libuv1-dev amd64 1.44.2-1+deb12u1, but failed
+- W: Tried to start delayed item http://deb.debian.org/debian bookworm/main amd64 libuv1-dev amd64 1.44.2-1+deb12u1, but failed
+- W: Tried to start delayed item http://deb.debian.org/debian bookworm/main amd64 libuv1-dev amd64 1.44.2-1+deb12u1, but failed
+- W: Tried to start delayed item http://deb.debian.org/debian bookworm/main amd64 libuv1-dev amd64 1.44.2-1+deb12u1, but failed
+- W: Tried to start delayed item http://deb.debian.org/debian bookworm/main amd64 libuv1-dev amd64 1.44.2-1+deb12u1, but failed
+- W: Tried to start delayed item http://deb.debian.org/debian bookworm/main amd64 libuv1-dev amd64 1.44.2-1+deb12u1, but failed
+- W: Tried to start delayed item http://deb.debian.org/debian bookworm/main amd64 libuv1-dev amd64 1.44.2-1+deb12u1, but failed
+- W: Tried to start delayed item http://deb.debian.org/debian bookworm/main amd64 libuv1-dev amd64 1.44.2-1+deb12u1, but failed
+- W: Tried to start delayed item http://deb.debian.org/debian bookworm/main amd64 libuv1-dev amd64 1.44.2-1+deb12u1, but failed
+- W: Tried to start delayed item http://deb.debian.org/debian bookworm/main amd64 libuv1-dev amd64 1.44.2-1+deb12u1, but failed
+- W: Tried to start delayed item http://deb.debian.org/debian bookworm/main amd64 libuv1-dev amd64 1.44.2-1+deb12u1, but failed
+- W: Tried to start delayed item http://deb.debian.org/debian bookworm/main amd64 libuv1-dev amd64 1.44.2-1+deb12u1, but failed
+- W: Tried to start delayed item http://deb.debian.org/debian bookworm/main amd64 libuv1-dev amd64 1.44.2-1+deb12u1, but failed
+- W: Tried to start delayed item http://deb.debian.org/debian bookworm/main amd64 libuv1-dev amd64 1.44.2-1+deb12u1, but failed
+- W: Tried to start delayed item http://deb.debian.org/debian bookworm/main amd64 libuv1-dev amd64 1.44.2-1+deb12u1, but failed
+- W: Tried to start delayed item http://deb.debian.org/debian bookworm/main amd64 libuv1-dev amd64 1.44.2-1+deb12u1, but failed
+- W: Tried to start delayed item http://deb.debian.org/debian bookworm/main amd64 libuv1-dev amd64 1.44.2-1+deb12u1, but failed
+- W: Tried to start delayed item http://deb.debian.org/debian bookworm/main amd64 libuv1-dev amd64 1.44.2-1+deb12u1, but failed
+- W: Tried to start delayed item http://deb.debian.org/debian bookworm/main amd64 libuv1-dev amd64 1.44.2-1+deb12u1, but failed
+- W: Tried to start delayed item http://deb.debian.org/debian bookworm/main amd64 libuv1-dev amd64 1.44.2-1+deb12u1, but failed
+- W: Tried to start delayed item http://deb.debian.org/debian bookworm/main amd64 libuv1-dev amd64 1.44.2-1+deb12u1, but failed
+- W: Tried to start delayed item http://deb.debian.org/debian bookworm/main amd64 libuv1-dev amd64 1.44.2-1+deb12u1, but failed
+- W: Tried to start delayed item http://deb.debian.org/debian bookworm/main amd64 libuv1-dev amd64 1.44.2-1+deb12u1, but failed
+- W: Tried to start delayed item http://deb.debian.org/debian bookworm/main amd64 libuv1-dev amd64 1.44.2-1+deb12u1, but failed
+- W: Tried to start delayed item http://deb.debian.org/debian bookworm/main amd64 libuv1-dev amd64 1.44.2-1+deb12u1, but failed
+- W: Tried to start delayed item http://deb.debian.org/debian bookworm/main amd64 libuv1-dev amd64 1.44.2-1+deb12u1, but failed
+- W: Tried to start delayed item http://deb.debian.org/debian bookworm/main amd64 libuv1-dev amd64 1.44.2-1+deb12u1, but failed
+- W: Tried to start delayed item http://deb.debian.org/debian bookworm/main amd64 libuv1-dev amd64 1.44.2-1+deb12u1, but failed
+- W: Tried to start delayed item http://deb.debian.org/debian bookworm/main amd64 libuv1-dev amd64 1.44.2-1+deb12u1, but failed
+- W: Tried to start delayed item http://deb.debian.org/debian bookworm/main amd64 libuv1-dev amd64 1.44.2-1+deb12u1, but failed
+- W: Tried to start delayed item http://deb.debian.org/debian bookworm/main amd64 libuv1-dev amd64 1.44.2-1+deb12u1, but failed
+- W: Tried to start delayed item http://deb.debian.org/debian bookworm/main amd64 libuv1-dev amd64 1.44.2-1+deb12u1, but failed
+- W: Tried to start delayed item http://deb.debian.org/debian bookworm/main amd64 libuv1-dev amd64 1.44.2-1+deb12u1, but failed
+- W: Tried to start delayed item http://deb.debian.org/debian bookworm/main amd64 libuv1-dev amd64 1.44.2-1+deb12u1, but failed
+- W: Tried to start delayed item http://deb.debian.org/debian bookworm/main amd64 libuv1-dev amd64 1.44.2-1+deb12u1, but failed
+- W: Tried to start delayed item http://deb.debian.org/debian bookworm/main amd64 libuv1-dev amd64 1.44.2-1+deb12u1, but failed
+- W: Tried to start delayed item http://deb.debian.org/debian bookworm/main amd64 libuv1-dev amd64 1.44.2-1+deb12u1, but failed
+- W: Tried to start delayed item http://deb.debian.org/debian bookworm/main amd64 libuv1-dev amd64 1.44.2-1+deb12u1, but failed
+- W: Tried to start delayed item http://deb.debian.org/debian bookworm/main amd64 libuv1-dev amd64 1.44.2-1+deb12u1, but failed
+- W: Tried to start delayed item http://deb.debian.org/debian bookworm/main amd64 libuv1-dev amd64 1.44.2-1+deb12u1, but failed
+- W: Tried to start delayed item http://deb.debian.org/debian bookworm/main amd64 libuv1-dev amd64 1.44.2-1+deb12u1, but failed
+- W: Tried to start delayed item http://deb.debian.org/debian bookworm/main amd64 libuv1-dev amd64 1.44.2-1+deb12u1, but failed
+- W: Tried to start delayed item http://deb.debian.org/debian bookworm/main amd64 libuv1-dev amd64 1.44.2-1+deb12u1, but failed
+- W: Tried to start delayed item http://deb.debian.org/debian bookworm/main amd64 libuv1-dev amd64 1.44.2-1+deb12u1, but failed
+- W: Tried to start delayed item http://deb.debian.org/debian bookworm/main amd64 libuv1-dev amd64 1.44.2-1+deb12u1, but failed
+- W: Tried to start delayed item http://deb.debian.org/debian bookworm/main amd64 libuv1-dev amd64 1.44.2-1+deb12u1, but failed
+- W: Tried to start delayed item http://deb.debian.org/debian bookworm/main amd64 libuv1-dev amd64 1.44.2-1+deb12u1, but failed
+- W: Tried to start delayed item http://deb.debian.org/debian bookworm/main amd64 libuv1-dev amd64 1.44.2-1+deb12u1, but failed
+- W: Tried to start delayed item http://deb.debian.org/debian bookworm/main amd64 libuv1-dev amd64 1.44.2-1+deb12u1, but failed
+- W: Tried to start delayed item http://deb.debian.org/debian bookworm/main amd64 libuv1-dev amd64 1.44.2-1+deb12u1, but failed
+- W: Tried to start delayed item http://deb.debian.org/debian bookworm/main amd64 libuv1-dev amd64 1.44.2-1+deb12u1, but failed
+- W: Tried to start delayed item http://deb.debian.org/debian bookworm/main amd64 libuv1-dev amd64 1.44.2-1+deb12u1, but failed
+- W: Tried to start delayed item http://deb.debian.org/debian bookworm/main amd64 libuv1-dev amd64 1.44.2-1+deb12u1, but failed
+- W: Tried to start delayed item http://deb.debian.org/debian bookworm/main amd64 libuv1-dev amd64 1.44.2-1+deb12u1, but failed
+- W: Tried to start delayed item http://deb.debian.org/debian bookworm/main amd64 libuv1-dev amd64 1.44.2-1+deb12u1, but failed
+- W: Tried to start delayed item http://deb.debian.org/debian bookworm/main amd64 libuv1-dev amd64 1.44.2-1+deb12u1, but failed
+- W: Tried to start delayed item http://deb.debian.org/debian bookworm/main amd64 libuv1-dev amd64 1.44.2-1+deb12u1, but failed
+- W: Tried to start delayed item http://deb.debian.org/debian bookworm/main amd64 libuv1-dev amd64 1.44.2-1+deb12u1, but failed
+- W: Tried to start delayed item http://deb.debian.org/debian bookworm/main amd64 libuv1-dev amd64 1.44.2-1+deb12u1, but failed
+- W: Tried to start delayed item http://deb.debian.org/debian bookworm/main amd64 libuv1-dev amd64 1.44.2-1+deb12u1, but failed
+- W: Tried to start delayed item http://deb.debian.org/debian bookworm/main amd64 libuv1-dev amd64 1.44.2-1+deb12u1, but failed
+- W: Tried to start delayed item http://deb.debian.org/debian bookworm/main amd64 libuv1-dev amd64 1.44.2-1+deb12u1, but failed
+- W: Tried to start delayed item http://deb.debian.org/debian bookworm/main amd64 libuv1-dev amd64 1.44.2-1+deb12u1, but failed
+- W: Tried to start delayed item http://deb.debian.org/debian bookworm/main amd64 libuv1-dev amd64 1.44.2-1+deb12u1, but failed
+- W: Tried to start delayed item http://deb.debian.org/debian bookworm/main amd64 libuv1-dev amd64 1.44.2-1+deb12u1, but failed
+- W: Tried to start delayed item http://deb.debian.org/debian bookworm/main amd64 libuv1-dev amd64 1.44.2-1+deb12u1, but failed
+- W: Tried to start delayed item http://deb.debian.org/debian bookworm/main amd64 libuv1-dev amd64 1.44.2-1+deb12u1, but failed
+- W: Tried to start delayed item http://deb.debian.org/debian bookworm/main amd64 libuv1-dev amd64 1.44.2-1+deb12u1, but failed
+- W: Tried to start delayed item http://deb.debian.org/debian bookworm/main amd64 libuv1-dev amd64 1.44.2-1+deb12u1, but failed
+- W: Tried to start delayed item http://deb.debian.org/debian bookworm/main amd64 libuv1-dev amd64 1.44.2-1+deb12u1, but failed
+- W: Tried to start delayed item http://deb.debian.org/debian bookworm/main amd64 libuv1-dev amd64 1.44.2-1+deb12u1, but failed
+- W: Tried to start delayed item http://deb.debian.org/debian bookworm/main amd64 libuv1-dev amd64 1.44.2-1+deb12u1, but failed
+- W: Tried to start delayed item http://deb.debian.org/debian bookworm/main amd64 libuv1-dev amd64 1.44.2-1+deb12u1, but failed
+- E: Failed to fetch http://deb.debian.org/debian/pool/main/d/dbus/libdbus-1-3_1.14.10-1%7edeb12u1_amd64.deb  Temporary failure resolving 'deb.debian.org'
+- E: Failed to fetch http://deb.debian.org/debian/pool/main/d/dbus/dbus-bin_1.14.10-1%7edeb12u1_amd64.deb  Temporary failure resolving 'deb.debian.org'
+- E: Failed to fetch http://deb.debian.org/debian/pool/main/d/dbus/dbus-session-bus-common_1.14.10-1%7edeb12u1_all.deb  Temporary failure resolving 'deb.debian.org'
+- E: Failed to fetch http://deb.debian.org/debian/pool/main/a/apparmor/libapparmor1_3.0.8-3_amd64.deb  Temporary failure resolving 'deb.debian.org'
+- E: Failed to fetch http://deb.debian.org/debian/pool/main/d/dbus/dbus-daemon_1.14.10-1%7edeb12u1_amd64.deb  Temporary failure resolving 'deb.debian.org'
+- E: Failed to fetch http://deb.debian.org/debian/pool/main/d/dbus/dbus-system-bus-common_1.14.10-1%7edeb12u1_all.deb  Temporary failure resolving 'deb.debian.org'
+- E: Failed to fetch http://deb.debian.org/debian/pool/main/d/dbus/dbus_1.14.10-1%7edeb12u1_amd64.deb  Temporary failure resolving 'deb.debian.org'
+- E: Failed to fetch http://deb.debian.org/debian/pool/main/o/openssl/libssl3_3.0.13-1%7edeb12u1_amd64.deb  Temporary failure resolving 'deb.debian.org'
+- E: Failed to fetch http://deb.debian.org/debian/pool/main/p/python3.11/libpython3.11-minimal_3.11.2-6%2bdeb12u2_amd64.deb  Temporary failure resolving 'deb.debian.org'
+- E: Failed to fetch http://deb.debian.org/debian/pool/main/p/python3.11/python3.11-minimal_3.11.2-6%2bdeb12u2_amd64.deb  Temporary failure resolving 'deb.debian.org'
+- E: Failed to fetch http://deb.debian.org/debian/pool/main/p/python3-defaults/python3-minimal_3.11.2-1%2bb1_amd64.deb  Temporary failure resolving 'deb.debian.org'
+- E: Failed to fetch http://deb.debian.org/debian/pool/main/m/media-types/media-types_10.0.0_all.deb  Temporary failure resolving 'deb.debian.org'
+- E: Failed to fetch http://deb.debian.org/debian/pool/main/p/python3.11/libpython3.11-stdlib_3.11.2-6%2bdeb12u2_amd64.deb  Temporary failure resolving 'deb.debian.org'
+- E: Failed to fetch http://deb.debian.org/debian/pool/main/p/python3.11/python3.11_3.11.2-6%2bdeb12u2_amd64.deb  Temporary failure resolving 'deb.debian.org'
+- E: Failed to fetch http://deb.debian.org/debian/pool/main/p/python3-defaults/libpython3-stdlib_3.11.2-1%2bb1_amd64.deb  Temporary failure resolving 'deb.debian.org'
+- E: Failed to fetch http://deb.debian.org/debian/pool/main/p/python3-defaults/python3_3.11.2-1%2bb1_amd64.deb  Temporary failure resolving 'deb.debian.org'
+- E: Failed to fetch http://deb.debian.org/debian/pool/main/n/node-fast-deep-equal/node-fast-deep-equal_3.1.3-3_all.deb  Temporary failure resolving 'deb.debian.org'
+- E: Failed to fetch http://deb.debian.org/debian/pool/main/n/node-json-schema-traverse/node-json-schema-traverse_1.0.0-3_all.deb  Temporary failure resolving 'deb.debian.org'
+- E: Failed to fetch http://deb.debian.org/debian/pool/main/n/node-jsonify/node-jsonify_0.0.1-1_all.deb  Temporary failure resolving 'deb.debian.org'
+- E: Failed to fetch http://deb.debian.org/debian/pool/main/n/node-json-stable-stringify/node-json-stable-stringify_1.0.2%2b%7ecs5.2.34-1_all.deb  Temporary failure resolving 'deb.debian.org'
+- E: Failed to fetch http://deb.debian.org/debian/pool/main/c/c-ares/libc-ares2_1.18.1-3_amd64.deb  Temporary failure resolving 'deb.debian.org'
+- E: Failed to fetch http://deb.debian.org/debian/pool/main/i/icu/libicu72_72.1-3_amd64.deb  Temporary failure resolving 'deb.debian.org'
+- E: Failed to fetch http://deb.debian.org/debian-security/pool/updates/main/libu/libuv1/libuv1_1.44.2-1%2bdeb12u1_amd64.deb  Temporary failure resolving 'deb.debian.org'
+- E: Failed to fetch http://deb.debian.org/debian/pool/main/n/node-xtend/node-xtend_4.0.2-3_all.deb  Temporary failure resolving 'deb.debian.org'
+- E: Failed to fetch http://deb.debian.org/debian/pool/main/a/acorn/node-acorn_8.8.1%2bds%2b%7ecs25.17.7-2_all.deb  Temporary failure resolving 'deb.debian.org'
+- E: Failed to fetch http://deb.debian.org/debian/pool/main/n/node-cjs-module-lexer/node-cjs-module-lexer_1.2.2%2bdfsg-5_all.deb  Temporary failure resolving 'deb.debian.org'
+- E: Failed to fetch http://deb.debian.org/debian/pool/main/n/node-busboy/node-busboy_1.6.0%2b%7ecs2.6.0-2_all.deb  Temporary failure resolving 'deb.debian.org'
+- E: Failed to fetch http://deb.debian.org/debian/pool/main/n/node-undici/node-undici_5.15.0%2bdfsg1%2b%7ecs20.10.9.3-1%2bdeb12u4_all.deb  Temporary failure resolving 'deb.debian.org'
+- E: Failed to fetch http://deb.debian.org/debian/pool/main/n/nodejs/libnode108_18.19.0%2bdfsg-6%7edeb12u2_amd64.deb  Temporary failure resolving 'deb.debian.org'
+- E: Failed to fetch http://deb.debian.org/debian/pool/main/n/nodejs/nodejs_18.19.0%2bdfsg-6%7edeb12u2_amd64.deb  Temporary failure resolving 'deb.debian.org'
+- E: Failed to fetch http://deb.debian.org/debian/pool/main/n/node-punycode/node-punycode_2.1.1-6_all.deb  Temporary failure resolving 'deb.debian.org'
+- E: Failed to fetch http://deb.debian.org/debian/pool/main/n/node-uri-js/node-uri-js_4.4.0%2bdfsg-8_all.deb  Temporary failure resolving 'deb.debian.org'
+- E: Failed to fetch http://deb.debian.org/debian/pool/main/n/node-ajv/node-ajv_6.12.6-3_all.deb  Temporary failure resolving 'deb.debian.org'
+- E: Failed to fetch http://deb.debian.org/debian/pool/main/n/node-inherits/libjs-inherits_2.0.4-6_all.deb  Temporary failure resolving 'deb.debian.org'
+- E: Failed to fetch http://deb.debian.org/debian/pool/main/n/node-inherits/node-inherits_2.0.4-6_all.deb  Temporary failure resolving 'deb.debian.org'
+- E: Failed to fetch http://deb.debian.org/debian/pool/main/n/node-core-util-is/node-core-util-is_1.0.3-1_all.deb  Temporary failure resolving 'deb.debian.org'
+- E: Failed to fetch http://deb.debian.org/debian/pool/main/n/node-safe-buffer/node-safe-buffer_5.2.1%2b%7ecs2.1.2-3_all.deb  Temporary failure resolving 'deb.debian.org'
+- E: Failed to fetch http://deb.debian.org/debian/pool/main/n/node-string-decoder/node-string-decoder_1.3.0-6_all.deb  Temporary failure resolving 'deb.debian.org'
+- E: Failed to fetch http://deb.debian.org/debian/pool/main/n/node-process-nextick-args/node-process-nextick-args_2.0.1-3_all.deb  Temporary failure resolving 'deb.debian.org'
+- E: Failed to fetch http://deb.debian.org/debian/pool/main/n/node-util-deprecate/node-util-deprecate_1.0.2-3_all.deb  Temporary failure resolving 'deb.debian.org'
+- E: Failed to fetch http://deb.debian.org/debian/pool/main/n/node-isarray/node-isarray_2.0.5-4_all.deb  Temporary failure resolving 'deb.debian.org'
+- E: Failed to fetch http://deb.debian.org/debian/pool/main/n/node-readable-stream/node-readable-stream_3.6.0%2b%7ecs3.0.0-4_all.deb  Temporary failure resolving 'deb.debian.org'
+- E: Failed to fetch http://deb.debian.org/debian/pool/main/n/node-typedarray/node-typedarray_0.0.7-1_all.deb  Temporary failure resolving 'deb.debian.org'
+- E: Failed to fetch http://deb.debian.org/debian/pool/main/n/node-concat-stream/node-concat-stream_2.0.0%2b%7e2.0.0-2_all.deb  Temporary failure resolving 'deb.debian.org'
+- E: Failed to fetch http://deb.debian.org/debian/pool/main/n/node-ms/node-ms_2.1.3%2b%7ecs0.7.31-3_all.deb  Temporary failure resolving 'deb.debian.org'
+- E: Failed to fetch http://deb.debian.org/debian/pool/main/n/node-debug/node-debug_4.3.4%2b%7ecs4.1.7-1_all.deb  Temporary failure resolving 'deb.debian.org'
+- E: Failed to fetch http://deb.debian.org/debian/pool/main/n/node-esutils/node-esutils_2.0.3%2b%7e2.0.0-1_all.deb  Temporary failure resolving 'deb.debian.org'
+- E: Failed to fetch http://deb.debian.org/debian/pool/main/n/node-doctrine/node-doctrine_3.0.0-4_all.deb  Temporary failure resolving 'deb.debian.org'
+- E: Failed to fetch http://deb.debian.org/debian/pool/main/n/node-eslint-visitor-keys/node-eslint-visitor-keys_3.3.0%2b%7e1.0.0-1_all.deb  Temporary failure resolving 'deb.debian.org'
+- E: Failed to fetch http://deb.debian.org/debian/pool/main/n/node-estraverse/node-estraverse_5.3.0%2bds%2b%7e5.1.1-1_all.deb  Temporary failure resolving 'deb.debian.org'
+- E: Failed to fetch http://deb.debian.org/debian/pool/main/n/node-object-assign/node-object-assign_4.1.1-7_all.deb  Temporary failure resolving 'deb.debian.org'
+- E: Failed to fetch http://deb.debian.org/debian/pool/main/n/node-esrecurse/node-esrecurse_4.3.0-2_all.deb  Temporary failure resolving 'deb.debian.org'
+- E: Failed to fetch http://deb.debian.org/debian/pool/main/n/node-eslint-scope/node-eslint-scope_7.1.1%2b%7e3.7.4-1_all.deb  Temporary failure resolving 'deb.debian.org'
+- E: Failed to fetch http://deb.debian.org/debian/pool/main/n/node-espree/node-espree_9.4.1%7edfsg-1_all.deb  Temporary failure resolving 'deb.debian.org'
+- E: Failed to fetch http://deb.debian.org/debian/pool/main/n/node-esquery/node-esquery_1.4.2%7eds-1_all.deb  Temporary failure resolving 'deb.debian.org'
+- E: Failed to fetch http://deb.debian.org/debian/pool/main/n/node-eslint-utils/node-eslint-utils_3.0.0-3_all.deb  Temporary failure resolving 'deb.debian.org'
+- E: Failed to fetch http://deb.debian.org/debian/pool/main/n/node-flatted/node-flatted_3.2.7%7eds-1_all.deb  Temporary failure resolving 'deb.debian.org'
+- E: Failed to fetch http://deb.debian.org/debian/pool/main/n/node-fs.realpath/node-fs.realpath_1.0.0-3_all.deb  Temporary failure resolving 'deb.debian.org'
+- E: Failed to fetch http://deb.debian.org/debian/pool/main/n/node-wrappy/node-wrappy_1.0.2-3_all.deb  Temporary failure resolving 'deb.debian.org'
+- E: Failed to fetch http://deb.debian.org/debian/pool/main/n/node-once/node-once_1.4.0-7_all.deb  Temporary failure resolving 'deb.debian.org'
+- E: Failed to fetch http://deb.debian.org/debian/pool/main/n/node-inflight/node-inflight_1.0.6-2_all.deb  Temporary failure resolving 'deb.debian.org'
+- E: Failed to fetch http://deb.debian.org/debian/pool/main/n/node-balanced-match/node-balanced-match_2.0.0-1_all.deb  Temporary failure resolving 'deb.debian.org'
+- E: Failed to fetch http://deb.debian.org/debian/pool/main/n/node-brace-expansion/node-brace-expansion_2.0.1-2_all.deb  Temporary failure resolving 'deb.debian.org'
+- E: Failed to fetch http://deb.debian.org/debian/pool/main/n/node-minimatch/node-minimatch_5.1.1%2b%7e5.1.2-1_all.deb  Temporary failure resolving 'deb.debian.org'
+- E: Failed to fetch http://deb.debian.org/debian/pool/main/n/node-glob/node-glob_8.0.3%2b%7ecs8.4.15-1_all.deb  Temporary failure resolving 'deb.debian.org'
+- E: Failed to fetch http://deb.debian.org/debian/pool/main/n/node-rimraf/node-rimraf_3.0.2-2_all.deb  Temporary failure resolving 'deb.debian.org'
+- E: Failed to fetch http://deb.debian.org/debian/pool/main/n/node-file-entry-cache/node-write_2.0.0%7e6.0.0%2b%7e3.0.4%2b%7e2.0.0%2b%7e1.0.0%2b%7e2.0.1-5_all.deb  Temporary failure resolving 'deb.debian.org'
+- E: Failed to fetch http://deb.debian.org/debian/pool/main/n/node-file-entry-cache/node-flat-cache_3.0.4%7e6.0.0%2b%7e3.0.4%2b%7e2.0.0%2b%7e1.0.0%2b%7e2.0.1-5_all.deb  Temporary failure resolving 'deb.debian.org'
+- E: Failed to fetch http://deb.debian.org/debian/pool/main/n/node-file-entry-cache/node-file-entry-cache_6.0.0%2b%7e3.0.4%2b%7e2.0.0%2b%7e1.0.0%2b%7e2.0.1-5_all.deb  Temporary failure resolving 'deb.debian.org'
+- E: Failed to fetch http://deb.debian.org/debian/pool/main/n/node-functional-red-black-tree/node-functional-red-black-tree_1.0.1%2b20181105-7_all.deb  Temporary failure resolving 'deb.debian.org'
+- E: Failed to fetch http://deb.debian.org/debian/pool/main/n/node-is-extglob/node-is-extglob_2.1.1-5_all.deb  Temporary failure resolving 'deb.debian.org'
+- E: Failed to fetch http://deb.debian.org/debian/pool/main/n/node-is-glob/node-is-glob_4.0.3-2_all.deb  Temporary failure resolving 'deb.debian.org'
+- E: Failed to fetch http://deb.debian.org/debian/pool/main/n/node-path-dirname/node-path-dirname_1.0.2-2_all.deb  Temporary failure resolving 'deb.debian.org'
+- E: Failed to fetch http://deb.debian.org/debian/pool/main/n/node-glob-parent/node-glob-parent_6.0.2%2b%7e5.1.1-2_all.deb  Temporary failure resolving 'deb.debian.org'
+- E: Failed to fetch http://deb.debian.org/debian/pool/main/n/node-globals/node-globals_13.18.0-1_all.deb  Temporary failure resolving 'deb.debian.org'
+- E: Failed to fetch http://deb.debian.org/debian/pool/main/n/node-resolve-from/node-resolve-from_5.0.0%2b%7e3.1.0%2b%7e3.3.0%2b%7e2.0.0-1_all.deb  Temporary failure resolving 'deb.debian.org'
+- E: Failed to fetch http://deb.debian.org/debian/pool/main/n/node-imurmurhash/node-imurmurhash_0.1.4%2bdfsg%2b%7e0.1.1-2_all.deb  Temporary failure resolving 'deb.debian.org'
+- E: Failed to fetch http://deb.debian.org/debian/pool/main/n/node-ignore/node-ignore_5.2.1-1_all.deb  Temporary failure resolving 'deb.debian.org'
+- E: Failed to fetch http://deb.debian.org/debian/pool/main/n/node-prelude-ls/node-prelude-ls_1.2.1%2bdfsg-3_all.deb  Temporary failure resolving 'deb.debian.org'
+- E: Failed to fetch http://deb.debian.org/debian/pool/main/n/node-type-check/node-type-check_0.4.0%2bdfsg-3_all.deb  Temporary failure resolving 'deb.debian.org'
+- E: Failed to fetch http://deb.debian.org/debian/pool/main/n/node-levn/node-levn_0.4.1%2bdfsg-2_all.deb  Temporary failure resolving 'deb.debian.org'
+- E: Failed to fetch http://deb.debian.org/debian/pool/main/n/node-lodash/node-lodash_4.17.21%2bdfsg%2b%7ecs8.31.198.20210220-9_all.deb  Temporary failure resolving 'deb.debian.org'
+- E: Failed to fetch http://deb.debian.org/debian/pool/main/n/node-memfs/node-memfs_3.4.12%2b%7ecs1.0.3-1_all.deb  Temporary failure resolving 'deb.debian.org'
+- E: Failed to fetch http://deb.debian.org/debian/pool/main/n/node-mkdirp/node-mkdirp_1.0.4%2b%7e1.0.2-4_all.deb  Temporary failure resolving 'deb.debian.org'
+- E: Failed to fetch http://deb.debian.org/debian/pool/main/n/node-deep-is/node-deep-is_0.1.4-1_all.deb  Temporary failure resolving 'deb.debian.org'
+- E: Failed to fetch http://deb.debian.org/debian/pool/main/n/node-fast-levenshtein/node-fast-levenshtein_2.0.6%2bds-3_all.deb  Temporary failure resolving 'deb.debian.org'
+- E: Failed to fetch http://deb.debian.org/debian/pool/main/n/node-optionator/node-optionator_0.9.1%2bdfsg%2b%7ecs1.2.3-1_all.deb  Temporary failure resolving 'deb.debian.org'
+- E: Failed to fetch http://deb.debian.org/debian/pool/main/n/node-progress/node-progress_2.0.3-2_all.deb  Temporary failure resolving 'deb.debian.org'
+- E: Failed to fetch http://deb.debian.org/debian/pool/main/n/node-regenerate/libjs-regenerate_1.4.2-3_all.deb  Temporary failure resolving 'deb.debian.org'
+- E: Failed to fetch http://deb.debian.org/debian/pool/main/n/node-regenerate/node-regenerate_1.4.2-3_all.deb  Temporary failure resolving 'deb.debian.org'
+- E: Failed to fetch http://deb.debian.org/debian/pool/main/n/node-regenerate-unicode-properties/node-regenerate-unicode-properties_10.1.0%2bds-1_all.deb  Temporary failure resolving 'deb.debian.org'
+- E: Failed to fetch http://deb.debian.org/debian/pool/main/n/node-regexpp/node-regexpp_3.2.0-4_all.deb  Temporary failure resolving 'deb.debian.org'
+- E: Failed to fetch http://deb.debian.org/debian/pool/main/n/node-yallist/node-yallist_4.0.0%2b%7e4.0.1-1_all.deb  Temporary failure resolving 'deb.debian.org'
+- E: Failed to fetch http://deb.debian.org/debian/pool/main/n/node-lru-cache/node-lru-cache_7.14.1-1_all.deb  Temporary failure resolving 'deb.debian.org'
+- E: Failed to fetch http://deb.debian.org/debian/pool/main/n/node-semver/node-semver_7.3.5%2b%7e7.3.9-2_all.deb  Temporary failure resolving 'deb.debian.org'
+- E: Failed to fetch http://deb.debian.org/debian/pool/main/n/node-strip-json-comments/node-strip-json-comments_4.0.0-4_all.deb  Temporary failure resolving 'deb.debian.org'
+- E: Failed to fetch http://deb.debian.org/debian/pool/main/n/node-json-schema/node-json-schema_0.4.0%2b%7e7.0.11-1_all.deb  Temporary failure resolving 'deb.debian.org'
+- E: Failed to fetch http://deb.debian.org/debian/pool/main/n/node-v8-compile-cache/node-v8-compile-cache_2.3.0-3%2bdeb12u1_all.deb  Temporary failure resolving 'deb.debian.org'
+- E: Failed to fetch http://deb.debian.org/debian/pool/main/e/eslint/eslint_6.4.0%7edfsg%2b%7e6.1.9-7_all.deb  Temporary failure resolving 'deb.debian.org'
+- E: Failed to fetch http://deb.debian.org/debian/pool/main/s/setuptools/python3-pkg-resources_66.1.1-1_all.deb  Temporary failure resolving 'deb.debian.org'
+- E: Failed to fetch http://deb.debian.org/debian/pool/main/s/six/python3-six_1.16.0-4_all.deb  Temporary failure resolving 'deb.debian.org'
+- E: Failed to fetch http://deb.debian.org/debian/pool/main/g/gyp/gyp_0.1%2b20220404git9ecf45e-2_all.deb  Temporary failure resolving 'deb.debian.org'
+- E: Failed to fetch http://deb.debian.org/debian/pool/main/n/node-neo-async/node-neo-async_2.6.2%2b%7ecs3.0.0-2_all.deb  Temporary failure resolving 'deb.debian.org'
+- E: Failed to fetch http://deb.debian.org/debian/pool/main/n/node-arrify/node-arrify_2.0.1-3_all.deb  Temporary failure resolving 'deb.debian.org'
+- E: Failed to fetch http://deb.debian.org/debian/pool/main/n/node-is-plain-obj/node-is-plain-obj_3.0.0-2_all.deb  Temporary failure resolving 'deb.debian.org'
+- E: Failed to fetch http://deb.debian.org/debian/pool/main/n/node-is-buffer/node-is-buffer_2.0.5-2_all.deb  Temporary failure resolving 'deb.debian.org'
+- E: Failed to fetch http://deb.debian.org/debian/pool/main/n/node-kind-of/node-kind-of_6.0.3%2bdfsg-2_all.deb  Temporary failure resolving 'deb.debian.org'
+- E: Failed to fetch http://deb.debian.org/debian/pool/main/n/node-minimist/node-minimist_1.2.7%2b%7ecs5.3.2-2_all.deb  Temporary failure resolving 'deb.debian.org'
+- E: Failed to fetch http://deb.debian.org/debian/pool/main/n/node-wordwrap/node-wordwrap_1.0.0-4_all.deb  Temporary failure resolving 'deb.debian.org'
+- E: Failed to fetch http://deb.debian.org/debian/pool/main/n/node-optimist/node-optimist_0.6.1%2b%7e0.0.30-2_all.deb  Temporary failure resolving 'deb.debian.org'
+- E: Failed to fetch http://deb.debian.org/debian/pool/main/n/node-source-map/libjs-source-map_0.7.0%2b%2bdfsg2%2breally.0.6.1-15_all.deb  Temporary failure resolving 'deb.debian.org'
+- E: Failed to fetch http://deb.debian.org/debian/pool/main/n/node-source-map/node-source-map_0.7.0%2b%2bdfsg2%2breally.0.6.1-15_all.deb  Temporary failure resolving 'deb.debian.org'
+- E: Failed to fetch http://deb.debian.org/debian/pool/main/n/node-handlebars/handlebars_4.7.7%2b%7e4.1.0-1_all.deb  Temporary failure resolving 'deb.debian.org'
+- E: Failed to fetch http://deb.debian.org/debian/pool/main/j/javascript-common/javascript-common_11%2bnmu1_all.deb  Temporary failure resolving 'deb.debian.org'
+- E: Failed to fetch http://deb.debian.org/debian/pool/main/liba/libauthen-sasl-perl/libauthen-sasl-perl_2.1600-3_all.deb  Temporary failure resolving 'deb.debian.org'
+- E: Failed to fetch http://deb.debian.org/debian/pool/main/libc/libclone-perl/libclone-perl_0.46-1_amd64.deb  Temporary failure resolving 'deb.debian.org'
+- E: Failed to fetch http://deb.debian.org/debian/pool/main/libd/libdata-dump-perl/libdata-dump-perl_1.25-1_all.deb  Temporary failure resolving 'deb.debian.org'
+- E: Failed to fetch http://deb.debian.org/debian/pool/main/libd/libdrm/libdrm-common_2.4.114-1_all.deb  Temporary failure resolving 'deb.debian.org'
+- E: Failed to fetch http://deb.debian.org/debian/pool/main/libd/libdrm/libdrm2_2.4.114-1%2bb1_amd64.deb  Temporary failure resolving 'deb.debian.org'
+- E: Failed to fetch http://deb.debian.org/debian/pool/main/libd/libdrm/libdrm-amdgpu1_2.4.114-1%2bb1_amd64.deb  Temporary failure resolving 'deb.debian.org'
+- E: Failed to fetch http://deb.debian.org/debian/pool/main/libp/libpciaccess/libpciaccess0_0.17-2_amd64.deb  Temporary failure resolving 'deb.debian.org'
+- E: Failed to fetch http://deb.debian.org/debian/pool/main/libd/libdrm/libdrm-intel1_2.4.114-1%2bb1_amd64.deb  Temporary failure resolving 'deb.debian.org'
+- E: Failed to fetch http://deb.debian.org/debian/pool/main/libd/libdrm/libdrm-nouveau2_2.4.114-1%2bb1_amd64.deb  Temporary failure resolving 'deb.debian.org'
+- E: Failed to fetch http://deb.debian.org/debian/pool/main/libd/libdrm/libdrm-radeon1_2.4.114-1%2bb1_amd64.deb  Temporary failure resolving 'deb.debian.org'
+- E: Failed to fetch http://deb.debian.org/debian/pool/main/w/wayland/libwayland-server0_1.21.0-1_amd64.deb  Temporary failure resolving 'deb.debian.org'
+- E: Failed to fetch http://deb.debian.org/debian/pool/main/m/mesa/libgbm1_22.3.6-1%2bdeb12u1_amd64.deb  Temporary failure resolving 'deb.debian.org'
+- E: Failed to fetch http://deb.debian.org/debian/pool/main/m/mesa/libglapi-mesa_22.3.6-1%2bdeb12u1_amd64.deb  Temporary failure resolving 'deb.debian.org'
+- E: Failed to fetch http://deb.debian.org/debian/pool/main/w/wayland/libwayland-client0_1.21.0-1_amd64.deb  Temporary failure resolving 'deb.debian.org'
+- E: Failed to fetch http://deb.debian.org/debian-security/pool/updates/main/libx/libx11/libx11-xcb1_1.8.4-2%2bdeb12u2_amd64.deb  Temporary failure resolving 'deb.debian.org'
+- E: Failed to fetch http://deb.debian.org/debian/pool/main/libx/libxcb/libxcb-dri2-0_1.15-1_amd64.deb  Temporary failure resolving 'deb.debian.org'
+- E: Failed to fetch http://deb.debian.org/debian/pool/main/libx/libxcb/libxcb-dri3-0_1.15-1_amd64.deb  Temporary failure resolving 'deb.debian.org'
+- E: Failed to fetch http://deb.debian.org/debian/pool/main/libx/libxcb/libxcb-present0_1.15-1_amd64.deb  Temporary failure resolving 'deb.debian.org'
+- E: Failed to fetch http://deb.debian.org/debian/pool/main/libx/libxcb/libxcb-randr0_1.15-1_amd64.deb  Temporary failure resolving 'deb.debian.org'
+- E: Failed to fetch http://deb.debian.org/debian/pool/main/libx/libxcb/libxcb-sync1_1.15-1_amd64.deb  Temporary failure resolving 'deb.debian.org'
+- E: Failed to fetch http://deb.debian.org/debian/pool/main/libx/libxcb/libxcb-xfixes0_1.15-1_amd64.deb  Temporary failure resolving 'deb.debian.org'
+- E: Failed to fetch http://deb.debian.org/debian/pool/main/libx/libxshmfence/libxshmfence1_1.3-1_amd64.deb  Temporary failure resolving 'deb.debian.org'
+- E: Failed to fetch http://deb.debian.org/debian/pool/main/m/mesa/libegl-mesa0_22.3.6-1%2bdeb12u1_amd64.deb  Temporary failure resolving 'deb.debian.org'
+- E: Failed to fetch http://deb.debian.org/debian/pool/main/e/elfutils/libelf1_0.188-2.1_amd64.deb  Temporary failure resolving 'deb.debian.org'
+- E: Failed to fetch http://deb.debian.org/debian/pool/main/libe/libencode-locale-perl/libencode-locale-perl_1.05-3_all.deb  Temporary failure resolving 'deb.debian.org'
+- E: Failed to fetch http://deb.debian.org/debian/pool/main/libi/libipc-system-simple-perl/libipc-system-simple-perl_1.30-2_all.deb  Temporary failure resolving 'deb.debian.org'
+- E: Failed to fetch http://deb.debian.org/debian/pool/main/libf/libfile-basedir-perl/libfile-basedir-perl_0.09-2_all.deb  Temporary failure resolving 'deb.debian.org'
+- E: Failed to fetch http://deb.debian.org/debian/pool/main/libr/libregexp-ipv6-perl/libregexp-ipv6-perl_0.03-3_all.deb  Temporary failure resolving 'deb.debian.org'
+- E: Failed to fetch http://deb.debian.org/debian/pool/main/libu/liburi-perl/liburi-perl_5.17-1_all.deb  Temporary failure resolving 'deb.debian.org'
+- E: Failed to fetch http://deb.debian.org/debian/pool/main/libf/libfile-desktopentry-perl/libfile-desktopentry-perl_0.22-3_all.deb  Temporary failure resolving 'deb.debian.org'
+- E: Failed to fetch http://deb.debian.org/debian/pool/main/libt/libtimedate-perl/libtimedate-perl_2.3300-2_all.deb  Temporary failure resolving 'deb.debian.org'
+- E: Failed to fetch http://deb.debian.org/debian/pool/main/libh/libhttp-date-perl/libhttp-date-perl_6.05-2_all.deb  Temporary failure resolving 'deb.debian.org'
+- E: Failed to fetch http://deb.debian.org/debian/pool/main/libf/libfile-listing-perl/libfile-listing-perl_6.15-1_all.deb  Temporary failure resolving 'deb.debian.org'
+- E: Failed to fetch http://deb.debian.org/debian/pool/main/g/glib2.0/libglib2.0-0_2.74.6-2%2bdeb12u3_amd64.deb  Temporary failure resolving 'deb.debian.org'
+- E: Failed to fetch http://deb.debian.org/debian/pool/main/libx/libxml2/libxml2_2.9.14%2bdfsg-1.3%7edeb12u1_amd64.deb  Temporary failure resolving 'deb.debian.org'
+- E: Failed to fetch http://deb.debian.org/debian/pool/main/s/shared-mime-info/shared-mime-info_2.2-1_amd64.deb  Temporary failure resolving 'deb.debian.org'
+- E: Failed to fetch http://deb.debian.org/debian/pool/main/libf/libfile-mimeinfo-perl/libfile-mimeinfo-perl_0.33-1_all.deb  Temporary failure resolving 'deb.debian.org'
+- E: Failed to fetch http://deb.debian.org/debian/pool/main/libf/libfont-afm-perl/libfont-afm-perl_1.20-4_all.deb  Temporary failure resolving 'deb.debian.org'
+- E: Failed to fetch http://deb.debian.org/debian/pool/main/libf/libfontenc/libfontenc1_1.1.4-1_amd64.deb  Temporary failure resolving 'deb.debian.org'
+- E: Failed to fetch http://deb.debian.org/debian/pool/main/g/gdk-pixbuf/libgdk-pixbuf2.0-common_2.42.10%2bdfsg-1%2bdeb12u1_all.deb  Temporary failure resolving 'deb.debian.org'
+- E: Failed to fetch http://deb.debian.org/debian/pool/main/g/gdk-pixbuf/libgdk-pixbuf-2.0-0_2.42.10%2bdfsg-1%2bdeb12u1_amd64.deb  Temporary failure resolving 'deb.debian.org'
+- E: Failed to fetch http://deb.debian.org/debian/pool/main/g/gdk-pixbuf/libgdk-pixbuf2.0-bin_2.42.10%2bdfsg-1%2bdeb12u1_amd64.deb  Temporary failure resolving 'deb.debian.org'
+- E: Failed to fetch http://deb.debian.org/debian/pool/main/libg/libglvnd/libglvnd0_1.6.0-1_amd64.deb  Temporary failure resolving 'deb.debian.org'
+- E: Failed to fetch http://deb.debian.org/debian/pool/main/libx/libxcb/libxcb-glx0_1.15-1_amd64.deb  Temporary failure resolving 'deb.debian.org'
+- E: Failed to fetch http://deb.debian.org/debian/pool/main/libx/libxcb/libxcb-shm0_1.15-1_amd64.deb  Temporary failure resolving 'deb.debian.org'
+- E: Failed to fetch http://deb.debian.org/debian/pool/main/libx/libxfixes/libxfixes3_6.0.0-2_amd64.deb  Temporary failure resolving 'deb.debian.org'
+- E: Failed to fetch http://deb.debian.org/debian/pool/main/libx/libxxf86vm/libxxf86vm1_1.1.4-1%2bb2_amd64.deb  Temporary failure resolving 'deb.debian.org'
+- E: Failed to fetch http://deb.debian.org/debian/pool/main/z/z3/libz3-4_4.8.12-3.1_amd64.deb  Temporary failure resolving 'deb.debian.org'
+- E: Failed to fetch http://deb.debian.org/debian/pool/main/l/llvm-toolchain-15/libllvm15_15.0.6-4%2bb1_amd64.deb  Temporary failure resolving 'deb.debian.org'
+- E: Failed to fetch http://deb.debian.org/debian/pool/main/l/lm-sensors/libsensors-config_3.6.0-7.1_all.deb  Temporary failure resolving 'deb.debian.org'
+- E: Failed to fetch http://deb.debian.org/debian/pool/main/l/lm-sensors/libsensors5_3.6.0-7.1_amd64.deb  Temporary failure resolving 'deb.debian.org'
+- E: Failed to fetch http://deb.debian.org/debian/pool/main/m/mesa/libgl1-mesa-dri_22.3.6-1%2bdeb12u1_amd64.deb  Temporary failure resolving 'deb.debian.org'
+- E: Failed to fetch http://deb.debian.org/debian/pool/main/m/mesa/libglx-mesa0_22.3.6-1%2bdeb12u1_amd64.deb  Temporary failure resolving 'deb.debian.org'
+- E: Failed to fetch http://deb.debian.org/debian/pool/main/libg/libglvnd/libglx0_1.6.0-1_amd64.deb  Temporary failure resolving 'deb.debian.org'
+- E: Failed to fetch http://deb.debian.org/debian/pool/main/libg/libglvnd/libgl1_1.6.0-1_amd64.deb  Temporary failure resolving 'deb.debian.org'
+- E: Failed to fetch http://deb.debian.org/debian/pool/main/libg/libglvnd/libgles2_1.6.0-1_amd64.deb  Temporary failure resolving 'deb.debian.org'
+- E: Failed to fetch http://deb.debian.org/debian/pool/main/g/glib2.0/libglib2.0-data_2.74.6-2%2bdeb12u3_all.deb  Temporary failure resolving 'deb.debian.org'
+- E: Failed to fetch http://deb.debian.org/debian/pool/main/libh/libhtml-tagset-perl/libhtml-tagset-perl_3.20-6_all.deb  Temporary failure resolving 'deb.debian.org'
+- E: Failed to fetch http://deb.debian.org/debian/pool/main/libh/libhtml-parser-perl/libhtml-parser-perl_3.81-1_amd64.deb  Temporary failure resolving 'deb.debian.org'
+- E: Failed to fetch http://deb.debian.org/debian/pool/main/libi/libio-html-perl/libio-html-perl_1.004-3_all.deb  Temporary failure resolving 'deb.debian.org'
+- E: Failed to fetch http://deb.debian.org/debian/pool/main/libl/liblwp-mediatypes-perl/liblwp-mediatypes-perl_6.04-2_all.deb  Temporary failure resolving 'deb.debian.org'
+- E: Failed to fetch http://deb.debian.org/debian/pool/main/libh/libhttp-message-perl/libhttp-message-perl_6.44-1_all.deb  Temporary failure resolving 'deb.debian.org'
+- E: Failed to fetch http://deb.debian.org/debian/pool/main/libh/libhtml-form-perl/libhtml-form-perl_6.11-1_all.deb  Temporary failure resolving 'deb.debian.org'
+- E: Failed to fetch http://deb.debian.org/debian/pool/main/libh/libhtml-tree-perl/libhtml-tree-perl_5.07-3_all.deb  Temporary failure resolving 'deb.debian.org'
+- E: Failed to fetch http://deb.debian.org/debian/pool/main/libh/libhtml-format-perl/libhtml-format-perl_2.16-2_all.deb  Temporary failure resolving 'deb.debian.org'
+- E: Failed to fetch http://deb.debian.org/debian/pool/main/libh/libhttp-cookies-perl/libhttp-cookies-perl_6.10-1_all.deb  Temporary failure resolving 'deb.debian.org'
+- E: Failed to fetch http://deb.debian.org/debian/pool/main/libh/libhttp-daemon-perl/libhttp-daemon-perl_6.16-1_all.deb  Temporary failure resolving 'deb.debian.org'
+- E: Failed to fetch http://deb.debian.org/debian/pool/main/libh/libhttp-negotiate-perl/libhttp-negotiate-perl_6.01-2_all.deb  Temporary failure resolving 'deb.debian.org'
+- E: Failed to fetch http://deb.debian.org/debian/pool/main/x/xorg/x11-common_7.7%2b23_all.deb  Temporary failure resolving 'deb.debian.org'
+- E: Failed to fetch http://deb.debian.org/debian/pool/main/libi/libice/libice6_1.0.10-1_amd64.deb  Temporary failure resolving 'deb.debian.org'
+- E: Failed to fetch http://deb.debian.org/debian/pool/main/p/perl-openssl-defaults/perl-openssl-defaults_7%2bb1_amd64.deb  Temporary failure resolving 'deb.debian.org'
+- E: Failed to fetch http://deb.debian.org/debian/pool/main/libn/libnet-ssleay-perl/libnet-ssleay-perl_1.92-2%2bb1_amd64.deb  Temporary failure resolving 'deb.debian.org'
+- E: Failed to fetch http://deb.debian.org/debian/pool/main/libi/libio-socket-ssl-perl/libio-socket-ssl-perl_2.081-2_all.deb  Temporary failure resolving 'deb.debian.org'
+- E: Failed to fetch http://deb.debian.org/debian/pool/main/i/io-stringy/libio-stringy-perl_2.111-3_all.deb  Temporary failure resolving 'deb.debian.org'
+- E: Failed to fetch http://deb.debian.org/debian/pool/main/n/node-async/libjs-async_0.8.0-6_all.deb  Temporary failure resolving 'deb.debian.org'
+- E: Failed to fetch http://deb.debian.org/debian/pool/main/n/node-events/libjs-events_3.3.0%2b%7e3.0.0-3_all.deb  Temporary failure resolving 'deb.debian.org'
+- E: Failed to fetch http://deb.debian.org/debian/pool/main/n/node-is-typedarray/libjs-is-typedarray_1.0.0-4_all.deb  Temporary failure resolving 'deb.debian.org'
+- E: Failed to fetch http://deb.debian.org/debian/pool/main/p/prettify.js/libjs-prettify_2015.12.04%2bdfsg-1.1_all.deb  Temporary failure resolving 'deb.debian.org'
+- E: Failed to fetch http://deb.debian.org/debian/pool/main/n/node-sprintf-js/libjs-sprintf-js_1.1.2%2bds1%2b%7e1.1.2-1_all.deb  Temporary failure resolving 'deb.debian.org'
+- E: Failed to fetch http://deb.debian.org/debian/pool/main/n/node-typedarray-to-buffer/libjs-typedarray-to-buffer_4.0.0-2_all.deb  Temporary failure resolving 'deb.debian.org'
+- E: Failed to fetch http://deb.debian.org/debian/pool/main/n/node-lodash/node-lodash-packages_4.17.21%2bdfsg%2b%7ecs8.31.198.20210220-9_all.deb  Temporary failure resolving 'deb.debian.org'
+- E: Failed to fetch http://deb.debian.org/debian/pool/main/n/node-function-bind/node-function-bind_1.1.1%2brepacked%2b%7e1.0.3-2_all.deb  Temporary failure resolving 'deb.debian.org'
+- E: Failed to fetch http://deb.debian.org/debian/pool/main/n/node-object-inspect/node-object-inspect_1.12.2%2b%7ecs1.8.1-1_all.deb  Temporary failure resolving 'deb.debian.org'
+- E: Failed to fetch http://deb.debian.org/debian/pool/main/n/node-es-abstract/node-es-abstract_1.20.4%2b%7ecs26.27.47-1_all.deb  Temporary failure resolving 'deb.debian.org'
+- E: Failed to fetch http://deb.debian.org/debian/pool/main/n/node-resolve/node-resolve_1.22.1%2b%7ecs5.31.10-1_all.deb  Temporary failure resolving 'deb.debian.org'
+- E: Failed to fetch http://deb.debian.org/debian/pool/main/n/node-define-properties/node-define-properties_1.1.4%2b%7e1.1.3-1_all.deb  Temporary failure resolving 'deb.debian.org'
+- E: Failed to fetch http://deb.debian.org/debian/pool/main/n/node-debbundle-es-to-primitive/node-debbundle-es-to-primitive_1.2.1%2b%7ecs9.7.25-2_all.deb  Temporary failure resolving 'deb.debian.org'
+- E: Failed to fetch http://deb.debian.org/debian/pool/main/n/node-defined/node-defined_1.0.1%2b%7e1.0.0-1_all.deb  Temporary failure resolving 'deb.debian.org'
+- E: Failed to fetch http://deb.debian.org/debian/pool/main/n/node-abbrev/node-abbrev_1.1.1%2b%7e1.1.2-1_all.deb  Temporary failure resolving 'deb.debian.org'
+- E: Failed to fetch http://deb.debian.org/debian/pool/main/n/node-archy/node-archy_1.0.0-6_all.deb  Temporary failure resolving 'deb.debian.org'
+- E: Failed to fetch http://deb.debian.org/debian/pool/main/n/node-async/node-async_0.8.0-6_all.deb  Temporary failure resolving 'deb.debian.org'
+- E: Failed to fetch http://deb.debian.org/debian/pool/main/n/node-convert-source-map/node-convert-source-map_1.9.0%2b%7e1.5.2-1_all.deb  Temporary failure resolving 'deb.debian.org'
+- E: Failed to fetch http://deb.debian.org/debian/pool/main/n/node-decamelize/node-decamelize_4.0.0-2_all.deb  Temporary failure resolving 'deb.debian.org'
+- E: Failed to fetch http://deb.debian.org/debian/pool/main/n/node-es6-error/node-es6-error_4.1.1-5_all.deb  Temporary failure resolving 'deb.debian.org'
+- E: Failed to fetch http://deb.debian.org/debian/pool/main/n/node-esprima/node-esprima_4.0.1%2bds%2b%7e4.0.3-2_all.deb  Temporary failure resolving 'deb.debian.org'
+- E: Failed to fetch http://deb.debian.org/debian/pool/main/n/node-escodegen/node-escodegen_2.0.0%2bdfsg%2b%7e0.0.7-2_all.deb  Temporary failure resolving 'deb.debian.org'
+- E: Failed to fetch http://deb.debian.org/debian/pool/main/n/node-commondir/node-commondir_1.0.1%2b%7e1.0.0-1_all.deb  Temporary failure resolving 'deb.debian.org'
+- E: Failed to fetch http://deb.debian.org/debian/pool/main/n/node-is-number/node-is-number_7.0.0-4_all.deb  Temporary failure resolving 'deb.debian.org'
+- E: Failed to fetch http://deb.debian.org/debian/pool/main/n/node-repeat-string/node-repeat-string_1.6.1%2brepack-1_all.deb  Temporary failure resolving 'deb.debian.org'
+- E: Failed to fetch http://deb.debian.org/debian/pool/main/n/node-to-regex-range/node-to-regex-range_5.0.1-4_all.deb  Temporary failure resolving 'deb.debian.org'
+- E: Failed to fetch http://deb.debian.org/debian/pool/main/n/node-fill-range/node-fill-range_7.0.1%2b%7e7.0.0-1_all.deb  Temporary failure resolving 'deb.debian.org'
+- E: Failed to fetch http://deb.debian.org/debian/pool/main/n/node-braces/node-braces_3.0.2%2b%7e3.0.1-1_all.deb  Temporary failure resolving 'deb.debian.org'
+- E: Failed to fetch http://deb.debian.org/debian/pool/main/n/node-normalize-path/node-normalize-path_3.0.0%2b%7e3.0.0-1_all.deb  Temporary failure resolving 'deb.debian.org'
+- E: Failed to fetch http://deb.debian.org/debian/pool/main/n/node-anymatch/node-anymatch_3.1.3%2b%7ecs4.6.1-2_all.deb  Temporary failure resolving 'deb.debian.org'
+- E: Failed to fetch http://deb.debian.org/debian/pool/main/n/node-micromatch/node-micromatch_4.0.5%2b%7e4.0.2-1_all.deb  Temporary failure resolving 'deb.debian.org'
+- E: Failed to fetch http://deb.debian.org/debian/pool/main/n/node-pify/node-pify_5.0.0%2b%7ecs5.0.1-1_all.deb  Temporary failure resolving 'deb.debian.org'
+- E: Failed to fetch http://deb.debian.org/debian/pool/main/n/node-path-type/node-path-type_4.0.0-3_all.deb  Temporary failure resolving 'deb.debian.org'
+- E: Failed to fetch http://deb.debian.org/debian/pool/main/n/node-n3/node-n3_1.16.3%2b%7e1.2.3%2b%7e1.10.4-1_all.deb  Temporary failure resolving 'deb.debian.org'
+- E: Failed to fetch http://deb.debian.org/debian/pool/main/n/node-slash/node-slash_4.0.0-3_all.deb  Temporary failure resolving 'deb.debian.org'
+- E: Failed to fetch http://deb.debian.org/debian/pool/main/n/node-globby/node-globby_13.1.3%2b%7ecs16.25.40-1_all.deb  Temporary failure resolving 'deb.debian.org'
+- E: Failed to fetch http://deb.debian.org/debian/pool/main/n/node-graceful-fs/node-graceful-fs_4.2.10-1_all.deb  Temporary failure resolving 'deb.debian.org'
+- E: Failed to fetch http://deb.debian.org/debian/pool/main/n/node-is-path-cwd/node-is-path-cwd_2.2.0-2_all.deb  Temporary failure resolving 'deb.debian.org'
+- E: Failed to fetch http://deb.debian.org/debian/pool/main/n/node-path-is-inside/node-path-is-inside_1.0.2%2b%7e1.0.0-1_all.deb  Temporary failure resolving 'deb.debian.org'
+- E: Failed to fetch http://deb.debian.org/debian/pool/main/n/node-is-path-inside/node-is-path-inside_3.0.3-2_all.deb  Temporary failure resolving 'deb.debian.org'
+- E: Failed to fetch http://deb.debian.org/debian/pool/main/n/node-escape-string-regexp/node-escape-string-regexp_4.0.0-2_all.deb  Temporary failure resolving 'deb.debian.org'
+- E: Failed to fetch http://deb.debian.org/debian/pool/main/n/node-indent-string/node-indent-string_4.0.0-2_all.deb  Temporary failure resolving 'deb.debian.org'
+- E: Failed to fetch http://deb.debian.org/debian/pool/main/n/node-p-map/node-p-map_4.0.0%2b%7e3.1.0%2b%7e3.0.1-1_all.deb  Temporary failure resolving 'deb.debian.org'
+- E: Failed to fetch http://deb.debian.org/debian/pool/main/n/node-del/node-del_7.0.0-5_all.deb  Temporary failure resolving 'deb.debian.org'
+- E: Failed to fetch http://deb.debian.org/debian/pool/main/n/node-make-dir/node-make-dir_3.1.0-3_all.deb  Temporary failure resolving 'deb.debian.org'
+- E: Failed to fetch http://deb.debian.org/debian/pool/main/n/node-p-limit/node-p-limit_4.0.0%2b%7ecs4.0.0-5_all.deb  Temporary failure resolving 'deb.debian.org'
+- E: Failed to fetch http://deb.debian.org/debian/pool/main/n/node-p-locate/node-p-locate_6.0.0-12_all.deb  Temporary failure resolving 'deb.debian.org'
+- E: Failed to fetch http://deb.debian.org/debian/pool/main/n/node-locate-path/node-locate-path_7.1.1-2_all.deb  Temporary failure resolving 'deb.debian.org'
+- E: Failed to fetch http://deb.debian.org/debian/pool/main/n/node-path-exists/node-path-exists_5.0.0-8_all.deb  Temporary failure resolving 'deb.debian.org'
+- E: Failed to fetch http://deb.debian.org/debian/pool/main/n/node-find-up/node-find-up_6.3.0-7_all.deb  Temporary failure resolving 'deb.debian.org'
+- E: Failed to fetch http://deb.debian.org/debian/pool/main/n/node-pkg-dir/node-pkg-dir_5.0.0-2_all.deb  Temporary failure resolving 'deb.debian.org'
+- E: Failed to fetch http://deb.debian.org/debian/pool/main/n/node-find-cache-dir/node-find-cache-dir_3.3.2%2b%7e3.2.1-1_all.deb  Temporary failure resolving 'deb.debian.org'
+- E: Failed to fetch http://deb.debian.org/debian/pool/main/n/node-signal-exit/node-signal-exit_3.0.7%2b%7e3.0.1-1_all.deb  Temporary failure resolving 'deb.debian.org'
+- E: Failed to fetch http://deb.debian.org/debian/pool/main/n/node-foreground-child/node-foreground-child_2.0.0-5_all.deb  Temporary failure resolving 'deb.debian.org'
+- E: Failed to fetch http://deb.debian.org/debian/pool/main/n/node-is-stream/node-is-stream_3.0.0-4_all.deb  Temporary failure resolving 'deb.debian.org'
+- E: Failed to fetch http://deb.debian.org/debian/pool/main/n/node-is-windows/node-is-windows_1.0.2%2b%7ecs1.0.0-1_all.deb  Temporary failure resolving 'deb.debian.org'
+- E: Failed to fetch http://deb.debian.org/debian/pool/main/n/node-sprintf-js/node-sprintf-js_1.1.2%2bds1%2b%7e1.1.2-1_all.deb  Temporary failure resolving 'deb.debian.org'
+- E: Failed to fetch http://deb.debian.org/debian/pool/main/n/node-argparse/node-argparse_2.0.1-2_all.deb  Temporary failure resolving 'deb.debian.org'
+- E: Failed to fetch http://deb.debian.org/debian/pool/main/n/node-js-yaml/node-js-yaml_4.1.0%2bdfsg%2b%7e4.0.5-7_all.deb  Temporary failure resolving 'deb.debian.org'
+- E: Failed to fetch http://deb.debian.org/debian/pool/main/n/node-nopt/node-nopt_5.0.0-4_all.deb  Temporary failure resolving 'deb.debian.org'
+- E: Failed to fetch http://deb.debian.org/debian/pool/main/n/node-npm-run-path/node-npm-run-path_5.1.0%2b%7e4.0.0-8_all.deb  Temporary failure resolving 'deb.debian.org'
+- E: Failed to fetch http://deb.debian.org/debian/pool/main/n/node-shebang-regex/node-shebang-regex_3.0.0-2_all.deb  Temporary failure resolving 'deb.debian.org'
+- E: Failed to fetch http://deb.debian.org/debian/pool/main/n/node-shebang-command/node-shebang-command_2.0.0-1_all.deb  Temporary failure resolving 'deb.debian.org'
+- E: Failed to fetch http://deb.debian.org/debian/pool/main/n/node-strip-bom/node-strip-bom_4.0.0-2_all.deb  Temporary failure resolving 'deb.debian.org'
+- E: Failed to fetch http://deb.debian.org/debian/pool/main/n/node-has-flag/node-has-flag_4.0.0-3_all.deb  Temporary failure resolving 'deb.debian.org'
+- E: Failed to fetch http://deb.debian.org/debian/pool/main/n/node-supports-color/node-supports-color_8.1.1%2b%7e8.1.1-1_all.deb  Temporary failure resolving 'deb.debian.org'
+- E: Failed to fetch http://deb.debian.org/debian/pool/main/n/node-util/node-util_0.12.5%2b%7e1.0.10-1_all.deb  Temporary failure resolving 'deb.debian.org'
+- E: Failed to fetch http://deb.debian.org/debian/pool/main/n/node-assert/node-assert_2.0.0%2b%7ecs3.9.8-2_all.deb  Temporary failure resolving 'deb.debian.org'
+- E: Failed to fetch http://deb.debian.org/debian/pool/main/n/node-ampproject-remapping/node-ampproject-remapping_2.2.0%2b%7ecs5.15.37-1_all.deb  Temporary failure resolving 'deb.debian.org'
+- E: Failed to fetch http://deb.debian.org/debian/pool/main/n/node-babel-plugin-add-module-exports/node-babel-plugin-add-module-exports_1.0.4%2bdfsg1%7ecs5.8.0-4_all.deb  Temporary failure resolving 'deb.debian.org'
+- E: Failed to fetch http://deb.debian.org/debian/pool/main/n/node-regenerator/node-regenerator-runtime_0.15.1%2b%7e0.10.8-1_all.deb  Temporary failure resolving 'deb.debian.org'
+- E: Failed to fetch http://deb.debian.org/debian/pool/main/n/node-babel7/node-babel7-runtime_7.20.15%2bds1%2b%7ecs214.269.168-3%2bdeb12u2_all.deb  Temporary failure resolving 'deb.debian.org'
+- E: Failed to fetch http://deb.debian.org/debian/pool/main/n/node-babel-polyfills/node-babel-helper-define-polyfill-provider_0.3.3%7e0%7e20220913%2bds1-1_all.deb  Temporary failure resolving 'deb.debian.org'
+- E: Failed to fetch http://deb.debian.org/debian/pool/main/n/node-babel-polyfills/node-babel-plugin-polyfill-corejs2_0.3.3%7e0%7e20220913%2bds1-1_all.deb  Temporary failure resolving 'deb.debian.org'
+- E: Failed to fetch http://deb.debian.org/debian/pool/main/n/node-caniuse-lite/node-caniuse-lite_1.0.30001436%2bdfsg%2b%7e1.0.1-1_all.deb  Temporary failure resolving 'deb.debian.org'
+- E: Failed to fetch http://deb.debian.org/debian/pool/main/n/node-electron-to-chromium/node-electron-to-chromium_1.4.284-1_all.deb  Temporary failure resolving 'deb.debian.org'
+- E: Failed to fetch http://deb.debian.org/debian/pool/main/n/node-picocolors/node-picocolors_1.0.0-4_all.deb  Temporary failure resolving 'deb.debian.org'
+- E: Failed to fetch http://deb.debian.org/debian/pool/main/n/node-browserslist/node-browserslist_4.21.4%2b%7ecs6.1.17-2_all.deb  Temporary failure resolving 'deb.debian.org'
+- E: Failed to fetch http://deb.debian.org/debian/pool/main/n/node-core-js/node-core-js-compat_3.26.1-3_all.deb  Temporary failure resolving 'deb.debian.org'
+- E: Failed to fetch http://deb.debian.org/debian/pool/main/n/node-babel-polyfills/node-babel-plugin-polyfill-corejs3_0.6.0%7e0%7e20220913%2bds1-1_all.deb  Temporary failure resolving 'deb.debian.org'
+- E: Failed to fetch http://deb.debian.org/debian/pool/main/n/node-babel-polyfills/node-babel-plugin-polyfill-regenerator_0.4.1%7e0%7e20220913%2bds1-1_all.deb  Temporary failure resolving 'deb.debian.org'
+- E: Failed to fetch http://deb.debian.org/debian/pool/main/n/node-color-name/node-color-name_1.1.4%2b%7e1.1.1-2_all.deb  Temporary failure resolving 'deb.debian.org'
+- E: Failed to fetch http://deb.debian.org/debian/pool/main/n/node-color-convert/node-color-convert_2.0.1%2b%7ecs2.0.0-2_all.deb  Temporary failure resolving 'deb.debian.org'
+- E: Failed to fetch http://deb.debian.org/debian/pool/main/n/node-ansi-styles/node-ansi-styles_6.2.1-2_all.deb  Temporary failure resolving 'deb.debian.org'
+- E: Failed to fetch http://deb.debian.org/debian/pool/main/n/node-chalk/node-chalk_5.2.0-1_all.deb  Temporary failure resolving 'deb.debian.org'
+- E: Failed to fetch http://deb.debian.org/debian/pool/main/n/node-for-in/node-for-in_1.0.2-4_all.deb  Temporary failure resolving 'deb.debian.org'
+- E: Failed to fetch http://deb.debian.org/debian/pool/main/n/node-for-own/node-for-own_1.0.0-3_all.deb  Temporary failure resolving 'deb.debian.org'
+- E: Failed to fetch http://deb.debian.org/debian/pool/main/n/node-is-plain-object/node-is-plain-object_5.0.0-7_all.deb  Temporary failure resolving 'deb.debian.org'
+- E: Failed to fetch http://deb.debian.org/debian/pool/main/n/node-is-extendable/node-is-extendable_1.0.1-3_all.deb  Temporary failure resolving 'deb.debian.org'
+- E: Failed to fetch http://deb.debian.org/debian/pool/main/n/node-clone-deep/node-clone-deep_4.0.1%2b%7ecs7.0.2-1_all.deb  Temporary failure resolving 'deb.debian.org'
+- E: Failed to fetch http://deb.debian.org/debian/pool/main/n/node-commander/node-commander_9.4.1-1_all.deb  Temporary failure resolving 'deb.debian.org'
+- E: Failed to fetch http://deb.debian.org/debian/pool/main/n/node-core-js/node-core-js_3.26.1-3_all.deb  Temporary failure resolving 'deb.debian.org'
+- E: Failed to fetch http://deb.debian.org/debian/pool/main/n/node-core-js/node-core-js-pure_3.26.1-3_all.deb  Temporary failure resolving 'deb.debian.org'
+- E: Failed to fetch http://deb.debian.org/debian/pool/main/n/node-fs-readdir-recursive/node-fs-readdir-recursive_1.1.0%2b%7e1.1.0-1_all.deb  Temporary failure resolving 'deb.debian.org'
+- E: Failed to fetch http://deb.debian.org/debian/pool/main/n/node-js-tokens/node-js-tokens_8.0.0-2_all.deb  Temporary failure resolving 'deb.debian.org'
+- E: Failed to fetch http://deb.debian.org/debian/pool/main/n/node-jsesc/node-jsesc_3.0.2%2b%7e3.0.1-1_all.deb  Temporary failure resolving 'deb.debian.org'
+- E: Failed to fetch http://deb.debian.org/debian/pool/main/n/node-json5/node-json5_2.2.3%2bdfsg-1_all.deb  Temporary failure resolving 'deb.debian.org'
+- E: Failed to fetch http://deb.debian.org/debian/pool/main/n/node-quick-lru/node-quick-lru_6.1.1-4_all.deb  Temporary failure resolving 'deb.debian.org'
+- E: Failed to fetch http://deb.debian.org/debian/pool/main/n/node-regenerator/node-regenerator-transform_0.15.1%2b%7e0.10.8-1_all.deb  Temporary failure resolving 'deb.debian.org'
+- E: Failed to fetch http://deb.debian.org/debian/pool/main/n/node-regjsgen/node-regjsgen_0.7.1%2bds-1_all.deb  Temporary failure resolving 'deb.debian.org'
+- E: Failed to fetch http://deb.debian.org/debian/pool/main/n/node-regjsparser/node-regjsparser_0.9.1%2bds-2_all.deb  Temporary failure resolving 'deb.debian.org'
+- E: Failed to fetch http://deb.debian.org/debian/pool/main/n/node-unicode-canonical-property-names-ecmascript/node-unicode-canonical-property-names-ecmascript_2.0.0-2_all.deb  Temporary failure resolving 'deb.debian.org'
+- E: Failed to fetch http://deb.debian.org/debian/pool/main/n/node-unicode-property-aliases-ecmascript/node-unicode-property-aliases-ecmascript_2.1.0%2bds-1_all.deb  Temporary failure resolving 'deb.debian.org'
+- E: Failed to fetch http://deb.debian.org/debian/pool/main/n/node-unicode-match-property-ecmascript/node-unicode-match-property-ecmascript_2.0.0-2_all.deb  Temporary failure resolving 'deb.debian.org'
+- E: Failed to fetch http://deb.debian.org/debian/pool/main/n/node-unicode-match-property-value-ecmascript/node-unicode-match-property-value-ecmascript_2.1.0%2bds-1_all.deb  Temporary failure resolving 'deb.debian.org'
+- E: Failed to fetch http://deb.debian.org/debian/pool/main/n/node-regexpu-core/node-regexpu-core_5.2.2-3_all.deb  Temporary failure resolving 'deb.debian.org'
+- E: Failed to fetch http://deb.debian.org/debian/pool/main/n/node-source-map-support/node-source-map-support_0.5.21%2bds%2b%7e0.5.4-1_all.deb  Temporary failure resolving 'deb.debian.org'
+- E: Failed to fetch http://deb.debian.org/debian/pool/main/n/node-to-fast-properties/node-to-fast-properties_3.0.1-3_all.deb  Temporary failure resolving 'deb.debian.org'
+- E: Failed to fetch http://deb.debian.org/debian/pool/main/n/node-v8flags/node-v8flags_3.2.0%2b%7e3.1.1-1_all.deb  Temporary failure resolving 'deb.debian.org'
+- E: Failed to fetch http://deb.debian.org/debian/pool/main/n/node-babel7/node-babel7_7.20.15%2bds1%2b%7ecs214.269.168-3%2bdeb12u2_all.deb  Temporary failure resolving 'deb.debian.org'
+- E: Failed to fetch http://deb.debian.org/debian/pool/main/n/node-is-arrayish/node-is-arrayish_0.3.2-3_all.deb  Temporary failure resolving 'deb.debian.org'
+- E: Failed to fetch http://deb.debian.org/debian/pool/main/n/node-error-ex/node-error-ex_1.3.2-4_all.deb  Temporary failure resolving 'deb.debian.org'
+- E: Failed to fetch http://deb.debian.org/debian/pool/main/n/node-json-parse-better-errors/node-json-parse-better-errors_1.0.2%2b%7ecs3.3.1-2_all.deb  Temporary failure resolving 'deb.debian.org'
+- E: Failed to fetch http://deb.debian.org/debian/pool/main/n/node-parse-json/node-parse-json_5.2.0%2b%7ecs5.1.7-1_all.deb  Temporary failure resolving 'deb.debian.org'
+- E: Failed to fetch http://deb.debian.org/debian/pool/main/n/node-hosted-git-info/node-hosted-git-info_6.1.1-2_all.deb  Temporary failure resolving 'deb.debian.org'
+- E: Failed to fetch http://deb.debian.org/debian/pool/main/n/node-spdx-license-ids/node-spdx-license-ids_3.0.12-1_all.deb  Temporary failure resolving 'deb.debian.org'
+- E: Failed to fetch http://deb.debian.org/debian/pool/main/n/node-spdx-exceptions/node-spdx-exceptions_2.3.0-2_all.deb  Temporary failure resolving 'deb.debian.org'
+- E: Failed to fetch http://deb.debian.org/debian/pool/main/n/node-spdx-expression-parse/node-spdx-expression-parse_3.0.1%2b%7e3.0.1-1_all.deb  Temporary failure resolving 'deb.debian.org'
+- E: Failed to fetch http://deb.debian.org/debian/pool/main/n/node-spdx-correct/node-spdx-correct_3.1.1-2_all.deb  Temporary failure resolving 'deb.debian.org'
+- E: Failed to fetch http://deb.debian.org/debian/pool/main/n/node-validate-npm-package-license/node-validate-npm-package-license_3.0.4-2_all.deb  Temporary failure resolving 'deb.debian.org'
+- E: Failed to fetch http://deb.debian.org/debian/pool/main/n/node-normalize-package-data/node-normalize-package-data_4.0.1%2b%7e2.4.1-1_all.deb  Temporary failure resolving 'deb.debian.org'
+- E: Failed to fetch http://deb.debian.org/debian/pool/main/n/node-read-pkg/node-read-pkg_5.2.0-2_all.deb  Temporary failure resolving 'deb.debian.org'
+- E: Failed to fetch http://deb.debian.org/debian/pool/main/n/node-uuid/node-uuid_8.3.2%2b%7e8.3.3-3_all.deb  Temporary failure resolving 'deb.debian.org'
+- E: Failed to fetch http://deb.debian.org/debian/pool/main/n/node-isexe/node-isexe_2.0.0%2b%7e2.0.1-5_all.deb  Temporary failure resolving 'deb.debian.org'
+- E: Failed to fetch http://deb.debian.org/debian/pool/main/n/node-which/node-which_2.0.2%2b%7ecs1.3.2-3_all.deb  Temporary failure resolving 'deb.debian.org'
+- E: Failed to fetch http://deb.debian.org/debian/pool/main/n/node-is-typedarray/node-is-typedarray_1.0.0-4_all.deb  Temporary failure resolving 'deb.debian.org'
+- E: Failed to fetch http://deb.debian.org/debian/pool/main/n/node-typedarray-to-buffer/node-typedarray-to-buffer_4.0.0-2_all.deb  Temporary failure resolving 'deb.debian.org'
+- E: Failed to fetch http://deb.debian.org/debian/pool/main/n/node-write-file-atomic/node-write-file-atomic_4.0.2%2b%7e4.0.0-1_all.deb  Temporary failure resolving 'deb.debian.org'
+- E: Failed to fetch http://deb.debian.org/debian/pool/main/n/node-slice-ansi/node-slice-ansi_5.0.0%2b%7ecs9.0.0-5_all.deb  Temporary failure resolving 'deb.debian.org'
+- E: Failed to fetch http://deb.debian.org/debian/pool/main/n/node-ansi-regex/node-ansi-regex_5.0.1-1_all.deb  Temporary failure resolving 'deb.debian.org'
+- E: Failed to fetch http://deb.debian.org/debian/pool/main/n/node-strip-ansi/node-strip-ansi_6.0.1-2_all.deb  Temporary failure resolving 'deb.debian.org'
+- E: Failed to fetch http://deb.debian.org/debian/pool/main/n/node-clone/node-clone_2.1.2-4_all.deb  Temporary failure resolving 'deb.debian.org'
+- E: Failed to fetch http://deb.debian.org/debian/pool/main/n/node-defaults/node-defaults_1.0.4%2b%7e1.0.3-1_all.deb  Temporary failure resolving 'deb.debian.org'
+- E: Failed to fetch http://deb.debian.org/debian/pool/main/n/node-wcwidth.js/node-wcwidth.js_1.0.2-2_all.deb  Temporary failure resolving 'deb.debian.org'
+- E: Failed to fetch http://deb.debian.org/debian/pool/main/n/node-string-width/node-string-width_4.2.3%2b%7ecs13.2.3-1_all.deb  Temporary failure resolving 'deb.debian.org'
+- E: Failed to fetch http://deb.debian.org/debian/pool/main/n/node-wrap-ansi/node-wrap-ansi_8.0.1%2b%7e8.0.1-3_all.deb  Temporary failure resolving 'deb.debian.org'
+- E: Failed to fetch http://deb.debian.org/debian/pool/main/n/node-cliui/node-cliui_7.0.4%2brepack%2b%7ecs3.1.0-4_all.deb  Temporary failure resolving 'deb.debian.org'
+- E: Failed to fetch http://deb.debian.org/debian/pool/main/n/node-get-caller-file/node-get-caller-file_2.0.5%2b%7ecs1.1.1-4_all.deb  Temporary failure resolving 'deb.debian.org'
+- E: Failed to fetch http://deb.debian.org/debian/pool/main/n/node-require-directory/node-require-directory_2.1.1%2b%7e2.1.2-1_all.deb  Temporary failure resolving 'deb.debian.org'
+- E: Failed to fetch http://deb.debian.org/debian/pool/main/n/node-y18n/node-y18n_5.0.8%2b%7e5.0.0-3_all.deb  Temporary failure resolving 'deb.debian.org'
+- E: Failed to fetch http://deb.debian.org/debian/pool/main/n/node-camelcase/node-camelcase_7.0.0-3_all.deb  Temporary failure resolving 'deb.debian.org'
+- E: Failed to fetch http://deb.debian.org/debian/pool/main/n/node-yargs-parser/node-yargs-parser_21.1.1%2b%7e21.0.0-4_all.deb  Temporary failure resolving 'deb.debian.org'
+- E: Failed to fetch http://deb.debian.org/debian/pool/main/n/node-yargs/node-yargs_16.2.0%2b%7e16.0.4-7_all.deb  Temporary failure resolving 'deb.debian.org'
+- E: Failed to fetch http://deb.debian.org/debian/pool/main/n/node-istanbul/node-istanbul_0.4.5%2brepack10%2b%7ecs97.25.57-3_all.deb  Temporary failure resolving 'deb.debian.org'
+- E: Failed to fetch http://deb.debian.org/debian/pool/main/n/node-through/node-through_2.3.8%2b%7ecs0.0.30-1_all.deb  Temporary failure resolving 'deb.debian.org'
+- E: Failed to fetch http://deb.debian.org/debian/pool/main/n/node-resumer/node-resumer_0.0.0-6_all.deb  Temporary failure resolving 'deb.debian.org'
+- E: Failed to fetch http://deb.debian.org/debian/pool/main/n/node-tape/node-tape_5.6.1%2b%7ecs8.20.19-1_all.deb  Temporary failure resolving 'deb.debian.org'
+- E: Failed to fetch http://deb.debian.org/debian/pool/main/n/node-deep-equal/node-deep-equal_2.1.0%2b%7ecs31.12.80-1_all.deb  Temporary failure resolving 'deb.debian.org'
+- E: Failed to fetch http://deb.debian.org/debian/pool/main/n/node-util/libjs-util_0.12.5%2b%7e1.0.10-1_all.deb  Temporary failure resolving 'deb.debian.org'
+- E: Failed to fetch http://deb.debian.org/debian/pool/main/libn/libnet-http-perl/libnet-http-perl_6.22-1_all.deb  Temporary failure resolving 'deb.debian.org'
+- E: Failed to fetch http://deb.debian.org/debian/pool/main/libt/libtry-tiny-perl/libtry-tiny-perl_0.31-2_all.deb  Temporary failure resolving 'deb.debian.org'
+- E: Failed to fetch http://deb.debian.org/debian/pool/main/libw/libwww-robotrules-perl/libwww-robotrules-perl_6.02-1_all.deb  Temporary failure resolving 'deb.debian.org'
+- E: Failed to fetch http://deb.debian.org/debian/pool/main/libw/libwww-perl/libwww-perl_6.68-1_all.deb  Temporary failure resolving 'deb.debian.org'
+- E: Failed to fetch http://deb.debian.org/debian/pool/main/libl/liblwp-protocol-https-perl/liblwp-protocol-https-perl_6.10-1_all.deb  Temporary failure resolving 'deb.debian.org'
+- E: Failed to fetch http://deb.debian.org/debian/pool/main/libn/libnet-smtp-ssl-perl/libnet-smtp-ssl-perl_1.04-2_all.deb  Temporary failure resolving 'deb.debian.org'
+- E: Failed to fetch http://deb.debian.org/debian/pool/main/libm/libmailtools-perl/libmailtools-perl_2.21-2_all.deb  Temporary failure resolving 'deb.debian.org'
+- E: Failed to fetch http://deb.debian.org/debian/pool/main/libx/libxml-parser-perl/libxml-parser-perl_2.46-4_amd64.deb  Temporary failure resolving 'deb.debian.org'
+- E: Failed to fetch http://deb.debian.org/debian/pool/main/libx/libxml-twig-perl/libxml-twig-perl_3.52-2_all.deb  Temporary failure resolving 'deb.debian.org'
+- E: Failed to fetch http://deb.debian.org/debian/pool/main/libn/libnet-dbus-perl/libnet-dbus-perl_1.2.0-2_amd64.deb  Temporary failure resolving 'deb.debian.org'
+- E: Failed to fetch http://deb.debian.org/debian/pool/main/o/openssl/libssl-dev_3.0.13-1%7edeb12u1_amd64.deb  Temporary failure resolving 'deb.debian.org'
+- E: Failed to fetch http://deb.debian.org/debian-security/pool/updates/main/libu/libuv1/libuv1-dev_1.44.2-1%2bdeb12u1_amd64.deb  Temporary failure resolving 'deb.debian.org'
+- E: Failed to fetch http://deb.debian.org/debian/pool/main/n/nodejs/libnode-dev_18.19.0%2bdfsg-6%7edeb12u2_amd64.deb  Temporary failure resolving 'deb.debian.org'
+- E: Failed to fetch http://deb.debian.org/debian/pool/main/libn/libnotify/libnotify4_0.8.1-1_amd64.deb  Temporary failure resolving 'deb.debian.org'
+- E: Failed to fetch http://deb.debian.org/debian/pool/main/libn/libnotify/libnotify-bin_0.8.1-1_amd64.deb  Temporary failure resolving 'deb.debian.org'
+- E: Failed to fetch http://deb.debian.org/debian/pool/main/libs/libsm/libsm6_1.2.3-1_amd64.deb  Temporary failure resolving 'deb.debian.org'
+- E: Failed to fetch http://deb.debian.org/debian/pool/main/libt/libtext-iconv-perl/libtext-iconv-perl_1.7-8_amd64.deb  Temporary failure resolving 'deb.debian.org'
+- E: Failed to fetch http://deb.debian.org/debian/pool/main/libt/libtie-ixhash-perl/libtie-ixhash-perl_1.23-4_all.deb  Temporary failure resolving 'deb.debian.org'
+- E: Failed to fetch http://deb.debian.org/debian/pool/main/libx/libx11-protocol-perl/libx11-protocol-perl_0.56-9_all.deb  Temporary failure resolving 'deb.debian.org'
+- E: Failed to fetch http://deb.debian.org/debian/pool/main/libx/libxt/libxt6_1.2.1-1.1_amd64.deb  Temporary failure resolving 'deb.debian.org'
+- E: Failed to fetch http://deb.debian.org/debian/pool/main/libx/libxmu/libxmu6_1.1.3-3_amd64.deb  Temporary failure resolving 'deb.debian.org'
+- E: Failed to fetch http://deb.debian.org/debian/pool/main/libx/libxaw/libxaw7_1.0.14-1_amd64.deb  Temporary failure resolving 'deb.debian.org'
+- E: Failed to fetch http://deb.debian.org/debian/pool/main/libx/libxcb/libxcb-shape0_1.15-1_amd64.deb  Temporary failure resolving 'deb.debian.org'
+- E: Failed to fetch http://deb.debian.org/debian/pool/main/libx/libxcomposite/libxcomposite1_0.4.5-1_amd64.deb  Temporary failure resolving 'deb.debian.org'
+- E: Failed to fetch http://deb.debian.org/debian/pool/main/libx/libxrender/libxrender1_0.9.10-1.1_amd64.deb  Temporary failure resolving 'deb.debian.org'
+- E: Failed to fetch http://deb.debian.org/debian/pool/main/libx/libxcursor/libxcursor1_1.2.1-1_amd64.deb  Temporary failure resolving 'deb.debian.org'
+- E: Failed to fetch http://deb.debian.org/debian/pool/main/x/xft/libxft2_2.3.6-1_amd64.deb  Temporary failure resolving 'deb.debian.org'
+- E: Failed to fetch http://deb.debian.org/debian/pool/main/libx/libxi/libxi6_1.8-1%2bb1_amd64.deb  Temporary failure resolving 'deb.debian.org'
+- E: Failed to fetch http://deb.debian.org/debian/pool/main/libx/libxinerama/libxinerama1_1.1.4-3_amd64.deb  Temporary failure resolving 'deb.debian.org'
+- E: Failed to fetch http://deb.debian.org/debian/pool/main/libx/libxkbfile/libxkbfile1_1.1.0-1_amd64.deb  Temporary failure resolving 'deb.debian.org'
+- E: Failed to fetch http://deb.debian.org/debian/pool/main/libx/libxml-xpathengine-perl/libxml-xpathengine-perl_0.14-2_all.deb  Temporary failure resolving 'deb.debian.org'
+- E: Failed to fetch http://deb.debian.org/debian/pool/main/libx/libxrandr/libxrandr2_1.5.2-2%2bb1_amd64.deb  Temporary failure resolving 'deb.debian.org'
+- E: Failed to fetch http://deb.debian.org/debian/pool/main/libx/libxtst/libxtst6_1.2.3-1.1_amd64.deb  Temporary failure resolving 'deb.debian.org'
+- E: Failed to fetch http://deb.debian.org/debian/pool/main/libx/libxv/libxv1_1.0.11-1.1_amd64.deb  Temporary failure resolving 'deb.debian.org'
+- E: Failed to fetch http://deb.debian.org/debian/pool/main/libx/libxxf86dga/libxxf86dga1_1.1.5-1_amd64.deb  Temporary failure resolving 'deb.debian.org'
+- E: Failed to fetch http://deb.debian.org/debian/pool/main/n/node-agent-base/node-agent-base_6.0.2%2b%7ecs5.4.2-2_all.deb  Temporary failure resolving 'deb.debian.org'
+- E: Failed to fetch http://deb.debian.org/debian/pool/main/n/node-ajv-keywords/node-ajv-keywords_3.5.2-2_all.deb  Temporary failure resolving 'deb.debian.org'
+- E: Failed to fetch http://deb.debian.org/debian/pool/main/n/node-ansi-escapes/node-ansi-escapes_5.0.0%2breally.4.3.1-1_all.deb  Temporary failure resolving 'deb.debian.org'
+- E: Failed to fetch http://deb.debian.org/debian/pool/main/n/node-aproba/node-aproba_2.0.0-3_all.deb  Temporary failure resolving 'deb.debian.org'
+- E: Failed to fetch http://deb.debian.org/debian/pool/main/n/node-delegates/node-delegates_1.0.0-3_all.deb  Temporary failure resolving 'deb.debian.org'
+- E: Failed to fetch http://deb.debian.org/debian/pool/main/n/node-are-we-there-yet/node-are-we-there-yet_3.0.1%2b%7e1.1.0-1_all.deb  Temporary failure resolving 'deb.debian.org'
+- E: Failed to fetch http://deb.debian.org/debian/pool/main/n/node-async-each/node-async-each_1.0.3-3_all.deb  Temporary failure resolving 'deb.debian.org'
+- E: Failed to fetch http://deb.debian.org/debian/pool/main/n/node-auto-bind/node-auto-bind_4.0.0-2_all.deb  Temporary failure resolving 'deb.debian.org'
+- E: Failed to fetch http://deb.debian.org/debian/pool/main/n/node-babel-plugin-lodash/node-babel-plugin-lodash_3.3.4%2b%7ecs2.0.1-6_all.deb  Temporary failure resolving 'deb.debian.org'
+- E: Failed to fetch http://deb.debian.org/debian/pool/main/n/node-isobject/node-isobject_4.0.0-2_all.deb  Temporary failure resolving 'deb.debian.org'
+- E: Failed to fetch http://deb.debian.org/debian/pool/main/n/node-object-visit/node-object-visit_1.0.1-5_all.deb  Temporary failure resolving 'deb.debian.org'
+- E: Failed to fetch http://deb.debian.org/debian/pool/main/n/node-map-visit/node-map-visit_1.0.0-4_all.deb  Temporary failure resolving 'deb.debian.org'
+- E: Failed to fetch http://deb.debian.org/debian/pool/main/n/node-collection-visit/node-collection-visit_1.0.0-4_all.deb  Temporary failure resolving 'deb.debian.org'
+- E: Failed to fetch http://deb.debian.org/debian/pool/main/n/node-get-value/node-get-value_3.0.1-4_all.deb  Temporary failure resolving 'deb.debian.org'
+- E: Failed to fetch http://deb.debian.org/debian/pool/main/n/node-sellside-emitter/node-sellside-emitter_1.2.1-3_all.deb  Temporary failure resolving 'deb.debian.org'
+- E: Failed to fetch http://deb.debian.org/debian/pool/main/n/node-is-primitive/node-is-primitive_3.0.1-3_all.deb  Temporary failure resolving 'deb.debian.org'
+- E: Failed to fetch http://deb.debian.org/debian/pool/main/n/node-set-value/node-set-value_4.1.0%2b%7e4.0.1-2_all.deb  Temporary failure resolving 'deb.debian.org'
+- E: Failed to fetch http://deb.debian.org/debian/pool/main/n/node-union-value/node-union-value_2.0.1-4_all.deb  Temporary failure resolving 'deb.debian.org'
+- E: Failed to fetch http://deb.debian.org/debian/pool/main/n/node-has-values/node-has-values_2.0.1-4_all.deb  Temporary failure resolving 'deb.debian.org'
+- E: Failed to fetch http://deb.debian.org/debian/pool/main/n/node-has-value/node-has-value_2.0.2-4_all.deb  Temporary failure resolving 'deb.debian.org'
+- E: Failed to fetch http://deb.debian.org/debian/pool/main/n/node-unset-value/node-unset-value_2.0.1-1_all.deb  Temporary failure resolving 'deb.debian.org'
+- E: Failed to fetch http://deb.debian.org/debian/pool/main/n/node-cache-base/node-cache-base_4.0.2-1_all.deb  Temporary failure resolving 'deb.debian.org'
+- E: Failed to fetch http://deb.debian.org/debian/pool/main/n/node-is-descriptor/node-is-descriptor_3.0.0-2_all.deb  Temporary failure resolving 'deb.debian.org'
+- E: Failed to fetch http://deb.debian.org/debian/pool/main/n/node-define-property/node-define-property_2.0.2%2breally%2b2.0.2-3_all.deb  Temporary failure resolving 'deb.debian.org'
+- E: Failed to fetch http://deb.debian.org/debian/pool/main/n/node-mixin-deep/node-mixin-deep_2.0.1-3_all.deb  Temporary failure resolving 'deb.debian.org'
+- E: Failed to fetch http://deb.debian.org/debian/pool/main/n/node-pascalcase/node-pascalcase_1.0.0-1_all.deb  Temporary failure resolving 'deb.debian.org'
+- E: Failed to fetch http://deb.debian.org/debian/pool/main/n/node-base/node-base_3.0.0-3_all.deb  Temporary failure resolving 'deb.debian.org'
+- E: Failed to fetch http://deb.debian.org/debian/pool/main/n/node-base64-js/node-base64-js_1.5.1%2bdfsg%2b%7e1.3.0-2_all.deb  Temporary failure resolving 'deb.debian.org'
+- E: Failed to fetch http://deb.debian.org/debian/pool/main/n/node-binary-extensions/node-binary-extensions_2.2.0-2_all.deb  Temporary failure resolving 'deb.debian.org'
+- E: Failed to fetch http://deb.debian.org/debian/pool/main/n/node-builtins/node-builtins_5.0.1-1_all.deb  Temporary failure resolving 'deb.debian.org'
+- E: Failed to fetch http://deb.debian.org/debian/pool/main/n/node-chownr/node-chownr_2.0.0-2_all.deb  Temporary failure resolving 'deb.debian.org'
+- E: Failed to fetch http://deb.debian.org/debian/pool/main/n/node-iconv-lite/node-iconv-lite_0.6.3-3_all.deb  Temporary failure resolving 'deb.debian.org'
+- E: Failed to fetch http://deb.debian.org/debian/pool/main/n/node-encoding/node-encoding_0.1.13-2_all.deb  Temporary failure resolving 'deb.debian.org'
+- E: Failed to fetch http://deb.debian.org/debian/pool/main/n/node-jsonparse/node-jsonparse_1.3.1-10_all.deb  Temporary failure resolving 'deb.debian.org'
+- E: Failed to fetch http://deb.debian.org/debian/pool/main/n/node-minipass/node-minipass_3.3.6%2b%7ecs9.4.19-1_all.deb  Temporary failure resolving 'deb.debian.org'
+- E: Failed to fetch http://deb.debian.org/debian/pool/main/n/node-iferr/node-iferr_1.0.2%2b%7e1.0.2-1_all.deb  Temporary failure resolving 'deb.debian.org'
+- E: Failed to fetch http://deb.debian.org/debian/pool/main/n/node-fs-write-stream-atomic/node-fs-write-stream-atomic_1.0.10-6_all.deb  Temporary failure resolving 'deb.debian.org'
+- E: Failed to fetch http://deb.debian.org/debian/pool/main/n/node-run-queue/node-run-queue_2.0.0-3_all.deb  Temporary failure resolving 'deb.debian.org'
+- E: Failed to fetch http://deb.debian.org/debian/pool/main/n/node-copy-concurrently/node-copy-concurrently_1.0.5-9_all.deb  Temporary failure resolving 'deb.debian.org'
+- E: Failed to fetch http://deb.debian.org/debian/pool/main/n/node-move-concurrently/node-move-concurrently_1.0.1-5_all.deb  Temporary failure resolving 'deb.debian.org'
+- E: Failed to fetch http://deb.debian.org/debian/pool/main/n/node-promise-inflight/node-promise-inflight_1.0.1%2b%7e1.0.0-1_all.deb  Temporary failure resolving 'deb.debian.org'
+- E: Failed to fetch http://deb.debian.org/debian/pool/main/n/node-ssri/node-ssri_9.0.1-2_all.deb  Temporary failure resolving 'deb.debian.org'
+- E: Failed to fetch http://deb.debian.org/debian/pool/main/n/node-unique-filename/node-unique-filename_1.1.1%2bds-2_all.deb  Temporary failure resolving 'deb.debian.org'
+- E: Failed to fetch http://deb.debian.org/debian/pool/main/n/node-cacache/node-cacache_17.0.3%2b%7ecs10.3.7-1_all.deb  Temporary failure resolving 'deb.debian.org'
+- E: Failed to fetch http://deb.debian.org/debian/pool/main/n/node-is-binary-path/node-is-binary-path_2.1.0-5_all.deb  Temporary failure resolving 'deb.debian.org'
+- E: Failed to fetch http://deb.debian.org/debian/pool/main/n/node-path-is-absolute/node-path-is-absolute_2.0.0-2_all.deb  Temporary failure resolving 'deb.debian.org'
+- E: Failed to fetch http://deb.debian.org/debian/pool/main/n/node-set-immediate-shim/node-set-immediate-shim_2.0.0-2_all.deb  Temporary failure resolving 'deb.debian.org'
+- E: Failed to fetch http://deb.debian.org/debian/pool/main/n/node-readdirp/node-readdirp_3.6.0-1_all.deb  Temporary failure resolving 'deb.debian.org'
+- E: Failed to fetch http://deb.debian.org/debian/pool/main/n/node-chokidar/node-chokidar_3.5.3-2_all.deb  Temporary failure resolving 'deb.debian.org'
+- E: Failed to fetch http://deb.debian.org/debian/pool/main/n/node-tslib/node-tslib_2.4.1-1_all.deb  Temporary failure resolving 'deb.debian.org'
+- E: Failed to fetch http://deb.debian.org/debian/pool/main/n/node-chrome-trace-event/node-chrome-trace-event_1.0.3-2_all.deb  Temporary failure resolving 'deb.debian.org'
+- E: Failed to fetch http://deb.debian.org/debian/pool/main/n/node-ci-info/node-ci-info_3.6.1%2b%7ecs1.1.0-1_all.deb  Temporary failure resolving 'deb.debian.org'
+- E: Failed to fetch http://deb.debian.org/debian/pool/main/n/node-cli-boxes/node-cli-boxes_2.2.1-2_all.deb  Temporary failure resolving 'deb.debian.org'
+- E: Failed to fetch http://deb.debian.org/debian/pool/main/n/node-restore-cursor/node-restore-cursor_4.0.0-2_all.deb  Temporary failure resolving 'deb.debian.org'
+- E: Failed to fetch http://deb.debian.org/debian/pool/main/n/node-cli-cursor/node-cli-cursor_4.0.0-3_all.deb  Temporary failure resolving 'deb.debian.org'
+- E: Failed to fetch http://deb.debian.org/debian/pool/main/c/colors.js/node-colors_1.4.0-4_all.deb  Temporary failure resolving 'deb.debian.org'
+- E: Failed to fetch http://deb.debian.org/debian/pool/main/n/node-cli-table/node-cli-table_0.3.11%2b%7ecs0.13.4-3_all.deb  Temporary failure resolving 'deb.debian.org'
+- E: Failed to fetch http://deb.debian.org/debian/pool/main/n/node-cli-truncate/node-cli-truncate_2.1.0-5_all.deb  Temporary failure resolving 'deb.debian.org'
+- E: Failed to fetch http://deb.debian.org/debian/pool/main/n/node-columnify/node-columnify_1.6.0%2b%7e1.5.1-1_all.deb  Temporary failure resolving 'deb.debian.org'
+- E: Failed to fetch http://deb.debian.org/debian/pool/main/n/node-console-control-strings/node-console-control-strings_1.1.0-3_all.deb  Temporary failure resolving 'deb.debian.org'
+- E: Failed to fetch http://deb.debian.org/debian/pool/main/n/node-growl/node-growl_1.10.5-4_all.deb  Temporary failure resolving 'deb.debian.org'
+- E: Failed to fetch http://deb.debian.org/debian/pool/main/n/node-lcov-parse/node-lcov-parse_1.0.0%2b20170612git80d039574ed9-6_all.deb  Temporary failure resolving 'deb.debian.org'
+- E: Failed to fetch http://deb.debian.org/debian/pool/main/n/node-log-driver/node-log-driver_1.2.7%2bgit%2b20180219%2bbba1761737-7_all.deb  Temporary failure resolving 'deb.debian.org'
+- E: Failed to fetch http://deb.debian.org/debian/pool/main/n/node-data-uri-to-buffer/node-data-uri-to-buffer_4.0.0-3_all.deb  Temporary failure resolving 'deb.debian.org'
+- E: Failed to fetch http://deb.debian.org/debian/pool/main/n/node-fetch/node-fetch_3.3.0%2b%7ecs11.4.11-2_all.deb  Temporary failure resolving 'deb.debian.org'
+- E: Failed to fetch http://deb.debian.org/debian/pool/main/n/node-coveralls/node-coveralls_3.1.1-2_all.deb  Temporary failure resolving 'deb.debian.org'
+- E: Failed to fetch http://deb.debian.org/debian/pool/main/n/node-css-selector-tokenizer/node-css-selector-tokenizer_0.8.0%2b%7ecs4.8.3-1_all.deb  Temporary failure resolving 'deb.debian.org'
+- E: Failed to fetch http://deb.debian.org/debian/pool/main/n/node-postcss/node-postcss_8.4.20%2b%7ecs8.0.23-1_all.deb  Temporary failure resolving 'deb.debian.org'
+- E: Failed to fetch http://deb.debian.org/debian/pool/main/n/node-icss-utils/node-icss-utils_5.1.0%2b%7e5.1.0-1_all.deb  Temporary failure resolving 'deb.debian.org'
+- E: Failed to fetch http://deb.debian.org/debian/pool/main/n/node-postcss-modules-extract-imports/node-postcss-modules-extract-imports_3.0.0-2_all.deb  Temporary failure resolving 'deb.debian.org'
+- E: Failed to fetch http://deb.debian.org/debian/pool/main/n/node-postcss-modules-values/node-postcss-modules-values_4.0.0%2b%7e4.0.0-1_all.deb  Temporary failure resolving 'deb.debian.org'
+- E: Failed to fetch http://deb.debian.org/debian/pool/main/n/node-postcss-value-parser/node-postcss-value-parser_4.2.0-1_all.deb  Temporary failure resolving 'deb.debian.org'
+- E: Failed to fetch http://deb.debian.org/debian/pool/main/n/node-prr/node-prr_1.0.1-3_all.deb  Temporary failure resolving 'deb.debian.org'
+- E: Failed to fetch http://deb.debian.org/debian/pool/main/n/node-errno/node-errno_1.0.0-3_all.deb  Temporary failure resolving 'deb.debian.org'
+- E: Failed to fetch http://deb.debian.org/debian/pool/main/n/node-memory-fs/node-memory-fs_0.5.0%2b%7e0.3.3-2_all.deb  Temporary failure resolving 'deb.debian.org'
+- E: Failed to fetch http://deb.debian.org/debian/pool/main/n/node-tapable/node-tapable_2.2.1-2_all.deb  Temporary failure resolving 'deb.debian.org'
+- E: Failed to fetch http://deb.debian.org/debian/pool/main/n/node-enhanced-resolve/node-enhanced-resolve_5.10.0-1_all.deb  Temporary failure resolving 'deb.debian.org'
+- E: Failed to fetch http://deb.debian.org/debian/pool/main/n/node-es-module-lexer/node-es-module-lexer_1.1.0%2bdfsg-2_all.deb  Temporary failure resolving 'deb.debian.org'
+- E: Failed to fetch http://deb.debian.org/debian/pool/main/n/node-events/node-events_3.3.0%2b%7e3.0.0-3_all.deb  Temporary failure resolving 'deb.debian.org'
+- E: Failed to fetch http://deb.debian.org/debian/pool/main/n/node-resolve-cwd/node-resolve-cwd_3.0.0-2_all.deb  Temporary failure resolving 'deb.debian.org'
+- E: Failed to fetch http://deb.debian.org/debian/pool/main/n/node-jest/node-jest-debbundle_29.3.1%7eds1%2b%7ecs70.48.25-2_all.deb  Temporary failure resolving 'deb.debian.org'
+- E: Failed to fetch http://deb.debian.org/debian/pool/main/n/node-interpret/node-interpret_2.2.0-3_all.deb  Temporary failure resolving 'deb.debian.org'
+- E: Failed to fetch http://deb.debian.org/debian/pool/main/n/node-merge-stream/node-merge-stream_2.0.0%2b%7e1.1.2-2_all.deb  Temporary failure resolving 'deb.debian.org'
+- E: Failed to fetch http://deb.debian.org/debian/pool/main/n/node-jest/node-jest-worker_29.3.1%7eds1%2b%7ecs70.48.25-2_all.deb  Temporary failure resolving 'deb.debian.org'
+- E: Failed to fetch http://deb.debian.org/debian/pool/main/n/node-loader-runner/node-loader-runner_4.3.0-1_all.deb  Temporary failure resolving 'deb.debian.org'
+- E: Failed to fetch http://deb.debian.org/debian/pool/main/n/node-mime/node-mime_3.0.0%2bdfsg%2b%7ecs3.97.1-1_all.deb  Temporary failure resolving 'deb.debian.org'
+- E: Failed to fetch http://deb.debian.org/debian/pool/main/n/node-mime-types/node-mime-types_2.1.35-1_all.deb  Temporary failure resolving 'deb.debian.org'
+- E: Failed to fetch http://deb.debian.org/debian/pool/main/n/node-rechoir/node-rechoir_0.8.0%2b%7e0.6.1-2_all.deb  Temporary failure resolving 'deb.debian.org'
+- E: Failed to fetch http://deb.debian.org/debian/pool/main/n/node-schema-utils/node-schema-utils_3.1.1%7eds-2_all.deb  Temporary failure resolving 'deb.debian.org'
+- E: Failed to fetch http://deb.debian.org/debian/pool/main/n/node-randombytes/node-randombytes_2.1.0%2b%7e2.0.0-2_all.deb  Temporary failure resolving 'deb.debian.org'
+- E: Failed to fetch http://deb.debian.org/debian/pool/main/n/node-serialize-javascript/node-serialize-javascript_6.0.0-2_all.deb  Temporary failure resolving 'deb.debian.org'
+- E: Failed to fetch http://deb.debian.org/debian/pool/main/n/node-watchpack/node-watchpack_2.4.0%2b%7ecs2.8.1-1_all.deb  Temporary failure resolving 'deb.debian.org'
+- E: Failed to fetch http://deb.debian.org/debian/pool/main/n/node-webassemblyjs/node-webassemblyjs_1.11.4%2bdfsg%2b%7ecs10.11.17-2_all.deb  Temporary failure resolving 'deb.debian.org'
+- E: Failed to fetch http://deb.debian.org/debian/pool/main/n/node-source-list-map/node-source-list-map_2.0.1%2bdfsg-2_all.deb  Temporary failure resolving 'deb.debian.org'
+- E: Failed to fetch http://deb.debian.org/debian/pool/main/n/node-webpack-sources/node-webpack-sources_3.2.3%2b%7e3.2.0-2_all.deb  Temporary failure resolving 'deb.debian.org'
+- E: Failed to fetch http://deb.debian.org/debian/pool/main/n/node-terser/node-terser_5.16.5-2_all.deb  Temporary failure resolving 'deb.debian.org'
+- E: Failed to fetch http://deb.debian.org/debian/pool/main/n/node-terser/terser_5.16.5-2_all.deb  Temporary failure resolving 'deb.debian.org'
+- E: Failed to fetch http://deb.debian.org/debian/pool/main/n/node-webpack/webpack_5.75.0%2bdfsg%2b%7ecs17.16.14-1%2bdeb12u1_all.deb  Temporary failure resolving 'deb.debian.org'
+- E: Failed to fetch http://deb.debian.org/debian/pool/main/n/node-css-loader/node-css-loader_6.7.2%2b%7ecs14.0.11-1_all.deb  Temporary failure resolving 'deb.debian.org'
+- E: Failed to fetch http://deb.debian.org/debian/pool/main/n/node-mimic-response/node-mimic-response_3.1.0-8_all.deb  Temporary failure resolving 'deb.debian.org'
+- E: Failed to fetch http://deb.debian.org/debian/pool/main/n/node-decompress-response/node-decompress-response_6.0.0-2_all.deb  Temporary failure resolving 'deb.debian.org'
+- E: Failed to fetch http://deb.debian.org/debian/pool/main/n/node-depd/node-depd_2.0.0-2_all.deb  Temporary failure resolving 'deb.debian.org'
+- E: Failed to fetch http://deb.debian.org/debian/pool/main/n/node-diff/node-diff_5.0.0%7edfsg%2b%7e5.0.1-4_all.deb  Temporary failure resolving 'deb.debian.org'
+- E: Failed to fetch http://deb.debian.org/debian/pool/main/n/node-end-of-stream/node-end-of-stream_1.4.4%2b%7e1.4.1-1_all.deb  Temporary failure resolving 'deb.debian.org'
+- E: Failed to fetch http://deb.debian.org/debian/pool/main/n/node-err-code/node-err-code_2.0.3%2bdfsg-3_all.deb  Temporary failure resolving 'deb.debian.org'
+- E: Failed to fetch http://deb.debian.org/debian/pool/main/n/node-time-stamp/node-time-stamp_2.2.0-2_all.deb  Temporary failure resolving 'deb.debian.org'
+- E: Failed to fetch http://deb.debian.org/debian/pool/main/n/node-fancy-log/node-fancy-log_1.3.3%2b%7ecs1.3.1-2_all.deb  Temporary failure resolving 'deb.debian.org'
+- E: Failed to fetch http://deb.debian.org/debian/pool/main/n/node-has-unicode/node-has-unicode_2.0.1-5_all.deb  Temporary failure resolving 'deb.debian.org'
+- E: Failed to fetch http://deb.debian.org/debian/pool/main/n/node-wide-align/node-wide-align_1.1.3-4_all.deb  Temporary failure resolving 'deb.debian.org'
+- E: Failed to fetch http://deb.debian.org/debian/pool/main/n/node-gauge/node-gauge_4.0.4-1_all.deb  Temporary failure resolving 'deb.debian.org'
+- E: Failed to fetch http://deb.debian.org/debian/pool/main/n/node-pump/node-pump_3.0.0-5_all.deb  Temporary failure resolving 'deb.debian.org'
+- E: Failed to fetch http://deb.debian.org/debian/pool/main/n/node-get-stream/node-get-stream_6.0.1-1_all.deb  Temporary failure resolving 'deb.debian.org'
+- E: Failed to fetch http://deb.debian.org/debian/pool/main/n/node-lowercase-keys/node-lowercase-keys_2.0.0-2_all.deb  Temporary failure resolving 'deb.debian.org'
+- E: Failed to fetch http://deb.debian.org/debian/pool/main/n/node-json-buffer/node-json-buffer_3.0.1%2b%7e3.0.0-1_all.deb  Temporary failure resolving 'deb.debian.org'
+- E: Failed to fetch http://deb.debian.org/debian/pool/main/n/node-p-cancelable/node-p-cancelable_2.1.1-1_all.deb  Temporary failure resolving 'deb.debian.org'
+- E: Failed to fetch http://deb.debian.org/debian/pool/main/n/node-got/node-got_11.8.5%2b%7ecs58.13.36-3_all.deb  Temporary failure resolving 'deb.debian.org'
+- E: Failed to fetch http://deb.debian.org/debian/pool/main/n/node-https-proxy-agent/node-https-proxy-agent_5.0.1%2b%7ecs8.0.0-3_all.deb  Temporary failure resolving 'deb.debian.org'
+- E: Failed to fetch http://deb.debian.org/debian/pool/main/n/node-set-blocking/node-set-blocking_2.0.0-2_all.deb  Temporary failure resolving 'deb.debian.org'
+- E: Failed to fetch http://deb.debian.org/debian/pool/main/n/node-npmlog/node-npmlog_7.0.1%2b%7e4.1.4-1_all.deb  Temporary failure resolving 'deb.debian.org'
+- E: Failed to fetch http://deb.debian.org/debian/pool/main/n/node-osenv/node-osenv_0.1.5%2b%7e0.1.1-1_all.deb  Temporary failure resolving 'deb.debian.org'
+- E: Failed to fetch http://deb.debian.org/debian/pool/main/n/node-tar/node-tar_6.1.13%2b%7ecs7.0.5-1_all.deb  Temporary failure resolving 'deb.debian.org'
+- E: Failed to fetch http://deb.debian.org/debian/pool/main/n/node-gyp/node-gyp_9.3.0-2_all.deb  Temporary failure resolving 'deb.debian.org'
+- E: Failed to fetch http://deb.debian.org/debian/pool/main/n/node-ieee754/node-ieee754_1.2.1-3_all.deb  Temporary failure resolving 'deb.debian.org'
+- E: Failed to fetch http://deb.debian.org/debian/pool/main/n/node-ini/node-ini_3.0.1-2_all.deb  Temporary failure resolving 'deb.debian.org'
+- E: Failed to fetch http://deb.debian.org/debian/pool/main/n/node-ip/node-ip_2.0.0%2b%7e1.1.0-1_all.deb  Temporary failure resolving 'deb.debian.org'
+- E: Failed to fetch http://deb.debian.org/debian/pool/main/n/node-ip-regex/node-ip-regex_4.3.0%2b%7e4.1.1-1_all.deb  Temporary failure resolving 'deb.debian.org'
+- E: Failed to fetch http://deb.debian.org/debian/pool/main/n/node-mute-stream/node-mute-stream_0.0.8%2b%7e0.0.1-3_all.deb  Temporary failure resolving 'deb.debian.org'
+- E: Failed to fetch http://deb.debian.org/debian/pool/main/n/node-negotiator/node-negotiator_0.6.3%2b%7e0.6.1-1_all.deb  Temporary failure resolving 'deb.debian.org'
+- E: Failed to fetch http://deb.debian.org/debian/pool/main/n/node-read-package-json/node-read-package-json_5.0.2%2b%7e2.0.0-1_all.deb  Temporary failure resolving 'deb.debian.org'
+- E: Failed to fetch http://deb.debian.org/debian/pool/main/n/node-npm-bundled/node-npm-bundled_2.0.1-2_all.deb  Temporary failure resolving 'deb.debian.org'
+- E: Failed to fetch http://deb.debian.org/debian/pool/main/n/node-validate-npm-package-name/node-validate-npm-package-name_5.0.0%2b%7e4.0.0-1_all.deb  Temporary failure resolving 'deb.debian.org'
+- E: Failed to fetch http://deb.debian.org/debian/pool/main/n/node-npm-package-arg/node-npm-package-arg_10.0.0%2b%7e3.0.0-2_all.deb  Temporary failure resolving 'deb.debian.org'
+- E: Failed to fetch http://deb.debian.org/debian/pool/main/x/xdg-utils/xdg-utils_1.1.3-4.1_all.deb  Temporary failure resolving 'deb.debian.org'
+- E: Failed to fetch http://deb.debian.org/debian/pool/main/n/node-opener/node-opener_1.5.2%2b%7e1.4.0-1_all.deb  Temporary failure resolving 'deb.debian.org'
+- E: Failed to fetch http://deb.debian.org/debian/pool/main/n/node-retry/node-retry_0.13.1%2b%7e0.12.1-1_all.deb  Temporary failure resolving 'deb.debian.org'
+- E: Failed to fetch http://deb.debian.org/debian/pool/main/n/node-promise-retry/node-promise-retry_2.0.1-4_all.deb  Temporary failure resolving 'deb.debian.org'
+- E: Failed to fetch http://deb.debian.org/debian/pool/main/n/node-read/node-read_1.0.7-5_all.deb  Temporary failure resolving 'deb.debian.org'
+- E: Failed to fetch http://deb.debian.org/debian/pool/main/n/node-promzard/node-promzard_0.3.0-2_all.deb  Temporary failure resolving 'deb.debian.org'
+- E: Failed to fetch http://deb.debian.org/debian/pool/main/n/node-shell-quote/node-shell-quote_1.7.4%2b%7e1.7.1-1_all.deb  Temporary failure resolving 'deb.debian.org'
+- E: Failed to fetch http://deb.debian.org/debian/pool/main/n/node-stack-utils/node-stack-utils_2.0.6%2b%7e2.0.1-1_all.deb  Temporary failure resolving 'deb.debian.org'
+- E: Failed to fetch http://deb.debian.org/debian/pool/main/n/node-yaml/node-yaml_2.1.3-2_all.deb  Temporary failure resolving 'deb.debian.org'
+- E: Failed to fetch http://deb.debian.org/debian/pool/main/n/node-tap-parser/node-tap-parser_11.0.2%2b%7ecs2.1.4-1_all.deb  Temporary failure resolving 'deb.debian.org'
+- E: Failed to fetch http://deb.debian.org/debian/pool/main/n/node-tap-mocha-reporter/node-tap-mocha-reporter_5.0.3%2b%7e2.0.2-2_all.deb  Temporary failure resolving 'deb.debian.org'
+- E: Failed to fetch http://deb.debian.org/debian/pool/main/n/node-widest-line/node-widest-line_3.1.0-2_all.deb  Temporary failure resolving 'deb.debian.org'
+- E: Failed to fetch http://deb.debian.org/debian/pool/main/n/node-ws/node-ws_8.11.0%2b%7ecs13.7.3-1_all.deb  Temporary failure resolving 'deb.debian.org'
+- E: Failed to fetch http://deb.debian.org/debian/pool/main/n/node-tap/node-tap_16.3.2%2bds1%2b%7ecs50.8.16-1_all.deb  Temporary failure resolving 'deb.debian.org'
+- E: Failed to fetch http://deb.debian.org/debian/pool/main/n/node-text-table/node-text-table_0.2.0-4_all.deb  Temporary failure resolving 'deb.debian.org'
+- E: Failed to fetch http://deb.debian.org/debian/pool/main/n/nodejs/nodejs-doc_18.19.0%2bdfsg-6%7edeb12u2_all.deb  Temporary failure resolving 'deb.debian.org'
+- E: Failed to fetch http://deb.debian.org/debian/pool/main/n/npm/npm_9.2.0%7eds1-1_all.deb  Temporary failure resolving 'deb.debian.org'
+- E: Failed to fetch http://deb.debian.org/debian/pool/main/o/openssl/openssl_3.0.13-1%7edeb12u1_amd64.deb  Temporary failure resolving 'deb.debian.org'
+- E: Failed to fetch http://deb.debian.org/debian/pool/main/x/x11-utils/x11-utils_7.7%2b5_amd64.deb  Temporary failure resolving 'deb.debian.org'
+- E: Failed to fetch http://deb.debian.org/debian/pool/main/x/x11-xserver-utils/x11-xserver-utils_7.7%2b9%2bb1_amd64.deb  Temporary failure resolving 'deb.debian.org'
+- E: Failed to fetch http://deb.debian.org/debian/pool/main/x/xdg-user-dirs/xdg-user-dirs_0.18-1_amd64.deb  Temporary failure resolving 'deb.debian.org'
+- E: Failed to fetch http://deb.debian.org/debian/pool/main/libg/libglvnd/libegl1_1.6.0-1_amd64.deb  Temporary failure resolving 'deb.debian.org'
+- E: Failed to fetch http://deb.debian.org/debian/pool/main/z/zutty/zutty_0.14.0.20230218%2bdfsg1-1_amd64.deb  Temporary failure resolving 'deb.debian.org'
+- E: Unable to fetch some archives, maybe run apt-get update or try with --fix-missing?
+[ERROR] System package install failed with exit code 100 at command:
+            sudo apt-get install -qq -yy npm
+[ERROR] These packages are still missing: npm
+
+[NOTE] You can retry with '--assume-depexts' to skip this check, or run 'opam option depext=false' to permanently disable handling of system packages.
+
+'opam reinstall --with-test --verbose nanoid.1.0.0' failed.
+"/usr/bin/env" "bash" "-c" "opam reinstall --with-test --verbose nanoid.1.0.0;
+        res=$?;
+        test "$res" != 31 && exit "$res";
+        export OPAMCLI=2.0;
+        build_dir=$(opam var prefix)/.opam-switch/build;
+        failed=$(ls "$build_dir");
+        partial_fails="";
+        for pkg in $failed; do
+          if opam show -f x-ci-accept-failures: "$pkg" | grep -qF "\"debian-12\""; then
+            echo "A package failed and has been disabled for CI using the 'x-ci-accept-failures' field.";
+          fi;
+          test "$pkg" != 'nanoid.1.0.0' && partial_fails="$partial_fails $pkg";
+        done;
+        test "${partial_fails}" != "" && echo "opam-repo-ci detected dependencies failing: ${partial_fails}";
+        exit 1" failed with exit status 10
+2024-07-05 05:32.25: Job failed: Failed: Build failed
+2024-07-05 05:32.25: Log analysis:
+2024-07-05 05:32.25: >>> 
+[ERROR] Sorry, resolution of the request timed out.
+ (score = 20)
+2024-07-05 05:32.25: >>> 
+[ERROR] System package install failed with exit code 100 at command:
+ (score = 20)
+2024-07-05 05:32.25: >>> 
+[ERROR] These packages are still missing: npm
+ (score = 20)
+2024-07-05 05:32.25: Sorry, resolution of the request timed out.

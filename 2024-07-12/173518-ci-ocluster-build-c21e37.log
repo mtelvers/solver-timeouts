@@ -1,0 +1,378 @@
+2024-07-12 17:35.18: New job: test opentelemetry.0.6 with bigstringaf.0.10.0, using opam dev
+                              from https://github.com/ocaml/opam-repository.git#refs/pull/26238/head (ea1c96487177ade5aaebf46c09829dc8f0d85aad)
+                              on debian-12-ocaml-5.2/amd64
+
+To reproduce locally:
+
+cd $(mktemp -d)
+git clone --recursive "https://github.com/ocaml/opam-repository.git" && cd "opam-repository" && git fetch origin "refs/pull/26238/head" && git reset --hard ea1c9648
+git fetch origin master
+git merge --no-edit 80f59f9d12c0e9dda29eb80811ac7689a7ec392b
+cat > ../Dockerfile <<'END-OF-DOCKERFILE'
+[34mFROM ocaml/opam:debian-12-ocaml-5.2@sha256:3dbaeab305d4a974b3d0f76aee75f526eefe33d14250a2110852ba3b6f45f772
+USER 1000:1000
+WORKDIR /home/opam
+RUN sudo ln -f /usr/bin/opam-dev /usr/bin/opam
+RUN opam init --reinit -ni
+RUN uname -rs && opam exec -- ocaml -version && opam --version
+ENV OPAMDOWNLOADJOBS="1"
+ENV OPAMERRLOGLEN="0"
+ENV OPAMSOLVERTIMEOUT="500"
+ENV OPAMPRECISETRACKING="1"
+ENV CI="true"
+ENV OPAM_REPO_CI="true"
+RUN rm -rf opam-repository/
+COPY --chown=1000:1000 . opam-repository/
+RUN opam repository set-url --strict default opam-repository/
+RUN opam update --depexts || true
+RUN opam pin add -k version -yn bigstringaf.0.10.0 0.10.0
+RUN opam reinstall bigstringaf.0.10.0; \
+    res=$?; \
+    test "$res" != 31 && exit "$res"; \
+    export OPAMCLI=2.0; \
+    build_dir=$(opam var prefix)/.opam-switch/build; \
+    failed=$(ls "$build_dir"); \
+    partial_fails=""; \
+    for pkg in $failed; do \
+    if opam show -f x-ci-accept-failures: "$pkg" | grep -qF "\"debian-12\""; then \
+    echo "A package failed and has been disabled for CI using the 'x-ci-accept-failures' field."; \
+    fi; \
+    test "$pkg" != 'bigstringaf.0.10.0' && partial_fails="$partial_fails $pkg"; \
+    done; \
+    test "${partial_fails}" != "" && echo "opam-repo-ci detected dependencies failing: ${partial_fails}"; \
+    exit 1
+RUN opam reinstall opentelemetry.0.6; \
+    res=$?; \
+    test "$res" != 31 && exit "$res"; \
+    export OPAMCLI=2.0; \
+    build_dir=$(opam var prefix)/.opam-switch/build; \
+    failed=$(ls "$build_dir"); \
+    partial_fails=""; \
+    for pkg in $failed; do \
+    if opam show -f x-ci-accept-failures: "$pkg" | grep -qF "\"debian-12\""; then \
+    echo "A package failed and has been disabled for CI using the 'x-ci-accept-failures' field."; \
+    fi; \
+    test "$pkg" != 'opentelemetry.0.6' && partial_fails="$partial_fails $pkg"; \
+    done; \
+    test "${partial_fails}" != "" && echo "opam-repo-ci detected dependencies failing: ${partial_fails}"; \
+    exit 1
+RUN (opam reinstall --with-test opentelemetry.0.6) || true
+RUN opam reinstall --with-test --verbose opentelemetry.0.6; \
+    res=$?; \
+    test "$res" != 31 && exit "$res"; \
+    export OPAMCLI=2.0; \
+    build_dir=$(opam var prefix)/.opam-switch/build; \
+    failed=$(ls "$build_dir"); \
+    partial_fails=""; \
+    for pkg in $failed; do \
+    if opam show -f x-ci-accept-failures: "$pkg" | grep -qF "\"debian-12\""; then \
+    echo "A package failed and has been disabled for CI using the 'x-ci-accept-failures' field."; \
+    fi; \
+    test "$pkg" != 'opentelemetry.0.6' && partial_fails="$partial_fails $pkg"; \
+    done; \
+    test "${partial_fails}" != "" && echo "opam-repo-ci detected dependencies failing: ${partial_fails}"; \
+    exit 1
+[0m
+END-OF-DOCKERFILE
+docker build -f ../Dockerfile .
+
+2024-07-12 17:35.18: Using cache hint "ocaml/opam:debian-12-ocaml-5.2@sha256:3dbaeab305d4a974b3d0f76aee75f526eefe33d14250a2110852ba3b6f45f772-bigstringaf.0.10.0-opentelemetry.0.6-ea1c96487177ade5aaebf46c09829dc8f0d85aad"
+2024-07-12 17:35.18: Using OBuilder spec:
+((from ocaml/opam:debian-12-ocaml-5.2@sha256:3dbaeab305d4a974b3d0f76aee75f526eefe33d14250a2110852ba3b6f45f772)
+ (user (uid 1000) (gid 1000))
+ (workdir /home/opam)
+ (run (shell "sudo ln -f /usr/bin/opam-dev /usr/bin/opam"))
+ (run (network host)
+      (shell "opam init --reinit --config .opamrc-sandbox -ni"))
+ (run (shell "uname -rs && opam exec -- ocaml -version && opam --version"))
+ (env OPAMDOWNLOADJOBS 1)
+ (env OPAMERRLOGLEN 0)
+ (env OPAMSOLVERTIMEOUT 500)
+ (env OPAMPRECISETRACKING 1)
+ (env CI true)
+ (env OPAM_REPO_CI true)
+ (run (shell "rm -rf opam-repository/"))
+ (copy (src .) (dst opam-repository/))
+ (run (shell "opam repository set-url --strict default opam-repository/"))
+ (run (network host)
+      (shell "opam update --depexts || true"))
+ (run (shell "opam pin add -k version -yn bigstringaf.0.10.0 0.10.0"))
+ (run (cache (opam-archives (target /home/opam/.opam/download-cache)))
+      (network host)
+      (shell  "opam reinstall bigstringaf.0.10.0;\
+             \n        res=$?;\
+             \n        test \"$res\" != 31 && exit \"$res\";\
+             \n        export OPAMCLI=2.0;\
+             \n        build_dir=$(opam var prefix)/.opam-switch/build;\
+             \n        failed=$(ls \"$build_dir\");\
+             \n        partial_fails=\"\";\
+             \n        for pkg in $failed; do\
+             \n          if opam show -f x-ci-accept-failures: \"$pkg\" | grep -qF \"\\\"debian-12\\\"\"; then\
+             \n            echo \"A package failed and has been disabled for CI using the 'x-ci-accept-failures' field.\";\
+             \n          fi;\
+             \n          test \"$pkg\" != 'bigstringaf.0.10.0' && partial_fails=\"$partial_fails $pkg\";\
+             \n        done;\
+             \n        test \"${partial_fails}\" != \"\" && echo \"opam-repo-ci detected dependencies failing: ${partial_fails}\";\
+             \n        exit 1"))
+ (run (cache (opam-archives (target /home/opam/.opam/download-cache)))
+      (network host)
+      (shell  "opam reinstall opentelemetry.0.6;\
+             \n        res=$?;\
+             \n        test \"$res\" != 31 && exit \"$res\";\
+             \n        export OPAMCLI=2.0;\
+             \n        build_dir=$(opam var prefix)/.opam-switch/build;\
+             \n        failed=$(ls \"$build_dir\");\
+             \n        partial_fails=\"\";\
+             \n        for pkg in $failed; do\
+             \n          if opam show -f x-ci-accept-failures: \"$pkg\" | grep -qF \"\\\"debian-12\\\"\"; then\
+             \n            echo \"A package failed and has been disabled for CI using the 'x-ci-accept-failures' field.\";\
+             \n          fi;\
+             \n          test \"$pkg\" != 'opentelemetry.0.6' && partial_fails=\"$partial_fails $pkg\";\
+             \n        done;\
+             \n        test \"${partial_fails}\" != \"\" && echo \"opam-repo-ci detected dependencies failing: ${partial_fails}\";\
+             \n        exit 1"))
+ (run (network host)
+      (shell "(opam reinstall --with-test opentelemetry.0.6) || true"))
+ (run (shell  "opam reinstall --with-test --verbose opentelemetry.0.6;\
+             \n        res=$?;\
+             \n        test \"$res\" != 31 && exit \"$res\";\
+             \n        export OPAMCLI=2.0;\
+             \n        build_dir=$(opam var prefix)/.opam-switch/build;\
+             \n        failed=$(ls \"$build_dir\");\
+             \n        partial_fails=\"\";\
+             \n        for pkg in $failed; do\
+             \n          if opam show -f x-ci-accept-failures: \"$pkg\" | grep -qF \"\\\"debian-12\\\"\"; then\
+             \n            echo \"A package failed and has been disabled for CI using the 'x-ci-accept-failures' field.\";\
+             \n          fi;\
+             \n          test \"$pkg\" != 'opentelemetry.0.6' && partial_fails=\"$partial_fails $pkg\";\
+             \n        done;\
+             \n        test \"${partial_fails}\" != \"\" && echo \"opam-repo-ci detected dependencies failing: ${partial_fails}\";\
+             \n        exit 1"))
+)
+
+2024-07-12 17:35.18: Waiting for resource in pool OCluster
+2024-07-12 18:17.50: Waiting for worker…
+2024-07-12 18:20.00: Got resource from pool OCluster
+Building on x86-bm-c17.sw.ocaml.org
+All commits already cached
+Updating files:  78% (25013/31828)Updating files:  79% (25145/31828)Updating files:  80% (25463/31828)Updating files:  81% (25781/31828)Updating files:  82% (26099/31828)Updating files:  83% (26418/31828)Updating files:  84% (26736/31828)Updating files:  85% (27054/31828)Updating files:  86% (27373/31828)Updating files:  87% (27691/31828)Updating files:  88% (28009/31828)Updating files:  89% (28327/31828)Updating files:  90% (28646/31828)Updating files:  91% (28964/31828)Updating files:  92% (29282/31828)Updating files:  93% (29601/31828)Updating files:  94% (29919/31828)Updating files:  95% (30237/31828)Updating files:  96% (30555/31828)Updating files:  97% (30874/31828)Updating files:  98% (31192/31828)Updating files:  99% (31510/31828)Updating files: 100% (31828/31828)Updating files: 100% (31828/31828), done.
+HEAD is now at 80f59f9d12 Merge pull request #26230 from dinosaure/release-http-mirage-client-v0.0.6
+Updating 80f59f9d12..ea1c964871
+Fast-forward
+ packages/bigstringaf/bigstringaf.0.10.0/opam | 48 ++++++++++++++++++++++++++++
+ 1 file changed, 48 insertions(+)
+ create mode 100644 packages/bigstringaf/bigstringaf.0.10.0/opam
+
+[01;34m(from ocaml/opam:debian-12-ocaml-5.2@sha256:3dbaeab305d4a974b3d0f76aee75f526eefe33d14250a2110852ba3b6f45f772)[0m
+[01;2m[01;35m2024-07-12 18:20.08 ---> using "456f3d0059126c0b11e45678cc1e36ddae78d88f78aea70fb502a88942d4273f" from cache[0m
+
+[01;34m/: (user (uid 1000) (gid 1000))[0m
+
+[01;34m/: (workdir /home/opam)[0m
+
+[01;34m/home/opam: (run (shell "sudo ln -f /usr/bin/opam-dev /usr/bin/opam"))[0m
+[01;2m[01;35m2024-07-12 18:20.08 ---> using "c2e05c0fc1dc9a30557e8283ea23a948d3de614ac1624231962d74f179af1a32" from cache[0m
+
+[01;34m/home/opam: (run (network host)
+                 (shell "opam init --reinit --config .opamrc-sandbox -ni"))[0m
+Configuring from /home/opam/.opamrc-sandbox, then /home/opam/.opamrc, and finally from built-in defaults.
+Checking for available remotes: rsync and local, git.
+  - you won't be able to use mercurial repositories unless you install the hg command on your system.
+  - you won't be able to use darcs repositories unless you install the darcs command on your system.
+
+This development version of opam requires an update to the layout of /home/opam/.opam from version 2.0 to version 2.2, which can't be reverted.
+You may want to back it up before going further.
+
+Continue? [y/n] y
+[NOTE] The 'jobs' option was reset, its value was 39 and its new value will vary according to the current number of cores on your machine. You can restore the fixed value using:
+           opam option jobs=39 --global
+Format upgrade done.
+
+<><> Updating repositories ><><><><><><><><><><><><><><><><><><><><><><><><><><>
+[default] synchronised from file:///home/opam/opam-repository
+[01;2m[01;35m2024-07-12 18:20.08 ---> using "def2b354300c6a0ca3d37ded11e0769754bb2a39f38e4ccb535e43743df16f98" from cache[0m
+
+[01;34m/home/opam: (run (shell "uname -rs && opam exec -- ocaml -version && opam --version"))[0m
+Linux 5.15.0-113-generic
+The OCaml toplevel, version 5.2.0
+2.3.0~alpha~dev
+[01;2m[01;35m2024-07-12 18:20.08 ---> using "f9d5311fd9e861315b71e2cd2c477384c4073cf2849f761b0b74439732026929" from cache[0m
+
+[01;34m/home/opam: (env OPAMDOWNLOADJOBS 1)[0m
+
+[01;34m/home/opam: (env OPAMERRLOGLEN 0)[0m
+
+[01;34m/home/opam: (env OPAMSOLVERTIMEOUT 500)[0m
+
+[01;34m/home/opam: (env OPAMPRECISETRACKING 1)[0m
+
+[01;34m/home/opam: (env CI true)[0m
+
+[01;34m/home/opam: (env OPAM_REPO_CI true)[0m
+
+[01;34m/home/opam: (run (shell "rm -rf opam-repository/"))[0m
+[01;2m[01;35m2024-07-12 18:20.08 ---> using "7b34f2df726425927636af408dbdb8ab83f5efce14e5d959ffe4c570125953a2" from cache[0m
+
+[01;34m/home/opam: (copy (src .) (dst opam-repository/))[0m
+[01;2m[01;35m2024-07-12 18:20.09 ---> using "131e0bb98b3dbd49bd599a2c654d9adb3b91197b8fae928bebe04432b655c913" from cache[0m
+
+[01;34m/home/opam: (run (shell "opam repository set-url --strict default opam-repository/"))[0m
+[default] Initialised
+[01;2m[01;35m2024-07-12 18:20.09 ---> using "6b7b672dc36db90bca4d6533f650593e07943118d387ea5e25cd05224e984758" from cache[0m
+
+[01;34m/home/opam: (run (network host)
+                 (shell "opam update --depexts || true"))[0m
++ /usr/bin/sudo "apt-get" "update"
+- Hit:1 http://deb.debian.org/debian bookworm InRelease
+- Get:2 http://deb.debian.org/debian bookworm-updates InRelease [55.4 kB]
+- Get:3 http://deb.debian.org/debian-security bookworm-security InRelease [48.0 kB]
+- Get:4 http://deb.debian.org/debian-security bookworm-security/main amd64 Packages [168 kB]
+- Fetched 271 kB in 0s (1067 kB/s)
+- Reading package lists...
+[01;2m[01;35m2024-07-12 18:20.09 ---> using "4b6cd89663723b254b29646cc8c76505b9708d653032c33b4348484aa50b2428" from cache[0m
+
+[01;34m/home/opam: (run (shell "opam pin add -k version -yn bigstringaf.0.10.0 0.10.0"))[0m
+bigstringaf is now pinned to version 0.10.0
+[01;2m[01;35m2024-07-12 18:20.09 ---> using "ce0c65474ca4a7c7d5bbcfcc0d1698063781595d6f9487aaf38624c683d6a1e1" from cache[0m
+
+[01;34m/home/opam: (run (cache (opam-archives (target /home/opam/.opam/download-cache)))
+                 (network host)
+                 (shell  "opam reinstall bigstringaf.0.10.0;\
+                        \n        res=$?;\
+                        \n        test \"$res\" != 31 && exit \"$res\";\
+                        \n        export OPAMCLI=2.0;\
+                        \n        build_dir=$(opam var prefix)/.opam-switch/build;\
+                        \n        failed=$(ls \"$build_dir\");\
+                        \n        partial_fails=\"\";\
+                        \n        for pkg in $failed; do\
+                        \n          if opam show -f x-ci-accept-failures: \"$pkg\" | grep -qF \"\\\"debian-12\\\"\"; then\
+                        \n            echo \"A package failed and has been disabled for CI using the 'x-ci-accept-failures' field.\";\
+                        \n          fi;\
+                        \n          test \"$pkg\" != 'bigstringaf.0.10.0' && partial_fails=\"$partial_fails $pkg\";\
+                        \n        done;\
+                        \n        test \"${partial_fails}\" != \"\" && echo \"opam-repo-ci detected dependencies failing: ${partial_fails}\";\
+                        \n        exit 1"))[0m
+bigstringaf.0.10.0 is not installed. Install it? [y/n] y
+The following actions will be performed:
+=== install 4 packages
+  - install bigstringaf       0.10.0 (pinned)
+  - install csexp             1.5.2           [required by dune-configurator]
+  - install dune              3.16.0          [required by bigstringaf]
+  - install dune-configurator 3.16.0          [required by bigstringaf]
+
+<><> Processing actions <><><><><><><><><><><><><><><><><><><><><><><><><><><><>
+-> retrieved bigstringaf.0.10.0  (cached)
+-> retrieved csexp.1.5.2  (cached)
+-> retrieved dune.3.16.0, dune-configurator.3.16.0  (cached)
+-> installed dune.3.16.0
+-> installed csexp.1.5.2
+-> installed dune-configurator.3.16.0
+-> installed bigstringaf.0.10.0
+Done.
+# Run eval $(opam env) to update the current shell environment
+[01;2m[01;35m2024-07-12 18:20.09 ---> using "b955892f5d9532eda9c76c93dbdfec45973a8f7ad9e16acb68b78504a250863e" from cache[0m
+
+[01;34m/home/opam: (run (cache (opam-archives (target /home/opam/.opam/download-cache)))
+                 (network host)
+                 (shell  "opam reinstall opentelemetry.0.6;\
+                        \n        res=$?;\
+                        \n        test \"$res\" != 31 && exit \"$res\";\
+                        \n        export OPAMCLI=2.0;\
+                        \n        build_dir=$(opam var prefix)/.opam-switch/build;\
+                        \n        failed=$(ls \"$build_dir\");\
+                        \n        partial_fails=\"\";\
+                        \n        for pkg in $failed; do\
+                        \n          if opam show -f x-ci-accept-failures: \"$pkg\" | grep -qF \"\\\"debian-12\\\"\"; then\
+                        \n            echo \"A package failed and has been disabled for CI using the 'x-ci-accept-failures' field.\";\
+                        \n          fi;\
+                        \n          test \"$pkg\" != 'opentelemetry.0.6' && partial_fails=\"$partial_fails $pkg\";\
+                        \n        done;\
+                        \n        test \"${partial_fails}\" != \"\" && echo \"opam-repo-ci detected dependencies failing: ${partial_fails}\";\
+                        \n        exit 1"))[0m
+opentelemetry.0.6 is not installed. Install it? [y/n] y
+The following actions will be performed:
+=== install 8 packages
+  - install ambient-context 0.1.0  [required by opentelemetry]
+  - install ocamlbuild      0.15.0 [required by ptime]
+  - install ocamlfind       1.9.6  [required by ptime]
+  - install opentelemetry   0.6
+  - install pbrt            2.4    [required by opentelemetry]
+  - install ptime           1.1.0  [required by opentelemetry]
+  - install stdlib-shims    0.3.0  [required by pbrt]
+  - install topkg           1.0.7  [required by ptime]
+
+<><> Processing actions <><><><><><><><><><><><><><><><><><><><><><><><><><><><>
+-> retrieved ambient-context.0.1.0  (cached)
+-> retrieved ocamlbuild.0.15.0  (cached)
+-> retrieved ocamlfind.1.9.6  (cached)
+-> retrieved opentelemetry.0.6  (cached)
+-> installed ambient-context.0.1.0
+-> retrieved pbrt.2.4  (cached)
+-> retrieved ptime.1.1.0  (cached)
+-> retrieved stdlib-shims.0.3.0  (cached)
+-> retrieved topkg.1.0.7  (cached)
+-> installed stdlib-shims.0.3.0
+-> installed pbrt.2.4
+-> installed ocamlfind.1.9.6
+-> installed ocamlbuild.0.15.0
+-> installed topkg.1.0.7
+-> installed ptime.1.1.0
+-> installed opentelemetry.0.6
+Done.
+
+<><> pbrt.2.4 installed successfully ><><><><><><><><><><><><><><><><><><><><><>
+=> Pbrt: runtime library for ocaml-protoc.
+
+   A shim library named "ocaml-protoc" still exists, to ease the
+   migration.
+# Run eval $(opam env) to update the current shell environment
+[01;2m[01;35m2024-07-12 18:20.41 ---> saved as "110f687313b38e5fcb86499c105ae4c293384b2d2226ca146a27338814bf00cc"[0m
+
+[01;34m/home/opam: (run (network host)
+                 (shell "(opam reinstall --with-test opentelemetry.0.6) || true"))[0m
+[ERROR] Sorry, resolution of the request timed out.
+        Try to specify a more precise request, use a different solver, or increase the allowed time by setting OPAMSOLVERTIMEOUT to a bigger value (currently, it is set to 500.0 seconds).
+[01;2m[01;35m2024-07-12 18:29.19 ---> saved as "96491a2aef238dbd5ce2af40404b82576c277e057c1d5eade9d0f52fa7f723a9"[0m
+
+[01;34m/home/opam: (run (shell  "opam reinstall --with-test --verbose opentelemetry.0.6;\
+                        \n        res=$?;\
+                        \n        test \"$res\" != 31 && exit \"$res\";\
+                        \n        export OPAMCLI=2.0;\
+                        \n        build_dir=$(opam var prefix)/.opam-switch/build;\
+                        \n        failed=$(ls \"$build_dir\");\
+                        \n        partial_fails=\"\";\
+                        \n        for pkg in $failed; do\
+                        \n          if opam show -f x-ci-accept-failures: \"$pkg\" | grep -qF \"\\\"debian-12\\\"\"; then\
+                        \n            echo \"A package failed and has been disabled for CI using the 'x-ci-accept-failures' field.\";\
+                        \n          fi;\
+                        \n          test \"$pkg\" != 'opentelemetry.0.6' && partial_fails=\"$partial_fails $pkg\";\
+                        \n        done;\
+                        \n        test \"${partial_fails}\" != \"\" && echo \"opam-repo-ci detected dependencies failing: ${partial_fails}\";\
+                        \n        exit 1"))[0m
+[ERROR] Sorry, resolution of the request timed out.
+        Try to specify a more precise request, use a different solver, or increase the allowed time by setting OPAMSOLVERTIMEOUT to a bigger value (currently, it is set to 500.0 seconds).
+'opam reinstall --with-test --verbose opentelemetry.0.6' failed.
+"/usr/bin/env" "bash" "-c" "opam reinstall --with-test --verbose opentelemetry.0.6;
+        res=$?;
+        test "$res" != 31 && exit "$res";
+        export OPAMCLI=2.0;
+        build_dir=$(opam var prefix)/.opam-switch/build;
+        failed=$(ls "$build_dir");
+        partial_fails="";
+        for pkg in $failed; do
+          if opam show -f x-ci-accept-failures: "$pkg" | grep -qF "\"debian-12\""; then
+            echo "A package failed and has been disabled for CI using the 'x-ci-accept-failures' field.";
+          fi;
+          test "$pkg" != 'opentelemetry.0.6' && partial_fails="$partial_fails $pkg";
+        done;
+        test "${partial_fails}" != "" && echo "opam-repo-ci detected dependencies failing: ${partial_fails}";
+        exit 1" failed with exit status 60
+2024-07-12 18:38.08: Job failed: Failed: Build failed
+2024-07-12 18:38.08: Log analysis:
+2024-07-12 18:38.08: >>> 
+[ERROR] Sorry, resolution of the request timed out.
+ (score = 20)
+2024-07-12 18:38.08: >>> 
+[ERROR] Sorry, resolution of the request timed out.
+ (score = 20)
+2024-07-12 18:38.08: Sorry, resolution of the request timed out.

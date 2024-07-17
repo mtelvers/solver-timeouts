@@ -1,0 +1,274 @@
+2024-06-05 08:26.37: New job: test mehari-lwt-unix.0.4, using opam 2.0
+                              from https://github.com/ocaml/opam-repository.git#refs/pull/26019/head (8d7cb50e9ff4951a52da2b615a49267c73cdb1a4)
+                              on debian-12-ocaml-5.2/amd64
+
+To reproduce locally:
+
+cd $(mktemp -d)
+git clone --recursive "https://github.com/ocaml/opam-repository.git" && cd "opam-repository" && git fetch origin "refs/pull/26019/head" && git reset --hard 8d7cb50e
+git fetch origin master
+git merge --no-edit 5979d639be2999663a41c1d1b8a73ce3036dcb41
+cat > ../Dockerfile <<'END-OF-DOCKERFILE'
+[34mFROM ocaml/opam:debian-12-ocaml-5.2@sha256:12df694d8961e9d2889415e9f52914c529db83d399156ead1a40943939257d06
+USER 1000:1000
+WORKDIR /home/opam
+RUN sudo ln -f /usr/bin/opam-2.0 /usr/bin/opam
+RUN opam init --reinit -ni
+RUN uname -rs && opam exec -- ocaml -version && opam --version
+ENV OPAMDOWNLOADJOBS="1"
+ENV OPAMERRLOGLEN="0"
+ENV OPAMSOLVERTIMEOUT="500"
+ENV OPAMPRECISETRACKING="1"
+ENV CI="true"
+ENV OPAM_REPO_CI="true"
+RUN rm -rf opam-repository/
+COPY --chown=1000:1000 . opam-repository/
+RUN opam repository set-url --strict default opam-repository/
+RUN opam depext -u || true
+RUN opam pin add -k version -yn mehari-lwt-unix.0.4 0.4
+RUN opam depext mehari-lwt-unix.0.4 && opam reinstall mehari-lwt-unix.0.4; \
+    res=$?; \
+    test "$res" != 31 && exit "$res"; \
+    export OPAMCLI=2.0; \
+    build_dir=$(opam var prefix)/.opam-switch/build; \
+    failed=$(ls "$build_dir"); \
+    partial_fails=""; \
+    for pkg in $failed; do \
+    if opam show -f x-ci-accept-failures: "$pkg" | grep -qF "\"debian-12\""; then \
+    echo "A package failed and has been disabled for CI using the 'x-ci-accept-failures' field."; \
+    fi; \
+    test "$pkg" != 'mehari-lwt-unix.0.4' && partial_fails="$partial_fails $pkg"; \
+    done; \
+    test "${partial_fails}" != "" && echo "opam-repo-ci detected dependencies failing: ${partial_fails}"; \
+    exit 1
+RUN (opam depext --with-test mehari-lwt-unix.0.4 && opam reinstall --with-test mehari-lwt-unix.0.4) || true
+RUN opam depext --with-test mehari-lwt-unix.0.4 && opam reinstall --with-test --verbose mehari-lwt-unix.0.4; \
+    res=$?; \
+    test "$res" != 31 && exit "$res"; \
+    export OPAMCLI=2.0; \
+    build_dir=$(opam var prefix)/.opam-switch/build; \
+    failed=$(ls "$build_dir"); \
+    partial_fails=""; \
+    for pkg in $failed; do \
+    if opam show -f x-ci-accept-failures: "$pkg" | grep -qF "\"debian-12\""; then \
+    echo "A package failed and has been disabled for CI using the 'x-ci-accept-failures' field."; \
+    fi; \
+    test "$pkg" != 'mehari-lwt-unix.0.4' && partial_fails="$partial_fails $pkg"; \
+    done; \
+    test "${partial_fails}" != "" && echo "opam-repo-ci detected dependencies failing: ${partial_fails}"; \
+    exit 1
+[0m
+END-OF-DOCKERFILE
+docker build -f ../Dockerfile .
+
+2024-06-05 08:26.37: Using cache hint "ocaml/opam:debian-12-ocaml-5.2@sha256:12df694d8961e9d2889415e9f52914c529db83d399156ead1a40943939257d06-mehari-lwt-unix.0.4-8d7cb50e9ff4951a52da2b615a49267c73cdb1a4"
+2024-06-05 08:26.37: Using OBuilder spec:
+((from ocaml/opam:debian-12-ocaml-5.2@sha256:12df694d8961e9d2889415e9f52914c529db83d399156ead1a40943939257d06)
+ (user (uid 1000) (gid 1000))
+ (workdir /home/opam)
+ (run (shell "sudo ln -f /usr/bin/opam-2.0 /usr/bin/opam"))
+ (run (network host)
+      (shell "opam init --reinit --config .opamrc-sandbox -ni"))
+ (run (shell "uname -rs && opam exec -- ocaml -version && opam --version"))
+ (env OPAMDOWNLOADJOBS 1)
+ (env OPAMERRLOGLEN 0)
+ (env OPAMSOLVERTIMEOUT 500)
+ (env OPAMPRECISETRACKING 1)
+ (env CI true)
+ (env OPAM_REPO_CI true)
+ (run (shell "rm -rf opam-repository/"))
+ (copy (src .) (dst opam-repository/))
+ (run (shell "opam repository set-url --strict default opam-repository/"))
+ (run (network host)
+      (shell "opam depext -u || true"))
+ (run (shell "opam pin add -k version -yn mehari-lwt-unix.0.4 0.4"))
+ (run (cache (opam-archives (target /home/opam/.opam/download-cache)))
+      (network host)
+      (shell  "opam depext mehari-lwt-unix.0.4 && opam reinstall mehari-lwt-unix.0.4;\
+             \n        res=$?;\
+             \n        test \"$res\" != 31 && exit \"$res\";\
+             \n        export OPAMCLI=2.0;\
+             \n        build_dir=$(opam var prefix)/.opam-switch/build;\
+             \n        failed=$(ls \"$build_dir\");\
+             \n        partial_fails=\"\";\
+             \n        for pkg in $failed; do\
+             \n          if opam show -f x-ci-accept-failures: \"$pkg\" | grep -qF \"\\\"debian-12\\\"\"; then\
+             \n            echo \"A package failed and has been disabled for CI using the 'x-ci-accept-failures' field.\";\
+             \n          fi;\
+             \n          test \"$pkg\" != 'mehari-lwt-unix.0.4' && partial_fails=\"$partial_fails $pkg\";\
+             \n        done;\
+             \n        test \"${partial_fails}\" != \"\" && echo \"opam-repo-ci detected dependencies failing: ${partial_fails}\";\
+             \n        exit 1"))
+ (run (network host)
+      (shell "(opam depext --with-test mehari-lwt-unix.0.4 && opam reinstall --with-test mehari-lwt-unix.0.4) || true"))
+ (run (shell  "opam depext --with-test mehari-lwt-unix.0.4 && opam reinstall --with-test --verbose mehari-lwt-unix.0.4;\
+             \n        res=$?;\
+             \n        test \"$res\" != 31 && exit \"$res\";\
+             \n        export OPAMCLI=2.0;\
+             \n        build_dir=$(opam var prefix)/.opam-switch/build;\
+             \n        failed=$(ls \"$build_dir\");\
+             \n        partial_fails=\"\";\
+             \n        for pkg in $failed; do\
+             \n          if opam show -f x-ci-accept-failures: \"$pkg\" | grep -qF \"\\\"debian-12\\\"\"; then\
+             \n            echo \"A package failed and has been disabled for CI using the 'x-ci-accept-failures' field.\";\
+             \n          fi;\
+             \n          test \"$pkg\" != 'mehari-lwt-unix.0.4' && partial_fails=\"$partial_fails $pkg\";\
+             \n        done;\
+             \n        test \"${partial_fails}\" != \"\" && echo \"opam-repo-ci detected dependencies failing: ${partial_fails}\";\
+             \n        exit 1"))
+)
+
+2024-06-05 08:26.37: Waiting for resource in pool OCluster
+2024-06-05 08:26.37: Waiting for worker…
+2024-06-05 08:29.05: Got resource from pool OCluster
+Building on x86-bm-c10.sw.ocaml.org
+All commits already cached
+Updating files:  61% (19203/31427)Updating files:  62% (19485/31427)Updating files:  63% (19800/31427)Updating files:  64% (20114/31427)Updating files:  65% (20428/31427)Updating files:  66% (20742/31427)Updating files:  67% (21057/31427)Updating files:  68% (21371/31427)Updating files:  69% (21685/31427)Updating files:  70% (21999/31427)Updating files:  71% (22314/31427)Updating files:  72% (22628/31427)Updating files:  73% (22942/31427)Updating files:  74% (23256/31427)Updating files:  75% (23571/31427)Updating files:  76% (23885/31427)Updating files:  77% (24199/31427)Updating files:  78% (24514/31427)Updating files:  79% (24828/31427)Updating files:  80% (25142/31427)Updating files:  81% (25456/31427)Updating files:  82% (25771/31427)Updating files:  83% (26085/31427)Updating files:  84% (26399/31427)Updating files:  85% (26713/31427)Updating files:  86% (27028/31427)Updating files:  87% (27342/31427)Updating files:  88% (27656/31427)Updating files:  89% (27971/31427)Updating files:  90% (28285/31427)Updating files:  91% (28599/31427)Updating files:  92% (28913/31427)Updating files:  93% (29228/31427)Updating files:  94% (29542/31427)Updating files:  95% (29856/31427)Updating files:  96% (30170/31427)Updating files:  97% (30485/31427)Updating files:  98% (30799/31427)Updating files:  99% (31113/31427)Updating files: 100% (31427/31427)Updating files: 100% (31427/31427), done.
+HEAD is now at 5979d639be Merge pull request #25948 from panglesd/release-slipshow-v0.0.32-3-gad3df09
+Updating 5979d639be..8d7cb50e9f
+Fast-forward
+ packages/mehari-eio/mehari-eio.0.4/opam           | 40 ++++++++++++++++++++
+ packages/mehari-lwt-unix/mehari-lwt-unix.0.4/opam | 41 ++++++++++++++++++++
+ packages/mehari-mirage/mehari-mirage.0.4/opam     | 42 +++++++++++++++++++++
+ packages/mehari/mehari.0.4/opam                   | 46 +++++++++++++++++++++++
+ 4 files changed, 169 insertions(+)
+ create mode 100644 packages/mehari-eio/mehari-eio.0.4/opam
+ create mode 100644 packages/mehari-lwt-unix/mehari-lwt-unix.0.4/opam
+ create mode 100644 packages/mehari-mirage/mehari-mirage.0.4/opam
+ create mode 100644 packages/mehari/mehari.0.4/opam
+
+[01;34m(from ocaml/opam:debian-12-ocaml-5.2@sha256:12df694d8961e9d2889415e9f52914c529db83d399156ead1a40943939257d06)[0m
+[01;2m[01;35m2024-06-05 08:29.14 ---> saved as "cd5e28c7764350a015cf18513c5962c60f452082d33e091e5bfc48530437f838"[0m
+
+[01;34m/: (user (uid 1000) (gid 1000))[0m
+
+[01;34m/: (workdir /home/opam)[0m
+
+[01;34m/home/opam: (run (shell "sudo ln -f /usr/bin/opam-2.0 /usr/bin/opam"))[0m
+[01;2m[01;35m2024-06-05 08:29.14 ---> saved as "7bb37e597b523899010969492fe491fc85ebf32b7b45663e903a85bae9e99142"[0m
+
+[01;34m/home/opam: (run (network host)
+                 (shell "opam init --reinit --config .opamrc-sandbox -ni"))[0m
+[NOTE] Will configure from /home/opam/.opamrc-sandbox, then /home/opam/.opamrc, and finally from built-in defaults.
+Checking for available remotes: rsync and local, git.
+  - you won't be able to use mercurial repositories unless you install the hg command on your system.
+  - you won't be able to use darcs repositories unless you install the darcs command on your system.
+
+[WARNING] Recommended dependencies -- most packages rely on these:
+  - m4
+
+<><> Updating repositories ><><><><><><><><><><><><><><><><><><><><><><><><><><>
+[default] synchronised from file:///home/opam/opam-repository
+default (at file:///home/opam/opam-repository): 
+    [INFO] opam 2.1 includes many performance improvements over 2.0; please consider upgrading (https://opam.ocaml.org/doc/Install.html)
+
+[01;2m[01;35m2024-06-05 08:30.08 ---> saved as "b19492dbf5b2ce26d1d6f22582be46bcd37ac0dd899a6d26809ac0a32f273d98"[0m
+
+[01;34m/home/opam: (run (shell "uname -rs && opam exec -- ocaml -version && opam --version"))[0m
+Linux 5.15.0-107-generic
+The OCaml toplevel, version 5.2.0
+2.0.10
+[01;2m[01;35m2024-06-05 08:30.09 ---> saved as "9e25e06c05305a0a135ae178b50d626a12a93043a22a77f4a29e787f6799b187"[0m
+
+[01;34m/home/opam: (env OPAMDOWNLOADJOBS 1)[0m
+
+[01;34m/home/opam: (env OPAMERRLOGLEN 0)[0m
+
+[01;34m/home/opam: (env OPAMSOLVERTIMEOUT 500)[0m
+
+[01;34m/home/opam: (env OPAMPRECISETRACKING 1)[0m
+
+[01;34m/home/opam: (env CI true)[0m
+
+[01;34m/home/opam: (env OPAM_REPO_CI true)[0m
+
+[01;34m/home/opam: (run (shell "rm -rf opam-repository/"))[0m
+[01;2m[01;35m2024-06-05 08:30.16 ---> saved as "94e435d2465a4fa54aabcecab98362c3cb0f9fbd611ffb1af4ebbaab3b9e0924"[0m
+
+[01;34m/home/opam: (copy (src .) (dst opam-repository/))[0m
+[01;2m[01;35m2024-06-05 08:30.28 ---> saved as "10896304e2ba20fa129eeb23c6aafb5f26e586d36383ac1d3584da573f7d8987"[0m
+
+[01;34m/home/opam: (run (shell "opam repository set-url --strict default opam-repository/"))[0m
+[default] Initialised
+default (at file:///home/opam/opam-repository): 
+    [INFO] opam 2.1 includes many performance improvements over 2.0; please consider upgrading (https://opam.ocaml.org/doc/Install.html)
+
+[01;2m[01;35m2024-06-05 08:30.53 ---> saved as "0fc3393526b9f74bcc65e4c20f617458827b24f8c14cc755f5da989aaf6775c3"[0m
+
+[01;34m/home/opam: (run (network host)
+                 (shell "opam depext -u || true"))[0m
+# Detecting depexts using vars: arch=x86_64, os=linux, os-distribution=debian, os-family=debian
+# No extra OS packages requirements found.
+# All required OS packages found.
+The following command needs to be run through "sudo":
+    apt-get update
+Hit:1 http://deb.debian.org/debian bookworm InRelease
+Get:2 http://deb.debian.org/debian bookworm-updates InRelease [55.4 kB]
+Hit:3 http://deb.debian.org/debian-security bookworm-security InRelease
+Fetched 55.4 kB in 0s (253 kB/s)
+Reading package lists...
+# OS package update successful
+[01;2m[01;35m2024-06-05 08:30.54 ---> saved as "c1eaaca299de1d8e0fa6a35d8de9bc3aa85495c6d75a6da3bd7c8aa8f321cadc"[0m
+
+[01;34m/home/opam: (run (shell "opam pin add -k version -yn mehari-lwt-unix.0.4 0.4"))[0m
+mehari-lwt-unix is now pinned to version 0.4
+[01;2m[01;35m2024-06-05 08:30.56 ---> saved as "a8ee6c09521da553ab1f3ab9cb413f8b11c4a271a99dc9ea54b29deac366b511"[0m
+
+[01;34m/home/opam: (run (cache (opam-archives (target /home/opam/.opam/download-cache)))
+                 (network host)
+                 (shell  "opam depext mehari-lwt-unix.0.4 && opam reinstall mehari-lwt-unix.0.4;\
+                        \n        res=$?;\
+                        \n        test \"$res\" != 31 && exit \"$res\";\
+                        \n        export OPAMCLI=2.0;\
+                        \n        build_dir=$(opam var prefix)/.opam-switch/build;\
+                        \n        failed=$(ls \"$build_dir\");\
+                        \n        partial_fails=\"\";\
+                        \n        for pkg in $failed; do\
+                        \n          if opam show -f x-ci-accept-failures: \"$pkg\" | grep -qF \"\\\"debian-12\\\"\"; then\
+                        \n            echo \"A package failed and has been disabled for CI using the 'x-ci-accept-failures' field.\";\
+                        \n          fi;\
+                        \n          test \"$pkg\" != 'mehari-lwt-unix.0.4' && partial_fails=\"$partial_fails $pkg\";\
+                        \n        done;\
+                        \n        test \"${partial_fails}\" != \"\" && echo \"opam-repo-ci detected dependencies failing: ${partial_fails}\";\
+                        \n        exit 1"))[0m
+# Detecting depexts using vars: arch=x86_64, os=linux, os-distribution=debian, os-family=debian
+# The following system packages are needed:
+libgmp-dev
+The following command needs to be run through "sudo":
+    apt-get install -qq -yy libgmp-dev
+debconf: delaying package configuration, since apt-utils is not installed
+Selecting previously unselected package libgmpxx4ldbl:amd64.
+(Reading database ... (Reading database ... 5%(Reading database ... 10%(Reading database ... 15%(Reading database ... 20%(Reading database ... 25%(Reading database ... 30%(Reading database ... 35%(Reading database ... 40%(Reading database ... 45%(Reading database ... 50%(Reading database ... 55%(Reading database ... 60%(Reading database ... 65%(Reading database ... 70%(Reading database ... 75%(Reading database ... 80%(Reading database ... 85%(Reading database ... 90%(Reading database ... 95%(Reading database ... 100%(Reading database ... 18766 files and directories currently installed.)
+Preparing to unpack .../libgmpxx4ldbl_2%3a6.2.1+dfsg1-1.1_amd64.deb ...
+Unpacking libgmpxx4ldbl:amd64 (2:6.2.1+dfsg1-1.1) ...
+Selecting previously unselected package libgmp-dev:amd64.
+Preparing to unpack .../libgmp-dev_2%3a6.2.1+dfsg1-1.1_amd64.deb ...
+Unpacking libgmp-dev:amd64 (2:6.2.1+dfsg1-1.1) ...
+Setting up libgmpxx4ldbl:amd64 (2:6.2.1+dfsg1-1.1) ...
+Setting up libgmp-dev:amd64 (2:6.2.1+dfsg1-1.1) ...
+Processing triggers for libc-bin (2.36-9+deb12u7) ...
+# OS packages installation successful
+mehari-lwt-unix.0.4 is not installed. Install it? [Y/n] y
+[ERROR] Sorry, resolution of the request timed out.
+        Try to specify a simpler request, use a different solver, or increase the allowed time by setting OPAMSOLVERTIMEOUT to a bigger value (currently, it is set to 500.0 seconds).
+"/usr/bin/env" "bash" "-c" "opam depext mehari-lwt-unix.0.4 && opam reinstall mehari-lwt-unix.0.4;
+        res=$?;
+        test "$res" != 31 && exit "$res";
+        export OPAMCLI=2.0;
+        build_dir=$(opam var prefix)/.opam-switch/build;
+        failed=$(ls "$build_dir");
+        partial_fails="";
+        for pkg in $failed; do
+          if opam show -f x-ci-accept-failures: "$pkg" | grep -qF "\"debian-12\""; then
+            echo "A package failed and has been disabled for CI using the 'x-ci-accept-failures' field.";
+          fi;
+          test "$pkg" != 'mehari-lwt-unix.0.4' && partial_fails="$partial_fails $pkg";
+        done;
+        test "${partial_fails}" != "" && echo "opam-repo-ci detected dependencies failing: ${partial_fails}";
+        exit 1" failed with exit status 60
+2024-06-05 08:39.47: Job failed: Failed: Build failed
+2024-06-05 08:39.47: Log analysis:
+2024-06-05 08:39.47: >>> 
+[ERROR] Sorry, resolution of the request timed out.
+ (score = 20)
+2024-06-05 08:39.47: Sorry, resolution of the request timed out.

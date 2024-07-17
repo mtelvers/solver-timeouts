@@ -1,0 +1,505 @@
+2024-07-12 17:38.13: New job: test hyper.1.0.0~alpha1 with bigstringaf.0.10.0, using opam dev
+                              from https://github.com/ocaml/opam-repository.git#refs/pull/26238/head (ea1c96487177ade5aaebf46c09829dc8f0d85aad)
+                              on debian-12-ocaml-4.14/amd64
+
+To reproduce locally:
+
+cd $(mktemp -d)
+git clone --recursive "https://github.com/ocaml/opam-repository.git" && cd "opam-repository" && git fetch origin "refs/pull/26238/head" && git reset --hard ea1c9648
+git fetch origin master
+git merge --no-edit 80f59f9d12c0e9dda29eb80811ac7689a7ec392b
+cat > ../Dockerfile <<'END-OF-DOCKERFILE'
+[34mFROM ocaml/opam:debian-12-ocaml-4.14@sha256:6861d2cea2df02e6467c0d6cf723eb199c902ae60e8e96b88bdfafcfab7b3a2f
+USER 1000:1000
+WORKDIR /home/opam
+RUN sudo ln -f /usr/bin/opam-dev /usr/bin/opam
+RUN opam init --reinit -ni
+RUN uname -rs && opam exec -- ocaml -version && opam --version
+ENV OPAMDOWNLOADJOBS="1"
+ENV OPAMERRLOGLEN="0"
+ENV OPAMSOLVERTIMEOUT="500"
+ENV OPAMPRECISETRACKING="1"
+ENV CI="true"
+ENV OPAM_REPO_CI="true"
+RUN rm -rf opam-repository/
+COPY --chown=1000:1000 . opam-repository/
+RUN opam repository set-url --strict default opam-repository/
+RUN opam update --depexts || true
+RUN opam pin add -k version -yn bigstringaf.0.10.0 0.10.0
+RUN opam reinstall bigstringaf.0.10.0; \
+    res=$?; \
+    test "$res" != 31 && exit "$res"; \
+    export OPAMCLI=2.0; \
+    build_dir=$(opam var prefix)/.opam-switch/build; \
+    failed=$(ls "$build_dir"); \
+    partial_fails=""; \
+    for pkg in $failed; do \
+    if opam show -f x-ci-accept-failures: "$pkg" | grep -qF "\"debian-12\""; then \
+    echo "A package failed and has been disabled for CI using the 'x-ci-accept-failures' field."; \
+    fi; \
+    test "$pkg" != 'bigstringaf.0.10.0' && partial_fails="$partial_fails $pkg"; \
+    done; \
+    test "${partial_fails}" != "" && echo "opam-repo-ci detected dependencies failing: ${partial_fails}"; \
+    exit 1
+RUN opam reinstall hyper.1.0.0~alpha1; \
+    res=$?; \
+    test "$res" != 31 && exit "$res"; \
+    export OPAMCLI=2.0; \
+    build_dir=$(opam var prefix)/.opam-switch/build; \
+    failed=$(ls "$build_dir"); \
+    partial_fails=""; \
+    for pkg in $failed; do \
+    if opam show -f x-ci-accept-failures: "$pkg" | grep -qF "\"debian-12\""; then \
+    echo "A package failed and has been disabled for CI using the 'x-ci-accept-failures' field."; \
+    fi; \
+    test "$pkg" != 'hyper.1.0.0~alpha1' && partial_fails="$partial_fails $pkg"; \
+    done; \
+    test "${partial_fails}" != "" && echo "opam-repo-ci detected dependencies failing: ${partial_fails}"; \
+    exit 1
+RUN (opam reinstall --with-test hyper.1.0.0~alpha1) || true
+RUN opam reinstall --with-test --verbose hyper.1.0.0~alpha1; \
+    res=$?; \
+    test "$res" != 31 && exit "$res"; \
+    export OPAMCLI=2.0; \
+    build_dir=$(opam var prefix)/.opam-switch/build; \
+    failed=$(ls "$build_dir"); \
+    partial_fails=""; \
+    for pkg in $failed; do \
+    if opam show -f x-ci-accept-failures: "$pkg" | grep -qF "\"debian-12\""; then \
+    echo "A package failed and has been disabled for CI using the 'x-ci-accept-failures' field."; \
+    fi; \
+    test "$pkg" != 'hyper.1.0.0~alpha1' && partial_fails="$partial_fails $pkg"; \
+    done; \
+    test "${partial_fails}" != "" && echo "opam-repo-ci detected dependencies failing: ${partial_fails}"; \
+    exit 1
+[0m
+END-OF-DOCKERFILE
+docker build -f ../Dockerfile .
+
+2024-07-12 17:38.13: Using cache hint "ocaml/opam:debian-12-ocaml-4.14@sha256:6861d2cea2df02e6467c0d6cf723eb199c902ae60e8e96b88bdfafcfab7b3a2f-bigstringaf.0.10.0-hyper.1.0.0~alpha1-ea1c96487177ade5aaebf46c09829dc8f0d85aad"
+2024-07-12 17:38.13: Using OBuilder spec:
+((from ocaml/opam:debian-12-ocaml-4.14@sha256:6861d2cea2df02e6467c0d6cf723eb199c902ae60e8e96b88bdfafcfab7b3a2f)
+ (user (uid 1000) (gid 1000))
+ (workdir /home/opam)
+ (run (shell "sudo ln -f /usr/bin/opam-dev /usr/bin/opam"))
+ (run (network host)
+      (shell "opam init --reinit --config .opamrc-sandbox -ni"))
+ (run (shell "uname -rs && opam exec -- ocaml -version && opam --version"))
+ (env OPAMDOWNLOADJOBS 1)
+ (env OPAMERRLOGLEN 0)
+ (env OPAMSOLVERTIMEOUT 500)
+ (env OPAMPRECISETRACKING 1)
+ (env CI true)
+ (env OPAM_REPO_CI true)
+ (run (shell "rm -rf opam-repository/"))
+ (copy (src .) (dst opam-repository/))
+ (run (shell "opam repository set-url --strict default opam-repository/"))
+ (run (network host)
+      (shell "opam update --depexts || true"))
+ (run (shell "opam pin add -k version -yn bigstringaf.0.10.0 0.10.0"))
+ (run (cache (opam-archives (target /home/opam/.opam/download-cache)))
+      (network host)
+      (shell  "opam reinstall bigstringaf.0.10.0;\
+             \n        res=$?;\
+             \n        test \"$res\" != 31 && exit \"$res\";\
+             \n        export OPAMCLI=2.0;\
+             \n        build_dir=$(opam var prefix)/.opam-switch/build;\
+             \n        failed=$(ls \"$build_dir\");\
+             \n        partial_fails=\"\";\
+             \n        for pkg in $failed; do\
+             \n          if opam show -f x-ci-accept-failures: \"$pkg\" | grep -qF \"\\\"debian-12\\\"\"; then\
+             \n            echo \"A package failed and has been disabled for CI using the 'x-ci-accept-failures' field.\";\
+             \n          fi;\
+             \n          test \"$pkg\" != 'bigstringaf.0.10.0' && partial_fails=\"$partial_fails $pkg\";\
+             \n        done;\
+             \n        test \"${partial_fails}\" != \"\" && echo \"opam-repo-ci detected dependencies failing: ${partial_fails}\";\
+             \n        exit 1"))
+ (run (cache (opam-archives (target /home/opam/.opam/download-cache)))
+      (network host)
+      (shell  "opam reinstall hyper.1.0.0~alpha1;\
+             \n        res=$?;\
+             \n        test \"$res\" != 31 && exit \"$res\";\
+             \n        export OPAMCLI=2.0;\
+             \n        build_dir=$(opam var prefix)/.opam-switch/build;\
+             \n        failed=$(ls \"$build_dir\");\
+             \n        partial_fails=\"\";\
+             \n        for pkg in $failed; do\
+             \n          if opam show -f x-ci-accept-failures: \"$pkg\" | grep -qF \"\\\"debian-12\\\"\"; then\
+             \n            echo \"A package failed and has been disabled for CI using the 'x-ci-accept-failures' field.\";\
+             \n          fi;\
+             \n          test \"$pkg\" != 'hyper.1.0.0~alpha1' && partial_fails=\"$partial_fails $pkg\";\
+             \n        done;\
+             \n        test \"${partial_fails}\" != \"\" && echo \"opam-repo-ci detected dependencies failing: ${partial_fails}\";\
+             \n        exit 1"))
+ (run (network host)
+      (shell "(opam reinstall --with-test hyper.1.0.0~alpha1) || true"))
+ (run (shell  "opam reinstall --with-test --verbose hyper.1.0.0~alpha1;\
+             \n        res=$?;\
+             \n        test \"$res\" != 31 && exit \"$res\";\
+             \n        export OPAMCLI=2.0;\
+             \n        build_dir=$(opam var prefix)/.opam-switch/build;\
+             \n        failed=$(ls \"$build_dir\");\
+             \n        partial_fails=\"\";\
+             \n        for pkg in $failed; do\
+             \n          if opam show -f x-ci-accept-failures: \"$pkg\" | grep -qF \"\\\"debian-12\\\"\"; then\
+             \n            echo \"A package failed and has been disabled for CI using the 'x-ci-accept-failures' field.\";\
+             \n          fi;\
+             \n          test \"$pkg\" != 'hyper.1.0.0~alpha1' && partial_fails=\"$partial_fails $pkg\";\
+             \n        done;\
+             \n        test \"${partial_fails}\" != \"\" && echo \"opam-repo-ci detected dependencies failing: ${partial_fails}\";\
+             \n        exit 1"))
+)
+
+2024-07-12 17:38.13: Waiting for resource in pool OCluster
+2024-07-12 23:24.37: Waiting for worker…
+2024-07-12 23:27.36: Got resource from pool OCluster
+Building on x86-bm-c14.sw.ocaml.org
+All commits already cached
+Updating files:  71% (22676/31828)Updating files:  72% (22917/31828)Updating files:  73% (23235/31828)Updating files:  74% (23553/31828)Updating files:  75% (23871/31828)Updating files:  76% (24190/31828)Updating files:  77% (24508/31828)Updating files:  78% (24826/31828)Updating files:  79% (25145/31828)Updating files:  80% (25463/31828)Updating files:  81% (25781/31828)Updating files:  82% (26099/31828)Updating files:  83% (26418/31828)Updating files:  84% (26736/31828)Updating files:  85% (27054/31828)Updating files:  86% (27373/31828)Updating files:  87% (27691/31828)Updating files:  88% (28009/31828)Updating files:  89% (28327/31828)Updating files:  90% (28646/31828)Updating files:  91% (28964/31828)Updating files:  92% (29282/31828)Updating files:  93% (29601/31828)Updating files:  94% (29919/31828)Updating files:  95% (30237/31828)Updating files:  96% (30555/31828)Updating files:  97% (30874/31828)Updating files:  98% (31192/31828)Updating files:  99% (31510/31828)Updating files: 100% (31828/31828)Updating files: 100% (31828/31828), done.
+HEAD is now at 80f59f9d12 Merge pull request #26230 from dinosaure/release-http-mirage-client-v0.0.6
+Updating 80f59f9d12..ea1c964871
+Fast-forward
+ packages/bigstringaf/bigstringaf.0.10.0/opam | 48 ++++++++++++++++++++++++++++
+ 1 file changed, 48 insertions(+)
+ create mode 100644 packages/bigstringaf/bigstringaf.0.10.0/opam
+
+[01;34m(from ocaml/opam:debian-12-ocaml-4.14@sha256:6861d2cea2df02e6467c0d6cf723eb199c902ae60e8e96b88bdfafcfab7b3a2f)[0m
+[01;2m[01;35m2024-07-12 23:27.39 ---> using "4a2062430b518b8cfbc5c574841529a30ba3d6de7679379ca94f79d85d164cd8" from cache[0m
+
+[01;34m/: (user (uid 1000) (gid 1000))[0m
+
+[01;34m/: (workdir /home/opam)[0m
+
+[01;34m/home/opam: (run (shell "sudo ln -f /usr/bin/opam-dev /usr/bin/opam"))[0m
+[01;2m[01;35m2024-07-12 23:27.39 ---> using "29b5d9aad4a768fb168dfa107102cb95821b2f365d548b85be5aef5132cd245d" from cache[0m
+
+[01;34m/home/opam: (run (network host)
+                 (shell "opam init --reinit --config .opamrc-sandbox -ni"))[0m
+Configuring from /home/opam/.opamrc-sandbox, then /home/opam/.opamrc, and finally from built-in defaults.
+Checking for available remotes: rsync and local, git.
+  - you won't be able to use mercurial repositories unless you install the hg command on your system.
+  - you won't be able to use darcs repositories unless you install the darcs command on your system.
+
+This development version of opam requires an update to the layout of /home/opam/.opam from version 2.0 to version 2.2, which can't be reverted.
+You may want to back it up before going further.
+
+Continue? [y/n] y
+Format upgrade done.
+
+<><> Updating repositories ><><><><><><><><><><><><><><><><><><><><><><><><><><>
+[default] synchronised from file:///home/opam/opam-repository
+[01;2m[01;35m2024-07-12 23:27.39 ---> using "0706a875292ea922359d31104426c52cf1ec62952c22af91ca77ba12165daa47" from cache[0m
+
+[01;34m/home/opam: (run (shell "uname -rs && opam exec -- ocaml -version && opam --version"))[0m
+Linux 5.15.0-113-generic
+The OCaml toplevel, version 4.14.2
+2.3.0~alpha~dev
+[01;2m[01;35m2024-07-12 23:27.39 ---> using "56af074fae77a51329f811b5bfb936746f95d4f3823a52bb864f86692f467bec" from cache[0m
+
+[01;34m/home/opam: (env OPAMDOWNLOADJOBS 1)[0m
+
+[01;34m/home/opam: (env OPAMERRLOGLEN 0)[0m
+
+[01;34m/home/opam: (env OPAMSOLVERTIMEOUT 500)[0m
+
+[01;34m/home/opam: (env OPAMPRECISETRACKING 1)[0m
+
+[01;34m/home/opam: (env CI true)[0m
+
+[01;34m/home/opam: (env OPAM_REPO_CI true)[0m
+
+[01;34m/home/opam: (run (shell "rm -rf opam-repository/"))[0m
+[01;2m[01;35m2024-07-12 23:27.39 ---> using "845fb03f28eba49019fb5591d249744cf0ecd47bd659754be83841c03de5d822" from cache[0m
+
+[01;34m/home/opam: (copy (src .) (dst opam-repository/))[0m
+[01;2m[01;35m2024-07-12 23:27.41 ---> using "88bd445deae872ef683f3f82e34cec30cb0227e7e9277cd8e8248e29b1de7fa4" from cache[0m
+
+[01;34m/home/opam: (run (shell "opam repository set-url --strict default opam-repository/"))[0m
+[default] Initialised
+[01;2m[01;35m2024-07-12 23:27.41 ---> using "80280e41f26d8295f50a688b7f8a1a232070b51e5d4539ffff82b492fe77bbd5" from cache[0m
+
+[01;34m/home/opam: (run (network host)
+                 (shell "opam update --depexts || true"))[0m
++ /usr/bin/sudo "apt-get" "update"
+- Hit:1 http://deb.debian.org/debian bookworm InRelease
+- Get:2 http://deb.debian.org/debian bookworm-updates InRelease [55.4 kB]
+- Get:3 http://deb.debian.org/debian-security bookworm-security InRelease [48.0 kB]
+- Get:4 http://deb.debian.org/debian-security bookworm-security/main amd64 Packages [168 kB]
+- Fetched 271 kB in 0s (1159 kB/s)
+- Reading package lists...
+[01;2m[01;35m2024-07-12 23:27.41 ---> using "1ef42ba6723c8cbbcd2f4fb01ace4eca812dbb838755faeaa0881a1c6bc96b8a" from cache[0m
+
+[01;34m/home/opam: (run (shell "opam pin add -k version -yn bigstringaf.0.10.0 0.10.0"))[0m
+bigstringaf is now pinned to version 0.10.0
+[01;2m[01;35m2024-07-12 23:27.41 ---> using "9d305abd7fc70f6bf14853f2d46d32ebfbee7e3e384c01c0b996d0b282eb0141" from cache[0m
+
+[01;34m/home/opam: (run (cache (opam-archives (target /home/opam/.opam/download-cache)))
+                 (network host)
+                 (shell  "opam reinstall bigstringaf.0.10.0;\
+                        \n        res=$?;\
+                        \n        test \"$res\" != 31 && exit \"$res\";\
+                        \n        export OPAMCLI=2.0;\
+                        \n        build_dir=$(opam var prefix)/.opam-switch/build;\
+                        \n        failed=$(ls \"$build_dir\");\
+                        \n        partial_fails=\"\";\
+                        \n        for pkg in $failed; do\
+                        \n          if opam show -f x-ci-accept-failures: \"$pkg\" | grep -qF \"\\\"debian-12\\\"\"; then\
+                        \n            echo \"A package failed and has been disabled for CI using the 'x-ci-accept-failures' field.\";\
+                        \n          fi;\
+                        \n          test \"$pkg\" != 'bigstringaf.0.10.0' && partial_fails=\"$partial_fails $pkg\";\
+                        \n        done;\
+                        \n        test \"${partial_fails}\" != \"\" && echo \"opam-repo-ci detected dependencies failing: ${partial_fails}\";\
+                        \n        exit 1"))[0m
+bigstringaf.0.10.0 is not installed. Install it? [y/n] y
+The following actions will be performed:
+=== install 4 packages
+  - install bigstringaf       0.10.0 (pinned)
+  - install csexp             1.5.2           [required by dune-configurator]
+  - install dune              3.16.0          [required by bigstringaf]
+  - install dune-configurator 3.16.0          [required by bigstringaf]
+
+<><> Processing actions <><><><><><><><><><><><><><><><><><><><><><><><><><><><>
+-> retrieved bigstringaf.0.10.0  (cached)
+-> retrieved csexp.1.5.2  (cached)
+-> retrieved dune.3.16.0, dune-configurator.3.16.0  (cached)
+-> installed dune.3.16.0
+-> installed csexp.1.5.2
+-> installed dune-configurator.3.16.0
+-> installed bigstringaf.0.10.0
+Done.
+# Run eval $(opam env) to update the current shell environment
+[01;2m[01;35m2024-07-12 23:27.41 ---> using "7c85a3d53220c7ae379e619c706bd7c738bbe6b9a84cf5942b731fa5571091ca" from cache[0m
+
+[01;34m/home/opam: (run (cache (opam-archives (target /home/opam/.opam/download-cache)))
+                 (network host)
+                 (shell  "opam reinstall hyper.1.0.0~alpha1;\
+                        \n        res=$?;\
+                        \n        test \"$res\" != 31 && exit \"$res\";\
+                        \n        export OPAMCLI=2.0;\
+                        \n        build_dir=$(opam var prefix)/.opam-switch/build;\
+                        \n        failed=$(ls \"$build_dir\");\
+                        \n        partial_fails=\"\";\
+                        \n        for pkg in $failed; do\
+                        \n          if opam show -f x-ci-accept-failures: \"$pkg\" | grep -qF \"\\\"debian-12\\\"\"; then\
+                        \n            echo \"A package failed and has been disabled for CI using the 'x-ci-accept-failures' field.\";\
+                        \n          fi;\
+                        \n          test \"$pkg\" != 'hyper.1.0.0~alpha1' && partial_fails=\"$partial_fails $pkg\";\
+                        \n        done;\
+                        \n        test \"${partial_fails}\" != \"\" && echo \"opam-repo-ci detected dependencies failing: ${partial_fails}\";\
+                        \n        exit 1"))[0m
+hyper.1.0.0~alpha1 is not installed. Install it? [y/n] y
+The following actions will be performed:
+=== install 42 packages
+  - install angstrom            0.16.0       [required by dream-httpaf]
+  - install base-bytes          base         [required by ocplib-endian]
+  - install base64              3.5.1        [required by dream-httpaf]
+  - install conf-libssl         4            [required by ssl]
+  - install conf-pkg-config     3            [required by mirage-crypto]
+  - install cppo                1.6.9        [required by lwt]
+  - install cstruct             6.2.0        [required by mirage-crypto-rng]
+  - install digestif            1.2.0        [required by dream-httpaf]
+  - install dream-httpaf        1.0.0~alpha1 [required by hyper]
+  - install dream-pure          1.0.0~alpha2 [required by hyper]
+  - install duration            0.2.1        [required by mirage-crypto-rng]
+  - install eqaf                0.9          [required by digestif, mirage-crypto]
+  - install faraday             0.8.2        [required by dream-httpaf]
+  - install faraday-lwt         0.8.2        [required by faraday-lwt-unix]
+  - install faraday-lwt-unix    0.8.2        [required by dream-httpaf]
+  - install fmt                 0.9.0        [required by logs]
+  - install hmap                0.8.1        [required by dream-pure]
+  - install hyper               1.0.0~alpha1
+  - install logs                0.7.0        [required by mirage-crypto-rng]
+  - install lwt                 5.7.0        [required by dream-httpaf, mirage-crypto-rng]
+  - install lwt_ppx             2.1.0        [required by hyper]
+  - install lwt_ssl             1.2.0        [required by dream-httpaf]
+  - install mirage-crypto       0.10.7       [required by mirage-crypto-rng]
+  - install mirage-crypto-rng   0.10.7       [required by hyper]
+  - install mtime               2.0.0        [required by mirage-crypto-rng]
+  - install ocaml-compiler-libs v0.12.4      [required by ppxlib]
+  - install ocaml-syntax-shims  1.0.0        [required by angstrom]
+  - install ocamlbuild          0.15.0       [required by logs, mtime]
+  - install ocamlfind           1.9.6        [required by logs, mtime]
+  - install ocplib-endian       1.2          [required by lwt]
+  - install ppx_derivers        1.2.1        [required by ppxlib]
+  - install ppxlib              0.32.1       [required by lwt_ppx]
+  - install psq                 0.2.1        [required by dream-httpaf]
+  - install ptime               1.1.0        [required by dream-pure]
+  - install result              1.5          [required by dream-httpaf]
+  - install seq                 base         [required by psq]
+  - install sexplib0            v0.17.0      [required by ppxlib]
+  - install ssl                 0.7.0        [required by dream-httpaf]
+  - install stdlib-shims        0.3.0        [required by ppxlib]
+  - install stringext           1.6.0        [required by uri]
+  - install topkg               1.0.7        [required by logs, mtime]
+  - install uri                 4.4.0        [required by hyper]
+
+The following system packages will first need to be installed:
+    libssl-dev pkg-config
+
+<><> Handling external dependencies <><><><><><><><><><><><><><><><><><><><><><>
+
+opam believes some required external dependencies are missing. opam can:
+> 1. Run apt-get to install them (may need root/sudo access)
+  2. Display the recommended apt-get command and wait while you run it manually (e.g. in another terminal)
+  3. Continue anyway, and, upon success, permanently register that this external dependency is present, but not detectable
+  4. Abort the installation
+
+[1/2/3/4] 1
+
++ /usr/bin/sudo "apt-get" "install" "-qq" "-yy" "libssl-dev" "pkg-config"
+- debconf: delaying package configuration, since apt-utils is not installed
+- Selecting previously unselected package libpkgconf3:amd64.
+- (Reading database ... (Reading database ... 5%(Reading database ... 10%(Reading database ... 15%(Reading database ... 20%(Reading database ... 25%(Reading database ... 30%(Reading database ... 35%(Reading database ... 40%(Reading database ... 45%(Reading database ... 50%(Reading database ... 55%(Reading database ... 60%(Reading database ... 65%(Reading database ... 70%(Reading database ... 75%(Reading database ... 80%(Reading database ... 85%(Reading database ... 90%(Reading database ... 95%(Reading database ... 100%(Reading database ... 18734 files and directories currently installed.)
+- Preparing to unpack .../libpkgconf3_1.8.1-1_amd64.deb ...
+- Unpacking libpkgconf3:amd64 (1.8.1-1) ...
+- Selecting previously unselected package libssl-dev:amd64.
+- Preparing to unpack .../libssl-dev_3.0.13-1~deb12u1_amd64.deb ...
+- Unpacking libssl-dev:amd64 (3.0.13-1~deb12u1) ...
+- Selecting previously unselected package pkgconf-bin.
+- Preparing to unpack .../pkgconf-bin_1.8.1-1_amd64.deb ...
+- Unpacking pkgconf-bin (1.8.1-1) ...
+- Selecting previously unselected package pkgconf:amd64.
+- Preparing to unpack .../pkgconf_1.8.1-1_amd64.deb ...
+- Unpacking pkgconf:amd64 (1.8.1-1) ...
+- Selecting previously unselected package pkg-config:amd64.
+- Preparing to unpack .../pkg-config_1.8.1-1_amd64.deb ...
+- Unpacking pkg-config:amd64 (1.8.1-1) ...
+- Setting up libpkgconf3:amd64 (1.8.1-1) ...
+- Setting up libssl-dev:amd64 (3.0.13-1~deb12u1) ...
+- Setting up pkgconf-bin (1.8.1-1) ...
+- Setting up pkgconf:amd64 (1.8.1-1) ...
+- Setting up pkg-config:amd64 (1.8.1-1) ...
+- Processing triggers for libc-bin (2.36-9+deb12u7) ...
+
+<><> Processing actions <><><><><><><><><><><><><><><><><><><><><><><><><><><><>
+-> retrieved angstrom.0.16.0  (cached)
+-> retrieved base64.3.5.1  (cached)
+-> retrieved conf-libssl.4  (cached)
+-> retrieved cppo.1.6.9  (cached)
+-> installed conf-pkg-config.3
+-> retrieved cstruct.6.2.0  (cached)
+-> installed conf-libssl.4
+-> installed base64.3.5.1
+-> retrieved digestif.1.2.0  (cached)
+-> retrieved dream-httpaf.1.0.0~alpha1  (cached)
+-> retrieved dream-pure.1.0.0~alpha2  (cached)
+-> retrieved duration.0.2.1  (cached)
+-> retrieved eqaf.0.9  (cached)
+-> retrieved faraday.0.8.2, faraday-lwt.0.8.2, faraday-lwt-unix.0.8.2  (cached)
+-> retrieved fmt.0.9.0  (cached)
+-> retrieved hmap.0.8.1  (cached)
+-> installed duration.0.2.1
+-> installed cppo.1.6.9
+-> installed faraday.0.8.2
+-> retrieved hyper.1.0.0~alpha1  (https://github.com/aantron/hyper/archive/refs/tags/1.0.0-alpha1.tar.gz)
+-> retrieved logs.0.7.0  (cached)
+-> retrieved lwt.5.7.0  (cached)
+-> retrieved lwt_ppx.2.1.0  (cached)
+-> retrieved lwt_ssl.1.2.0  (cached)
+-> retrieved mirage-crypto.0.10.7, mirage-crypto-rng.0.10.7  (cached)
+-> retrieved mtime.2.0.0  (cached)
+-> retrieved ocaml-compiler-libs.v0.12.4  (cached)
+-> retrieved ocaml-syntax-shims.1.0.0  (cached)
+-> retrieved ocamlbuild.0.15.0  (cached)
+-> retrieved ocamlfind.1.9.6  (cached)
+-> retrieved ocplib-endian.1.2  (cached)
+-> retrieved ppx_derivers.1.2.1  (cached)
+-> retrieved ppxlib.0.32.1  (cached)
+-> retrieved psq.0.2.1  (cached)
+-> retrieved ptime.1.1.0  (cached)
+-> installed ppx_derivers.1.2.1
+-> retrieved result.1.5  (cached)
+-> retrieved seq.base  (cached)
+-> installed seq.base
+-> retrieved sexplib0.v0.17.0  (cached)
+-> retrieved ssl.0.7.0  (cached)
+-> retrieved stdlib-shims.0.3.0  (cached)
+-> retrieved stringext.1.6.0  (cached)
+-> retrieved topkg.1.0.7  (cached)
+-> retrieved uri.4.4.0  (cached)
+-> installed stringext.1.6.0
+-> installed result.1.5
+-> installed stdlib-shims.0.3.0
+-> installed psq.0.2.1
+-> installed sexplib0.v0.17.0
+-> installed ocaml-syntax-shims.1.0.0
+-> installed ocaml-compiler-libs.v0.12.4
+-> installed angstrom.0.16.0
+-> installed ssl.0.7.0
+-> installed ocamlfind.1.9.6
+-> installed base-bytes.base
+-> installed uri.4.4.0
+-> installed ocplib-endian.1.2
+-> installed ocamlbuild.0.15.0
+-> installed lwt.5.7.0
+-> installed faraday-lwt.0.8.2
+-> installed lwt_ssl.1.2.0
+-> installed faraday-lwt-unix.0.8.2
+-> installed topkg.1.0.7
+-> installed hmap.0.8.1
+-> installed mtime.2.0.0
+-> installed fmt.0.9.0
+-> installed ptime.1.1.0
+-> installed cstruct.6.2.0
+-> installed eqaf.0.9
+-> installed logs.0.7.0
+-> installed digestif.1.2.0
+-> installed mirage-crypto.0.10.7
+-> installed mirage-crypto-rng.0.10.7
+-> installed ppxlib.0.32.1
+-> installed lwt_ppx.2.1.0
+-> installed dream-pure.1.0.0~alpha2
+-> installed dream-httpaf.1.0.0~alpha1
+-> installed hyper.1.0.0~alpha1
+Done.
+# Run eval $(opam env) to update the current shell environment
+[01;2m[01;35m2024-07-12 23:28.36 ---> saved as "5f5e4aca862725c91ff74b398f6c7147e38652204234b7f7039268dd9654fd10"[0m
+
+[01;34m/home/opam: (run (network host)
+                 (shell "(opam reinstall --with-test hyper.1.0.0~alpha1) || true"))[0m
+[ERROR] Sorry, resolution of the request timed out.
+        Try to specify a more precise request, use a different solver, or increase the allowed time by setting OPAMSOLVERTIMEOUT to a bigger value (currently, it is set to 500.0 seconds).
+[01;2m[01;35m2024-07-12 23:37.18 ---> saved as "3d32e7611f497268807503c9f42d0bc73108dfcd160375faa3d0582c00649860"[0m
+
+[01;34m/home/opam: (run (shell  "opam reinstall --with-test --verbose hyper.1.0.0~alpha1;\
+                        \n        res=$?;\
+                        \n        test \"$res\" != 31 && exit \"$res\";\
+                        \n        export OPAMCLI=2.0;\
+                        \n        build_dir=$(opam var prefix)/.opam-switch/build;\
+                        \n        failed=$(ls \"$build_dir\");\
+                        \n        partial_fails=\"\";\
+                        \n        for pkg in $failed; do\
+                        \n          if opam show -f x-ci-accept-failures: \"$pkg\" | grep -qF \"\\\"debian-12\\\"\"; then\
+                        \n            echo \"A package failed and has been disabled for CI using the 'x-ci-accept-failures' field.\";\
+                        \n          fi;\
+                        \n          test \"$pkg\" != 'hyper.1.0.0~alpha1' && partial_fails=\"$partial_fails $pkg\";\
+                        \n        done;\
+                        \n        test \"${partial_fails}\" != \"\" && echo \"opam-repo-ci detected dependencies failing: ${partial_fails}\";\
+                        \n        exit 1"))[0m
+[ERROR] Sorry, resolution of the request timed out.
+        Try to specify a more precise request, use a different solver, or increase the allowed time by setting OPAMSOLVERTIMEOUT to a bigger value (currently, it is set to 500.0 seconds).
+'opam reinstall --with-test --verbose hyper.1.0.0~alpha1' failed.
+"/usr/bin/env" "bash" "-c" "opam reinstall --with-test --verbose hyper.1.0.0~alpha1;
+        res=$?;
+        test "$res" != 31 && exit "$res";
+        export OPAMCLI=2.0;
+        build_dir=$(opam var prefix)/.opam-switch/build;
+        failed=$(ls "$build_dir");
+        partial_fails="";
+        for pkg in $failed; do
+          if opam show -f x-ci-accept-failures: "$pkg" | grep -qF "\"debian-12\""; then
+            echo "A package failed and has been disabled for CI using the 'x-ci-accept-failures' field.";
+          fi;
+          test "$pkg" != 'hyper.1.0.0~alpha1' && partial_fails="$partial_fails $pkg";
+        done;
+        test "${partial_fails}" != "" && echo "opam-repo-ci detected dependencies failing: ${partial_fails}";
+        exit 1" failed with exit status 60
+2024-07-12 23:46.13: Job failed: Failed: Build failed
+2024-07-12 23:46.13: Log analysis:
+2024-07-12 23:46.13: >>> 
+[ERROR] Sorry, resolution of the request timed out.
+ (score = 20)
+2024-07-12 23:46.13: >>> 
+[ERROR] Sorry, resolution of the request timed out.
+ (score = 20)
+2024-07-12 23:46.13: Sorry, resolution of the request timed out.

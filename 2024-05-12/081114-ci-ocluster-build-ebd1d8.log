@@ -1,0 +1,1273 @@
+2024-05-12 08:11.14: New job: test amqp-client.2.2.2 with ocaml-base-compiler.4.14.2, using opam dev
+                              from https://github.com/ocaml/opam-repository.git#refs/pull/25861/head (87c3caa8e8025fbeb6be3fea49759b482963b0b2)
+                              on debian-12-ocaml-4.14/amd64
+
+To reproduce locally:
+
+cd $(mktemp -d)
+git clone --recursive "https://github.com/ocaml/opam-repository.git" && cd "opam-repository" && git fetch origin "refs/pull/25861/head" && git reset --hard 87c3caa8
+git fetch origin master
+git merge --no-edit fec8ff50cdf61e200702c668040d941b0c7a5f89
+cat > ../Dockerfile <<'END-OF-DOCKERFILE'
+[34mFROM ocaml/opam:debian-12-ocaml-4.14@sha256:35b1aa76181479f2ba40039ae0c5fa5d94e24300e1eb606117587a8e82e9d89e
+USER 1000:1000
+WORKDIR /home/opam
+RUN sudo ln -f /usr/bin/opam-dev /usr/bin/opam
+RUN opam init --reinit -ni
+RUN uname -rs && opam exec -- ocaml -version && opam --version
+ENV OPAMDOWNLOADJOBS="1"
+ENV OPAMERRLOGLEN="0"
+ENV OPAMSOLVERTIMEOUT="500"
+ENV OPAMPRECISETRACKING="1"
+ENV CI="true"
+ENV OPAM_REPO_CI="true"
+RUN rm -rf opam-repository/
+COPY --chown=1000:1000 . opam-repository/
+RUN opam repository set-url --strict default opam-repository/
+RUN opam update --depexts || true
+RUN opam pin add -k version -yn ocaml-base-compiler.4.14.2 4.14.2
+RUN opam reinstall ocaml-base-compiler.4.14.2; \
+    res=$?; \
+    test "$res" != 31 && exit "$res"; \
+    export OPAMCLI=2.0; \
+    build_dir=$(opam var prefix)/.opam-switch/build; \
+    failed=$(ls "$build_dir"); \
+    partial_fails=""; \
+    for pkg in $failed; do \
+    if opam show -f x-ci-accept-failures: "$pkg" | grep -qF "\"debian-12\""; then \
+    echo "A package failed and has been disabled for CI using the 'x-ci-accept-failures' field."; \
+    fi; \
+    test "$pkg" != 'ocaml-base-compiler.4.14.2' && partial_fails="$partial_fails $pkg"; \
+    done; \
+    test "${partial_fails}" != "" && echo "opam-repo-ci detected dependencies failing: ${partial_fails}"; \
+    exit 1
+RUN opam reinstall amqp-client.2.2.2; \
+    res=$?; \
+    test "$res" != 31 && exit "$res"; \
+    export OPAMCLI=2.0; \
+    build_dir=$(opam var prefix)/.opam-switch/build; \
+    failed=$(ls "$build_dir"); \
+    partial_fails=""; \
+    for pkg in $failed; do \
+    if opam show -f x-ci-accept-failures: "$pkg" | grep -qF "\"debian-12\""; then \
+    echo "A package failed and has been disabled for CI using the 'x-ci-accept-failures' field."; \
+    fi; \
+    test "$pkg" != 'amqp-client.2.2.2' && partial_fails="$partial_fails $pkg"; \
+    done; \
+    test "${partial_fails}" != "" && echo "opam-repo-ci detected dependencies failing: ${partial_fails}"; \
+    exit 1
+RUN (opam reinstall --with-test amqp-client.2.2.2) || true
+RUN opam reinstall --with-test --verbose amqp-client.2.2.2; \
+    res=$?; \
+    test "$res" != 31 && exit "$res"; \
+    export OPAMCLI=2.0; \
+    build_dir=$(opam var prefix)/.opam-switch/build; \
+    failed=$(ls "$build_dir"); \
+    partial_fails=""; \
+    for pkg in $failed; do \
+    if opam show -f x-ci-accept-failures: "$pkg" | grep -qF "\"debian-12\""; then \
+    echo "A package failed and has been disabled for CI using the 'x-ci-accept-failures' field."; \
+    fi; \
+    test "$pkg" != 'amqp-client.2.2.2' && partial_fails="$partial_fails $pkg"; \
+    done; \
+    test "${partial_fails}" != "" && echo "opam-repo-ci detected dependencies failing: ${partial_fails}"; \
+    exit 1
+[0m
+END-OF-DOCKERFILE
+docker build -f ../Dockerfile .
+
+2024-05-12 08:11.14: Using cache hint "ocaml/opam:debian-12-ocaml-4.14@sha256:35b1aa76181479f2ba40039ae0c5fa5d94e24300e1eb606117587a8e82e9d89e-ocaml-base-compiler.4.14.2-amqp-client.2.2.2-87c3caa8e8025fbeb6be3fea49759b482963b0b2"
+2024-05-12 08:11.14: Using OBuilder spec:
+((from ocaml/opam:debian-12-ocaml-4.14@sha256:35b1aa76181479f2ba40039ae0c5fa5d94e24300e1eb606117587a8e82e9d89e)
+ (user (uid 1000) (gid 1000))
+ (workdir /home/opam)
+ (run (shell "sudo ln -f /usr/bin/opam-dev /usr/bin/opam"))
+ (run (network host)
+      (shell "opam init --reinit --config .opamrc-sandbox -ni"))
+ (run (shell "uname -rs && opam exec -- ocaml -version && opam --version"))
+ (env OPAMDOWNLOADJOBS 1)
+ (env OPAMERRLOGLEN 0)
+ (env OPAMSOLVERTIMEOUT 500)
+ (env OPAMPRECISETRACKING 1)
+ (env CI true)
+ (env OPAM_REPO_CI true)
+ (run (shell "rm -rf opam-repository/"))
+ (copy (src .) (dst opam-repository/))
+ (run (shell "opam repository set-url --strict default opam-repository/"))
+ (run (network host)
+      (shell "opam update --depexts || true"))
+ (run (shell "opam pin add -k version -yn ocaml-base-compiler.4.14.2 4.14.2"))
+ (run (cache (opam-archives (target /home/opam/.opam/download-cache)))
+      (network host)
+      (shell  "opam reinstall ocaml-base-compiler.4.14.2;\
+             \n        res=$?;\
+             \n        test \"$res\" != 31 && exit \"$res\";\
+             \n        export OPAMCLI=2.0;\
+             \n        build_dir=$(opam var prefix)/.opam-switch/build;\
+             \n        failed=$(ls \"$build_dir\");\
+             \n        partial_fails=\"\";\
+             \n        for pkg in $failed; do\
+             \n          if opam show -f x-ci-accept-failures: \"$pkg\" | grep -qF \"\\\"debian-12\\\"\"; then\
+             \n            echo \"A package failed and has been disabled for CI using the 'x-ci-accept-failures' field.\";\
+             \n          fi;\
+             \n          test \"$pkg\" != 'ocaml-base-compiler.4.14.2' && partial_fails=\"$partial_fails $pkg\";\
+             \n        done;\
+             \n        test \"${partial_fails}\" != \"\" && echo \"opam-repo-ci detected dependencies failing: ${partial_fails}\";\
+             \n        exit 1"))
+ (run (cache (opam-archives (target /home/opam/.opam/download-cache)))
+      (network host)
+      (shell  "opam reinstall amqp-client.2.2.2;\
+             \n        res=$?;\
+             \n        test \"$res\" != 31 && exit \"$res\";\
+             \n        export OPAMCLI=2.0;\
+             \n        build_dir=$(opam var prefix)/.opam-switch/build;\
+             \n        failed=$(ls \"$build_dir\");\
+             \n        partial_fails=\"\";\
+             \n        for pkg in $failed; do\
+             \n          if opam show -f x-ci-accept-failures: \"$pkg\" | grep -qF \"\\\"debian-12\\\"\"; then\
+             \n            echo \"A package failed and has been disabled for CI using the 'x-ci-accept-failures' field.\";\
+             \n          fi;\
+             \n          test \"$pkg\" != 'amqp-client.2.2.2' && partial_fails=\"$partial_fails $pkg\";\
+             \n        done;\
+             \n        test \"${partial_fails}\" != \"\" && echo \"opam-repo-ci detected dependencies failing: ${partial_fails}\";\
+             \n        exit 1"))
+ (run (network host)
+      (shell "(opam reinstall --with-test amqp-client.2.2.2) || true"))
+ (run (shell  "opam reinstall --with-test --verbose amqp-client.2.2.2;\
+             \n        res=$?;\
+             \n        test \"$res\" != 31 && exit \"$res\";\
+             \n        export OPAMCLI=2.0;\
+             \n        build_dir=$(opam var prefix)/.opam-switch/build;\
+             \n        failed=$(ls \"$build_dir\");\
+             \n        partial_fails=\"\";\
+             \n        for pkg in $failed; do\
+             \n          if opam show -f x-ci-accept-failures: \"$pkg\" | grep -qF \"\\\"debian-12\\\"\"; then\
+             \n            echo \"A package failed and has been disabled for CI using the 'x-ci-accept-failures' field.\";\
+             \n          fi;\
+             \n          test \"$pkg\" != 'amqp-client.2.2.2' && partial_fails=\"$partial_fails $pkg\";\
+             \n        done;\
+             \n        test \"${partial_fails}\" != \"\" && echo \"opam-repo-ci detected dependencies failing: ${partial_fails}\";\
+             \n        exit 1"))
+)
+
+2024-05-12 08:11.14: Waiting for resource in pool OCluster
+2024-05-12 13:18.27: Waiting for worker…
+2024-05-12 13:21.58: Got resource from pool OCluster
+Building on x86-bm-c10.sw.ocaml.org
+All commits already cached
+Updating files:  79% (26860/33674)Updating files:  80% (26940/33674)Updating files:  81% (27276/33674)Updating files:  82% (27613/33674)Updating files:  83% (27950/33674)Updating files:  84% (28287/33674)Updating files:  85% (28623/33674)Updating files:  86% (28960/33674)Updating files:  87% (29297/33674)Updating files:  88% (29634/33674)Updating files:  89% (29970/33674)Updating files:  90% (30307/33674)Updating files:  91% (30644/33674)Updating files:  92% (30981/33674)Updating files:  93% (31317/33674)Updating files:  94% (31654/33674)Updating files:  95% (31991/33674)Updating files:  96% (32328/33674)Updating files:  97% (32664/33674)Updating files:  98% (33001/33674)Updating files:  99% (33338/33674)Updating files: 100% (33674/33674)Updating files: 100% (33674/33674), done.
+HEAD is now at fec8ff50cd Merge pull request #25853 from kit-ty-kate/fix-303
+Merge made by the 'ort' strategy.
+ packages/arch-x86_32/arch-x86_32.1/opam            | 22 ++++++
+ packages/arch-x86_64/arch-x86_64.1/opam            | 27 +++++++
+ packages/conf-c++/conf-c++.1.0/opam                | 10 ++-
+ packages/conf-g++/conf-g++.1.0/opam                | 10 ++-
+ .../conf-mingw-w64-gcc-i686.1/opam                 |  4 ++
+ .../conf-mingw-w64-gcc-x86_64.1/opam               |  4 ++
+ .../conf-mingw-w64-pkgconf-i686.1/opam             |  4 ++
+ .../conf-mingw-w64-pkgconf-x86_64.1/opam           |  4 ++
+ .../conf-mingw-w64-zstd-i686.1/opam                |  2 +
+ .../conf-mingw-w64-zstd-x86_64.1/opam              |  2 +
+ packages/conf-pkg-config/conf-pkg-config.3/opam    |  6 +-
+ packages/conf-zstd/conf-zstd.1.3.8/opam            | 12 +++-
+ packages/host-arch-arm32/host-arch-arm32.1/opam    | 16 +++++
+ packages/host-arch-arm64/host-arch-arm64.1/opam    | 16 +++++
+ packages/host-arch-ppc64/host-arch-ppc64.1/opam    | 17 +++++
+ .../host-arch-riscv64/host-arch-riscv64.1/opam     | 16 +++++
+ packages/host-arch-s390x/host-arch-s390x.1/opam    | 17 +++++
+ .../host-arch-unknown/host-arch-unknown.1/opam     | 16 +++++
+ packages/host-arch-x86_32/host-arch-x86_32.1/opam  | 17 +++++
+ packages/host-arch-x86_64/host-arch-x86_64.1/opam  | 17 +++++
+ .../host-system-mingw/host-system-mingw.1/opam     | 17 +++++
+ packages/host-system-msvc/host-system-msvc.1/opam  | 17 +++++
+ .../host-system-other/host-system-other.1/opam     | 15 ++++
+ packages/msys2-clang32/msys2-clang32.1/opam        | 17 +++++
+ packages/msys2-clang64/msys2-clang64.1/opam        | 17 +++++
+ packages/msys2-clangarm64/msys2-clangarm64.1/opam  | 17 +++++
+ packages/msys2-mingw32/msys2-mingw32.1/opam        | 17 +++++
+ packages/msys2-mingw64/msys2-mingw64.1/opam        | 17 +++++
+ packages/msys2-ucrt64/msys2-ucrt64.1/opam          | 17 +++++
+ packages/msys2/msys2.0.1.0/opam                    | 83 ++++++++++++++++++++++
+ .../ocaml-base-compiler.4.13.0/opam                | 44 ++++++++++++
+ .../ocaml-base-compiler.4.13.1/opam                | 44 ++++++++++++
+ .../ocaml-base-compiler.4.14.0/opam                | 44 ++++++++++++
+ .../ocaml-base-compiler.4.14.1/opam                | 44 ++++++++++++
+ .../ocaml-base-compiler.4.14.2/opam                | 44 ++++++++++++
+ .../ocaml-base-compiler.5.0.0/opam                 | 42 ++++++++++-
+ .../ocaml-base-compiler.5.1.0/opam                 | 40 +++++++++++
+ .../ocaml-base-compiler.5.1.1/opam                 | 40 +++++++++++
+ .../ocaml-base-compiler.5.2.0~alpha1/opam          | 43 ++++++++++-
+ .../ocaml-base-compiler.5.2.0~beta1/opam           | 43 ++++++++++-
+ .../ocaml-base-compiler.5.2.0~beta2/opam           | 43 ++++++++++-
+ .../ocaml-base-compiler.5.2.0~rc1/opam             | 43 ++++++++++-
+ packages/ocaml-beta/ocaml-beta.disabled/opam       |  1 +
+ packages/ocaml-config/ocaml-config.0/opam          |  3 +-
+ packages/ocaml-config/ocaml-config.1/opam          |  3 +-
+ packages/ocaml-config/ocaml-config.2/opam          |  2 +
+ .../ocaml-mingw32-env/ocaml-mingw32-env.1/opam     | 28 ++++++++
+ .../ocaml-mingw64-env/ocaml-mingw64-env.1/opam     | 28 ++++++++
+ packages/ocaml-msvc32-env/ocaml-msvc32-env.1/opam  | 38 ++++++++++
+ packages/ocaml-msvc64-env/ocaml-msvc64-env.1/opam  | 38 ++++++++++
+ .../ocaml-option-32bit/ocaml-option-32bit.1/opam   |  7 ++
+ .../ocaml-option-address-sanitizer.1/opam          |  7 ++
+ packages/ocaml-option-afl/ocaml-option-afl.1/opam  |  7 ++
+ .../ocaml-option-bytecode-only.1/opam              | 15 +++-
+ .../ocaml-option-default-unsafe-string.1/opam      |  7 ++
+ .../ocaml-option-flambda.1/opam                    |  7 ++
+ packages/ocaml-option-fp/ocaml-option-fp.1/opam    |  7 ++
+ .../ocaml-option-leak-sanitizer.1/opam             |  7 ++
+ .../ocaml-option-mingw/ocaml-option-mingw.1/opam   | 19 +++++
+ .../ocaml-option-musl/ocaml-option-musl.1/opam     |  7 ++
+ packages/ocaml-option-nnp/ocaml-option-nnp.1/opam  |  7 ++
+ .../ocaml-option-nnpchecker.1/opam                 | 10 ++-
+ .../ocaml-option-no-compression.1/opam             |  7 ++
+ .../ocaml-option-no-flat-float-array.1/opam        |  7 ++
+ .../ocaml-option-spacetime.1/opam                  |  7 ++
+ .../ocaml-option-static/ocaml-option-static.1/opam |  7 ++
+ .../ocaml-option-tsan/ocaml-option-tsan.1/opam     |  8 +++
+ .../ocaml-options-only-afl.1/opam                  |  8 +++
+ .../ocaml-options-only-flambda-fp.1/opam           |  8 +++
+ .../ocaml-options-only-flambda.1/opam              |  8 +++
+ .../ocaml-options-only-fp.1/opam                   |  8 +++
+ .../ocaml-options-only-nnp.1/opam                  |  8 +++
+ .../ocaml-options-only-nnpchecker.1/opam           |  8 +++
+ .../opam                                           |  8 +++
+ .../ocaml-options-only-no-flat-float-array.1/opam  |  8 +++
+ .../ocaml-options-only-tsan.1/opam                 |  8 +++
+ .../ocaml-options-vanilla.1/opam                   | 16 ++++-
+ packages/ocaml-system/ocaml-system.4.13.0/opam     | 39 +++++++++-
+ packages/ocaml-system/ocaml-system.4.13.1/opam     | 39 +++++++++-
+ packages/ocaml-system/ocaml-system.4.14.0/opam     | 39 +++++++++-
+ packages/ocaml-system/ocaml-system.4.14.1/opam     | 39 +++++++++-
+ packages/ocaml-system/ocaml-system.4.14.2/opam     | 39 +++++++++-
+ packages/ocaml-system/ocaml-system.5.0.0/opam      | 40 ++++++++++-
+ packages/ocaml-system/ocaml-system.5.1.0/opam      | 42 ++++++++++-
+ packages/ocaml-system/ocaml-system.5.1.1/opam      | 42 ++++++++++-
+ .../ocaml-variants.4.13.0+options/opam             | 43 +++++++++++
+ .../ocaml-variants.4.13.1+options/opam             | 43 +++++++++++
+ .../ocaml-variants.4.13.2+trunk/opam               | 44 ++++++++++++
+ .../ocaml-variants.4.14.0+options/opam             | 43 +++++++++++
+ .../ocaml-variants.4.14.1+options/opam             | 43 +++++++++++
+ .../ocaml-variants.4.14.2+options/opam             | 43 +++++++++++
+ .../ocaml-variants.4.14.3+trunk/opam               | 44 ++++++++++++
+ .../ocaml-variants.5.0.0+options/opam              | 46 +++++++++++-
+ .../ocaml-variants/ocaml-variants.5.0.1+trunk/opam | 48 ++++++++++++-
+ .../ocaml-variants.5.1.0+options/opam              | 45 +++++++++++-
+ .../ocaml-variants.5.1.1+effect-syntax/opam        | 46 +++++++++++-
+ .../ocaml-variants.5.1.1+options/opam              | 45 +++++++++++-
+ .../ocaml-variants/ocaml-variants.5.1.2+trunk/opam | 61 +++++++++++-----
+ .../ocaml-variants/ocaml-variants.5.2.0+trunk/opam | 46 +++++++++++-
+ .../ocaml-variants.5.2.0~alpha1+options/opam       | 46 +++++++++++-
+ .../ocaml-variants.5.2.0~beta1+options/opam        | 46 +++++++++++-
+ .../ocaml-variants.5.2.0~beta2+options/opam        | 46 +++++++++++-
+ .../ocaml-variants.5.2.0~rc1+options/opam          | 46 +++++++++++-
+ .../ocaml-variants/ocaml-variants.5.3.0+trunk/opam | 49 ++++++++++++-
+ packages/ocaml/ocaml.4.13.0/opam                   |  3 +
+ packages/ocaml/ocaml.4.13.1/opam                   |  3 +
+ packages/ocaml/ocaml.4.13.2/opam                   |  3 +
+ packages/ocaml/ocaml.4.14.0/opam                   |  3 +
+ packages/ocaml/ocaml.4.14.1/opam                   |  3 +
+ packages/ocaml/ocaml.4.14.2/opam                   |  3 +
+ packages/ocaml/ocaml.4.14.3/opam                   |  3 +
+ packages/ocaml/ocaml.5.0.0/opam                    |  3 +
+ packages/ocaml/ocaml.5.0.1/opam                    |  3 +
+ packages/ocaml/ocaml.5.1.0/opam                    |  3 +
+ packages/ocaml/ocaml.5.1.1/opam                    |  3 +
+ packages/ocaml/ocaml.5.1.2/opam                    |  3 +
+ packages/ocaml/ocaml.5.2.0/opam                    |  3 +
+ packages/ocaml/ocaml.5.3.0/opam                    |  3 +
+ packages/system-mingw/system-mingw.1/opam          | 20 ++++++
+ packages/system-msvc/system-msvc.1/opam            | 20 ++++++
+ 120 files changed, 2573 insertions(+), 60 deletions(-)
+ create mode 100644 packages/arch-x86_32/arch-x86_32.1/opam
+ create mode 100644 packages/arch-x86_64/arch-x86_64.1/opam
+ create mode 100644 packages/host-arch-arm32/host-arch-arm32.1/opam
+ create mode 100644 packages/host-arch-arm64/host-arch-arm64.1/opam
+ create mode 100644 packages/host-arch-ppc64/host-arch-ppc64.1/opam
+ create mode 100644 packages/host-arch-riscv64/host-arch-riscv64.1/opam
+ create mode 100644 packages/host-arch-s390x/host-arch-s390x.1/opam
+ create mode 100644 packages/host-arch-unknown/host-arch-unknown.1/opam
+ create mode 100644 packages/host-arch-x86_32/host-arch-x86_32.1/opam
+ create mode 100644 packages/host-arch-x86_64/host-arch-x86_64.1/opam
+ create mode 100644 packages/host-system-mingw/host-system-mingw.1/opam
+ create mode 100644 packages/host-system-msvc/host-system-msvc.1/opam
+ create mode 100644 packages/host-system-other/host-system-other.1/opam
+ create mode 100644 packages/msys2-clang32/msys2-clang32.1/opam
+ create mode 100644 packages/msys2-clang64/msys2-clang64.1/opam
+ create mode 100644 packages/msys2-clangarm64/msys2-clangarm64.1/opam
+ create mode 100644 packages/msys2-mingw32/msys2-mingw32.1/opam
+ create mode 100644 packages/msys2-mingw64/msys2-mingw64.1/opam
+ create mode 100644 packages/msys2-ucrt64/msys2-ucrt64.1/opam
+ create mode 100644 packages/msys2/msys2.0.1.0/opam
+ create mode 100644 packages/ocaml-mingw32-env/ocaml-mingw32-env.1/opam
+ create mode 100644 packages/ocaml-mingw64-env/ocaml-mingw64-env.1/opam
+ create mode 100644 packages/ocaml-msvc32-env/ocaml-msvc32-env.1/opam
+ create mode 100644 packages/ocaml-msvc64-env/ocaml-msvc64-env.1/opam
+ create mode 100644 packages/ocaml-option-mingw/ocaml-option-mingw.1/opam
+ create mode 100644 packages/system-mingw/system-mingw.1/opam
+ create mode 100644 packages/system-msvc/system-msvc.1/opam
+
+[01;34m(from ocaml/opam:debian-12-ocaml-4.14@sha256:35b1aa76181479f2ba40039ae0c5fa5d94e24300e1eb606117587a8e82e9d89e)[0m
+[01;2m[01;35m2024-05-12 13:22.01 ---> using "6bc7e89b5725106f75c11a8b774d971b425f7dab532e626727166f8fc8501d75" from cache[0m
+
+[01;34m/: (user (uid 1000) (gid 1000))[0m
+
+[01;34m/: (workdir /home/opam)[0m
+
+[01;34m/home/opam: (run (shell "sudo ln -f /usr/bin/opam-dev /usr/bin/opam"))[0m
+[01;2m[01;35m2024-05-12 13:22.01 ---> using "6c46928c87bd33edd5e231c6d2911f55a5eec75b812a3d7fda9fca2b12f57d18" from cache[0m
+
+[01;34m/home/opam: (run (network host)
+                 (shell "opam init --reinit --config .opamrc-sandbox -ni"))[0m
+Configuring from /home/opam/.opamrc-sandbox, then /home/opam/.opamrc, and finally from built-in defaults.
+Checking for available remotes: rsync and local, git.
+  - you won't be able to use mercurial repositories unless you install the hg command on your system.
+  - you won't be able to use darcs repositories unless you install the darcs command on your system.
+
+This development version of opam requires an update to the layout of /home/opam/.opam from version 2.0 to version 2.2~alpha, which can't be reverted.
+You may want to back it up before going further.
+
+Continue? [y/n] y
+[NOTE] The 'jobs' option was reset, its value was 255 and its new value will vary according to the current number of cores on your machine. You can restore the fixed value using:
+           opam option jobs=255 --global
+Format upgrade done.
+
+<><> Updating repositories ><><><><><><><><><><><><><><><><><><><><><><><><><><>
+[default] synchronised from file:///home/opam/opam-repository
+[01;2m[01;35m2024-05-12 13:22.01 ---> using "3788b182527ec34e6f4ace4f954db383e2985afce7b5a5d65b696ddea02578e3" from cache[0m
+
+[01;34m/home/opam: (run (shell "uname -rs && opam exec -- ocaml -version && opam --version"))[0m
+Linux 5.15.0-106-generic
+The OCaml toplevel, version 4.14.2
+2.2.0~beta3~dev
+[01;2m[01;35m2024-05-12 13:22.01 ---> using "c7bf2e2bd9245a43ecc8d21b4a2e1fa9eed2aa27ec394d7eebda31d38857e6c9" from cache[0m
+
+[01;34m/home/opam: (env OPAMDOWNLOADJOBS 1)[0m
+
+[01;34m/home/opam: (env OPAMERRLOGLEN 0)[0m
+
+[01;34m/home/opam: (env OPAMSOLVERTIMEOUT 500)[0m
+
+[01;34m/home/opam: (env OPAMPRECISETRACKING 1)[0m
+
+[01;34m/home/opam: (env CI true)[0m
+
+[01;34m/home/opam: (env OPAM_REPO_CI true)[0m
+
+[01;34m/home/opam: (run (shell "rm -rf opam-repository/"))[0m
+[01;2m[01;35m2024-05-12 13:22.01 ---> using "112dde4704bddd0267c8982796c8bcbcc4f65cf21c3dfeb42addcfb7cee9ac89" from cache[0m
+
+[01;34m/home/opam: (copy (src .) (dst opam-repository/))[0m
+[01;2m[01;35m2024-05-12 13:22.03 ---> using "81c008595ea254c629714ffb6126a8f2f7a59fbb78992f4096feaaba845847b3" from cache[0m
+
+[01;34m/home/opam: (run (shell "opam repository set-url --strict default opam-repository/"))[0m
+[default] Initialised
+[01;2m[01;35m2024-05-12 13:22.03 ---> using "3ffd0f7fd69ea56041daa09016d5a175eeb07b030f297d6da250f3ef97e5ea51" from cache[0m
+
+[01;34m/home/opam: (run (network host)
+                 (shell "opam update --depexts || true"))[0m
++ /usr/bin/sudo "apt-get" "update"
+- Hit:1 http://deb.debian.org/debian bookworm InRelease
+- Get:2 http://deb.debian.org/debian bookworm-updates InRelease [55.4 kB]
+- Get:3 http://deb.debian.org/debian-security bookworm-security InRelease [48.0 kB]
+- Get:4 http://deb.debian.org/debian bookworm-updates/main amd64 Packages.diff/Index [10.6 kB]
+- Get:5 http://deb.debian.org/debian bookworm-updates/main amd64 Packages T-2024-04-23-2036.10-F-2024-04-23-2036.10.pdiff [1595 B]
+- Get:5 http://deb.debian.org/debian bookworm-updates/main amd64 Packages T-2024-04-23-2036.10-F-2024-04-23-2036.10.pdiff [1595 B]
+- Get:6 http://deb.debian.org/debian-security bookworm-security/main amd64 Packages [155 kB]
+- Fetched 271 kB in 0s (1003 kB/s)
+- Reading package lists...
+[01;2m[01;35m2024-05-12 13:22.03 ---> using "83fb76dfeeaa5940be713d917d4bf4baf4c7446d581209f0c1fe4381da1a1e09" from cache[0m
+
+[01;34m/home/opam: (run (shell "opam pin add -k version -yn ocaml-base-compiler.4.14.2 4.14.2"))[0m
+[NOTE] Pinning unchanged
+ocaml-base-compiler is now pinned to version 4.14.2
+[01;2m[01;35m2024-05-12 13:22.03 ---> using "b4b293f0a6e730f1fea48d2d6fe5e01ea18be8c9f8accef6e48f7b3c2ab7429e" from cache[0m
+
+[01;34m/home/opam: (run (cache (opam-archives (target /home/opam/.opam/download-cache)))
+                 (network host)
+                 (shell  "opam reinstall ocaml-base-compiler.4.14.2;\
+                        \n        res=$?;\
+                        \n        test \"$res\" != 31 && exit \"$res\";\
+                        \n        export OPAMCLI=2.0;\
+                        \n        build_dir=$(opam var prefix)/.opam-switch/build;\
+                        \n        failed=$(ls \"$build_dir\");\
+                        \n        partial_fails=\"\";\
+                        \n        for pkg in $failed; do\
+                        \n          if opam show -f x-ci-accept-failures: \"$pkg\" | grep -qF \"\\\"debian-12\\\"\"; then\
+                        \n            echo \"A package failed and has been disabled for CI using the 'x-ci-accept-failures' field.\";\
+                        \n          fi;\
+                        \n          test \"$pkg\" != 'ocaml-base-compiler.4.14.2' && partial_fails=\"$partial_fails $pkg\";\
+                        \n        done;\
+                        \n        test \"${partial_fails}\" != \"\" && echo \"opam-repo-ci detected dependencies failing: ${partial_fails}\";\
+                        \n        exit 1"))[0m
+The following actions will be performed:
+=== recompile 4 packages
+  - recompile ocaml               4.14.2          [uses ocaml-base-compiler]
+  - recompile ocaml-base-compiler 4.14.2 (pinned)
+  - recompile ocaml-config        2               [uses ocaml-base-compiler]
+  - recompile opam-depext         1.2.1-1         [uses ocaml]
+=== install 2 packages
+  - install   host-arch-x86_64    1
+  - install   host-system-other   1
+
+<><> Processing actions <><><><><><><><><><><><><><><><><><><><><><><><><><><><>
+-> installed host-arch-x86_64.1
+-> installed host-system-other.1
+-> retrieved ocaml-base-compiler.4.14.2  (cached)
+-> retrieved opam-depext.1.2.1-1  (cached)
+-> removed   opam-depext.1.2.1-1
+-> removed   ocaml.4.14.2
+-> removed   ocaml-config.2
+-> removed   ocaml-base-compiler.4.14.2
+-> installed ocaml-base-compiler.4.14.2
+-> installed ocaml-config.2
+-> installed ocaml.4.14.2
+-> installed opam-depext.1.2.1-1
+Done.
+
+<><> opam-depext.1.2.1-1 installed successfully <><><><><><><><><><><><><><><><>
+=> opam-depext is unnecessary when used with opam >= 2.1. Please use opam install directly instead
+# Run eval $(opam env) to update the current shell environment
+[01;2m[01;35m2024-05-12 13:22.03 ---> using "e1023d8118c4ee16d79e70826b5b42e5a0509b62db19ada1b9268cdfe6786a03" from cache[0m
+
+[01;34m/home/opam: (run (cache (opam-archives (target /home/opam/.opam/download-cache)))
+                 (network host)
+                 (shell  "opam reinstall amqp-client.2.2.2;\
+                        \n        res=$?;\
+                        \n        test \"$res\" != 31 && exit \"$res\";\
+                        \n        export OPAMCLI=2.0;\
+                        \n        build_dir=$(opam var prefix)/.opam-switch/build;\
+                        \n        failed=$(ls \"$build_dir\");\
+                        \n        partial_fails=\"\";\
+                        \n        for pkg in $failed; do\
+                        \n          if opam show -f x-ci-accept-failures: \"$pkg\" | grep -qF \"\\\"debian-12\\\"\"; then\
+                        \n            echo \"A package failed and has been disabled for CI using the 'x-ci-accept-failures' field.\";\
+                        \n          fi;\
+                        \n          test \"$pkg\" != 'amqp-client.2.2.2' && partial_fails=\"$partial_fails $pkg\";\
+                        \n        done;\
+                        \n        test \"${partial_fails}\" != \"\" && echo \"opam-repo-ci detected dependencies failing: ${partial_fails}\";\
+                        \n        exit 1"))[0m
+amqp-client.2.2.2 is not installed. Install it? [y/n] y
+The following actions will be performed:
+=== install 10 packages
+  - install amqp-client   2.2.2
+  - install base-bytes    base   [required by ocplib-endian]
+  - install cppo          1.6.9  [required by ocplib-endian]
+  - install dune          3.15.2 [required by amqp-client]
+  - install ezxmlm        1.1.0  [required by amqp-client]
+  - install ocamlbuild    0.14.3 [required by xmlm]
+  - install ocamlfind     1.9.6  [required by xmlm, base-bytes]
+  - install ocplib-endian 1.2    [required by amqp-client]
+  - install topkg         1.0.7  [required by xmlm]
+  - install xmlm          1.4.0  [required by ezxmlm]
+
+<><> Processing actions <><><><><><><><><><><><><><><><><><><><><><><><><><><><>
+-> retrieved amqp-client.2.2.2  (cached)
+-> retrieved cppo.1.6.9  (cached)
+-> retrieved dune.3.15.2  (cached)
+-> retrieved ezxmlm.1.1.0  (cached)
+-> retrieved ocamlbuild.0.14.3  (cached)
+-> retrieved ocamlfind.1.9.6  (cached)
+-> retrieved ocplib-endian.1.2  (cached)
+-> retrieved topkg.1.0.7  (cached)
+-> retrieved xmlm.1.4.0  (cached)
+-> installed ocamlfind.1.9.6
+-> installed base-bytes.base
+-> installed ocamlbuild.0.14.3
+-> installed topkg.1.0.7
+-> installed xmlm.1.4.0
+-> installed dune.3.15.2
+-> installed ezxmlm.1.1.0
+-> installed cppo.1.6.9
+-> installed ocplib-endian.1.2
+-> installed amqp-client.2.2.2
+Done.
+# Run eval $(opam env) to update the current shell environment
+[01;2m[01;35m2024-05-12 13:22.57 ---> saved as "4ff36245055af08a0281cb2fc8ce767658aa977b78b3f37d286df4fd9425da4c"[0m
+
+[01;34m/home/opam: (run (network host)
+                 (shell "(opam reinstall --with-test amqp-client.2.2.2) || true"))[0m
+[ERROR] Sorry, resolution of the request timed out.
+        Try to specify a more precise request, use a different solver, or increase the allowed time by setting OPAMSOLVERTIMEOUT to a bigger value (currently, it is set to 500.0 seconds).
+[01;2m[01;35m2024-05-12 13:31.35 ---> saved as "c8097ee1c94db8d9df32ada04f701bd2709ebb31b2a297b8c6d8a9c736531dc2"[0m
+
+[01;34m/home/opam: (run (shell  "opam reinstall --with-test --verbose amqp-client.2.2.2;\
+                        \n        res=$?;\
+                        \n        test \"$res\" != 31 && exit \"$res\";\
+                        \n        export OPAMCLI=2.0;\
+                        \n        build_dir=$(opam var prefix)/.opam-switch/build;\
+                        \n        failed=$(ls \"$build_dir\");\
+                        \n        partial_fails=\"\";\
+                        \n        for pkg in $failed; do\
+                        \n          if opam show -f x-ci-accept-failures: \"$pkg\" | grep -qF \"\\\"debian-12\\\"\"; then\
+                        \n            echo \"A package failed and has been disabled for CI using the 'x-ci-accept-failures' field.\";\
+                        \n          fi;\
+                        \n          test \"$pkg\" != 'amqp-client.2.2.2' && partial_fails=\"$partial_fails $pkg\";\
+                        \n        done;\
+                        \n        test \"${partial_fails}\" != \"\" && echo \"opam-repo-ci detected dependencies failing: ${partial_fails}\";\
+                        \n        exit 1"))[0m
+The following actions will be performed:
+=== recompile 1 package
+  - recompile amqp-client             2.2.2
+=== install 63 packages
+  - install   async                   v0.14.0 [required by amqp-client]
+  - install   async_kernel            v0.14.0 [required by async]
+  - install   async_rpc_kernel        v0.14.0 [required by async]
+  - install   async_unix              v0.14.0 [required by async]
+  - install   base                    v0.14.3 [required by core_kernel]
+  - install   base_bigstring          v0.14.0 [required by core_kernel]
+  - install   base_quickcheck         v0.14.1 [required by core_kernel]
+  - install   bin_prot                v0.14.1 [required by core_kernel]
+  - install   core                    v0.14.1 [required by async]
+  - install   core_kernel             v0.14.2 [required by async]
+  - install   dune-configurator       2.7.0   [required by lwt]
+  - install   fieldslib               v0.14.0 [required by core_kernel]
+  - install   jane-street-headers     v0.14.0 [required by core_kernel]
+  - install   jst-config              v0.14.1 [required by core_kernel, core]
+  - install   lwt                     5.7.0   [required by amqp-client]
+  - install   num                     1.5     [required by sexplib]
+  - install   ocaml-compiler-libs     v0.12.4 [required by ppxlib]
+  - install   octavius                1.2.2   [required by ppx_js_style]
+  - install   parsexp                 v0.14.2 [required by sexplib]
+  - install   ppx_assert              v0.14.0 [required by core_kernel]
+  - install   ppx_base                v0.14.0 [required by core_kernel]
+  - install   ppx_bench               v0.14.1 [required by ppx_jane]
+  - install   ppx_bin_prot            v0.14.0 [required by ppx_jane]
+  - install   ppx_cold                v0.14.0 [required by ppx_base]
+  - install   ppx_compare             v0.14.0 [required by ppx_base, bin_prot]
+  - install   ppx_custom_printf       v0.14.1 [required by ppx_jane]
+  - install   ppx_derivers            1.2.1   [required by ppxlib]
+  - install   ppx_enumerate           v0.14.0 [required by ppx_base]
+  - install   ppx_expect              v0.14.2 [required by ppx_jane]
+  - install   ppx_fields_conv         v0.14.2 [required by ppx_jane]
+  - install   ppx_fixed_literal       v0.14.0 [required by ppx_jane]
+  - install   ppx_hash                v0.14.0 [required by core_kernel]
+  - install   ppx_here                v0.14.0 [required by ppx_jane]
+  - install   ppx_inline_test         v0.14.1 [required by core_kernel]
+  - install   ppx_jane                v0.14.0 [required by async]
+  - install   ppx_js_style            v0.14.1 [required by ppx_base]
+  - install   ppx_let                 v0.14.0 [required by ppx_jane]
+  - install   ppx_module_timer        v0.14.0 [required by ppx_jane]
+  - install   ppx_optcomp             v0.14.3 [required by core_kernel]
+  - install   ppx_optional            v0.14.0 [required by ppx_jane]
+  - install   ppx_pipebang            v0.14.0 [required by ppx_jane]
+  - install   ppx_sexp_conv           v0.14.3 [required by core_kernel]
+  - install   ppx_sexp_message        v0.14.1 [required by core_kernel]
+  - install   ppx_sexp_value          v0.14.0 [required by ppx_jane]
+  - install   ppx_stable              v0.14.1 [required by ppx_jane]
+  - install   ppx_string              v0.14.1 [required by ppx_jane]
+  - install   ppx_typerep_conv        v0.14.2 [required by ppx_jane]
+  - install   ppx_variants_conv       v0.14.2 [required by ppx_jane]
+  - install   ppxlib                  0.25.1  [required by ppx_jane]
+  - install   protocol_version_header v0.14.0 [required by async_rpc_kernel]
+  - install   re                      1.11.0  [required by ppx_expect]
+  - install   seq                     base    [required by re]
+  - install   sexplib                 v0.14.0 [required by core_kernel, core]
+  - install   sexplib0                v0.14.0 [required by base, sexplib]
+  - install   spawn                   v0.15.1 [required by core]
+  - install   splittable_random       v0.14.0 [required by core_kernel]
+  - install   stdio                   v0.14.0 [required by core_kernel]
+  - install   stdlib-shims            0.3.0   [required by ppxlib]
+  - install   textutils               v0.14.0 [required by async]
+  - install   time_now                v0.14.0 [required by core_kernel]
+  - install   timezone                v0.14.0 [required by core]
+  - install   typerep                 v0.14.0 [required by core_kernel]
+  - install   variantslib             v0.14.0 [required by core_kernel]
+
+<><> Processing actions <><><><><><><><><><><><><><><><><><><><><><><><><><><><>
+Processing  1/193: [amqp-client.2.2.2: http]
+[ERROR] Failed to get sources of amqp-client.2.2.2: Curl failed
+Processing  2/193: [async.v0.14.0: http]
+[ERROR] Failed to get sources of async.v0.14.0: Curl failed
+Processing  3/193: [async_kernel.v0.14.0: http]
+[ERROR] Failed to get sources of async_kernel.v0.14.0: Curl failed
+Processing  4/193: [async_rpc_kernel.v0.14.0: http]
+[ERROR] Failed to get sources of async_rpc_kernel.v0.14.0: Curl failed
+Processing  5/193: [async_unix.v0.14.0: http]
+[ERROR] Failed to get sources of async_unix.v0.14.0: Curl failed
+Processing  6/193: [base.v0.14.3: http]
+[ERROR] Failed to get sources of base.v0.14.3: Curl failed
+Processing  7/193: [base_bigstring.v0.14.0: http]
+[ERROR] Failed to get sources of base_bigstring.v0.14.0: Curl failed
+Processing  8/193: [base_quickcheck.v0.14.1: http]
+[ERROR] Failed to get sources of base_quickcheck.v0.14.1: Curl failed
+Processing  9/193: [bin_prot.v0.14.1: http]
+[ERROR] Failed to get sources of bin_prot.v0.14.1: Curl failed
+Processing 10/193: [core.v0.14.1: http]
+[ERROR] Failed to get sources of core.v0.14.1: Curl failed
+Processing 11/193: [core_kernel.v0.14.2: http]
+[ERROR] Failed to get sources of core_kernel.v0.14.2: Curl failed
+Processing 12/193: [dune-configurator.2.7.0: http]
+[ERROR] Failed to get sources of dune-configurator.2.7.0: Curl failed
+Processing 13/193: [fieldslib.v0.14.0: http]
+Processing 14/193: [fieldslib.v0.14.0: http]
+Processing 15/193: [fieldslib.v0.14.0: http]
+[ERROR] Failed to get sources of fieldslib.v0.14.0: Curl failed
+Processing 16/193: [jane-street-headers.v0.14.0: http]
+[ERROR] Failed to get sources of jane-street-headers.v0.14.0: Curl failed
+Processing 17/193: [jst-config.v0.14.1: http]
+Processing 18/193: [jst-config.v0.14.1: http]
+Processing 19/193: [jst-config.v0.14.1: http]
+[ERROR] Failed to get sources of jst-config.v0.14.1: Curl failed
+Processing 20/193: [lwt.5.7.0: http]
+[ERROR] Failed to get sources of lwt.5.7.0: Curl failed
+Processing 21/193: [num.1.5: http]
+Processing 22/193: [num.1.5: http]
+Processing 23/193: [num.1.5: http]
+[ERROR] Failed to get sources of num.1.5: Curl failed
+Processing 24/193: [ocaml-compiler-libs.v0.12.4: http]
+Processing 25/193: [ocaml-compiler-libs.v0.12.4: http]
+Processing 26/193: [ocaml-compiler-libs.v0.12.4: http]
+[ERROR] Failed to get sources of ocaml-compiler-libs.v0.12.4: Curl failed
+Processing 27/193: [octavius.1.2.2: http]
+Processing 28/193: [octavius.1.2.2: http]
+Processing 29/193: [octavius.1.2.2: http]
+[ERROR] Failed to get sources of octavius.1.2.2: Curl failed
+Processing 30/193: [parsexp.v0.14.2: http]
+Processing 31/193: [parsexp.v0.14.2: http]
+Processing 32/193: [parsexp.v0.14.2: http]
+[ERROR] Failed to get sources of parsexp.v0.14.2: Curl failed
+Processing 33/193: [ppx_assert.v0.14.0: http]
+[ERROR] Failed to get sources of ppx_assert.v0.14.0: Curl failed
+Processing 34/193: [ppx_base.v0.14.0: http]
+[ERROR] Failed to get sources of ppx_base.v0.14.0: Curl failed
+Processing 35/193: [ppx_bench.v0.14.1: http]
+[ERROR] Failed to get sources of ppx_bench.v0.14.1: Curl failed
+Processing 36/193: [ppx_bin_prot.v0.14.0: http]
+[ERROR] Failed to get sources of ppx_bin_prot.v0.14.0: Curl failed
+Processing 37/193: [ppx_cold.v0.14.0: http]
+[ERROR] Failed to get sources of ppx_cold.v0.14.0: Curl failed
+Processing 38/193: [ppx_compare.v0.14.0: http]
+[ERROR] Failed to get sources of ppx_compare.v0.14.0: Curl failed
+Processing 39/193: [ppx_custom_printf.v0.14.1: http]
+[ERROR] Failed to get sources of ppx_custom_printf.v0.14.1: Curl failed
+Processing 40/193: [ppx_derivers.1.2.1: http]
+[ERROR] Failed to get sources of ppx_derivers.1.2.1: Curl failed
+Processing 41/193: [ppx_enumerate.v0.14.0: http]
+Processing 42/193: [ppx_enumerate.v0.14.0: http]
+Processing 43/193: [ppx_enumerate.v0.14.0: http]
+[ERROR] Failed to get sources of ppx_enumerate.v0.14.0: Curl failed
+Processing 44/193: [ppx_expect.v0.14.2: http]
+[ERROR] Failed to get sources of ppx_expect.v0.14.2: Curl failed
+Processing 45/193: [ppx_fields_conv.v0.14.2: http]
+[ERROR] Failed to get sources of ppx_fields_conv.v0.14.2: Curl failed
+Processing 46/193: [ppx_fixed_literal.v0.14.0: http]
+[ERROR] Failed to get sources of ppx_fixed_literal.v0.14.0: Curl failed
+Processing 47/193: [ppx_hash.v0.14.0: http]
+[ERROR] Failed to get sources of ppx_hash.v0.14.0: Curl failed
+Processing 48/193: [ppx_here.v0.14.0: http]
+[ERROR] Failed to get sources of ppx_here.v0.14.0: Curl failed
+Processing 49/193: [ppx_inline_test.v0.14.1: http]
+[ERROR] Failed to get sources of ppx_inline_test.v0.14.1: Curl failed
+Processing 50/193: [ppx_jane.v0.14.0: http]
+[ERROR] Failed to get sources of ppx_jane.v0.14.0: Curl failed
+Processing 51/193: [ppx_js_style.v0.14.1: http]
+[ERROR] Failed to get sources of ppx_js_style.v0.14.1: Curl failed
+Processing 52/193: [ppx_let.v0.14.0: http]
+[ERROR] Failed to get sources of ppx_let.v0.14.0: Curl failed
+Processing 53/193: [ppx_module_timer.v0.14.0: http]
+[ERROR] Failed to get sources of ppx_module_timer.v0.14.0: Curl failed
+Processing 54/193: [ppx_optcomp.v0.14.3: http]
+[ERROR] Failed to get sources of ppx_optcomp.v0.14.3: Curl failed
+Processing 55/193: [ppx_optional.v0.14.0: http]
+[ERROR] Failed to get sources of ppx_optional.v0.14.0: Curl failed
+Processing 56/193: [ppx_pipebang.v0.14.0: http]
+[ERROR] Failed to get sources of ppx_pipebang.v0.14.0: Curl failed
+Processing 57/193: [ppx_sexp_conv.v0.14.3: http]
+[ERROR] Failed to get sources of ppx_sexp_conv.v0.14.3: Curl failed
+Processing 58/193: [ppx_sexp_message.v0.14.1: http]
+[ERROR] Failed to get sources of ppx_sexp_message.v0.14.1: Curl failed
+Processing 59/193: [ppx_sexp_value.v0.14.0: http]
+[ERROR] Failed to get sources of ppx_sexp_value.v0.14.0: Curl failed
+Processing 60/193: [ppx_stable.v0.14.1: http]
+[ERROR] Failed to get sources of ppx_stable.v0.14.1: Curl failed
+Processing 61/193: [ppx_string.v0.14.1: http]
+[ERROR] Failed to get sources of ppx_string.v0.14.1: Curl failed
+Processing 62/193: [ppx_typerep_conv.v0.14.2: http]
+[ERROR] Failed to get sources of ppx_typerep_conv.v0.14.2: Curl failed
+Processing 63/193: [ppx_variants_conv.v0.14.2: http]
+[ERROR] Failed to get sources of ppx_variants_conv.v0.14.2: Curl failed
+Processing 64/193: [ppxlib.0.25.1: http]
+[ERROR] Failed to get sources of ppxlib.0.25.1: Curl failed
+Processing 65/193: [protocol_version_header.v0.14.0: http]
+[ERROR] Failed to get sources of protocol_version_header.v0.14.0: Curl failed
+Processing 66/193: [re.1.11.0: http]
+[ERROR] Failed to get sources of re.1.11.0: Curl failed
+Processing 68/193: [sexplib.v0.14.0: http]
+Processing 69/193: [sexplib.v0.14.0: http]
+-> installed seq.base
+Processing 70/193: [sexplib.v0.14.0: http]
+Processing 71/193: [sexplib.v0.14.0: http]
+Processing 72/193: [sexplib.v0.14.0: http]
+[ERROR] Failed to get sources of sexplib.v0.14.0: Curl failed
+Processing 73/193: [sexplib0.v0.14.0: http]
+[ERROR] Failed to get sources of sexplib0.v0.14.0: Curl failed
+Processing 74/193: [spawn.v0.15.1: http]
+Processing 75/193: [spawn.v0.15.1: http]
+Processing 76/193: [spawn.v0.15.1: http]
+Processing 77/193: [spawn.v0.15.1: http]
+Processing 78/193: [spawn.v0.15.1: http]
+Processing 79/193: [spawn.v0.15.1: http]
+Processing 80/193: [spawn.v0.15.1: http]
+Processing 81/193: [spawn.v0.15.1: http]
+Processing 82/193: [spawn.v0.15.1: http]
+Processing 83/193: [spawn.v0.15.1: http]
+Processing 84/193: [spawn.v0.15.1: http]
+[ERROR] Failed to get sources of spawn.v0.15.1: Curl failed
+Processing 85/193: [splittable_random.v0.14.0: http]
+Processing 86/193: [splittable_random.v0.14.0: http]
+Processing 87/193: [splittable_random.v0.14.0: http]
+Processing 88/193: [stdio.v0.14.0: http]
+[ERROR] Failed to get sources of splittable_random.v0.14.0: Curl failed
+[ERROR] Failed to get sources of stdio.v0.14.0: Curl failed
+Processing 89/193: [stdlib-shims.0.3.0: http]
+Processing 90/193: [stdlib-shims.0.3.0: http]
+Processing 91/193: [stdlib-shims.0.3.0: http]
+[ERROR] Failed to get sources of stdlib-shims.0.3.0: Curl failed
+Processing 92/193: [textutils.v0.14.0: http]
+Processing 93/193: [textutils.v0.14.0: http]
+Processing 94/193: [textutils.v0.14.0: http]
+Processing 95/193: [textutils.v0.14.0: http]
+Processing 96/193: [textutils.v0.14.0: http]
+Processing 97/193: [textutils.v0.14.0: http]
+Processing 98/193: [textutils.v0.14.0: http]
+Processing 99/193: [textutils.v0.14.0: http]
+Processing 100/193: [textutils.v0.14.0: http]
+Processing 101/193: [textutils.v0.14.0: http]
+Processing 102/193: [textutils.v0.14.0: http]
+Processing 103/193: [textutils.v0.14.0: http]
+Processing 104/193: [textutils.v0.14.0: http]
+Processing 105/193: [textutils.v0.14.0: http]
+Processing 106/193: [textutils.v0.14.0: http]
+Processing 107/193: [textutils.v0.14.0: http]
+Processing 108/193: [textutils.v0.14.0: http]
+Processing 109/193: [textutils.v0.14.0: http]
+Processing 110/193: [textutils.v0.14.0: http]
+Processing 111/193: [textutils.v0.14.0: http]
+Processing 112/193: [textutils.v0.14.0: http]
+Processing 113/193: [textutils.v0.14.0: http]
+Processing 114/193: [textutils.v0.14.0: http]
+Processing 115/193: [textutils.v0.14.0: http]
+Processing 116/193: [textutils.v0.14.0: http]
+Processing 117/193: [textutils.v0.14.0: http]
+Processing 118/193: [textutils.v0.14.0: http]
+Processing 119/193: [textutils.v0.14.0: http]
+Processing 120/193: [textutils.v0.14.0: http]
+Processing 121/193: [textutils.v0.14.0: http]
+Processing 122/193: [textutils.v0.14.0: http]
+Processing 123/193: [textutils.v0.14.0: http]
+Processing 124/193: [textutils.v0.14.0: http]
+Processing 125/193: [textutils.v0.14.0: http]
+Processing 126/193: [textutils.v0.14.0: http]
+Processing 127/193: [textutils.v0.14.0: http]
+Processing 128/193: [textutils.v0.14.0: http]
+Processing 129/193: [textutils.v0.14.0: http]
+Processing 130/193: [textutils.v0.14.0: http]
+Processing 131/193: [textutils.v0.14.0: http]
+Processing 132/193: [textutils.v0.14.0: http]
+Processing 133/193: [textutils.v0.14.0: http]
+Processing 134/193: [textutils.v0.14.0: http]
+Processing 135/193: [textutils.v0.14.0: http]
+Processing 136/193: [textutils.v0.14.0: http]
+Processing 137/193: [textutils.v0.14.0: http]
+Processing 138/193: [textutils.v0.14.0: http]
+Processing 139/193: [textutils.v0.14.0: http]
+[ERROR] Failed to get sources of textutils.v0.14.0: Curl failed
+Processing 140/193: [time_now.v0.14.0: http]
+[ERROR] Failed to get sources of time_now.v0.14.0: Curl failed
+Processing 141/193: [timezone.v0.14.0: http]
+Processing 142/193: [timezone.v0.14.0: http]
+Processing 143/193: [timezone.v0.14.0: http]
+Processing 144/193: [timezone.v0.14.0: http]
+Processing 145/193: [timezone.v0.14.0: http]
+Processing 146/193: [timezone.v0.14.0: http]
+Processing 147/193: [timezone.v0.14.0: http]
+Processing 148/193: [timezone.v0.14.0: http]
+Processing 149/193: [timezone.v0.14.0: http]
+Processing 150/193: [timezone.v0.14.0: http]
+Processing 151/193: [timezone.v0.14.0: http]
+Processing 152/193: [timezone.v0.14.0: http]
+Processing 153/193: [timezone.v0.14.0: http]
+Processing 154/193: [timezone.v0.14.0: http]
+Processing 155/193: [timezone.v0.14.0: http]
+[ERROR] Failed to get sources of timezone.v0.14.0: Curl failed
+Processing 156/193: [typerep.v0.14.0: http]
+[ERROR] Failed to get sources of typerep.v0.14.0: Curl failed
+Processing 157/193: [variantslib.v0.14.0: http]
+Processing 158/193: [variantslib.v0.14.0: http]
+Processing 159/193: [variantslib.v0.14.0: http]
+Processing 160/193: [variantslib.v0.14.0: http]
+Processing 161/193: [variantslib.v0.14.0: http]
+[ERROR] Failed to get sources of variantslib.v0.14.0: Curl failed
+
+#=== ERROR while fetching sources for variantslib.v0.14.0 =====================#
+OpamSolution.Fetch_fail("https://ocaml.janestreet.com/ocaml-core/v0.14/files/variantslib-v0.14.0.tar.gz (Curl failed: \"/usr/bin/curl --write-out %{http_code}\\\\n --retry 3 --retry-delay 2 --user-agent opam/2.2.0~beta3~dev -L -o /home/opam/.opam/4.14/.opam-switch/sources/variantslib.v0.14.0/variantslib-v0.14.0.tar.gz.part -- https://ocaml.janestreet.com/ocaml-core/v0.14/files/variantslib-v0.14.0.tar.gz\" exited with code 6)")
+
+#=== ERROR while fetching sources for typerep.v0.14.0 =========================#
+OpamSolution.Fetch_fail("https://ocaml.janestreet.com/ocaml-core/v0.14/files/typerep-v0.14.0.tar.gz (Curl failed: \"/usr/bin/curl --write-out %{http_code}\\\\n --retry 3 --retry-delay 2 --user-agent opam/2.2.0~beta3~dev -L -o /home/opam/.opam/4.14/.opam-switch/sources/typerep.v0.14.0/typerep-v0.14.0.tar.gz.part -- https://ocaml.janestreet.com/ocaml-core/v0.14/files/typerep-v0.14.0.tar.gz\" exited with code 6)")
+
+#=== ERROR while fetching sources for timezone.v0.14.0 ========================#
+OpamSolution.Fetch_fail("https://ocaml.janestreet.com/ocaml-core/v0.14/files/timezone-v0.14.0.tar.gz (Curl failed: \"/usr/bin/curl --write-out %{http_code}\\\\n --retry 3 --retry-delay 2 --user-agent opam/2.2.0~beta3~dev -L -o /home/opam/.opam/4.14/.opam-switch/sources/timezone.v0.14.0/timezone-v0.14.0.tar.gz.part -- https://ocaml.janestreet.com/ocaml-core/v0.14/files/timezone-v0.14.0.tar.gz\" exited with code 6)")
+
+#=== ERROR while fetching sources for time_now.v0.14.0 ========================#
+OpamSolution.Fetch_fail("https://ocaml.janestreet.com/ocaml-core/v0.14/files/time_now-v0.14.0.tar.gz (Curl failed: \"/usr/bin/curl --write-out %{http_code}\\\\n --retry 3 --retry-delay 2 --user-agent opam/2.2.0~beta3~dev -L -o /home/opam/.opam/4.14/.opam-switch/sources/time_now.v0.14.0/time_now-v0.14.0.tar.gz.part -- https://ocaml.janestreet.com/ocaml-core/v0.14/files/time_now-v0.14.0.tar.gz\" exited with code 6)")
+
+#=== ERROR while fetching sources for textutils.v0.14.0 =======================#
+OpamSolution.Fetch_fail("https://ocaml.janestreet.com/ocaml-core/v0.14/files/textutils-v0.14.0.tar.gz (Curl failed: \"/usr/bin/curl --write-out %{http_code}\\\\n --retry 3 --retry-delay 2 --user-agent opam/2.2.0~beta3~dev -L -o /home/opam/.opam/4.14/.opam-switch/sources/textutils.v0.14.0/textutils-v0.14.0.tar.gz.part -- https://ocaml.janestreet.com/ocaml-core/v0.14/files/textutils-v0.14.0.tar.gz\" exited with code 6)")
+
+#=== ERROR while fetching sources for stdlib-shims.0.3.0 ======================#
+OpamSolution.Fetch_fail("https://github.com/ocaml/stdlib-shims/releases/download/0.3.0/stdlib-shims-0.3.0.tbz (Curl failed: \"/usr/bin/curl --write-out %{http_code}\\\\n --retry 3 --retry-delay 2 --user-agent opam/2.2.0~beta3~dev -L -o /home/opam/.opam/4.14/.opam-switch/sources/stdlib-shims.0.3.0/stdlib-shims-0.3.0.tbz.part -- https://github.com/ocaml/stdlib-shims/releases/download/0.3.0/stdlib-shims-0.3.0.tbz\" exited with code 6)")
+
+#=== ERROR while fetching sources for stdio.v0.14.0 ===========================#
+OpamSolution.Fetch_fail("https://ocaml.janestreet.com/ocaml-core/v0.14/files/stdio-v0.14.0.tar.gz (Curl failed: \"/usr/bin/curl --write-out %{http_code}\\\\n --retry 3 --retry-delay 2 --user-agent opam/2.2.0~beta3~dev -L -o /home/opam/.opam/4.14/.opam-switch/sources/stdio.v0.14.0/stdio-v0.14.0.tar.gz.part -- https://ocaml.janestreet.com/ocaml-core/v0.14/files/stdio-v0.14.0.tar.gz\" exited with code 6)")
+
+#=== ERROR while fetching sources for splittable_random.v0.14.0 ===============#
+OpamSolution.Fetch_fail("https://ocaml.janestreet.com/ocaml-core/v0.14/files/splittable_random-v0.14.0.tar.gz (Curl failed: \"/usr/bin/curl --write-out %{http_code}\\\\n --retry 3 --retry-delay 2 --user-agent opam/2.2.0~beta3~dev -L -o /home/opam/.opam/4.14/.opam-switch/sources/splittable_random.v0.14.0/splittable_random-v0.14.0.tar.gz.part -- https://ocaml.janestreet.com/ocaml-core/v0.14/files/splittable_random-v0.14.0.tar.gz\" exited with code 6)")
+
+#=== ERROR while fetching sources for spawn.v0.15.1 ===========================#
+OpamSolution.Fetch_fail("https://github.com/janestreet/spawn/archive/v0.15.1.tar.gz (Curl failed: \"/usr/bin/curl --write-out %{http_code}\\\\n --retry 3 --retry-delay 2 --user-agent opam/2.2.0~beta3~dev -L -o /home/opam/.opam/4.14/.opam-switch/sources/spawn.v0.15.1/v0.15.1.tar.gz.part -- https://github.com/janestreet/spawn/archive/v0.15.1.tar.gz\" exited with code 6)")
+
+#=== ERROR while fetching sources for sexplib0.v0.14.0 ========================#
+OpamSolution.Fetch_fail("https://ocaml.janestreet.com/ocaml-core/v0.14/files/sexplib0-v0.14.0.tar.gz (Curl failed: \"/usr/bin/curl --write-out %{http_code}\\\\n --retry 3 --retry-delay 2 --user-agent opam/2.2.0~beta3~dev -L -o /home/opam/.opam/4.14/.opam-switch/sources/sexplib0.v0.14.0/sexplib0-v0.14.0.tar.gz.part -- https://ocaml.janestreet.com/ocaml-core/v0.14/files/sexplib0-v0.14.0.tar.gz\" exited with code 6)")
+
+#=== ERROR while fetching sources for sexplib.v0.14.0 =========================#
+OpamSolution.Fetch_fail("https://ocaml.janestreet.com/ocaml-core/v0.14/files/sexplib-v0.14.0.tar.gz (Curl failed: \"/usr/bin/curl --write-out %{http_code}\\\\n --retry 3 --retry-delay 2 --user-agent opam/2.2.0~beta3~dev -L -o /home/opam/.opam/4.14/.opam-switch/sources/sexplib.v0.14.0/sexplib-v0.14.0.tar.gz.part -- https://ocaml.janestreet.com/ocaml-core/v0.14/files/sexplib-v0.14.0.tar.gz\" exited with code 6)")
+
+#=== ERROR while fetching sources for re.1.11.0 ===============================#
+OpamSolution.Fetch_fail("https://github.com/ocaml/ocaml-re/releases/download/1.11.0/re-1.11.0.tbz (Curl failed: \"/usr/bin/curl --write-out %{http_code}\\\\n --retry 3 --retry-delay 2 --user-agent opam/2.2.0~beta3~dev -L -o /home/opam/.opam/4.14/.opam-switch/sources/re.1.11.0/re-1.11.0.tbz.part -- https://github.com/ocaml/ocaml-re/releases/download/1.11.0/re-1.11.0.tbz\" exited with code 6)")
+
+#=== ERROR while fetching sources for protocol_version_header.v0.14.0 =========#
+OpamSolution.Fetch_fail("https://ocaml.janestreet.com/ocaml-core/v0.14/files/protocol_version_header-v0.14.0.tar.gz (Curl failed: \"/usr/bin/curl --write-out %{http_code}\\\\n --retry 3 --retry-delay 2 --user-agent opam/2.2.0~beta3~dev -L -o /home/opam/.opam/4.14/.opam-switch/sources/protocol_version_header.v0.14.0/protocol_version_header-v0.14.0.tar.gz.part -- https://ocaml.janestreet.com/ocaml-core/v0.14/files/protocol_version_header-v0.14.0.tar.gz\" exited with code 6)")
+
+#=== ERROR while fetching sources for ppxlib.0.25.1 ===========================#
+OpamSolution.Fetch_fail("https://github.com/ocaml-ppx/ppxlib/releases/download/0.25.1/ppxlib-0.25.1.tbz (Curl failed: \"/usr/bin/curl --write-out %{http_code}\\\\n --retry 3 --retry-delay 2 --user-agent opam/2.2.0~beta3~dev -L -o /home/opam/.opam/4.14/.opam-switch/sources/ppxlib.0.25.1/ppxlib-0.25.1.tbz.part -- https://github.com/ocaml-ppx/ppxlib/releases/download/0.25.1/ppxlib-0.25.1.tbz\" exited with code 6)")
+
+#=== ERROR while fetching sources for ppx_variants_conv.v0.14.2 ===============#
+OpamSolution.Fetch_fail("https://github.com/janestreet/ppx_variants_conv/archive/v0.14.2.tar.gz (Curl failed: \"/usr/bin/curl --write-out %{http_code}\\\\n --retry 3 --retry-delay 2 --user-agent opam/2.2.0~beta3~dev -L -o /home/opam/.opam/4.14/.opam-switch/sources/ppx_variants_conv.v0.14.2/v0.14.2.tar.gz.part -- https://github.com/janestreet/ppx_variants_conv/archive/v0.14.2.tar.gz\" exited with code 6)")
+
+#=== ERROR while fetching sources for ppx_typerep_conv.v0.14.2 ================#
+OpamSolution.Fetch_fail("https://github.com/janestreet/ppx_typerep_conv/archive/v0.14.2.tar.gz (Curl failed: \"/usr/bin/curl --write-out %{http_code}\\\\n --retry 3 --retry-delay 2 --user-agent opam/2.2.0~beta3~dev -L -o /home/opam/.opam/4.14/.opam-switch/sources/ppx_typerep_conv.v0.14.2/v0.14.2.tar.gz.part -- https://github.com/janestreet/ppx_typerep_conv/archive/v0.14.2.tar.gz\" exited with code 6)")
+
+#=== ERROR while fetching sources for ppx_string.v0.14.1 ======================#
+OpamSolution.Fetch_fail("https://github.com/janestreet/ppx_string/archive/v0.14.1.tar.gz (Curl failed: \"/usr/bin/curl --write-out %{http_code}\\\\n --retry 3 --retry-delay 2 --user-agent opam/2.2.0~beta3~dev -L -o /home/opam/.opam/4.14/.opam-switch/sources/ppx_string.v0.14.1/v0.14.1.tar.gz.part -- https://github.com/janestreet/ppx_string/archive/v0.14.1.tar.gz\" exited with code 6)")
+
+#=== ERROR while fetching sources for ppx_stable.v0.14.1 ======================#
+OpamSolution.Fetch_fail("https://github.com/janestreet/ppx_stable/archive/v0.14.1.tar.gz (Curl failed: \"/usr/bin/curl --write-out %{http_code}\\\\n --retry 3 --retry-delay 2 --user-agent opam/2.2.0~beta3~dev -L -o /home/opam/.opam/4.14/.opam-switch/sources/ppx_stable.v0.14.1/v0.14.1.tar.gz.part -- https://github.com/janestreet/ppx_stable/archive/v0.14.1.tar.gz\" exited with code 6)")
+
+#=== ERROR while fetching sources for ppx_sexp_value.v0.14.0 ==================#
+OpamSolution.Fetch_fail("https://ocaml.janestreet.com/ocaml-core/v0.14/files/ppx_sexp_value-v0.14.0.tar.gz (Curl failed: \"/usr/bin/curl --write-out %{http_code}\\\\n --retry 3 --retry-delay 2 --user-agent opam/2.2.0~beta3~dev -L -o /home/opam/.opam/4.14/.opam-switch/sources/ppx_sexp_value.v0.14.0/ppx_sexp_value-v0.14.0.tar.gz.part -- https://ocaml.janestreet.com/ocaml-core/v0.14/files/ppx_sexp_value-v0.14.0.tar.gz\" exited with code 6)")
+
+#=== ERROR while fetching sources for ppx_sexp_message.v0.14.1 ================#
+OpamSolution.Fetch_fail("https://github.com/janestreet/ppx_sexp_message/archive/v0.14.1.tar.gz (Curl failed: \"/usr/bin/curl --write-out %{http_code}\\\\n --retry 3 --retry-delay 2 --user-agent opam/2.2.0~beta3~dev -L -o /home/opam/.opam/4.14/.opam-switch/sources/ppx_sexp_message.v0.14.1/v0.14.1.tar.gz.part -- https://github.com/janestreet/ppx_sexp_message/archive/v0.14.1.tar.gz\" exited with code 6)")
+
+#=== ERROR while fetching sources for ppx_sexp_conv.v0.14.3 ===================#
+OpamSolution.Fetch_fail("https://github.com/janestreet/ppx_sexp_conv/archive/v0.14.3.tar.gz (Curl failed: \"/usr/bin/curl --write-out %{http_code}\\\\n --retry 3 --retry-delay 2 --user-agent opam/2.2.0~beta3~dev -L -o /home/opam/.opam/4.14/.opam-switch/sources/ppx_sexp_conv.v0.14.3/v0.14.3.tar.gz.part -- https://github.com/janestreet/ppx_sexp_conv/archive/v0.14.3.tar.gz\" exited with code 6)")
+
+#=== ERROR while fetching sources for ppx_pipebang.v0.14.0 ====================#
+OpamSolution.Fetch_fail("https://ocaml.janestreet.com/ocaml-core/v0.14/files/ppx_pipebang-v0.14.0.tar.gz (Curl failed: \"/usr/bin/curl --write-out %{http_code}\\\\n --retry 3 --retry-delay 2 --user-agent opam/2.2.0~beta3~dev -L -o /home/opam/.opam/4.14/.opam-switch/sources/ppx_pipebang.v0.14.0/ppx_pipebang-v0.14.0.tar.gz.part -- https://ocaml.janestreet.com/ocaml-core/v0.14/files/ppx_pipebang-v0.14.0.tar.gz\" exited with code 6)")
+
+#=== ERROR while fetching sources for ppx_optional.v0.14.0 ====================#
+OpamSolution.Fetch_fail("https://ocaml.janestreet.com/ocaml-core/v0.14/files/ppx_optional-v0.14.0.tar.gz (Curl failed: \"/usr/bin/curl --write-out %{http_code}\\\\n --retry 3 --retry-delay 2 --user-agent opam/2.2.0~beta3~dev -L -o /home/opam/.opam/4.14/.opam-switch/sources/ppx_optional.v0.14.0/ppx_optional-v0.14.0.tar.gz.part -- https://ocaml.janestreet.com/ocaml-core/v0.14/files/ppx_optional-v0.14.0.tar.gz\" exited with code 6)")
+
+#=== ERROR while fetching sources for ppx_optcomp.v0.14.3 =====================#
+OpamSolution.Fetch_fail("https://github.com/janestreet/ppx_optcomp/archive/v0.14.3.tar.gz (Curl failed: \"/usr/bin/curl --write-out %{http_code}\\\\n --retry 3 --retry-delay 2 --user-agent opam/2.2.0~beta3~dev -L -o /home/opam/.opam/4.14/.opam-switch/sources/ppx_optcomp.v0.14.3/v0.14.3.tar.gz.part -- https://github.com/janestreet/ppx_optcomp/archive/v0.14.3.tar.gz\" exited with code 6)")
+
+#=== ERROR while fetching sources for ppx_module_timer.v0.14.0 ================#
+OpamSolution.Fetch_fail("https://ocaml.janestreet.com/ocaml-core/v0.14/files/ppx_module_timer-v0.14.0.tar.gz (Curl failed: \"/usr/bin/curl --write-out %{http_code}\\\\n --retry 3 --retry-delay 2 --user-agent opam/2.2.0~beta3~dev -L -o /home/opam/.opam/4.14/.opam-switch/sources/ppx_module_timer.v0.14.0/ppx_module_timer-v0.14.0.tar.gz.part -- https://ocaml.janestreet.com/ocaml-core/v0.14/files/ppx_module_timer-v0.14.0.tar.gz\" exited with code 6)")
+
+#=== ERROR while fetching sources for ppx_let.v0.14.0 =========================#
+OpamSolution.Fetch_fail("https://ocaml.janestreet.com/ocaml-core/v0.14/files/ppx_let-v0.14.0.tar.gz (Curl failed: \"/usr/bin/curl --write-out %{http_code}\\\\n --retry 3 --retry-delay 2 --user-agent opam/2.2.0~beta3~dev -L -o /home/opam/.opam/4.14/.opam-switch/sources/ppx_let.v0.14.0/ppx_let-v0.14.0.tar.gz.part -- https://ocaml.janestreet.com/ocaml-core/v0.14/files/ppx_let-v0.14.0.tar.gz\" exited with code 6)")
+
+#=== ERROR while fetching sources for ppx_js_style.v0.14.1 ====================#
+OpamSolution.Fetch_fail("https://github.com/janestreet/ppx_js_style/archive/refs/tags/v0.14.1.tar.gz (Curl failed: \"/usr/bin/curl --write-out %{http_code}\\\\n --retry 3 --retry-delay 2 --user-agent opam/2.2.0~beta3~dev -L -o /home/opam/.opam/4.14/.opam-switch/sources/ppx_js_style.v0.14.1/v0.14.1.tar.gz.part -- https://github.com/janestreet/ppx_js_style/archive/refs/tags/v0.14.1.tar.gz\" exited with code 6)")
+
+#=== ERROR while fetching sources for ppx_jane.v0.14.0 ========================#
+OpamSolution.Fetch_fail("https://ocaml.janestreet.com/ocaml-core/v0.14/files/ppx_jane-v0.14.0.tar.gz (Curl failed: \"/usr/bin/curl --write-out %{http_code}\\\\n --retry 3 --retry-delay 2 --user-agent opam/2.2.0~beta3~dev -L -o /home/opam/.opam/4.14/.opam-switch/sources/ppx_jane.v0.14.0/ppx_jane-v0.14.0.tar.gz.part -- https://ocaml.janestreet.com/ocaml-core/v0.14/files/ppx_jane-v0.14.0.tar.gz\" exited with code 6)")
+
+#=== ERROR while fetching sources for ppx_inline_test.v0.14.1 =================#
+OpamSolution.Fetch_fail("https://github.com/janestreet/ppx_inline_test/archive/v0.14.1.tar.gz (Curl failed: \"/usr/bin/curl --write-out %{http_code}\\\\n --retry 3 --retry-delay 2 --user-agent opam/2.2.0~beta3~dev -L -o /home/opam/.opam/4.14/.opam-switch/sources/ppx_inline_test.v0.14.1/v0.14.1.tar.gz.part -- https://github.com/janestreet/ppx_inline_test/archive/v0.14.1.tar.gz\" exited with code 6)")
+
+#=== ERROR while fetching sources for ppx_here.v0.14.0 ========================#
+OpamSolution.Fetch_fail("https://ocaml.janestreet.com/ocaml-core/v0.14/files/ppx_here-v0.14.0.tar.gz (Curl failed: \"/usr/bin/curl --write-out %{http_code}\\\\n --retry 3 --retry-delay 2 --user-agent opam/2.2.0~beta3~dev -L -o /home/opam/.opam/4.14/.opam-switch/sources/ppx_here.v0.14.0/ppx_here-v0.14.0.tar.gz.part -- https://ocaml.janestreet.com/ocaml-core/v0.14/files/ppx_here-v0.14.0.tar.gz\" exited with code 6)")
+
+#=== ERROR while fetching sources for ppx_hash.v0.14.0 ========================#
+OpamSolution.Fetch_fail("https://ocaml.janestreet.com/ocaml-core/v0.14/files/ppx_hash-v0.14.0.tar.gz (Curl failed: \"/usr/bin/curl --write-out %{http_code}\\\\n --retry 3 --retry-delay 2 --user-agent opam/2.2.0~beta3~dev -L -o /home/opam/.opam/4.14/.opam-switch/sources/ppx_hash.v0.14.0/ppx_hash-v0.14.0.tar.gz.part -- https://ocaml.janestreet.com/ocaml-core/v0.14/files/ppx_hash-v0.14.0.tar.gz\" exited with code 6)")
+
+#=== ERROR while fetching sources for ppx_fixed_literal.v0.14.0 ===============#
+OpamSolution.Fetch_fail("https://ocaml.janestreet.com/ocaml-core/v0.14/files/ppx_fixed_literal-v0.14.0.tar.gz (Curl failed: \"/usr/bin/curl --write-out %{http_code}\\\\n --retry 3 --retry-delay 2 --user-agent opam/2.2.0~beta3~dev -L -o /home/opam/.opam/4.14/.opam-switch/sources/ppx_fixed_literal.v0.14.0/ppx_fixed_literal-v0.14.0.tar.gz.part -- https://ocaml.janestreet.com/ocaml-core/v0.14/files/ppx_fixed_literal-v0.14.0.tar.gz\" exited with code 6)")
+
+#=== ERROR while fetching sources for ppx_fields_conv.v0.14.2 =================#
+OpamSolution.Fetch_fail("https://github.com/janestreet/ppx_fields_conv/archive/v0.14.2.tar.gz (Curl failed: \"/usr/bin/curl --write-out %{http_code}\\\\n --retry 3 --retry-delay 2 --user-agent opam/2.2.0~beta3~dev -L -o /home/opam/.opam/4.14/.opam-switch/sources/ppx_fields_conv.v0.14.2/v0.14.2.tar.gz.part -- https://github.com/janestreet/ppx_fields_conv/archive/v0.14.2.tar.gz\" exited with code 6)")
+
+#=== ERROR while fetching sources for ppx_expect.v0.14.2 ======================#
+OpamSolution.Fetch_fail("https://github.com/janestreet/ppx_expect/archive/v0.14.2.tar.gz (Curl failed: \"/usr/bin/curl --write-out %{http_code}\\\\n --retry 3 --retry-delay 2 --user-agent opam/2.2.0~beta3~dev -L -o /home/opam/.opam/4.14/.opam-switch/sources/ppx_expect.v0.14.2/v0.14.2.tar.gz.part -- https://github.com/janestreet/ppx_expect/archive/v0.14.2.tar.gz\" exited with code 6)")
+
+#=== ERROR while fetching sources for ppx_enumerate.v0.14.0 ===================#
+OpamSolution.Fetch_fail("https://ocaml.janestreet.com/ocaml-core/v0.14/files/ppx_enumerate-v0.14.0.tar.gz (Curl failed: \"/usr/bin/curl --write-out %{http_code}\\\\n --retry 3 --retry-delay 2 --user-agent opam/2.2.0~beta3~dev -L -o /home/opam/.opam/4.14/.opam-switch/sources/ppx_enumerate.v0.14.0/ppx_enumerate-v0.14.0.tar.gz.part -- https://ocaml.janestreet.com/ocaml-core/v0.14/files/ppx_enumerate-v0.14.0.tar.gz\" exited with code 6)")
+
+#=== ERROR while fetching sources for ppx_derivers.1.2.1 ======================#
+OpamSolution.Fetch_fail("https://github.com/ocaml-ppx/ppx_derivers/archive/1.2.1.tar.gz (Curl failed: \"/usr/bin/curl --write-out %{http_code}\\\\n --retry 3 --retry-delay 2 --user-agent opam/2.2.0~beta3~dev -L -o /home/opam/.opam/4.14/.opam-switch/sources/ppx_derivers.1.2.1/1.2.1.tar.gz.part -- https://github.com/ocaml-ppx/ppx_derivers/archive/1.2.1.tar.gz\" exited with code 6)")
+
+#=== ERROR while fetching sources for ppx_custom_printf.v0.14.1 ===============#
+OpamSolution.Fetch_fail("https://github.com/janestreet/ppx_custom_printf/archive/v0.14.1.tar.gz (Curl failed: \"/usr/bin/curl --write-out %{http_code}\\\\n --retry 3 --retry-delay 2 --user-agent opam/2.2.0~beta3~dev -L -o /home/opam/.opam/4.14/.opam-switch/sources/ppx_custom_printf.v0.14.1/v0.14.1.tar.gz.part -- https://github.com/janestreet/ppx_custom_printf/archive/v0.14.1.tar.gz\" exited with code 6)")
+
+#=== ERROR while fetching sources for ppx_compare.v0.14.0 =====================#
+OpamSolution.Fetch_fail("https://ocaml.janestreet.com/ocaml-core/v0.14/files/ppx_compare-v0.14.0.tar.gz (Curl failed: \"/usr/bin/curl --write-out %{http_code}\\\\n --retry 3 --retry-delay 2 --user-agent opam/2.2.0~beta3~dev -L -o /home/opam/.opam/4.14/.opam-switch/sources/ppx_compare.v0.14.0/ppx_compare-v0.14.0.tar.gz.part -- https://ocaml.janestreet.com/ocaml-core/v0.14/files/ppx_compare-v0.14.0.tar.gz\" exited with code 6)")
+
+#=== ERROR while fetching sources for ppx_cold.v0.14.0 ========================#
+OpamSolution.Fetch_fail("https://ocaml.janestreet.com/ocaml-core/v0.14/files/ppx_cold-v0.14.0.tar.gz (Curl failed: \"/usr/bin/curl --write-out %{http_code}\\\\n --retry 3 --retry-delay 2 --user-agent opam/2.2.0~beta3~dev -L -o /home/opam/.opam/4.14/.opam-switch/sources/ppx_cold.v0.14.0/ppx_cold-v0.14.0.tar.gz.part -- https://ocaml.janestreet.com/ocaml-core/v0.14/files/ppx_cold-v0.14.0.tar.gz\" exited with code 6)")
+
+#=== ERROR while fetching sources for ppx_bin_prot.v0.14.0 ====================#
+OpamSolution.Fetch_fail("https://ocaml.janestreet.com/ocaml-core/v0.14/files/ppx_bin_prot-v0.14.0.tar.gz (Curl failed: \"/usr/bin/curl --write-out %{http_code}\\\\n --retry 3 --retry-delay 2 --user-agent opam/2.2.0~beta3~dev -L -o /home/opam/.opam/4.14/.opam-switch/sources/ppx_bin_prot.v0.14.0/ppx_bin_prot-v0.14.0.tar.gz.part -- https://ocaml.janestreet.com/ocaml-core/v0.14/files/ppx_bin_prot-v0.14.0.tar.gz\" exited with code 6)")
+
+#=== ERROR while fetching sources for ppx_bench.v0.14.1 =======================#
+OpamSolution.Fetch_fail("https://github.com/janestreet/ppx_bench/archive/v0.14.1.tar.gz (Curl failed: \"/usr/bin/curl --write-out %{http_code}\\\\n --retry 3 --retry-delay 2 --user-agent opam/2.2.0~beta3~dev -L -o /home/opam/.opam/4.14/.opam-switch/sources/ppx_bench.v0.14.1/v0.14.1.tar.gz.part -- https://github.com/janestreet/ppx_bench/archive/v0.14.1.tar.gz\" exited with code 6)")
+
+#=== ERROR while fetching sources for ppx_base.v0.14.0 ========================#
+OpamSolution.Fetch_fail("https://ocaml.janestreet.com/ocaml-core/v0.14/files/ppx_base-v0.14.0.tar.gz (Curl failed: \"/usr/bin/curl --write-out %{http_code}\\\\n --retry 3 --retry-delay 2 --user-agent opam/2.2.0~beta3~dev -L -o /home/opam/.opam/4.14/.opam-switch/sources/ppx_base.v0.14.0/ppx_base-v0.14.0.tar.gz.part -- https://ocaml.janestreet.com/ocaml-core/v0.14/files/ppx_base-v0.14.0.tar.gz\" exited with code 6)")
+
+#=== ERROR while fetching sources for ppx_assert.v0.14.0 ======================#
+OpamSolution.Fetch_fail("https://ocaml.janestreet.com/ocaml-core/v0.14/files/ppx_assert-v0.14.0.tar.gz (Curl failed: \"/usr/bin/curl --write-out %{http_code}\\\\n --retry 3 --retry-delay 2 --user-agent opam/2.2.0~beta3~dev -L -o /home/opam/.opam/4.14/.opam-switch/sources/ppx_assert.v0.14.0/ppx_assert-v0.14.0.tar.gz.part -- https://ocaml.janestreet.com/ocaml-core/v0.14/files/ppx_assert-v0.14.0.tar.gz\" exited with code 6)")
+
+#=== ERROR while fetching sources for parsexp.v0.14.2 =========================#
+OpamSolution.Fetch_fail("https://github.com/janestreet/parsexp/archive/refs/tags/v0.14.2.tar.gz (Curl failed: \"/usr/bin/curl --write-out %{http_code}\\\\n --retry 3 --retry-delay 2 --user-agent opam/2.2.0~beta3~dev -L -o /home/opam/.opam/4.14/.opam-switch/sources/parsexp.v0.14.2/v0.14.2.tar.gz.part -- https://github.com/janestreet/parsexp/archive/refs/tags/v0.14.2.tar.gz\" exited with code 6)")
+
+#=== ERROR while fetching sources for octavius.1.2.2 ==========================#
+OpamSolution.Fetch_fail("https://github.com/ocaml-doc/octavius/archive/v1.2.2.tar.gz (Curl failed: \"/usr/bin/curl --write-out %{http_code}\\\\n --retry 3 --retry-delay 2 --user-agent opam/2.2.0~beta3~dev -L -o /home/opam/.opam/4.14/.opam-switch/sources/octavius.1.2.2/v1.2.2.tar.gz.part -- https://github.com/ocaml-doc/octavius/archive/v1.2.2.tar.gz\" exited with code 6)")
+
+#=== ERROR while fetching sources for ocaml-compiler-libs.v0.12.4 =============#
+OpamSolution.Fetch_fail("https://github.com/janestreet/ocaml-compiler-libs/releases/download/v0.12.4/ocaml-compiler-libs-v0.12.4.tbz (Curl failed: \"/usr/bin/curl --write-out %{http_code}\\\\n --retry 3 --retry-delay 2 --user-agent opam/2.2.0~beta3~dev -L -o /home/opam/.opam/4.14/.opam-switch/sources/ocaml-compiler-libs.v0.12.4/ocaml-compiler-libs-v0.12.4.tbz.part -- https://github.com/janestreet/ocaml-compiler-libs/releases/download/v0.12.4/ocaml-compiler-libs-v0.12.4.tbz\" exited with code 6)")
+
+#=== ERROR while fetching sources for num.1.5 =================================#
+OpamSolution.Fetch_fail("https://github.com/ocaml/num/archive/v1.5.tar.gz (Curl failed: \"/usr/bin/curl --write-out %{http_code}\\\\n --retry 3 --retry-delay 2 --user-agent opam/2.2.0~beta3~dev -L -o /home/opam/.opam/4.14/.opam-switch/sources/num.1.5/v1.5.tar.gz.part -- https://github.com/ocaml/num/archive/v1.5.tar.gz\" exited with code 6)")
+
+#=== ERROR while fetching sources for lwt.5.7.0 ===============================#
+OpamSolution.Fetch_fail("https://github.com/ocsigen/lwt/archive/refs/tags/5.7.0.tar.gz (Curl failed: \"/usr/bin/curl --write-out %{http_code}\\\\n --retry 3 --retry-delay 2 --user-agent opam/2.2.0~beta3~dev -L -o /home/opam/.opam/4.14/.opam-switch/sources/lwt.5.7.0/5.7.0.tar.gz.part -- https://github.com/ocsigen/lwt/archive/refs/tags/5.7.0.tar.gz\" exited with code 6)")
+
+#=== ERROR while fetching sources for jst-config.v0.14.1 ======================#
+OpamSolution.Fetch_fail("https://github.com/janestreet/jst-config/archive/refs/tags/v0.14.1.tar.gz (Curl failed: \"/usr/bin/curl --write-out %{http_code}\\\\n --retry 3 --retry-delay 2 --user-agent opam/2.2.0~beta3~dev -L -o /home/opam/.opam/4.14/.opam-switch/sources/jst-config.v0.14.1/v0.14.1.tar.gz.part -- https://github.com/janestreet/jst-config/archive/refs/tags/v0.14.1.tar.gz\" exited with code 6)")
+
+#=== ERROR while fetching sources for jane-street-headers.v0.14.0 =============#
+OpamSolution.Fetch_fail("https://ocaml.janestreet.com/ocaml-core/v0.14/files/jane-street-headers-v0.14.0.tar.gz (Curl failed: \"/usr/bin/curl --write-out %{http_code}\\\\n --retry 3 --retry-delay 2 --user-agent opam/2.2.0~beta3~dev -L -o /home/opam/.opam/4.14/.opam-switch/sources/jane-street-headers.v0.14.0/jane-street-headers-v0.14.0.tar.gz.part -- https://ocaml.janestreet.com/ocaml-core/v0.14/files/jane-street-headers-v0.14.0.tar.gz\" exited with code 6)")
+
+#=== ERROR while fetching sources for fieldslib.v0.14.0 =======================#
+OpamSolution.Fetch_fail("https://ocaml.janestreet.com/ocaml-core/v0.14/files/fieldslib-v0.14.0.tar.gz (Curl failed: \"/usr/bin/curl --write-out %{http_code}\\\\n --retry 3 --retry-delay 2 --user-agent opam/2.2.0~beta3~dev -L -o /home/opam/.opam/4.14/.opam-switch/sources/fieldslib.v0.14.0/fieldslib-v0.14.0.tar.gz.part -- https://ocaml.janestreet.com/ocaml-core/v0.14/files/fieldslib-v0.14.0.tar.gz\" exited with code 6)")
+
+#=== ERROR while fetching sources for dune-configurator.2.7.0 =================#
+OpamSolution.Fetch_fail("https://github.com/ocaml/dune/releases/download/2.7.0/dune-2.7.0.tbz (Curl failed: \"/usr/bin/curl --write-out %{http_code}\\\\n --retry 3 --retry-delay 2 --user-agent opam/2.2.0~beta3~dev -L -o /home/opam/.opam/4.14/.opam-switch/sources/dune-configurator.2.7.0/dune-2.7.0.tbz.part -- https://github.com/ocaml/dune/releases/download/2.7.0/dune-2.7.0.tbz\" exited with code 6)")
+
+#=== ERROR while fetching sources for core_kernel.v0.14.2 =====================#
+OpamSolution.Fetch_fail("https://github.com/janestreet/core_kernel/archive/v0.14.2.tar.gz (Curl failed: \"/usr/bin/curl --write-out %{http_code}\\\\n --retry 3 --retry-delay 2 --user-agent opam/2.2.0~beta3~dev -L -o /home/opam/.opam/4.14/.opam-switch/sources/core_kernel.v0.14.2/v0.14.2.tar.gz.part -- https://github.com/janestreet/core_kernel/archive/v0.14.2.tar.gz\" exited with code 6)")
+
+#=== ERROR while fetching sources for core.v0.14.1 ============================#
+OpamSolution.Fetch_fail("https://github.com/janestreet/core/archive/v0.14.1.tar.gz (Curl failed: \"/usr/bin/curl --write-out %{http_code}\\\\n --retry 3 --retry-delay 2 --user-agent opam/2.2.0~beta3~dev -L -o /home/opam/.opam/4.14/.opam-switch/sources/core.v0.14.1/v0.14.1.tar.gz.part -- https://github.com/janestreet/core/archive/v0.14.1.tar.gz\" exited with code 6)")
+
+#=== ERROR while fetching sources for bin_prot.v0.14.1 ========================#
+OpamSolution.Fetch_fail("https://github.com/janestreet/bin_prot/archive/refs/tags/v0.14.1.tar.gz (Curl failed: \"/usr/bin/curl --write-out %{http_code}\\\\n --retry 3 --retry-delay 2 --user-agent opam/2.2.0~beta3~dev -L -o /home/opam/.opam/4.14/.opam-switch/sources/bin_prot.v0.14.1/v0.14.1.tar.gz.part -- https://github.com/janestreet/bin_prot/archive/refs/tags/v0.14.1.tar.gz\" exited with code 6)")
+
+#=== ERROR while fetching sources for base_quickcheck.v0.14.1 =================#
+OpamSolution.Fetch_fail("https://github.com/janestreet/base_quickcheck/archive/v0.14.1.tar.gz (Curl failed: \"/usr/bin/curl --write-out %{http_code}\\\\n --retry 3 --retry-delay 2 --user-agent opam/2.2.0~beta3~dev -L -o /home/opam/.opam/4.14/.opam-switch/sources/base_quickcheck.v0.14.1/v0.14.1.tar.gz.part -- https://github.com/janestreet/base_quickcheck/archive/v0.14.1.tar.gz\" exited with code 6)")
+
+#=== ERROR while fetching sources for base_bigstring.v0.14.0 ==================#
+OpamSolution.Fetch_fail("https://ocaml.janestreet.com/ocaml-core/v0.14/files/base_bigstring-v0.14.0.tar.gz (Curl failed: \"/usr/bin/curl --write-out %{http_code}\\\\n --retry 3 --retry-delay 2 --user-agent opam/2.2.0~beta3~dev -L -o /home/opam/.opam/4.14/.opam-switch/sources/base_bigstring.v0.14.0/base_bigstring-v0.14.0.tar.gz.part -- https://ocaml.janestreet.com/ocaml-core/v0.14/files/base_bigstring-v0.14.0.tar.gz\" exited with code 6)")
+
+#=== ERROR while fetching sources for base.v0.14.3 ============================#
+OpamSolution.Fetch_fail("https://github.com/janestreet/base/archive/v0.14.3.tar.gz (Curl failed: \"/usr/bin/curl --write-out %{http_code}\\\\n --retry 3 --retry-delay 2 --user-agent opam/2.2.0~beta3~dev -L -o /home/opam/.opam/4.14/.opam-switch/sources/base.v0.14.3/v0.14.3.tar.gz.part -- https://github.com/janestreet/base/archive/v0.14.3.tar.gz\" exited with code 6)")
+
+#=== ERROR while fetching sources for async_unix.v0.14.0 ======================#
+OpamSolution.Fetch_fail("https://ocaml.janestreet.com/ocaml-core/v0.14/files/async_unix-v0.14.0.tar.gz (Curl failed: \"/usr/bin/curl --write-out %{http_code}\\\\n --retry 3 --retry-delay 2 --user-agent opam/2.2.0~beta3~dev -L -o /home/opam/.opam/4.14/.opam-switch/sources/async_unix.v0.14.0/async_unix-v0.14.0.tar.gz.part -- https://ocaml.janestreet.com/ocaml-core/v0.14/files/async_unix-v0.14.0.tar.gz\" exited with code 6)")
+
+#=== ERROR while fetching sources for async_rpc_kernel.v0.14.0 ================#
+OpamSolution.Fetch_fail("https://ocaml.janestreet.com/ocaml-core/v0.14/files/async_rpc_kernel-v0.14.0.tar.gz (Curl failed: \"/usr/bin/curl --write-out %{http_code}\\\\n --retry 3 --retry-delay 2 --user-agent opam/2.2.0~beta3~dev -L -o /home/opam/.opam/4.14/.opam-switch/sources/async_rpc_kernel.v0.14.0/async_rpc_kernel-v0.14.0.tar.gz.part -- https://ocaml.janestreet.com/ocaml-core/v0.14/files/async_rpc_kernel-v0.14.0.tar.gz\" exited with code 6)")
+
+#=== ERROR while fetching sources for async_kernel.v0.14.0 ====================#
+OpamSolution.Fetch_fail("https://ocaml.janestreet.com/ocaml-core/v0.14/files/async_kernel-v0.14.0.tar.gz (Curl failed: \"/usr/bin/curl --write-out %{http_code}\\\\n --retry 3 --retry-delay 2 --user-agent opam/2.2.0~beta3~dev -L -o /home/opam/.opam/4.14/.opam-switch/sources/async_kernel.v0.14.0/async_kernel-v0.14.0.tar.gz.part -- https://ocaml.janestreet.com/ocaml-core/v0.14/files/async_kernel-v0.14.0.tar.gz\" exited with code 6)")
+
+#=== ERROR while fetching sources for async.v0.14.0 ===========================#
+OpamSolution.Fetch_fail("https://ocaml.janestreet.com/ocaml-core/v0.14/files/async-v0.14.0.tar.gz (Curl failed: \"/usr/bin/curl --write-out %{http_code}\\\\n --retry 3 --retry-delay 2 --user-agent opam/2.2.0~beta3~dev -L -o /home/opam/.opam/4.14/.opam-switch/sources/async.v0.14.0/async-v0.14.0.tar.gz.part -- https://ocaml.janestreet.com/ocaml-core/v0.14/files/async-v0.14.0.tar.gz\" exited with code 6)")
+
+#=== ERROR while fetching sources for amqp-client.2.2.2 =======================#
+OpamSolution.Fetch_fail("https://github.com/andersfugmann/amqp-client/archive/2.2.2.tar.gz (Curl failed: \"/usr/bin/curl --write-out %{http_code}\\\\n --retry 3 --retry-delay 2 --user-agent opam/2.2.0~beta3~dev -L -o /home/opam/.opam/4.14/.opam-switch/sources/amqp-client.2.2.2/2.2.2.tar.gz.part -- https://github.com/andersfugmann/amqp-client/archive/2.2.2.tar.gz\" exited with code 6)")
+
+
+<><> Error report <><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><>
++- The following actions failed
+| - fetch amqp-client             2.2.2
+| - fetch async                   v0.14.0
+| - fetch async_kernel            v0.14.0
+| - fetch async_rpc_kernel        v0.14.0
+| - fetch async_unix              v0.14.0
+| - fetch base                    v0.14.3
+| - fetch base_bigstring          v0.14.0
+| - fetch base_quickcheck         v0.14.1
+| - fetch bin_prot                v0.14.1
+| - fetch core                    v0.14.1
+| - fetch core_kernel             v0.14.2
+| - fetch dune-configurator       2.7.0
+| - fetch fieldslib               v0.14.0
+| - fetch jane-street-headers     v0.14.0
+| - fetch jst-config              v0.14.1
+| - fetch lwt                     5.7.0
+| - fetch num                     1.5
+| - fetch ocaml-compiler-libs     v0.12.4
+| - fetch octavius                1.2.2
+| - fetch parsexp                 v0.14.2
+| - fetch ppx_assert              v0.14.0
+| - fetch ppx_base                v0.14.0
+| - fetch ppx_bench               v0.14.1
+| - fetch ppx_bin_prot            v0.14.0
+| - fetch ppx_cold                v0.14.0
+| - fetch ppx_compare             v0.14.0
+| - fetch ppx_custom_printf       v0.14.1
+| - fetch ppx_derivers            1.2.1
+| - fetch ppx_enumerate           v0.14.0
+| - fetch ppx_expect              v0.14.2
+| - fetch ppx_fields_conv         v0.14.2
+| - fetch ppx_fixed_literal       v0.14.0
+| - fetch ppx_hash                v0.14.0
+| - fetch ppx_here                v0.14.0
+| - fetch ppx_inline_test         v0.14.1
+| - fetch ppx_jane                v0.14.0
+| - fetch ppx_js_style            v0.14.1
+| - fetch ppx_let                 v0.14.0
+| - fetch ppx_module_timer        v0.14.0
+| - fetch ppx_optcomp             v0.14.3
+| - fetch ppx_optional            v0.14.0
+| - fetch ppx_pipebang            v0.14.0
+| - fetch ppx_sexp_conv           v0.14.3
+| - fetch ppx_sexp_message        v0.14.1
+| - fetch ppx_sexp_value          v0.14.0
+| - fetch ppx_stable              v0.14.1
+| - fetch ppx_string              v0.14.1
+| - fetch ppx_typerep_conv        v0.14.2
+| - fetch ppx_variants_conv       v0.14.2
+| - fetch ppxlib                  0.25.1
+| - fetch protocol_version_header v0.14.0
+| - fetch re                      1.11.0
+| - fetch sexplib                 v0.14.0
+| - fetch sexplib0                v0.14.0
+| - fetch spawn                   v0.15.1
+| - fetch splittable_random       v0.14.0
+| - fetch stdio                   v0.14.0
+| - fetch stdlib-shims            0.3.0
+| - fetch textutils               v0.14.0
+| - fetch time_now                v0.14.0
+| - fetch timezone                v0.14.0
+| - fetch typerep                 v0.14.0
+| - fetch variantslib             v0.14.0
++- 
++- The following changes have been performed
+| - install seq base
++- 
+# Run eval $(opam env) to update the current shell environment
+
+The former state can be restored with:
+    /usr/bin/opam switch import "/home/opam/.opam/4.14/.opam-switch/backup/state-20240512133136.export"
+'opam reinstall --with-test --verbose amqp-client.2.2.2' failed.
+"/usr/bin/env" "bash" "-c" "opam reinstall --with-test --verbose amqp-client.2.2.2;
+        res=$?;
+        test "$res" != 31 && exit "$res";
+        export OPAMCLI=2.0;
+        build_dir=$(opam var prefix)/.opam-switch/build;
+        failed=$(ls "$build_dir");
+        partial_fails="";
+        for pkg in $failed; do
+          if opam show -f x-ci-accept-failures: "$pkg" | grep -qF "\"debian-12\""; then
+            echo "A package failed and has been disabled for CI using the 'x-ci-accept-failures' field.";
+          fi;
+          test "$pkg" != 'amqp-client.2.2.2' && partial_fails="$partial_fails $pkg";
+        done;
+        test "${partial_fails}" != "" && echo "opam-repo-ci detected dependencies failing: ${partial_fails}";
+        exit 1" failed with exit status 40
+2024-05-12 13:46.35: Job failed: Failed: Build failed
+2024-05-12 13:46.35: Log analysis:
+2024-05-12 13:46.35: >>> 
+[ERROR] Sorry, resolution of the request timed out.
+ (score = 20)
+2024-05-12 13:46.35: >>> 
+[ERROR] Failed to get sources of amqp-client.2.2.2: Curl failed
+ (score = 25)
+2024-05-12 13:46.35: >>> 
+[ERROR] Failed to get sources of async.v0.14.0: Curl failed
+ (score = 25)
+2024-05-12 13:46.35: >>> 
+[ERROR] Failed to get sources of async_kernel.v0.14.0: Curl failed
+ (score = 25)
+2024-05-12 13:46.35: >>> 
+[ERROR] Failed to get sources of async_rpc_kernel.v0.14.0: Curl failed
+ (score = 25)
+2024-05-12 13:46.35: >>> 
+[ERROR] Failed to get sources of async_unix.v0.14.0: Curl failed
+ (score = 25)
+2024-05-12 13:46.35: >>> 
+[ERROR] Failed to get sources of base.v0.14.3: Curl failed
+ (score = 25)
+2024-05-12 13:46.35: >>> 
+[ERROR] Failed to get sources of base_bigstring.v0.14.0: Curl failed
+ (score = 25)
+2024-05-12 13:46.35: >>> 
+[ERROR] Failed to get sources of base_quickcheck.v0.14.1: Curl failed
+ (score = 25)
+2024-05-12 13:46.35: >>> 
+[ERROR] Failed to get sources of bin_prot.v0.14.1: Curl failed
+ (score = 25)
+2024-05-12 13:46.35: >>> 
+[ERROR] Failed to get sources of core.v0.14.1: Curl failed
+ (score = 25)
+2024-05-12 13:46.35: >>> 
+[ERROR] Failed to get sources of core_kernel.v0.14.2: Curl failed
+ (score = 25)
+2024-05-12 13:46.35: >>> 
+[ERROR] Failed to get sources of dune-configurator.2.7.0: Curl failed
+ (score = 25)
+2024-05-12 13:46.35: >>> 
+[ERROR] Failed to get sources of fieldslib.v0.14.0: Curl failed
+ (score = 25)
+2024-05-12 13:46.35: >>> 
+[ERROR] Failed to get sources of jane-street-headers.v0.14.0: Curl failed
+ (score = 25)
+2024-05-12 13:46.35: >>> 
+[ERROR] Failed to get sources of jst-config.v0.14.1: Curl failed
+ (score = 25)
+2024-05-12 13:46.35: >>> 
+[ERROR] Failed to get sources of lwt.5.7.0: Curl failed
+ (score = 25)
+2024-05-12 13:46.35: >>> 
+[ERROR] Failed to get sources of num.1.5: Curl failed
+ (score = 25)
+2024-05-12 13:46.35: >>> 
+[ERROR] Failed to get sources of ocaml-compiler-libs.v0.12.4: Curl failed
+ (score = 25)
+2024-05-12 13:46.35: >>> 
+[ERROR] Failed to get sources of octavius.1.2.2: Curl failed
+ (score = 25)
+2024-05-12 13:46.35: >>> 
+[ERROR] Failed to get sources of parsexp.v0.14.2: Curl failed
+ (score = 25)
+2024-05-12 13:46.35: >>> 
+[ERROR] Failed to get sources of ppx_assert.v0.14.0: Curl failed
+ (score = 25)
+2024-05-12 13:46.35: >>> 
+[ERROR] Failed to get sources of ppx_base.v0.14.0: Curl failed
+ (score = 25)
+2024-05-12 13:46.35: >>> 
+[ERROR] Failed to get sources of ppx_bench.v0.14.1: Curl failed
+ (score = 25)
+2024-05-12 13:46.35: >>> 
+[ERROR] Failed to get sources of ppx_bin_prot.v0.14.0: Curl failed
+ (score = 25)
+2024-05-12 13:46.35: >>> 
+[ERROR] Failed to get sources of ppx_cold.v0.14.0: Curl failed
+ (score = 25)
+2024-05-12 13:46.35: >>> 
+[ERROR] Failed to get sources of ppx_compare.v0.14.0: Curl failed
+ (score = 25)
+2024-05-12 13:46.35: >>> 
+[ERROR] Failed to get sources of ppx_custom_printf.v0.14.1: Curl failed
+ (score = 25)
+2024-05-12 13:46.35: >>> 
+[ERROR] Failed to get sources of ppx_derivers.1.2.1: Curl failed
+ (score = 25)
+2024-05-12 13:46.35: >>> 
+[ERROR] Failed to get sources of ppx_enumerate.v0.14.0: Curl failed
+ (score = 25)
+2024-05-12 13:46.35: >>> 
+[ERROR] Failed to get sources of ppx_expect.v0.14.2: Curl failed
+ (score = 25)
+2024-05-12 13:46.35: >>> 
+[ERROR] Failed to get sources of ppx_fields_conv.v0.14.2: Curl failed
+ (score = 25)
+2024-05-12 13:46.35: >>> 
+[ERROR] Failed to get sources of ppx_fixed_literal.v0.14.0: Curl failed
+ (score = 25)
+2024-05-12 13:46.35: >>> 
+[ERROR] Failed to get sources of ppx_hash.v0.14.0: Curl failed
+ (score = 25)
+2024-05-12 13:46.35: >>> 
+[ERROR] Failed to get sources of ppx_here.v0.14.0: Curl failed
+ (score = 25)
+2024-05-12 13:46.35: >>> 
+[ERROR] Failed to get sources of ppx_inline_test.v0.14.1: Curl failed
+ (score = 25)
+2024-05-12 13:46.35: >>> 
+[ERROR] Failed to get sources of ppx_jane.v0.14.0: Curl failed
+ (score = 25)
+2024-05-12 13:46.35: >>> 
+[ERROR] Failed to get sources of ppx_js_style.v0.14.1: Curl failed
+ (score = 25)
+2024-05-12 13:46.35: >>> 
+[ERROR] Failed to get sources of ppx_let.v0.14.0: Curl failed
+ (score = 25)
+2024-05-12 13:46.35: >>> 
+[ERROR] Failed to get sources of ppx_module_timer.v0.14.0: Curl failed
+ (score = 25)
+2024-05-12 13:46.35: >>> 
+[ERROR] Failed to get sources of ppx_optcomp.v0.14.3: Curl failed
+ (score = 25)
+2024-05-12 13:46.35: >>> 
+[ERROR] Failed to get sources of ppx_optional.v0.14.0: Curl failed
+ (score = 25)
+2024-05-12 13:46.35: >>> 
+[ERROR] Failed to get sources of ppx_pipebang.v0.14.0: Curl failed
+ (score = 25)
+2024-05-12 13:46.35: >>> 
+[ERROR] Failed to get sources of ppx_sexp_conv.v0.14.3: Curl failed
+ (score = 25)
+2024-05-12 13:46.35: >>> 
+[ERROR] Failed to get sources of ppx_sexp_message.v0.14.1: Curl failed
+ (score = 25)
+2024-05-12 13:46.35: >>> 
+[ERROR] Failed to get sources of ppx_sexp_value.v0.14.0: Curl failed
+ (score = 25)
+2024-05-12 13:46.35: >>> 
+[ERROR] Failed to get sources of ppx_stable.v0.14.1: Curl failed
+ (score = 25)
+2024-05-12 13:46.35: >>> 
+[ERROR] Failed to get sources of ppx_string.v0.14.1: Curl failed
+ (score = 25)
+2024-05-12 13:46.35: >>> 
+[ERROR] Failed to get sources of ppx_typerep_conv.v0.14.2: Curl failed
+ (score = 25)
+2024-05-12 13:46.35: >>> 
+[ERROR] Failed to get sources of ppx_variants_conv.v0.14.2: Curl failed
+ (score = 25)
+2024-05-12 13:46.35: >>> 
+[ERROR] Failed to get sources of ppxlib.0.25.1: Curl failed
+ (score = 25)
+2024-05-12 13:46.35: >>> 
+[ERROR] Failed to get sources of protocol_version_header.v0.14.0: Curl failed
+ (score = 25)
+2024-05-12 13:46.35: >>> 
+[ERROR] Failed to get sources of re.1.11.0: Curl failed
+ (score = 25)
+2024-05-12 13:46.35: >>> 
+[ERROR] Failed to get sources of sexplib.v0.14.0: Curl failed
+ (score = 25)
+2024-05-12 13:46.35: >>> 
+[ERROR] Failed to get sources of sexplib0.v0.14.0: Curl failed
+ (score = 25)
+2024-05-12 13:46.35: >>> 
+[ERROR] Failed to get sources of spawn.v0.15.1: Curl failed
+ (score = 25)
+2024-05-12 13:46.35: >>> 
+[ERROR] Failed to get sources of splittable_random.v0.14.0: Curl failed
+ (score = 25)
+2024-05-12 13:46.35: >>> 
+[ERROR] Failed to get sources of stdlib-shims.0.3.0: Curl failed
+ (score = 25)
+2024-05-12 13:46.35: >>> 
+[ERROR] Failed to get sources of textutils.v0.14.0: Curl failed
+ (score = 25)
+2024-05-12 13:46.35: >>> 
+[ERROR] Failed to get sources of time_now.v0.14.0: Curl failed
+ (score = 25)
+2024-05-12 13:46.35: >>> 
+[ERROR] Failed to get sources of timezone.v0.14.0: Curl failed
+ (score = 25)
+2024-05-12 13:46.35: >>> 
+[ERROR] Failed to get sources of typerep.v0.14.0: Curl failed
+ (score = 25)
+2024-05-12 13:46.35: >>> 
+[ERROR] Failed to get sources of variantslib.v0.14.0: Curl failed
+ (score = 25)
+2024-05-12 13:46.35: Failed to get sources of amqp-client.2.2.2: Curl failed

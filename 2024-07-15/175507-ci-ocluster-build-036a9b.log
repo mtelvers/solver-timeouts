@@ -1,0 +1,316 @@
+2024-07-15 17:55.07: New job: test publish.0.3.4+transition with menhirCST.20240715, using opam dev
+                              from https://github.com/ocaml/opam-repository.git#refs/pull/26245/head (2171c4a8d2b8a0500df7563aa0e4d57b79c4f1be)
+                              on debian-12-ocaml-5.2/amd64
+
+To reproduce locally:
+
+cd $(mktemp -d)
+git clone --recursive "https://github.com/ocaml/opam-repository.git" && cd "opam-repository" && git fetch origin "refs/pull/26245/head" && git reset --hard 2171c4a8
+git fetch origin master
+git merge --no-edit 39a5da86fcc01db2bd49c3f796df29ec7d149ad5
+cat > ../Dockerfile <<'END-OF-DOCKERFILE'
+[34mFROM ocaml/opam:debian-12-ocaml-5.2@sha256:3dbaeab305d4a974b3d0f76aee75f526eefe33d14250a2110852ba3b6f45f772
+USER 1000:1000
+WORKDIR /home/opam
+RUN sudo ln -f /usr/bin/opam-dev /usr/bin/opam
+RUN opam init --reinit -ni
+RUN uname -rs && opam exec -- ocaml -version && opam --version
+ENV OPAMDOWNLOADJOBS="1"
+ENV OPAMERRLOGLEN="0"
+ENV OPAMSOLVERTIMEOUT="500"
+ENV OPAMPRECISETRACKING="1"
+ENV CI="true"
+ENV OPAM_REPO_CI="true"
+RUN rm -rf opam-repository/
+COPY --chown=1000:1000 . opam-repository/
+RUN opam repository set-url --strict default opam-repository/
+RUN opam update --depexts || true
+RUN opam pin add -k version -yn menhirCST.20240715 20240715
+RUN opam reinstall menhirCST.20240715; \
+    res=$?; \
+    test "$res" != 31 && exit "$res"; \
+    export OPAMCLI=2.0; \
+    build_dir=$(opam var prefix)/.opam-switch/build; \
+    failed=$(ls "$build_dir"); \
+    partial_fails=""; \
+    for pkg in $failed; do \
+    if opam show -f x-ci-accept-failures: "$pkg" | grep -qF "\"debian-12\""; then \
+    echo "A package failed and has been disabled for CI using the 'x-ci-accept-failures' field."; \
+    fi; \
+    test "$pkg" != 'menhirCST.20240715' && partial_fails="$partial_fails $pkg"; \
+    done; \
+    test "${partial_fails}" != "" && echo "opam-repo-ci detected dependencies failing: ${partial_fails}"; \
+    exit 1
+RUN opam reinstall publish.0.3.4+transition; \
+    res=$?; \
+    test "$res" != 31 && exit "$res"; \
+    export OPAMCLI=2.0; \
+    build_dir=$(opam var prefix)/.opam-switch/build; \
+    failed=$(ls "$build_dir"); \
+    partial_fails=""; \
+    for pkg in $failed; do \
+    if opam show -f x-ci-accept-failures: "$pkg" | grep -qF "\"debian-12\""; then \
+    echo "A package failed and has been disabled for CI using the 'x-ci-accept-failures' field."; \
+    fi; \
+    test "$pkg" != 'publish.0.3.4+transition' && partial_fails="$partial_fails $pkg"; \
+    done; \
+    test "${partial_fails}" != "" && echo "opam-repo-ci detected dependencies failing: ${partial_fails}"; \
+    exit 1
+RUN (opam reinstall --with-test publish.0.3.4+transition) || true
+RUN opam reinstall --with-test --verbose publish.0.3.4+transition; \
+    res=$?; \
+    test "$res" != 31 && exit "$res"; \
+    export OPAMCLI=2.0; \
+    build_dir=$(opam var prefix)/.opam-switch/build; \
+    failed=$(ls "$build_dir"); \
+    partial_fails=""; \
+    for pkg in $failed; do \
+    if opam show -f x-ci-accept-failures: "$pkg" | grep -qF "\"debian-12\""; then \
+    echo "A package failed and has been disabled for CI using the 'x-ci-accept-failures' field."; \
+    fi; \
+    test "$pkg" != 'publish.0.3.4+transition' && partial_fails="$partial_fails $pkg"; \
+    done; \
+    test "${partial_fails}" != "" && echo "opam-repo-ci detected dependencies failing: ${partial_fails}"; \
+    exit 1
+[0m
+END-OF-DOCKERFILE
+docker build -f ../Dockerfile .
+
+2024-07-15 17:55.07: Using cache hint "ocaml/opam:debian-12-ocaml-5.2@sha256:3dbaeab305d4a974b3d0f76aee75f526eefe33d14250a2110852ba3b6f45f772-menhirCST.20240715-publish.0.3.4+transition-2171c4a8d2b8a0500df7563aa0e4d57b79c4f1be"
+2024-07-15 17:55.07: Using OBuilder spec:
+((from ocaml/opam:debian-12-ocaml-5.2@sha256:3dbaeab305d4a974b3d0f76aee75f526eefe33d14250a2110852ba3b6f45f772)
+ (user (uid 1000) (gid 1000))
+ (workdir /home/opam)
+ (run (shell "sudo ln -f /usr/bin/opam-dev /usr/bin/opam"))
+ (run (network host)
+      (shell "opam init --reinit --config .opamrc-sandbox -ni"))
+ (run (shell "uname -rs && opam exec -- ocaml -version && opam --version"))
+ (env OPAMDOWNLOADJOBS 1)
+ (env OPAMERRLOGLEN 0)
+ (env OPAMSOLVERTIMEOUT 500)
+ (env OPAMPRECISETRACKING 1)
+ (env CI true)
+ (env OPAM_REPO_CI true)
+ (run (shell "rm -rf opam-repository/"))
+ (copy (src .) (dst opam-repository/))
+ (run (shell "opam repository set-url --strict default opam-repository/"))
+ (run (network host)
+      (shell "opam update --depexts || true"))
+ (run (shell "opam pin add -k version -yn menhirCST.20240715 20240715"))
+ (run (cache (opam-archives (target /home/opam/.opam/download-cache)))
+      (network host)
+      (shell  "opam reinstall menhirCST.20240715;\
+             \n        res=$?;\
+             \n        test \"$res\" != 31 && exit \"$res\";\
+             \n        export OPAMCLI=2.0;\
+             \n        build_dir=$(opam var prefix)/.opam-switch/build;\
+             \n        failed=$(ls \"$build_dir\");\
+             \n        partial_fails=\"\";\
+             \n        for pkg in $failed; do\
+             \n          if opam show -f x-ci-accept-failures: \"$pkg\" | grep -qF \"\\\"debian-12\\\"\"; then\
+             \n            echo \"A package failed and has been disabled for CI using the 'x-ci-accept-failures' field.\";\
+             \n          fi;\
+             \n          test \"$pkg\" != 'menhirCST.20240715' && partial_fails=\"$partial_fails $pkg\";\
+             \n        done;\
+             \n        test \"${partial_fails}\" != \"\" && echo \"opam-repo-ci detected dependencies failing: ${partial_fails}\";\
+             \n        exit 1"))
+ (run (cache (opam-archives (target /home/opam/.opam/download-cache)))
+      (network host)
+      (shell  "opam reinstall publish.0.3.4+transition;\
+             \n        res=$?;\
+             \n        test \"$res\" != 31 && exit \"$res\";\
+             \n        export OPAMCLI=2.0;\
+             \n        build_dir=$(opam var prefix)/.opam-switch/build;\
+             \n        failed=$(ls \"$build_dir\");\
+             \n        partial_fails=\"\";\
+             \n        for pkg in $failed; do\
+             \n          if opam show -f x-ci-accept-failures: \"$pkg\" | grep -qF \"\\\"debian-12\\\"\"; then\
+             \n            echo \"A package failed and has been disabled for CI using the 'x-ci-accept-failures' field.\";\
+             \n          fi;\
+             \n          test \"$pkg\" != 'publish.0.3.4+transition' && partial_fails=\"$partial_fails $pkg\";\
+             \n        done;\
+             \n        test \"${partial_fails}\" != \"\" && echo \"opam-repo-ci detected dependencies failing: ${partial_fails}\";\
+             \n        exit 1"))
+ (run (network host)
+      (shell "(opam reinstall --with-test publish.0.3.4+transition) || true"))
+ (run (shell  "opam reinstall --with-test --verbose publish.0.3.4+transition;\
+             \n        res=$?;\
+             \n        test \"$res\" != 31 && exit \"$res\";\
+             \n        export OPAMCLI=2.0;\
+             \n        build_dir=$(opam var prefix)/.opam-switch/build;\
+             \n        failed=$(ls \"$build_dir\");\
+             \n        partial_fails=\"\";\
+             \n        for pkg in $failed; do\
+             \n          if opam show -f x-ci-accept-failures: \"$pkg\" | grep -qF \"\\\"debian-12\\\"\"; then\
+             \n            echo \"A package failed and has been disabled for CI using the 'x-ci-accept-failures' field.\";\
+             \n          fi;\
+             \n          test \"$pkg\" != 'publish.0.3.4+transition' && partial_fails=\"$partial_fails $pkg\";\
+             \n        done;\
+             \n        test \"${partial_fails}\" != \"\" && echo \"opam-repo-ci detected dependencies failing: ${partial_fails}\";\
+             \n        exit 1"))
+)
+
+2024-07-15 17:55.07: Waiting for resource in pool OCluster
+2024-07-15 22:09.06: Waiting for worker…
+2024-07-15 22:13.49: Got resource from pool OCluster
+Building on x86-bm-c6.sw.ocaml.org
+All commits already cached
+Updating files:  42% (13531/31836)Updating files:  43% (13690/31836)Updating files:  44% (14008/31836)Updating files:  45% (14327/31836)Updating files:  46% (14645/31836)Updating files:  47% (14963/31836)Updating files:  48% (15282/31836)Updating files:  49% (15600/31836)Updating files:  50% (15918/31836)Updating files:  51% (16237/31836)Updating files:  52% (16555/31836)Updating files:  53% (16874/31836)Updating files:  54% (17192/31836)Updating files:  55% (17510/31836)Updating files:  56% (17829/31836)Updating files:  57% (18147/31836)Updating files:  58% (18465/31836)Updating files:  59% (18784/31836)Updating files:  60% (19102/31836)Updating files:  61% (19420/31836)Updating files:  62% (19739/31836)Updating files:  63% (20057/31836)Updating files:  64% (20376/31836)Updating files:  65% (20694/31836)Updating files:  66% (21012/31836)Updating files:  67% (21331/31836)Updating files:  68% (21649/31836)Updating files:  69% (21967/31836)Updating files:  70% (22286/31836)Updating files:  71% (22604/31836)Updating files:  72% (22922/31836)Updating files:  73% (23241/31836)Updating files:  74% (23559/31836)Updating files:  75% (23877/31836)Updating files:  76% (24196/31836)Updating files:  77% (24514/31836)Updating files:  78% (24833/31836)Updating files:  79% (25151/31836)Updating files:  80% (25469/31836)Updating files:  80% (25734/31836)Updating files:  81% (25788/31836)Updating files:  82% (26106/31836)Updating files:  83% (26424/31836)Updating files:  84% (26743/31836)Updating files:  85% (27061/31836)Updating files:  86% (27379/31836)Updating files:  87% (27698/31836)Updating files:  88% (28016/31836)Updating files:  89% (28335/31836)Updating files:  90% (28653/31836)Updating files:  91% (28971/31836)Updating files:  92% (29290/31836)Updating files:  93% (29608/31836)Updating files:  94% (29926/31836)Updating files:  95% (30245/31836)Updating files:  96% (30563/31836)Updating files:  97% (30881/31836)Updating files:  98% (31200/31836)Updating files:  99% (31518/31836)Updating files: 100% (31836/31836)Updating files: 100% (31836/31836), done.
+HEAD is now at 39a5da86fc Merge pull request #26240 from abeaumont/opam-publish-salsa20-core.2.0.0
+Updating 39a5da86fc..2171c4a8d2
+Fast-forward
+ packages/menhir/menhir.20240715/opam       | 30 ++++++++++++++++++++++++++++++
+ packages/menhirCST/menhirCST.20240715/opam | 29 +++++++++++++++++++++++++++++
+ packages/menhirLib/menhirLib.20240715/opam | 30 ++++++++++++++++++++++++++++++
+ packages/menhirSdk/menhirSdk.20240715/opam | 30 ++++++++++++++++++++++++++++++
+ 4 files changed, 119 insertions(+)
+ create mode 100644 packages/menhir/menhir.20240715/opam
+ create mode 100644 packages/menhirCST/menhirCST.20240715/opam
+ create mode 100644 packages/menhirLib/menhirLib.20240715/opam
+ create mode 100644 packages/menhirSdk/menhirSdk.20240715/opam
+
+[01;34m(from ocaml/opam:debian-12-ocaml-5.2@sha256:3dbaeab305d4a974b3d0f76aee75f526eefe33d14250a2110852ba3b6f45f772)[0m
+[01;2m[01;35m2024-07-15 22:13.59 ---> using "456f3d0059126c0b11e45678cc1e36ddae78d88f78aea70fb502a88942d4273f" from cache[0m
+
+[01;34m/: (user (uid 1000) (gid 1000))[0m
+
+[01;34m/: (workdir /home/opam)[0m
+
+[01;34m/home/opam: (run (shell "sudo ln -f /usr/bin/opam-dev /usr/bin/opam"))[0m
+[01;2m[01;35m2024-07-15 22:13.59 ---> using "c2e05c0fc1dc9a30557e8283ea23a948d3de614ac1624231962d74f179af1a32" from cache[0m
+
+[01;34m/home/opam: (run (network host)
+                 (shell "opam init --reinit --config .opamrc-sandbox -ni"))[0m
+Configuring from /home/opam/.opamrc-sandbox, then /home/opam/.opamrc, and finally from built-in defaults.
+Checking for available remotes: rsync and local, git.
+  - you won't be able to use mercurial repositories unless you install the hg command on your system.
+  - you won't be able to use darcs repositories unless you install the darcs command on your system.
+
+This development version of opam requires an update to the layout of /home/opam/.opam from version 2.0 to version 2.2, which can't be reverted.
+You may want to back it up before going further.
+
+Continue? [y/n] y
+[NOTE] The 'jobs' option was reset, its value was 39 and its new value will vary according to the current number of cores on your machine. You can restore the fixed value using:
+           opam option jobs=39 --global
+Format upgrade done.
+
+<><> Updating repositories ><><><><><><><><><><><><><><><><><><><><><><><><><><>
+[default] synchronised from file:///home/opam/opam-repository
+[01;2m[01;35m2024-07-15 22:13.59 ---> using "def2b354300c6a0ca3d37ded11e0769754bb2a39f38e4ccb535e43743df16f98" from cache[0m
+
+[01;34m/home/opam: (run (shell "uname -rs && opam exec -- ocaml -version && opam --version"))[0m
+Linux 5.15.0-113-generic
+The OCaml toplevel, version 5.2.0
+2.3.0~alpha~dev
+[01;2m[01;35m2024-07-15 22:13.59 ---> using "f9d5311fd9e861315b71e2cd2c477384c4073cf2849f761b0b74439732026929" from cache[0m
+
+[01;34m/home/opam: (env OPAMDOWNLOADJOBS 1)[0m
+
+[01;34m/home/opam: (env OPAMERRLOGLEN 0)[0m
+
+[01;34m/home/opam: (env OPAMSOLVERTIMEOUT 500)[0m
+
+[01;34m/home/opam: (env OPAMPRECISETRACKING 1)[0m
+
+[01;34m/home/opam: (env CI true)[0m
+
+[01;34m/home/opam: (env OPAM_REPO_CI true)[0m
+
+[01;34m/home/opam: (run (shell "rm -rf opam-repository/"))[0m
+[01;2m[01;35m2024-07-15 22:13.59 ---> using "7b34f2df726425927636af408dbdb8ab83f5efce14e5d959ffe4c570125953a2" from cache[0m
+
+[01;34m/home/opam: (copy (src .) (dst opam-repository/))[0m
+[01;2m[01;35m2024-07-15 22:14.01 ---> using "fc497fbb028ba79a699d56e137e056389b6f5e0c1384e843f3878958a8c4a92f" from cache[0m
+
+[01;34m/home/opam: (run (shell "opam repository set-url --strict default opam-repository/"))[0m
+[default] Initialised
+[01;2m[01;35m2024-07-15 22:14.01 ---> using "32d6f64f73813f7cdbf0728ce3848af6eec1f11d80031b80b71fb2abb11c2cea" from cache[0m
+
+[01;34m/home/opam: (run (network host)
+                 (shell "opam update --depexts || true"))[0m
++ /usr/bin/sudo "apt-get" "update"
+- Hit:1 http://deb.debian.org/debian bookworm InRelease
+- Get:2 http://deb.debian.org/debian bookworm-updates InRelease [55.4 kB]
+- Get:3 http://deb.debian.org/debian-security bookworm-security InRelease [48.0 kB]
+- Get:4 http://deb.debian.org/debian-security bookworm-security/main amd64 Packages [168 kB]
+- Fetched 271 kB in 0s (1110 kB/s)
+- Reading package lists...
+[01;2m[01;35m2024-07-15 22:14.01 ---> using "61d2a762eb32302ce556ae617aa88c0145c586a62a033a54d78e090c3586e9f6" from cache[0m
+
+[01;34m/home/opam: (run (shell "opam pin add -k version -yn menhirCST.20240715 20240715"))[0m
+menhirCST is now pinned to version 20240715
+[01;2m[01;35m2024-07-15 22:14.01 ---> using "0d2ca569252348cedb35aeb4995764b15405428c3219b527a19fb8444a8ddb7f" from cache[0m
+
+[01;34m/home/opam: (run (cache (opam-archives (target /home/opam/.opam/download-cache)))
+                 (network host)
+                 (shell  "opam reinstall menhirCST.20240715;\
+                        \n        res=$?;\
+                        \n        test \"$res\" != 31 && exit \"$res\";\
+                        \n        export OPAMCLI=2.0;\
+                        \n        build_dir=$(opam var prefix)/.opam-switch/build;\
+                        \n        failed=$(ls \"$build_dir\");\
+                        \n        partial_fails=\"\";\
+                        \n        for pkg in $failed; do\
+                        \n          if opam show -f x-ci-accept-failures: \"$pkg\" | grep -qF \"\\\"debian-12\\\"\"; then\
+                        \n            echo \"A package failed and has been disabled for CI using the 'x-ci-accept-failures' field.\";\
+                        \n          fi;\
+                        \n          test \"$pkg\" != 'menhirCST.20240715' && partial_fails=\"$partial_fails $pkg\";\
+                        \n        done;\
+                        \n        test \"${partial_fails}\" != \"\" && echo \"opam-repo-ci detected dependencies failing: ${partial_fails}\";\
+                        \n        exit 1"))[0m
+menhirCST.20240715 is not installed. Install it? [y/n] y
+The following actions will be performed:
+=== install 2 packages
+  - install dune      3.16.0            [required by menhirCST]
+  - install menhirCST 20240715 (pinned)
+
+<><> Processing actions <><><><><><><><><><><><><><><><><><><><><><><><><><><><>
+-> retrieved dune.3.16.0  (cached)
+-> retrieved menhirCST.20240715  (cached)
+-> installed dune.3.16.0
+-> installed menhirCST.20240715
+Done.
+# Run eval $(opam env) to update the current shell environment
+[01;2m[01;35m2024-07-15 22:14.01 ---> using "65e5c1f28284198f2ac3b3270f5239e81475a9fb46e6ba3510d6dd94d17fad28" from cache[0m
+
+[01;34m/home/opam: (run (cache (opam-archives (target /home/opam/.opam/download-cache)))
+                 (network host)
+                 (shell  "opam reinstall publish.0.3.4+transition;\
+                        \n        res=$?;\
+                        \n        test \"$res\" != 31 && exit \"$res\";\
+                        \n        export OPAMCLI=2.0;\
+                        \n        build_dir=$(opam var prefix)/.opam-switch/build;\
+                        \n        failed=$(ls \"$build_dir\");\
+                        \n        partial_fails=\"\";\
+                        \n        for pkg in $failed; do\
+                        \n          if opam show -f x-ci-accept-failures: \"$pkg\" | grep -qF \"\\\"debian-12\\\"\"; then\
+                        \n            echo \"A package failed and has been disabled for CI using the 'x-ci-accept-failures' field.\";\
+                        \n          fi;\
+                        \n          test \"$pkg\" != 'publish.0.3.4+transition' && partial_fails=\"$partial_fails $pkg\";\
+                        \n        done;\
+                        \n        test \"${partial_fails}\" != \"\" && echo \"opam-repo-ci detected dependencies failing: ${partial_fails}\";\
+                        \n        exit 1"))[0m
+publish.0.3.4+transition is not installed. Install it? [y/n] y
+[ERROR] Sorry, resolution of the request timed out.
+        Try to specify a more precise request, use a different solver, or increase the allowed time by setting OPAMSOLVERTIMEOUT to a bigger value (currently, it is set to 500.0 seconds).
+"/usr/bin/env" "bash" "-c" "opam reinstall publish.0.3.4+transition;
+        res=$?;
+        test "$res" != 31 && exit "$res";
+        export OPAMCLI=2.0;
+        build_dir=$(opam var prefix)/.opam-switch/build;
+        failed=$(ls "$build_dir");
+        partial_fails="";
+        for pkg in $failed; do
+          if opam show -f x-ci-accept-failures: "$pkg" | grep -qF "\"debian-12\""; then
+            echo "A package failed and has been disabled for CI using the 'x-ci-accept-failures' field.";
+          fi;
+          test "$pkg" != 'publish.0.3.4+transition' && partial_fails="$partial_fails $pkg";
+        done;
+        test "${partial_fails}" != "" && echo "opam-repo-ci detected dependencies failing: ${partial_fails}";
+        exit 1" failed with exit status 60
+2024-07-15 22:22.54: Job failed: Failed: Build failed
+2024-07-15 22:22.54: Log analysis:
+2024-07-15 22:22.54: >>> 
+[ERROR] Sorry, resolution of the request timed out.
+ (score = 20)
+2024-07-15 22:22.54: Sorry, resolution of the request timed out.

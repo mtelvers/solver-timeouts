@@ -1,0 +1,415 @@
+2024-06-17 19:34.41: New job: test opentelemetry-lwt.0.8 with menhir-secondary.20210419, using opam dev
+                              from https://github.com/ocaml/opam-repository.git#refs/pull/25928/head (3f2c920b90e20a61c5c90d25ab350fcf660158fd)
+                              on debian-12-ocaml-4.14/amd64
+
+To reproduce locally:
+
+cd $(mktemp -d)
+git clone --recursive "https://github.com/ocaml/opam-repository.git" && cd "opam-repository" && git fetch origin "refs/pull/25928/head" && git reset --hard 3f2c920b
+git fetch origin master
+git merge --no-edit 5d6f1cf035d4b9d572fef4ae2e63cf1e3da8760d
+cat > ../Dockerfile <<'END-OF-DOCKERFILE'
+[34mFROM ocaml/opam:debian-12-ocaml-4.14@sha256:68ecefb12259af7ac8f85f40002bb77c47ee641474979fd6a320ed7bf1222c7c
+USER 1000:1000
+WORKDIR /home/opam
+RUN sudo ln -f /usr/bin/opam-dev /usr/bin/opam
+RUN opam init --reinit -ni
+RUN uname -rs && opam exec -- ocaml -version && opam --version
+ENV OPAMDOWNLOADJOBS="1"
+ENV OPAMERRLOGLEN="0"
+ENV OPAMSOLVERTIMEOUT="500"
+ENV OPAMPRECISETRACKING="1"
+ENV CI="true"
+ENV OPAM_REPO_CI="true"
+RUN rm -rf opam-repository/
+COPY --chown=1000:1000 . opam-repository/
+RUN opam repository set-url --strict default opam-repository/
+RUN opam update --depexts || true
+RUN opam pin add -k version -yn menhir-secondary.20210419 20210419
+RUN opam reinstall menhir-secondary.20210419; \
+    res=$?; \
+    test "$res" != 31 && exit "$res"; \
+    export OPAMCLI=2.0; \
+    build_dir=$(opam var prefix)/.opam-switch/build; \
+    failed=$(ls "$build_dir"); \
+    partial_fails=""; \
+    for pkg in $failed; do \
+    if opam show -f x-ci-accept-failures: "$pkg" | grep -qF "\"debian-12\""; then \
+    echo "A package failed and has been disabled for CI using the 'x-ci-accept-failures' field."; \
+    fi; \
+    test "$pkg" != 'menhir-secondary.20210419' && partial_fails="$partial_fails $pkg"; \
+    done; \
+    test "${partial_fails}" != "" && echo "opam-repo-ci detected dependencies failing: ${partial_fails}"; \
+    exit 1
+RUN opam reinstall opentelemetry-lwt.0.8; \
+    res=$?; \
+    test "$res" != 31 && exit "$res"; \
+    export OPAMCLI=2.0; \
+    build_dir=$(opam var prefix)/.opam-switch/build; \
+    failed=$(ls "$build_dir"); \
+    partial_fails=""; \
+    for pkg in $failed; do \
+    if opam show -f x-ci-accept-failures: "$pkg" | grep -qF "\"debian-12\""; then \
+    echo "A package failed and has been disabled for CI using the 'x-ci-accept-failures' field."; \
+    fi; \
+    test "$pkg" != 'opentelemetry-lwt.0.8' && partial_fails="$partial_fails $pkg"; \
+    done; \
+    test "${partial_fails}" != "" && echo "opam-repo-ci detected dependencies failing: ${partial_fails}"; \
+    exit 1
+RUN (opam reinstall --with-test opentelemetry-lwt.0.8) || true
+RUN opam reinstall --with-test --verbose opentelemetry-lwt.0.8; \
+    res=$?; \
+    test "$res" != 31 && exit "$res"; \
+    export OPAMCLI=2.0; \
+    build_dir=$(opam var prefix)/.opam-switch/build; \
+    failed=$(ls "$build_dir"); \
+    partial_fails=""; \
+    for pkg in $failed; do \
+    if opam show -f x-ci-accept-failures: "$pkg" | grep -qF "\"debian-12\""; then \
+    echo "A package failed and has been disabled for CI using the 'x-ci-accept-failures' field."; \
+    fi; \
+    test "$pkg" != 'opentelemetry-lwt.0.8' && partial_fails="$partial_fails $pkg"; \
+    done; \
+    test "${partial_fails}" != "" && echo "opam-repo-ci detected dependencies failing: ${partial_fails}"; \
+    exit 1
+[0m
+END-OF-DOCKERFILE
+docker build -f ../Dockerfile .
+
+2024-06-17 19:34.41: Using cache hint "ocaml/opam:debian-12-ocaml-4.14@sha256:68ecefb12259af7ac8f85f40002bb77c47ee641474979fd6a320ed7bf1222c7c-menhir-secondary.20210419-opentelemetry-lwt.0.8-3f2c920b90e20a61c5c90d25ab350fcf660158fd"
+2024-06-17 19:34.41: Using OBuilder spec:
+((from ocaml/opam:debian-12-ocaml-4.14@sha256:68ecefb12259af7ac8f85f40002bb77c47ee641474979fd6a320ed7bf1222c7c)
+ (user (uid 1000) (gid 1000))
+ (workdir /home/opam)
+ (run (shell "sudo ln -f /usr/bin/opam-dev /usr/bin/opam"))
+ (run (network host)
+      (shell "opam init --reinit --config .opamrc-sandbox -ni"))
+ (run (shell "uname -rs && opam exec -- ocaml -version && opam --version"))
+ (env OPAMDOWNLOADJOBS 1)
+ (env OPAMERRLOGLEN 0)
+ (env OPAMSOLVERTIMEOUT 500)
+ (env OPAMPRECISETRACKING 1)
+ (env CI true)
+ (env OPAM_REPO_CI true)
+ (run (shell "rm -rf opam-repository/"))
+ (copy (src .) (dst opam-repository/))
+ (run (shell "opam repository set-url --strict default opam-repository/"))
+ (run (network host)
+      (shell "opam update --depexts || true"))
+ (run (shell "opam pin add -k version -yn menhir-secondary.20210419 20210419"))
+ (run (cache (opam-archives (target /home/opam/.opam/download-cache)))
+      (network host)
+      (shell  "opam reinstall menhir-secondary.20210419;\
+             \n        res=$?;\
+             \n        test \"$res\" != 31 && exit \"$res\";\
+             \n        export OPAMCLI=2.0;\
+             \n        build_dir=$(opam var prefix)/.opam-switch/build;\
+             \n        failed=$(ls \"$build_dir\");\
+             \n        partial_fails=\"\";\
+             \n        for pkg in $failed; do\
+             \n          if opam show -f x-ci-accept-failures: \"$pkg\" | grep -qF \"\\\"debian-12\\\"\"; then\
+             \n            echo \"A package failed and has been disabled for CI using the 'x-ci-accept-failures' field.\";\
+             \n          fi;\
+             \n          test \"$pkg\" != 'menhir-secondary.20210419' && partial_fails=\"$partial_fails $pkg\";\
+             \n        done;\
+             \n        test \"${partial_fails}\" != \"\" && echo \"opam-repo-ci detected dependencies failing: ${partial_fails}\";\
+             \n        exit 1"))
+ (run (cache (opam-archives (target /home/opam/.opam/download-cache)))
+      (network host)
+      (shell  "opam reinstall opentelemetry-lwt.0.8;\
+             \n        res=$?;\
+             \n        test \"$res\" != 31 && exit \"$res\";\
+             \n        export OPAMCLI=2.0;\
+             \n        build_dir=$(opam var prefix)/.opam-switch/build;\
+             \n        failed=$(ls \"$build_dir\");\
+             \n        partial_fails=\"\";\
+             \n        for pkg in $failed; do\
+             \n          if opam show -f x-ci-accept-failures: \"$pkg\" | grep -qF \"\\\"debian-12\\\"\"; then\
+             \n            echo \"A package failed and has been disabled for CI using the 'x-ci-accept-failures' field.\";\
+             \n          fi;\
+             \n          test \"$pkg\" != 'opentelemetry-lwt.0.8' && partial_fails=\"$partial_fails $pkg\";\
+             \n        done;\
+             \n        test \"${partial_fails}\" != \"\" && echo \"opam-repo-ci detected dependencies failing: ${partial_fails}\";\
+             \n        exit 1"))
+ (run (network host)
+      (shell "(opam reinstall --with-test opentelemetry-lwt.0.8) || true"))
+ (run (shell  "opam reinstall --with-test --verbose opentelemetry-lwt.0.8;\
+             \n        res=$?;\
+             \n        test \"$res\" != 31 && exit \"$res\";\
+             \n        export OPAMCLI=2.0;\
+             \n        build_dir=$(opam var prefix)/.opam-switch/build;\
+             \n        failed=$(ls \"$build_dir\");\
+             \n        partial_fails=\"\";\
+             \n        for pkg in $failed; do\
+             \n          if opam show -f x-ci-accept-failures: \"$pkg\" | grep -qF \"\\\"debian-12\\\"\"; then\
+             \n            echo \"A package failed and has been disabled for CI using the 'x-ci-accept-failures' field.\";\
+             \n          fi;\
+             \n          test \"$pkg\" != 'opentelemetry-lwt.0.8' && partial_fails=\"$partial_fails $pkg\";\
+             \n        done;\
+             \n        test \"${partial_fails}\" != \"\" && echo \"opam-repo-ci detected dependencies failing: ${partial_fails}\";\
+             \n        exit 1"))
+)
+
+2024-06-17 19:34.41: Waiting for resource in pool OCluster
+2024-06-18 03:22.56: Waiting for worker…
+2024-06-18 03:26.32: Got resource from pool OCluster
+Building on x86-bm-c15.sw.ocaml.org
+All commits already cached
+Updating files:  68% (21665/31554)Updating files:  69% (21773/31554)Updating files:  70% (22088/31554)Updating files:  71% (22404/31554)Updating files:  72% (22719/31554)Updating files:  73% (23035/31554)Updating files:  74% (23350/31554)Updating files:  75% (23666/31554)Updating files:  76% (23982/31554)Updating files:  77% (24297/31554)Updating files:  78% (24613/31554)Updating files:  79% (24928/31554)Updating files:  80% (25244/31554)Updating files:  81% (25559/31554)Updating files:  82% (25875/31554)Updating files:  83% (26190/31554)Updating files:  84% (26506/31554)Updating files:  85% (26821/31554)Updating files:  86% (27137/31554)Updating files:  87% (27452/31554)Updating files:  88% (27768/31554)Updating files:  89% (28084/31554)Updating files:  90% (28399/31554)Updating files:  91% (28715/31554)Updating files:  92% (29030/31554)Updating files:  93% (29346/31554)Updating files:  94% (29661/31554)Updating files:  95% (29977/31554)Updating files:  96% (30292/31554)Updating files:  97% (30608/31554)Updating files:  98% (30923/31554)Updating files:  99% (31239/31554)Updating files: 100% (31554/31554)Updating files: 100% (31554/31554), done.
+HEAD is now at 5d6f1cf035 Merge pull request #26098 from yawaramin/release-dream-html-v3.5.2
+Merge made by the 'ort' strategy.
+ packages/base-flambda2/base-flambda2.base/opam     |  8 +++
+ packages/dune-secondary/dune-secondary.3.8.1/opam  | 60 ++++++++++++++++++++++
+ .../menhir-secondary.20210419/opam                 | 34 ++++++++++++
+ .../ocaml-secondary-compiler.4.14.2/opam           | 30 +++++++++++
+ .../ocaml-variants.5.1.1+flambda2/opam             | 46 +++++++++++++++++
+ 5 files changed, 178 insertions(+)
+ create mode 100644 packages/base-flambda2/base-flambda2.base/opam
+ create mode 100644 packages/dune-secondary/dune-secondary.3.8.1/opam
+ create mode 100644 packages/menhir-secondary/menhir-secondary.20210419/opam
+ create mode 100644 packages/ocaml-secondary-compiler/ocaml-secondary-compiler.4.14.2/opam
+ create mode 100644 packages/ocaml-variants/ocaml-variants.5.1.1+flambda2/opam
+
+[01;34m(from ocaml/opam:debian-12-ocaml-4.14@sha256:68ecefb12259af7ac8f85f40002bb77c47ee641474979fd6a320ed7bf1222c7c)[0m
+[01;2m[01;35m2024-06-18 03:26.35 ---> using "be6362479294069b96a78ceb45e5e59b696aa4ead55eec8c4ca81a46ae6af254" from cache[0m
+
+[01;34m/: (user (uid 1000) (gid 1000))[0m
+
+[01;34m/: (workdir /home/opam)[0m
+
+[01;34m/home/opam: (run (shell "sudo ln -f /usr/bin/opam-dev /usr/bin/opam"))[0m
+[01;2m[01;35m2024-06-18 03:26.35 ---> using "8ad80d6a0debeaed101481b8cff66e1eafb8b0e653f48d497136a3cd6c73afd4" from cache[0m
+
+[01;34m/home/opam: (run (network host)
+                 (shell "opam init --reinit --config .opamrc-sandbox -ni"))[0m
+Configuring from /home/opam/.opamrc-sandbox, then /home/opam/.opamrc, and finally from built-in defaults.
+Checking for available remotes: rsync and local, git.
+  - you won't be able to use mercurial repositories unless you install the hg command on your system.
+  - you won't be able to use darcs repositories unless you install the darcs command on your system.
+
+This development version of opam requires an update to the layout of /home/opam/.opam from version 2.0 to version 2.2~beta, which can't be reverted.
+You may want to back it up before going further.
+
+Continue? [y/n] y
+Format upgrade done.
+
+<><> Updating repositories ><><><><><><><><><><><><><><><><><><><><><><><><><><>
+[default] synchronised from file:///home/opam/opam-repository
+[01;2m[01;35m2024-06-18 03:26.35 ---> using "56bbd298ac51fe1e7634bdd19c2541599a9d163a08dafe773745bbf4eb18410c" from cache[0m
+
+[01;34m/home/opam: (run (shell "uname -rs && opam exec -- ocaml -version && opam --version"))[0m
+Linux 5.15.0-112-generic
+The OCaml toplevel, version 4.14.2
+2.2.0~beta3~dev
+[01;2m[01;35m2024-06-18 03:26.35 ---> using "152abb09d7c0ec6a6b81839d18fba96e3d05ed398f577cd267f0f4b08f6eb24b" from cache[0m
+
+[01;34m/home/opam: (env OPAMDOWNLOADJOBS 1)[0m
+
+[01;34m/home/opam: (env OPAMERRLOGLEN 0)[0m
+
+[01;34m/home/opam: (env OPAMSOLVERTIMEOUT 500)[0m
+
+[01;34m/home/opam: (env OPAMPRECISETRACKING 1)[0m
+
+[01;34m/home/opam: (env CI true)[0m
+
+[01;34m/home/opam: (env OPAM_REPO_CI true)[0m
+
+[01;34m/home/opam: (run (shell "rm -rf opam-repository/"))[0m
+[01;2m[01;35m2024-06-18 03:26.35 ---> using "ed21e7d865a19fc202b822ef2e288487fef395f0eb5a1334ec4e29366b626f01" from cache[0m
+
+[01;34m/home/opam: (copy (src .) (dst opam-repository/))[0m
+[01;2m[01;35m2024-06-18 03:26.37 ---> using "87714c5da9847fac11b9a56940173d1997c1c1161df2e16668aa8c668afcd33b" from cache[0m
+
+[01;34m/home/opam: (run (shell "opam repository set-url --strict default opam-repository/"))[0m
+[default] Initialised
+[01;2m[01;35m2024-06-18 03:26.37 ---> using "88bec433876cda499d6bf3693125a84078516c9508a2ecad2cb8497fef23a877" from cache[0m
+
+[01;34m/home/opam: (run (network host)
+                 (shell "opam update --depexts || true"))[0m
++ /usr/bin/sudo "apt-get" "update"
+- Hit:1 http://deb.debian.org/debian bookworm InRelease
+- Get:2 http://deb.debian.org/debian bookworm-updates InRelease [55.4 kB]
+- Get:3 http://deb.debian.org/debian-security bookworm-security InRelease [48.0 kB]
+- Get:4 http://deb.debian.org/debian-security bookworm-security/main amd64 Packages [160 kB]
+- Fetched 263 kB in 0s (987 kB/s)
+- Reading package lists...
+- 
+[01;2m[01;35m2024-06-18 03:26.37 ---> using "225c9c9fb985ff177aff4eb650c3d0b39b72e6a6a0a6d05b628d10b6ab428069" from cache[0m
+
+[01;34m/home/opam: (run (shell "opam pin add -k version -yn menhir-secondary.20210419 20210419"))[0m
+menhir-secondary is now pinned to version 20210419
+[01;2m[01;35m2024-06-18 03:26.37 ---> using "5e653339d97e0ed8185532c5e1703035ce8343dcb811ddc6b0aea6ac7d86883e" from cache[0m
+
+[01;34m/home/opam: (run (cache (opam-archives (target /home/opam/.opam/download-cache)))
+                 (network host)
+                 (shell  "opam reinstall menhir-secondary.20210419;\
+                        \n        res=$?;\
+                        \n        test \"$res\" != 31 && exit \"$res\";\
+                        \n        export OPAMCLI=2.0;\
+                        \n        build_dir=$(opam var prefix)/.opam-switch/build;\
+                        \n        failed=$(ls \"$build_dir\");\
+                        \n        partial_fails=\"\";\
+                        \n        for pkg in $failed; do\
+                        \n          if opam show -f x-ci-accept-failures: \"$pkg\" | grep -qF \"\\\"debian-12\\\"\"; then\
+                        \n            echo \"A package failed and has been disabled for CI using the 'x-ci-accept-failures' field.\";\
+                        \n          fi;\
+                        \n          test \"$pkg\" != 'menhir-secondary.20210419' && partial_fails=\"$partial_fails $pkg\";\
+                        \n        done;\
+                        \n        test \"${partial_fails}\" != \"\" && echo \"opam-repo-ci detected dependencies failing: ${partial_fails}\";\
+                        \n        exit 1"))[0m
+menhir-secondary.20210419 is not installed. Install it? [y/n] y
+The following actions will be performed:
+=== install 3 packages
+  - install dune-secondary           3.8.1             [required by menhir-secondary]
+  - install menhir-secondary         20210419 (pinned)
+  - install ocaml-secondary-compiler 4.14.2            [required by menhir-secondary]
+
+<><> Processing actions <><><><><><><><><><><><><><><><><><><><><><><><><><><><>
+-> retrieved dune-secondary.3.8.1  (cached)
+-> retrieved menhir-secondary.20210419  (cached)
+-> retrieved ocaml-secondary-compiler.4.14.2  (cached)
+-> installed ocaml-secondary-compiler.4.14.2
+-> installed dune-secondary.3.8.1
+-> installed menhir-secondary.20210419
+Done.
+# Run eval $(opam env) to update the current shell environment
+[01;2m[01;35m2024-06-18 03:26.37 ---> using "d2891b055dfb002137c9443556254c76776d5579d4c176144d7bb63c7d4019af" from cache[0m
+
+[01;34m/home/opam: (run (cache (opam-archives (target /home/opam/.opam/download-cache)))
+                 (network host)
+                 (shell  "opam reinstall opentelemetry-lwt.0.8;\
+                        \n        res=$?;\
+                        \n        test \"$res\" != 31 && exit \"$res\";\
+                        \n        export OPAMCLI=2.0;\
+                        \n        build_dir=$(opam var prefix)/.opam-switch/build;\
+                        \n        failed=$(ls \"$build_dir\");\
+                        \n        partial_fails=\"\";\
+                        \n        for pkg in $failed; do\
+                        \n          if opam show -f x-ci-accept-failures: \"$pkg\" | grep -qF \"\\\"debian-12\\\"\"; then\
+                        \n            echo \"A package failed and has been disabled for CI using the 'x-ci-accept-failures' field.\";\
+                        \n          fi;\
+                        \n          test \"$pkg\" != 'opentelemetry-lwt.0.8' && partial_fails=\"$partial_fails $pkg\";\
+                        \n        done;\
+                        \n        test \"${partial_fails}\" != \"\" && echo \"opam-repo-ci detected dependencies failing: ${partial_fails}\";\
+                        \n        exit 1"))[0m
+opentelemetry-lwt.0.8 is not installed. Install it? [y/n] y
+The following actions will be performed:
+=== install 22 packages
+  - install ambient-context     0.1.0   [required by opentelemetry-lwt]
+  - install base-bytes          base    [required by ocplib-endian]
+  - install cppo                1.6.9   [required by lwt]
+  - install csexp               1.5.2   [required by dune-configurator]
+  - install dune                3.16.0  [required by opentelemetry-lwt]
+  - install dune-configurator   3.16.0  [required by lwt]
+  - install hmap                0.8.1   [required by ambient-context, opentelemetry]
+  - install lwt                 5.7.0   [required by opentelemetry-lwt]
+  - install lwt_ppx             2.1.0   [required by opentelemetry-lwt]
+  - install ocaml-compiler-libs v0.12.4 [required by ppxlib]
+  - install ocamlbuild          0.14.3  [required by hmap, ptime]
+  - install ocamlfind           1.9.6   [required by hmap, ptime]
+  - install ocplib-endian       1.2     [required by lwt]
+  - install opentelemetry       0.8     [required by opentelemetry-lwt]
+  - install opentelemetry-lwt   0.8
+  - install pbrt                3.0.2   [required by opentelemetry]
+  - install ppx_derivers        1.2.1   [required by ppxlib]
+  - install ppxlib              0.32.1  [required by lwt_ppx]
+  - install ptime               1.1.0   [required by opentelemetry]
+  - install sexplib0            v0.17.0 [required by ppxlib]
+  - install stdlib-shims        0.3.0   [required by ppxlib, pbrt]
+  - install topkg               1.0.7   [required by hmap, ptime]
+
+<><> Processing actions <><><><><><><><><><><><><><><><><><><><><><><><><><><><>
+-> retrieved ambient-context.0.1.0  (cached)
+-> retrieved cppo.1.6.9  (cached)
+-> retrieved csexp.1.5.2  (cached)
+-> retrieved dune.3.16.0, dune-configurator.3.16.0  (cached)
+-> retrieved hmap.0.8.1  (cached)
+-> retrieved lwt.5.7.0  (cached)
+-> retrieved lwt_ppx.2.1.0  (cached)
+-> retrieved ocaml-compiler-libs.v0.12.4  (cached)
+-> retrieved ocamlbuild.0.14.3  (cached)
+-> retrieved ocamlfind.1.9.6  (cached)
+-> retrieved ocplib-endian.1.2  (cached)
+-> retrieved opentelemetry.0.8, opentelemetry-lwt.0.8  (https://github.com/imandra-ai/ocaml-opentelemetry/releases/download/v0.8/opentelemetry-0.8.tbz)
+-> retrieved pbrt.3.0.2  (https://github.com/mransan/ocaml-protoc/releases/download/v3.0.2/ocaml-protoc-3.0.2.tbz)
+-> retrieved ppx_derivers.1.2.1  (cached)
+-> retrieved ppxlib.0.32.1  (cached)
+-> retrieved ptime.1.1.0  (cached)
+-> retrieved sexplib0.v0.17.0  (cached)
+-> retrieved stdlib-shims.0.3.0  (cached)
+-> retrieved topkg.1.0.7  (cached)
+-> installed ocamlfind.1.9.6
+-> installed base-bytes.base
+-> installed ocamlbuild.0.14.3
+-> installed topkg.1.0.7
+-> installed hmap.0.8.1
+-> installed ptime.1.1.0
+-> installed dune.3.16.0
+-> installed ppx_derivers.1.2.1
+-> installed csexp.1.5.2
+-> installed ambient-context.0.1.0
+-> installed cppo.1.6.9
+-> installed ocaml-compiler-libs.v0.12.4
+-> installed sexplib0.v0.17.0
+-> installed stdlib-shims.0.3.0
+-> installed ocplib-endian.1.2
+-> installed pbrt.3.0.2
+-> installed dune-configurator.3.16.0
+-> installed opentelemetry.0.8
+-> installed lwt.5.7.0
+-> installed ppxlib.0.32.1
+-> installed lwt_ppx.2.1.0
+-> installed opentelemetry-lwt.0.8
+Done.
+# Run eval $(opam env) to update the current shell environment
+[01;2m[01;35m2024-06-18 03:27.48 ---> saved as "dc5e47d87bfdc3846b2515d4134773dca90f2448dcf6950a37ae4b9acde3634b"[0m
+
+[01;34m/home/opam: (run (network host)
+                 (shell "(opam reinstall --with-test opentelemetry-lwt.0.8) || true"))[0m
+[ERROR] Sorry, resolution of the request timed out.
+        Try to specify a more precise request, use a different solver, or increase the allowed time by setting OPAMSOLVERTIMEOUT to a bigger value (currently, it is set to 500.0 seconds).
+[01;2m[01;35m2024-06-18 03:36.26 ---> saved as "ae0ce5dfbe0714c0b0843070a6ca8c7d02bd149415e8effc0642c0564d2bde3d"[0m
+
+[01;34m/home/opam: (run (shell  "opam reinstall --with-test --verbose opentelemetry-lwt.0.8;\
+                        \n        res=$?;\
+                        \n        test \"$res\" != 31 && exit \"$res\";\
+                        \n        export OPAMCLI=2.0;\
+                        \n        build_dir=$(opam var prefix)/.opam-switch/build;\
+                        \n        failed=$(ls \"$build_dir\");\
+                        \n        partial_fails=\"\";\
+                        \n        for pkg in $failed; do\
+                        \n          if opam show -f x-ci-accept-failures: \"$pkg\" | grep -qF \"\\\"debian-12\\\"\"; then\
+                        \n            echo \"A package failed and has been disabled for CI using the 'x-ci-accept-failures' field.\";\
+                        \n          fi;\
+                        \n          test \"$pkg\" != 'opentelemetry-lwt.0.8' && partial_fails=\"$partial_fails $pkg\";\
+                        \n        done;\
+                        \n        test \"${partial_fails}\" != \"\" && echo \"opam-repo-ci detected dependencies failing: ${partial_fails}\";\
+                        \n        exit 1"))[0m
+[ERROR] Sorry, resolution of the request timed out.
+        Try to specify a more precise request, use a different solver, or increase the allowed time by setting OPAMSOLVERTIMEOUT to a bigger value (currently, it is set to 500.0 seconds).
+'opam reinstall --with-test --verbose opentelemetry-lwt.0.8' failed.
+"/usr/bin/env" "bash" "-c" "opam reinstall --with-test --verbose opentelemetry-lwt.0.8;
+        res=$?;
+        test "$res" != 31 && exit "$res";
+        export OPAMCLI=2.0;
+        build_dir=$(opam var prefix)/.opam-switch/build;
+        failed=$(ls "$build_dir");
+        partial_fails="";
+        for pkg in $failed; do
+          if opam show -f x-ci-accept-failures: "$pkg" | grep -qF "\"debian-12\""; then
+            echo "A package failed and has been disabled for CI using the 'x-ci-accept-failures' field.";
+          fi;
+          test "$pkg" != 'opentelemetry-lwt.0.8' && partial_fails="$partial_fails $pkg";
+        done;
+        test "${partial_fails}" != "" && echo "opam-repo-ci detected dependencies failing: ${partial_fails}";
+        exit 1" failed with exit status 60
+2024-06-18 03:45.07: Job failed: Failed: Build failed
+2024-06-18 03:45.07: Log analysis:
+2024-06-18 03:45.07: >>> 
+[ERROR] Sorry, resolution of the request timed out.
+ (score = 20)
+2024-06-18 03:45.07: >>> 
+[ERROR] Sorry, resolution of the request timed out.
+ (score = 20)
+2024-06-18 03:45.07: Sorry, resolution of the request timed out.

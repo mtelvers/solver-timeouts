@@ -1,0 +1,388 @@
+2024-06-27 15:03.40: New job: test js_of_ocaml-toplevel.5.7.2 with yojson.2.2.2, using opam dev
+                              from https://github.com/ocaml/opam-repository.git#refs/pull/26158/head (b6fd252bfb86f03c473aee61b4d7dd8e91bdc8a0)
+                              on debian-12-ocaml-4.14/amd64
+
+To reproduce locally:
+
+cd $(mktemp -d)
+git clone --recursive "https://github.com/ocaml/opam-repository.git" && cd "opam-repository" && git fetch origin "refs/pull/26158/head" && git reset --hard b6fd252b
+git fetch origin master
+git merge --no-edit 2c609820901335eb683658c6b6ed87d5a9c9e40d
+cat > ../Dockerfile <<'END-OF-DOCKERFILE'
+[34mFROM ocaml/opam:debian-12-ocaml-4.14@sha256:51859147d869ebd23a15922818349effc446cbbc6a0b3e0257a7859e766261b3
+USER 1000:1000
+WORKDIR /home/opam
+RUN sudo ln -f /usr/bin/opam-dev /usr/bin/opam
+RUN opam init --reinit -ni
+RUN uname -rs && opam exec -- ocaml -version && opam --version
+ENV OPAMDOWNLOADJOBS="1"
+ENV OPAMERRLOGLEN="0"
+ENV OPAMSOLVERTIMEOUT="500"
+ENV OPAMPRECISETRACKING="1"
+ENV CI="true"
+ENV OPAM_REPO_CI="true"
+RUN rm -rf opam-repository/
+COPY --chown=1000:1000 . opam-repository/
+RUN opam repository set-url --strict default opam-repository/
+RUN opam update --depexts || true
+RUN opam pin add -k version -yn yojson.2.2.2 2.2.2
+RUN opam reinstall yojson.2.2.2; \
+    res=$?; \
+    test "$res" != 31 && exit "$res"; \
+    export OPAMCLI=2.0; \
+    build_dir=$(opam var prefix)/.opam-switch/build; \
+    failed=$(ls "$build_dir"); \
+    partial_fails=""; \
+    for pkg in $failed; do \
+    if opam show -f x-ci-accept-failures: "$pkg" | grep -qF "\"debian-12\""; then \
+    echo "A package failed and has been disabled for CI using the 'x-ci-accept-failures' field."; \
+    fi; \
+    test "$pkg" != 'yojson.2.2.2' && partial_fails="$partial_fails $pkg"; \
+    done; \
+    test "${partial_fails}" != "" && echo "opam-repo-ci detected dependencies failing: ${partial_fails}"; \
+    exit 1
+RUN opam reinstall js_of_ocaml-toplevel.5.7.2; \
+    res=$?; \
+    test "$res" != 31 && exit "$res"; \
+    export OPAMCLI=2.0; \
+    build_dir=$(opam var prefix)/.opam-switch/build; \
+    failed=$(ls "$build_dir"); \
+    partial_fails=""; \
+    for pkg in $failed; do \
+    if opam show -f x-ci-accept-failures: "$pkg" | grep -qF "\"debian-12\""; then \
+    echo "A package failed and has been disabled for CI using the 'x-ci-accept-failures' field."; \
+    fi; \
+    test "$pkg" != 'js_of_ocaml-toplevel.5.7.2' && partial_fails="$partial_fails $pkg"; \
+    done; \
+    test "${partial_fails}" != "" && echo "opam-repo-ci detected dependencies failing: ${partial_fails}"; \
+    exit 1
+RUN (opam reinstall --with-test js_of_ocaml-toplevel.5.7.2) || true
+RUN opam reinstall --with-test --verbose js_of_ocaml-toplevel.5.7.2; \
+    res=$?; \
+    test "$res" != 31 && exit "$res"; \
+    export OPAMCLI=2.0; \
+    build_dir=$(opam var prefix)/.opam-switch/build; \
+    failed=$(ls "$build_dir"); \
+    partial_fails=""; \
+    for pkg in $failed; do \
+    if opam show -f x-ci-accept-failures: "$pkg" | grep -qF "\"debian-12\""; then \
+    echo "A package failed and has been disabled for CI using the 'x-ci-accept-failures' field."; \
+    fi; \
+    test "$pkg" != 'js_of_ocaml-toplevel.5.7.2' && partial_fails="$partial_fails $pkg"; \
+    done; \
+    test "${partial_fails}" != "" && echo "opam-repo-ci detected dependencies failing: ${partial_fails}"; \
+    exit 1
+[0m
+END-OF-DOCKERFILE
+docker build -f ../Dockerfile .
+
+2024-06-27 15:03.40: Using cache hint "ocaml/opam:debian-12-ocaml-4.14@sha256:51859147d869ebd23a15922818349effc446cbbc6a0b3e0257a7859e766261b3-yojson.2.2.2-js_of_ocaml-toplevel.5.7.2-b6fd252bfb86f03c473aee61b4d7dd8e91bdc8a0"
+2024-06-27 15:03.40: Using OBuilder spec:
+((from ocaml/opam:debian-12-ocaml-4.14@sha256:51859147d869ebd23a15922818349effc446cbbc6a0b3e0257a7859e766261b3)
+ (user (uid 1000) (gid 1000))
+ (workdir /home/opam)
+ (run (shell "sudo ln -f /usr/bin/opam-dev /usr/bin/opam"))
+ (run (network host)
+      (shell "opam init --reinit --config .opamrc-sandbox -ni"))
+ (run (shell "uname -rs && opam exec -- ocaml -version && opam --version"))
+ (env OPAMDOWNLOADJOBS 1)
+ (env OPAMERRLOGLEN 0)
+ (env OPAMSOLVERTIMEOUT 500)
+ (env OPAMPRECISETRACKING 1)
+ (env CI true)
+ (env OPAM_REPO_CI true)
+ (run (shell "rm -rf opam-repository/"))
+ (copy (src .) (dst opam-repository/))
+ (run (shell "opam repository set-url --strict default opam-repository/"))
+ (run (network host)
+      (shell "opam update --depexts || true"))
+ (run (shell "opam pin add -k version -yn yojson.2.2.2 2.2.2"))
+ (run (cache (opam-archives (target /home/opam/.opam/download-cache)))
+      (network host)
+      (shell  "opam reinstall yojson.2.2.2;\
+             \n        res=$?;\
+             \n        test \"$res\" != 31 && exit \"$res\";\
+             \n        export OPAMCLI=2.0;\
+             \n        build_dir=$(opam var prefix)/.opam-switch/build;\
+             \n        failed=$(ls \"$build_dir\");\
+             \n        partial_fails=\"\";\
+             \n        for pkg in $failed; do\
+             \n          if opam show -f x-ci-accept-failures: \"$pkg\" | grep -qF \"\\\"debian-12\\\"\"; then\
+             \n            echo \"A package failed and has been disabled for CI using the 'x-ci-accept-failures' field.\";\
+             \n          fi;\
+             \n          test \"$pkg\" != 'yojson.2.2.2' && partial_fails=\"$partial_fails $pkg\";\
+             \n        done;\
+             \n        test \"${partial_fails}\" != \"\" && echo \"opam-repo-ci detected dependencies failing: ${partial_fails}\";\
+             \n        exit 1"))
+ (run (cache (opam-archives (target /home/opam/.opam/download-cache)))
+      (network host)
+      (shell  "opam reinstall js_of_ocaml-toplevel.5.7.2;\
+             \n        res=$?;\
+             \n        test \"$res\" != 31 && exit \"$res\";\
+             \n        export OPAMCLI=2.0;\
+             \n        build_dir=$(opam var prefix)/.opam-switch/build;\
+             \n        failed=$(ls \"$build_dir\");\
+             \n        partial_fails=\"\";\
+             \n        for pkg in $failed; do\
+             \n          if opam show -f x-ci-accept-failures: \"$pkg\" | grep -qF \"\\\"debian-12\\\"\"; then\
+             \n            echo \"A package failed and has been disabled for CI using the 'x-ci-accept-failures' field.\";\
+             \n          fi;\
+             \n          test \"$pkg\" != 'js_of_ocaml-toplevel.5.7.2' && partial_fails=\"$partial_fails $pkg\";\
+             \n        done;\
+             \n        test \"${partial_fails}\" != \"\" && echo \"opam-repo-ci detected dependencies failing: ${partial_fails}\";\
+             \n        exit 1"))
+ (run (network host)
+      (shell "(opam reinstall --with-test js_of_ocaml-toplevel.5.7.2) || true"))
+ (run (shell  "opam reinstall --with-test --verbose js_of_ocaml-toplevel.5.7.2;\
+             \n        res=$?;\
+             \n        test \"$res\" != 31 && exit \"$res\";\
+             \n        export OPAMCLI=2.0;\
+             \n        build_dir=$(opam var prefix)/.opam-switch/build;\
+             \n        failed=$(ls \"$build_dir\");\
+             \n        partial_fails=\"\";\
+             \n        for pkg in $failed; do\
+             \n          if opam show -f x-ci-accept-failures: \"$pkg\" | grep -qF \"\\\"debian-12\\\"\"; then\
+             \n            echo \"A package failed and has been disabled for CI using the 'x-ci-accept-failures' field.\";\
+             \n          fi;\
+             \n          test \"$pkg\" != 'js_of_ocaml-toplevel.5.7.2' && partial_fails=\"$partial_fails $pkg\";\
+             \n        done;\
+             \n        test \"${partial_fails}\" != \"\" && echo \"opam-repo-ci detected dependencies failing: ${partial_fails}\";\
+             \n        exit 1"))
+)
+
+2024-06-27 15:03.40: Waiting for resource in pool OCluster
+2024-06-27 17:50.54: Waiting for worker…
+2024-06-27 17:53.55: Got resource from pool OCluster
+Building on x86-bm-c1.sw.ocaml.org
+All commits already cached
+Updating files:  63% (20088/31626)Updating files:  64% (20241/31626)Updating files:  65% (20557/31626)Updating files:  66% (20874/31626)Updating files:  67% (21190/31626)Updating files:  68% (21506/31626)Updating files:  69% (21822/31626)Updating files:  70% (22139/31626)Updating files:  71% (22455/31626)Updating files:  72% (22771/31626)Updating files:  73% (23087/31626)Updating files:  74% (23404/31626)Updating files:  75% (23720/31626)Updating files:  76% (24036/31626)Updating files:  77% (24353/31626)Updating files:  78% (24669/31626)Updating files:  79% (24985/31626)Updating files:  80% (25301/31626)Updating files:  81% (25618/31626)Updating files:  82% (25934/31626)Updating files:  83% (26250/31626)Updating files:  84% (26566/31626)Updating files:  85% (26883/31626)Updating files:  86% (27199/31626)Updating files:  87% (27515/31626)Updating files:  88% (27831/31626)Updating files:  89% (28148/31626)Updating files:  90% (28464/31626)Updating files:  91% (28780/31626)Updating files:  92% (29096/31626)Updating files:  93% (29413/31626)Updating files:  94% (29729/31626)Updating files:  95% (30045/31626)Updating files:  96% (30361/31626)Updating files:  97% (30678/31626)Updating files:  98% (30994/31626)Updating files:  99% (31310/31626)Updating files: 100% (31626/31626)Updating files: 100% (31626/31626), done.
+HEAD is now at 2c60982090 Merge pull request #26149 from davesnx/release-html_of_jsx-0.0.4
+Updating 2c60982090..b6fd252bfb
+Fast-forward
+ packages/yojson-five/yojson-five.2.2.2/opam | 46 ++++++++++++++++++++++++++++
+ packages/yojson/yojson.2.2.2/opam           | 47 +++++++++++++++++++++++++++++
+ 2 files changed, 93 insertions(+)
+ create mode 100644 packages/yojson-five/yojson-five.2.2.2/opam
+ create mode 100644 packages/yojson/yojson.2.2.2/opam
+
+[01;34m(from ocaml/opam:debian-12-ocaml-4.14@sha256:51859147d869ebd23a15922818349effc446cbbc6a0b3e0257a7859e766261b3)[0m
+[01;2m[01;35m2024-06-27 17:54.03 ---> using "7d0037e87409e99fda0588f75b47ce776adea91ebf3f460e136466d751adef89" from cache[0m
+
+[01;34m/: (user (uid 1000) (gid 1000))[0m
+
+[01;34m/: (workdir /home/opam)[0m
+
+[01;34m/home/opam: (run (shell "sudo ln -f /usr/bin/opam-dev /usr/bin/opam"))[0m
+[01;2m[01;35m2024-06-27 17:54.03 ---> using "b33af19cce4ad58a445b7dfc6bf1a0dfe3b6dc622435cad5cd3b51437ac841da" from cache[0m
+
+[01;34m/home/opam: (run (network host)
+                 (shell "opam init --reinit --config .opamrc-sandbox -ni"))[0m
+Configuring from /home/opam/.opamrc-sandbox, then /home/opam/.opamrc, and finally from built-in defaults.
+Checking for available remotes: rsync and local, git.
+  - you won't be able to use mercurial repositories unless you install the hg command on your system.
+  - you won't be able to use darcs repositories unless you install the darcs command on your system.
+
+This development version of opam requires an update to the layout of /home/opam/.opam from version 2.0 to version 2.2~beta, which can't be reverted.
+You may want to back it up before going further.
+
+Continue? [y/n] y
+Format upgrade done.
+
+<><> Updating repositories ><><><><><><><><><><><><><><><><><><><><><><><><><><>
+[default] synchronised from file:///home/opam/opam-repository
+[01;2m[01;35m2024-06-27 17:54.03 ---> using "c7319748019c698ac18553450663ed54bb2835216e6158140e57acb510db4ce9" from cache[0m
+
+[01;34m/home/opam: (run (shell "uname -rs && opam exec -- ocaml -version && opam --version"))[0m
+Linux 5.15.0-112-generic
+The OCaml toplevel, version 4.14.2
+2.2.0~rc1~dev
+[01;2m[01;35m2024-06-27 17:54.03 ---> using "6bce037bdf3a394fc38741cc54c12283f3366866d149b33203c7c3a211d4b1b9" from cache[0m
+
+[01;34m/home/opam: (env OPAMDOWNLOADJOBS 1)[0m
+
+[01;34m/home/opam: (env OPAMERRLOGLEN 0)[0m
+
+[01;34m/home/opam: (env OPAMSOLVERTIMEOUT 500)[0m
+
+[01;34m/home/opam: (env OPAMPRECISETRACKING 1)[0m
+
+[01;34m/home/opam: (env CI true)[0m
+
+[01;34m/home/opam: (env OPAM_REPO_CI true)[0m
+
+[01;34m/home/opam: (run (shell "rm -rf opam-repository/"))[0m
+[01;2m[01;35m2024-06-27 17:54.03 ---> using "d7e3dabd08034f666e9af626d2c2108d7ffb689867b7ba904f891ba4c067d618" from cache[0m
+
+[01;34m/home/opam: (copy (src .) (dst opam-repository/))[0m
+[01;2m[01;35m2024-06-27 17:54.05 ---> using "580f0d33b5a1eaec38d18b951ea468d4196361eabfaf6ba3ff2232d58c8bebcd" from cache[0m
+
+[01;34m/home/opam: (run (shell "opam repository set-url --strict default opam-repository/"))[0m
+[default] Initialised
+[01;2m[01;35m2024-06-27 17:54.05 ---> using "2490074321d3de99367718d521b1e66aa99dbad47b1fd5fb730c5b21e8681272" from cache[0m
+
+[01;34m/home/opam: (run (network host)
+                 (shell "opam update --depexts || true"))[0m
++ /usr/bin/sudo "apt-get" "update"
+- Hit:1 http://deb.debian.org/debian bookworm InRelease
+- Get:2 http://deb.debian.org/debian bookworm-updates InRelease [55.4 kB]
+- Get:3 http://deb.debian.org/debian-security bookworm-security InRelease [48.0 kB]
+- Get:4 http://deb.debian.org/debian-security bookworm-security/main amd64 Packages [161 kB]
+- Fetched 264 kB in 0s (976 kB/s)
+- Reading package lists...
+- 
+[01;2m[01;35m2024-06-27 17:54.05 ---> using "0aa92bc6ec524f36ec849c0c683572f6ebf0a6d094996c3cabb13d7c685a40b6" from cache[0m
+
+[01;34m/home/opam: (run (shell "opam pin add -k version -yn yojson.2.2.2 2.2.2"))[0m
+yojson is now pinned to version 2.2.2
+[01;2m[01;35m2024-06-27 17:54.05 ---> using "f752453b84d673d47434624fd7ae270d4f9bff61f4864fdb0d73c6ac174a03e7" from cache[0m
+
+[01;34m/home/opam: (run (cache (opam-archives (target /home/opam/.opam/download-cache)))
+                 (network host)
+                 (shell  "opam reinstall yojson.2.2.2;\
+                        \n        res=$?;\
+                        \n        test \"$res\" != 31 && exit \"$res\";\
+                        \n        export OPAMCLI=2.0;\
+                        \n        build_dir=$(opam var prefix)/.opam-switch/build;\
+                        \n        failed=$(ls \"$build_dir\");\
+                        \n        partial_fails=\"\";\
+                        \n        for pkg in $failed; do\
+                        \n          if opam show -f x-ci-accept-failures: \"$pkg\" | grep -qF \"\\\"debian-12\\\"\"; then\
+                        \n            echo \"A package failed and has been disabled for CI using the 'x-ci-accept-failures' field.\";\
+                        \n          fi;\
+                        \n          test \"$pkg\" != 'yojson.2.2.2' && partial_fails=\"$partial_fails $pkg\";\
+                        \n        done;\
+                        \n        test \"${partial_fails}\" != \"\" && echo \"opam-repo-ci detected dependencies failing: ${partial_fails}\";\
+                        \n        exit 1"))[0m
+yojson.2.2.2 is not installed. Install it? [y/n] y
+The following actions will be performed:
+=== install 3 packages
+  - install dune   3.16.0         [required by yojson]
+  - install seq    base           [required by yojson]
+  - install yojson 2.2.2 (pinned)
+
+<><> Processing actions <><><><><><><><><><><><><><><><><><><><><><><><><><><><>
+-> retrieved dune.3.16.0  (cached)
+-> retrieved seq.base  (cached)
+-> installed seq.base
+-> retrieved yojson.2.2.2  (cached)
+-> installed dune.3.16.0
+-> installed yojson.2.2.2
+Done.
+# Run eval $(opam env) to update the current shell environment
+[01;2m[01;35m2024-06-27 17:54.05 ---> using "f7307128480fe2241bda420bfd98b6a95da8c680888905e25b8d417bbbdd2d12" from cache[0m
+
+[01;34m/home/opam: (run (cache (opam-archives (target /home/opam/.opam/download-cache)))
+                 (network host)
+                 (shell  "opam reinstall js_of_ocaml-toplevel.5.7.2;\
+                        \n        res=$?;\
+                        \n        test \"$res\" != 31 && exit \"$res\";\
+                        \n        export OPAMCLI=2.0;\
+                        \n        build_dir=$(opam var prefix)/.opam-switch/build;\
+                        \n        failed=$(ls \"$build_dir\");\
+                        \n        partial_fails=\"\";\
+                        \n        for pkg in $failed; do\
+                        \n          if opam show -f x-ci-accept-failures: \"$pkg\" | grep -qF \"\\\"debian-12\\\"\"; then\
+                        \n            echo \"A package failed and has been disabled for CI using the 'x-ci-accept-failures' field.\";\
+                        \n          fi;\
+                        \n          test \"$pkg\" != 'js_of_ocaml-toplevel.5.7.2' && partial_fails=\"$partial_fails $pkg\";\
+                        \n        done;\
+                        \n        test \"${partial_fails}\" != \"\" && echo \"opam-repo-ci detected dependencies failing: ${partial_fails}\";\
+                        \n        exit 1"))[0m
+js_of_ocaml-toplevel.5.7.2 is not installed. Install it? [y/n] y
+The following actions will be performed:
+=== install 15 packages
+  - install cmdliner             1.3.0    [required by js_of_ocaml-compiler]
+  - install gen                  1.1      [required by sedlex]
+  - install js_of_ocaml-compiler 5.7.2    [required by js_of_ocaml-toplevel]
+  - install js_of_ocaml-toplevel 5.7.2
+  - install menhir               20231231 [required by js_of_ocaml-compiler]
+  - install menhirCST            20231231 [required by menhir]
+  - install menhirLib            20231231 [required by js_of_ocaml-compiler]
+  - install menhirSdk            20231231 [required by js_of_ocaml-compiler]
+  - install ocaml-compiler-libs  v0.12.4  [required by ppxlib]
+  - install ocamlfind            1.9.6    [required by js_of_ocaml-toplevel]
+  - install ppx_derivers         1.2.1    [required by ppxlib]
+  - install ppxlib               0.32.1   [required by js_of_ocaml-compiler]
+  - install sedlex               3.2      [required by js_of_ocaml-compiler]
+  - install sexplib0             v0.17.0  [required by ppxlib]
+  - install stdlib-shims         0.3.0    [required by ppxlib]
+
+<><> Processing actions <><><><><><><><><><><><><><><><><><><><><><><><><><><><>
+-> retrieved cmdliner.1.3.0  (cached)
+-> retrieved gen.1.1  (cached)
+-> retrieved js_of_ocaml-compiler.5.7.2, js_of_ocaml-toplevel.5.7.2  (cached)
+-> retrieved menhir.20231231, menhirCST.20231231, menhirLib.20231231, menhirSdk.20231231  (cached)
+-> retrieved ocaml-compiler-libs.v0.12.4  (cached)
+-> retrieved ocamlfind.1.9.6  (cached)
+-> installed cmdliner.1.3.0
+-> installed gen.1.1
+-> installed menhirCST.20231231
+-> retrieved ppx_derivers.1.2.1  (cached)
+-> retrieved ppxlib.0.32.1  (cached)
+-> installed menhirSdk.20231231
+-> installed ppx_derivers.1.2.1
+-> retrieved sedlex.3.2  (cached)
+-> retrieved sexplib0.v0.17.0  (cached)
+-> retrieved stdlib-shims.0.3.0  (cached)
+-> installed menhirLib.20231231
+-> installed stdlib-shims.0.3.0
+-> installed ocaml-compiler-libs.v0.12.4
+-> installed sexplib0.v0.17.0
+-> installed ocamlfind.1.9.6
+-> installed menhir.20231231
+-> installed ppxlib.0.32.1
+-> installed sedlex.3.2
+-> installed js_of_ocaml-compiler.5.7.2
+-> installed js_of_ocaml-toplevel.5.7.2
+Done.
+# Run eval $(opam env) to update the current shell environment
+[01;2m[01;35m2024-06-27 17:55.59 ---> saved as "5025e76564060ea17ab988005accd4782e0ece33b2244ed09029c05dd77f70f2"[0m
+
+[01;34m/home/opam: (run (network host)
+                 (shell "(opam reinstall --with-test js_of_ocaml-toplevel.5.7.2) || true"))[0m
+[ERROR] Sorry, resolution of the request timed out.
+        Try to specify a more precise request, use a different solver, or increase the allowed time by setting OPAMSOLVERTIMEOUT to a bigger value (currently, it is set to 500.0 seconds).
+[01;2m[01;35m2024-06-27 18:04.39 ---> saved as "fdc87f7ad270de3521915700d75ec4fc71a150e0f0146b5b9995b59e633b4390"[0m
+
+[01;34m/home/opam: (run (shell  "opam reinstall --with-test --verbose js_of_ocaml-toplevel.5.7.2;\
+                        \n        res=$?;\
+                        \n        test \"$res\" != 31 && exit \"$res\";\
+                        \n        export OPAMCLI=2.0;\
+                        \n        build_dir=$(opam var prefix)/.opam-switch/build;\
+                        \n        failed=$(ls \"$build_dir\");\
+                        \n        partial_fails=\"\";\
+                        \n        for pkg in $failed; do\
+                        \n          if opam show -f x-ci-accept-failures: \"$pkg\" | grep -qF \"\\\"debian-12\\\"\"; then\
+                        \n            echo \"A package failed and has been disabled for CI using the 'x-ci-accept-failures' field.\";\
+                        \n          fi;\
+                        \n          test \"$pkg\" != 'js_of_ocaml-toplevel.5.7.2' && partial_fails=\"$partial_fails $pkg\";\
+                        \n        done;\
+                        \n        test \"${partial_fails}\" != \"\" && echo \"opam-repo-ci detected dependencies failing: ${partial_fails}\";\
+                        \n        exit 1"))[0m
+[ERROR] Sorry, resolution of the request timed out.
+        Try to specify a more precise request, use a different solver, or increase the allowed time by setting OPAMSOLVERTIMEOUT to a bigger value (currently, it is set to 500.0 seconds).
+'opam reinstall --with-test --verbose js_of_ocaml-toplevel.5.7.2' failed.
+"/usr/bin/env" "bash" "-c" "opam reinstall --with-test --verbose js_of_ocaml-toplevel.5.7.2;
+        res=$?;
+        test "$res" != 31 && exit "$res";
+        export OPAMCLI=2.0;
+        build_dir=$(opam var prefix)/.opam-switch/build;
+        failed=$(ls "$build_dir");
+        partial_fails="";
+        for pkg in $failed; do
+          if opam show -f x-ci-accept-failures: "$pkg" | grep -qF "\"debian-12\""; then
+            echo "A package failed and has been disabled for CI using the 'x-ci-accept-failures' field.";
+          fi;
+          test "$pkg" != 'js_of_ocaml-toplevel.5.7.2' && partial_fails="$partial_fails $pkg";
+        done;
+        test "${partial_fails}" != "" && echo "opam-repo-ci detected dependencies failing: ${partial_fails}";
+        exit 1" failed with exit status 60
+2024-06-27 18:13.34: Job failed: Failed: Build failed
+2024-06-27 18:13.34: Log analysis:
+2024-06-27 18:13.34: >>> 
+[ERROR] Sorry, resolution of the request timed out.
+ (score = 20)
+2024-06-27 18:13.34: >>> 
+[ERROR] Sorry, resolution of the request timed out.
+ (score = 20)
+2024-06-27 18:13.34: Sorry, resolution of the request timed out.

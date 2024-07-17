@@ -1,0 +1,262 @@
+2024-06-18 21:40.15: New job: test httpun-ws-mirage.0.1.0, using opam dev
+                              from https://github.com/ocaml/opam-repository.git#refs/pull/26110/head (de613790656be9032d9e0d9b4677832ece930f18)
+                              on debian-12-ocaml-4.09/amd64
+
+To reproduce locally:
+
+cd $(mktemp -d)
+git clone --recursive "https://github.com/ocaml/opam-repository.git" && cd "opam-repository" && git fetch origin "refs/pull/26110/head" && git reset --hard de613790
+git fetch origin master
+git merge --no-edit 5d6f1cf035d4b9d572fef4ae2e63cf1e3da8760d
+cat > ../Dockerfile <<'END-OF-DOCKERFILE'
+[34mFROM ocaml/opam:debian-12-ocaml-4.09@sha256:6308cb9361f00a439e23e4184d9fc84e2a4b99c58184beb80aeb4b38ac0556e1
+USER 1000:1000
+WORKDIR /home/opam
+RUN sudo ln -f /usr/bin/opam-dev /usr/bin/opam
+RUN opam init --reinit -ni
+RUN uname -rs && opam exec -- ocaml -version && opam --version
+ENV OPAMDOWNLOADJOBS="1"
+ENV OPAMERRLOGLEN="0"
+ENV OPAMSOLVERTIMEOUT="500"
+ENV OPAMPRECISETRACKING="1"
+ENV CI="true"
+ENV OPAM_REPO_CI="true"
+RUN rm -rf opam-repository/
+COPY --chown=1000:1000 . opam-repository/
+RUN opam repository set-url --strict default opam-repository/
+RUN opam update --depexts || true
+RUN opam pin add -k version -yn httpun-ws-mirage.0.1.0 0.1.0
+RUN opam reinstall httpun-ws-mirage.0.1.0; \
+    res=$?; \
+    test "$res" != 31 && exit "$res"; \
+    export OPAMCLI=2.0; \
+    build_dir=$(opam var prefix)/.opam-switch/build; \
+    failed=$(ls "$build_dir"); \
+    partial_fails=""; \
+    for pkg in $failed; do \
+    if opam show -f x-ci-accept-failures: "$pkg" | grep -qF "\"debian-12\""; then \
+    echo "A package failed and has been disabled for CI using the 'x-ci-accept-failures' field."; \
+    fi; \
+    test "$pkg" != 'httpun-ws-mirage.0.1.0' && partial_fails="$partial_fails $pkg"; \
+    done; \
+    test "${partial_fails}" != "" && echo "opam-repo-ci detected dependencies failing: ${partial_fails}"; \
+    exit 1
+RUN (opam reinstall --with-test httpun-ws-mirage.0.1.0) || true
+RUN opam reinstall --with-test --verbose httpun-ws-mirage.0.1.0; \
+    res=$?; \
+    test "$res" != 31 && exit "$res"; \
+    export OPAMCLI=2.0; \
+    build_dir=$(opam var prefix)/.opam-switch/build; \
+    failed=$(ls "$build_dir"); \
+    partial_fails=""; \
+    for pkg in $failed; do \
+    if opam show -f x-ci-accept-failures: "$pkg" | grep -qF "\"debian-12\""; then \
+    echo "A package failed and has been disabled for CI using the 'x-ci-accept-failures' field."; \
+    fi; \
+    test "$pkg" != 'httpun-ws-mirage.0.1.0' && partial_fails="$partial_fails $pkg"; \
+    done; \
+    test "${partial_fails}" != "" && echo "opam-repo-ci detected dependencies failing: ${partial_fails}"; \
+    exit 1
+[0m
+END-OF-DOCKERFILE
+docker build -f ../Dockerfile .
+
+2024-06-18 21:40.15: Using cache hint "ocaml/opam:debian-12-ocaml-4.09@sha256:6308cb9361f00a439e23e4184d9fc84e2a4b99c58184beb80aeb4b38ac0556e1-httpun-ws-mirage.0.1.0-de613790656be9032d9e0d9b4677832ece930f18"
+2024-06-18 21:40.15: Using OBuilder spec:
+((from ocaml/opam:debian-12-ocaml-4.09@sha256:6308cb9361f00a439e23e4184d9fc84e2a4b99c58184beb80aeb4b38ac0556e1)
+ (user (uid 1000) (gid 1000))
+ (workdir /home/opam)
+ (run (shell "sudo ln -f /usr/bin/opam-dev /usr/bin/opam"))
+ (run (network host)
+      (shell "opam init --reinit --config .opamrc-sandbox -ni"))
+ (run (shell "uname -rs && opam exec -- ocaml -version && opam --version"))
+ (env OPAMDOWNLOADJOBS 1)
+ (env OPAMERRLOGLEN 0)
+ (env OPAMSOLVERTIMEOUT 500)
+ (env OPAMPRECISETRACKING 1)
+ (env CI true)
+ (env OPAM_REPO_CI true)
+ (run (shell "rm -rf opam-repository/"))
+ (copy (src .) (dst opam-repository/))
+ (run (shell "opam repository set-url --strict default opam-repository/"))
+ (run (network host)
+      (shell "opam update --depexts || true"))
+ (run (shell "opam pin add -k version -yn httpun-ws-mirage.0.1.0 0.1.0"))
+ (run (cache (opam-archives (target /home/opam/.opam/download-cache)))
+      (network host)
+      (shell  "opam reinstall httpun-ws-mirage.0.1.0;\
+             \n        res=$?;\
+             \n        test \"$res\" != 31 && exit \"$res\";\
+             \n        export OPAMCLI=2.0;\
+             \n        build_dir=$(opam var prefix)/.opam-switch/build;\
+             \n        failed=$(ls \"$build_dir\");\
+             \n        partial_fails=\"\";\
+             \n        for pkg in $failed; do\
+             \n          if opam show -f x-ci-accept-failures: \"$pkg\" | grep -qF \"\\\"debian-12\\\"\"; then\
+             \n            echo \"A package failed and has been disabled for CI using the 'x-ci-accept-failures' field.\";\
+             \n          fi;\
+             \n          test \"$pkg\" != 'httpun-ws-mirage.0.1.0' && partial_fails=\"$partial_fails $pkg\";\
+             \n        done;\
+             \n        test \"${partial_fails}\" != \"\" && echo \"opam-repo-ci detected dependencies failing: ${partial_fails}\";\
+             \n        exit 1"))
+ (run (network host)
+      (shell "(opam reinstall --with-test httpun-ws-mirage.0.1.0) || true"))
+ (run (shell  "opam reinstall --with-test --verbose httpun-ws-mirage.0.1.0;\
+             \n        res=$?;\
+             \n        test \"$res\" != 31 && exit \"$res\";\
+             \n        export OPAMCLI=2.0;\
+             \n        build_dir=$(opam var prefix)/.opam-switch/build;\
+             \n        failed=$(ls \"$build_dir\");\
+             \n        partial_fails=\"\";\
+             \n        for pkg in $failed; do\
+             \n          if opam show -f x-ci-accept-failures: \"$pkg\" | grep -qF \"\\\"debian-12\\\"\"; then\
+             \n            echo \"A package failed and has been disabled for CI using the 'x-ci-accept-failures' field.\";\
+             \n          fi;\
+             \n          test \"$pkg\" != 'httpun-ws-mirage.0.1.0' && partial_fails=\"$partial_fails $pkg\";\
+             \n        done;\
+             \n        test \"${partial_fails}\" != \"\" && echo \"opam-repo-ci detected dependencies failing: ${partial_fails}\";\
+             \n        exit 1"))
+)
+
+2024-06-18 21:40.15: Connecting to build cluster…
+2024-06-18 21:40.15: Waiting for resource in pool OCluster
+2024-06-19 00:25.49: Waiting for worker…
+2024-06-19 00:33.13: Got resource from pool OCluster
+Building on x86-bm-c2.sw.ocaml.org
+All commits already cached
+Updating files:  64% (20438/31555)Updating files:  65% (20511/31555)Updating files:  66% (20827/31555)Updating files:  67% (21142/31555)Updating files:  68% (21458/31555)Updating files:  69% (21773/31555)Updating files:  70% (22089/31555)Updating files:  71% (22405/31555)Updating files:  72% (22720/31555)Updating files:  73% (23036/31555)Updating files:  74% (23351/31555)Updating files:  75% (23667/31555)Updating files:  76% (23982/31555)Updating files:  77% (24298/31555)Updating files:  78% (24613/31555)Updating files:  79% (24929/31555)Updating files:  80% (25244/31555)Updating files:  81% (25560/31555)Updating files:  82% (25876/31555)Updating files:  83% (26191/31555)Updating files:  84% (26507/31555)Updating files:  85% (26822/31555)Updating files:  86% (27138/31555)Updating files:  87% (27453/31555)Updating files:  88% (27769/31555)Updating files:  89% (28084/31555)Updating files:  90% (28400/31555)Updating files:  91% (28716/31555)Updating files:  92% (29031/31555)Updating files:  93% (29347/31555)Updating files:  94% (29662/31555)Updating files:  95% (29978/31555)Updating files:  96% (30293/31555)Updating files:  97% (30609/31555)Updating files:  98% (30924/31555)Updating files:  99% (31240/31555)Updating files: 100% (31555/31555)Updating files: 100% (31555/31555), done.
+HEAD is now at 5d6f1cf035 Merge pull request #26098 from yawaramin/release-dream-html-v3.5.2
+Updating 5d6f1cf035..de61379065
+Fast-forward
+ .../httpun-ws-async/httpun-ws-async.0.1.0/opam     | 43 ++++++++++++++++++++
+ packages/httpun-ws-eio/httpun-ws-eio.0.1.0/opam    | 42 ++++++++++++++++++++
+ .../httpun-ws-lwt-unix.0.1.0/opam                  | 41 +++++++++++++++++++
+ packages/httpun-ws-lwt/httpun-ws-lwt.0.1.0/opam    | 43 ++++++++++++++++++++
+ .../httpun-ws-mirage/httpun-ws-mirage.0.1.0/opam   | 43 ++++++++++++++++++++
+ packages/httpun-ws/httpun-ws.0.1.0/opam            | 46 ++++++++++++++++++++++
+ 6 files changed, 258 insertions(+)
+ create mode 100644 packages/httpun-ws-async/httpun-ws-async.0.1.0/opam
+ create mode 100644 packages/httpun-ws-eio/httpun-ws-eio.0.1.0/opam
+ create mode 100644 packages/httpun-ws-lwt-unix/httpun-ws-lwt-unix.0.1.0/opam
+ create mode 100644 packages/httpun-ws-lwt/httpun-ws-lwt.0.1.0/opam
+ create mode 100644 packages/httpun-ws-mirage/httpun-ws-mirage.0.1.0/opam
+ create mode 100644 packages/httpun-ws/httpun-ws.0.1.0/opam
+
+[01;34m(from ocaml/opam:debian-12-ocaml-4.09@sha256:6308cb9361f00a439e23e4184d9fc84e2a4b99c58184beb80aeb4b38ac0556e1)[0m
+Unable to find image 'ocaml/opam:debian-12-ocaml-4.09@sha256:6308cb9361f00a439e23e4184d9fc84e2a4b99c58184beb80aeb4b38ac0556e1' locally
+docker.io/ocaml/opam@sha256:6308cb9361f00a439e23e4184d9fc84e2a4b99c58184beb80aeb4b38ac0556e1: Pulling from ocaml/opam
+22de04c0a0c2: Pulling fs layer
+22de04c0a0c2: Download complete
+22de04c0a0c2: Pull complete
+Digest: sha256:6308cb9361f00a439e23e4184d9fc84e2a4b99c58184beb80aeb4b38ac0556e1
+Status: Downloaded newer image for ocaml/opam@sha256:6308cb9361f00a439e23e4184d9fc84e2a4b99c58184beb80aeb4b38ac0556e1
+[01;2m[01;35m2024-06-19 00:33.16 ---> using "94da38cb77c51de058c52a299ec44d6b58f8cb9842926129f839bdb4d2d264c7" from cache[0m
+
+[01;34m/: (user (uid 1000) (gid 1000))[0m
+
+[01;34m/: (workdir /home/opam)[0m
+
+[01;34m/home/opam: (run (shell "sudo ln -f /usr/bin/opam-dev /usr/bin/opam"))[0m
+[01;2m[01;35m2024-06-19 00:33.16 ---> using "ae9d361a03f28ced61ebb6dc225ae85f5878293c537f4d99d1ea4b7b9992c64d" from cache[0m
+
+[01;34m/home/opam: (run (network host)
+                 (shell "opam init --reinit --config .opamrc-sandbox -ni"))[0m
+Configuring from /home/opam/.opamrc-sandbox, then /home/opam/.opamrc, and finally from built-in defaults.
+Checking for available remotes: rsync and local, git.
+  - you won't be able to use mercurial repositories unless you install the hg command on your system.
+  - you won't be able to use darcs repositories unless you install the darcs command on your system.
+
+This development version of opam requires an update to the layout of /home/opam/.opam from version 2.0 to version 2.2~beta, which can't be reverted.
+You may want to back it up before going further.
+
+Continue? [y/n] y
+Format upgrade done.
+
+<><> Updating repositories ><><><><><><><><><><><><><><><><><><><><><><><><><><>
+[default] synchronised from file:///home/opam/opam-repository
+[01;2m[01;35m2024-06-19 00:33.16 ---> using "8526a862cc33e0bb61d8d0e410a6d71cd8bb6dfb05c6d39b6a39fd2d550441c7" from cache[0m
+
+[01;34m/home/opam: (run (shell "uname -rs && opam exec -- ocaml -version && opam --version"))[0m
+Linux 5.15.0-112-generic
+The OCaml toplevel, version 4.09.1
+2.2.0~beta3~dev
+[01;2m[01;35m2024-06-19 00:33.16 ---> using "26383384ebe99f0fbc3b33dd7a28e885b748f414332499d8b313fc135aaecea2" from cache[0m
+
+[01;34m/home/opam: (env OPAMDOWNLOADJOBS 1)[0m
+
+[01;34m/home/opam: (env OPAMERRLOGLEN 0)[0m
+
+[01;34m/home/opam: (env OPAMSOLVERTIMEOUT 500)[0m
+
+[01;34m/home/opam: (env OPAMPRECISETRACKING 1)[0m
+
+[01;34m/home/opam: (env CI true)[0m
+
+[01;34m/home/opam: (env OPAM_REPO_CI true)[0m
+
+[01;34m/home/opam: (run (shell "rm -rf opam-repository/"))[0m
+[01;2m[01;35m2024-06-19 00:33.16 ---> using "437781dfb65811c30d5f00bf62efb901158ec9a5af57c83906a6c8f1668559f8" from cache[0m
+
+[01;34m/home/opam: (copy (src .) (dst opam-repository/))[0m
+[01;2m[01;35m2024-06-19 00:33.24 ---> saved as "d1be8227cd3592e81dc3edc6f0b9ec7021f97843118604cbc611bf66f6f55cd2"[0m
+
+[01;34m/home/opam: (run (shell "opam repository set-url --strict default opam-repository/"))[0m
+[default] Initialised
+[01;2m[01;35m2024-06-19 00:34.20 ---> saved as "fffc9538634bcd74be7470bea2fd1405f1b132f6cd3a9760da9082240dcdcf3e"[0m
+
+[01;34m/home/opam: (run (network host)
+                 (shell "opam update --depexts || true"))[0m
++ /usr/bin/sudo "apt-get" "update"
+- Hit:1 http://deb.debian.org/debian bookworm InRelease
+- Get:2 http://deb.debian.org/debian bookworm-updates InRelease [55.4 kB]
+- Get:3 http://deb.debian.org/debian-security bookworm-security InRelease [48.0 kB]
+- Get:4 http://deb.debian.org/debian-security bookworm-security/main amd64 Packages [160 kB]
+- Fetched 263 kB in 0s (1063 kB/s)
+- Reading package lists...
+[01;2m[01;35m2024-06-19 00:34.21 ---> saved as "7929be92bee3d47aa747cf2bbdd1b98d4f2a7f314ba55973f736797441a048f2"[0m
+
+[01;34m/home/opam: (run (shell "opam pin add -k version -yn httpun-ws-mirage.0.1.0 0.1.0"))[0m
+httpun-ws-mirage is now pinned to version 0.1.0
+[01;2m[01;35m2024-06-19 00:34.22 ---> saved as "c95fed1f8148d76cd6db265e3fe3d60cda0bb1c1e1e453d38d4c70675d6a7813"[0m
+
+[01;34m/home/opam: (run (cache (opam-archives (target /home/opam/.opam/download-cache)))
+                 (network host)
+                 (shell  "opam reinstall httpun-ws-mirage.0.1.0;\
+                        \n        res=$?;\
+                        \n        test \"$res\" != 31 && exit \"$res\";\
+                        \n        export OPAMCLI=2.0;\
+                        \n        build_dir=$(opam var prefix)/.opam-switch/build;\
+                        \n        failed=$(ls \"$build_dir\");\
+                        \n        partial_fails=\"\";\
+                        \n        for pkg in $failed; do\
+                        \n          if opam show -f x-ci-accept-failures: \"$pkg\" | grep -qF \"\\\"debian-12\\\"\"; then\
+                        \n            echo \"A package failed and has been disabled for CI using the 'x-ci-accept-failures' field.\";\
+                        \n          fi;\
+                        \n          test \"$pkg\" != 'httpun-ws-mirage.0.1.0' && partial_fails=\"$partial_fails $pkg\";\
+                        \n        done;\
+                        \n        test \"${partial_fails}\" != \"\" && echo \"opam-repo-ci detected dependencies failing: ${partial_fails}\";\
+                        \n        exit 1"))[0m
+httpun-ws-mirage.0.1.0 is not installed. Install it? [y/n] y
+[ERROR] Sorry, resolution of the request timed out.
+        Try to specify a more precise request, use a different solver, or increase the allowed time by setting OPAMSOLVERTIMEOUT to a bigger value (currently, it is set to 500.0 seconds).
+"/usr/bin/env" "bash" "-c" "opam reinstall httpun-ws-mirage.0.1.0;
+        res=$?;
+        test "$res" != 31 && exit "$res";
+        export OPAMCLI=2.0;
+        build_dir=$(opam var prefix)/.opam-switch/build;
+        failed=$(ls "$build_dir");
+        partial_fails="";
+        for pkg in $failed; do
+          if opam show -f x-ci-accept-failures: "$pkg" | grep -qF "\"debian-12\""; then
+            echo "A package failed and has been disabled for CI using the 'x-ci-accept-failures' field.";
+          fi;
+          test "$pkg" != 'httpun-ws-mirage.0.1.0' && partial_fails="$partial_fails $pkg";
+        done;
+        test "${partial_fails}" != "" && echo "opam-repo-ci detected dependencies failing: ${partial_fails}";
+        exit 1" failed with exit status 60
+2024-06-19 00:43.16: Job failed: Failed: Build failed
+2024-06-19 00:43.16: Log analysis:
+2024-06-19 00:43.16: >>> 
+[ERROR] Sorry, resolution of the request timed out.
+ (score = 20)
+2024-06-19 00:43.16: Sorry, resolution of the request timed out.

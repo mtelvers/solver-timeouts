@@ -1,0 +1,357 @@
+2024-07-03 13:03.24: New job: test happy-eyeballs-lwt.0.1.2 with conf-gmp.5, using opam dev
+                              from https://github.com/ocaml/opam-repository.git#refs/pull/23330/head (e065de656cee71750ee448a95ca37886f41c1cd4)
+                              on debian-12-ocaml-5.2/amd64
+
+To reproduce locally:
+
+cd $(mktemp -d)
+git clone --recursive "https://github.com/ocaml/opam-repository.git" && cd "opam-repository" && git fetch origin "refs/pull/23330/head" && git reset --hard e065de65
+git fetch origin master
+git merge --no-edit f11abb6589b7c157b8bd91c5d5fcb5a92da6d892
+cat > ../Dockerfile <<'END-OF-DOCKERFILE'
+[34mFROM ocaml/opam:debian-12-ocaml-5.2@sha256:583bd84391ee71ae55caa44262c64c2260af63906c7c0231d7561504ac61b650
+USER 1000:1000
+WORKDIR /home/opam
+RUN sudo ln -f /usr/bin/opam-dev /usr/bin/opam
+RUN opam init --reinit -ni
+RUN uname -rs && opam exec -- ocaml -version && opam --version
+ENV OPAMDOWNLOADJOBS="1"
+ENV OPAMERRLOGLEN="0"
+ENV OPAMSOLVERTIMEOUT="500"
+ENV OPAMPRECISETRACKING="1"
+ENV CI="true"
+ENV OPAM_REPO_CI="true"
+RUN rm -rf opam-repository/
+COPY --chown=1000:1000 . opam-repository/
+RUN opam repository set-url --strict default opam-repository/
+RUN opam update --depexts || true
+RUN opam pin add -k version -yn conf-gmp.5 5
+RUN opam reinstall conf-gmp.5; \
+    res=$?; \
+    test "$res" != 31 && exit "$res"; \
+    export OPAMCLI=2.0; \
+    build_dir=$(opam var prefix)/.opam-switch/build; \
+    failed=$(ls "$build_dir"); \
+    partial_fails=""; \
+    for pkg in $failed; do \
+    if opam show -f x-ci-accept-failures: "$pkg" | grep -qF "\"debian-12\""; then \
+    echo "A package failed and has been disabled for CI using the 'x-ci-accept-failures' field."; \
+    fi; \
+    test "$pkg" != 'conf-gmp.5' && partial_fails="$partial_fails $pkg"; \
+    done; \
+    test "${partial_fails}" != "" && echo "opam-repo-ci detected dependencies failing: ${partial_fails}"; \
+    exit 1
+RUN opam reinstall happy-eyeballs-lwt.0.1.2; \
+    res=$?; \
+    test "$res" != 31 && exit "$res"; \
+    export OPAMCLI=2.0; \
+    build_dir=$(opam var prefix)/.opam-switch/build; \
+    failed=$(ls "$build_dir"); \
+    partial_fails=""; \
+    for pkg in $failed; do \
+    if opam show -f x-ci-accept-failures: "$pkg" | grep -qF "\"debian-12\""; then \
+    echo "A package failed and has been disabled for CI using the 'x-ci-accept-failures' field."; \
+    fi; \
+    test "$pkg" != 'happy-eyeballs-lwt.0.1.2' && partial_fails="$partial_fails $pkg"; \
+    done; \
+    test "${partial_fails}" != "" && echo "opam-repo-ci detected dependencies failing: ${partial_fails}"; \
+    exit 1
+RUN (opam reinstall --with-test happy-eyeballs-lwt.0.1.2) || true
+RUN opam reinstall --with-test --verbose happy-eyeballs-lwt.0.1.2; \
+    res=$?; \
+    test "$res" != 31 && exit "$res"; \
+    export OPAMCLI=2.0; \
+    build_dir=$(opam var prefix)/.opam-switch/build; \
+    failed=$(ls "$build_dir"); \
+    partial_fails=""; \
+    for pkg in $failed; do \
+    if opam show -f x-ci-accept-failures: "$pkg" | grep -qF "\"debian-12\""; then \
+    echo "A package failed and has been disabled for CI using the 'x-ci-accept-failures' field."; \
+    fi; \
+    test "$pkg" != 'happy-eyeballs-lwt.0.1.2' && partial_fails="$partial_fails $pkg"; \
+    done; \
+    test "${partial_fails}" != "" && echo "opam-repo-ci detected dependencies failing: ${partial_fails}"; \
+    exit 1
+[0m
+END-OF-DOCKERFILE
+docker build -f ../Dockerfile .
+
+2024-07-03 13:03.24: Using cache hint "ocaml/opam:debian-12-ocaml-5.2@sha256:583bd84391ee71ae55caa44262c64c2260af63906c7c0231d7561504ac61b650-conf-gmp.5-happy-eyeballs-lwt.0.1.2-e065de656cee71750ee448a95ca37886f41c1cd4"
+2024-07-03 13:03.24: Using OBuilder spec:
+((from ocaml/opam:debian-12-ocaml-5.2@sha256:583bd84391ee71ae55caa44262c64c2260af63906c7c0231d7561504ac61b650)
+ (user (uid 1000) (gid 1000))
+ (workdir /home/opam)
+ (run (shell "sudo ln -f /usr/bin/opam-dev /usr/bin/opam"))
+ (run (network host)
+      (shell "opam init --reinit --config .opamrc-sandbox -ni"))
+ (run (shell "uname -rs && opam exec -- ocaml -version && opam --version"))
+ (env OPAMDOWNLOADJOBS 1)
+ (env OPAMERRLOGLEN 0)
+ (env OPAMSOLVERTIMEOUT 500)
+ (env OPAMPRECISETRACKING 1)
+ (env CI true)
+ (env OPAM_REPO_CI true)
+ (run (shell "rm -rf opam-repository/"))
+ (copy (src .) (dst opam-repository/))
+ (run (shell "opam repository set-url --strict default opam-repository/"))
+ (run (network host)
+      (shell "opam update --depexts || true"))
+ (run (shell "opam pin add -k version -yn conf-gmp.5 5"))
+ (run (cache (opam-archives (target /home/opam/.opam/download-cache)))
+      (network host)
+      (shell  "opam reinstall conf-gmp.5;\
+             \n        res=$?;\
+             \n        test \"$res\" != 31 && exit \"$res\";\
+             \n        export OPAMCLI=2.0;\
+             \n        build_dir=$(opam var prefix)/.opam-switch/build;\
+             \n        failed=$(ls \"$build_dir\");\
+             \n        partial_fails=\"\";\
+             \n        for pkg in $failed; do\
+             \n          if opam show -f x-ci-accept-failures: \"$pkg\" | grep -qF \"\\\"debian-12\\\"\"; then\
+             \n            echo \"A package failed and has been disabled for CI using the 'x-ci-accept-failures' field.\";\
+             \n          fi;\
+             \n          test \"$pkg\" != 'conf-gmp.5' && partial_fails=\"$partial_fails $pkg\";\
+             \n        done;\
+             \n        test \"${partial_fails}\" != \"\" && echo \"opam-repo-ci detected dependencies failing: ${partial_fails}\";\
+             \n        exit 1"))
+ (run (cache (opam-archives (target /home/opam/.opam/download-cache)))
+      (network host)
+      (shell  "opam reinstall happy-eyeballs-lwt.0.1.2;\
+             \n        res=$?;\
+             \n        test \"$res\" != 31 && exit \"$res\";\
+             \n        export OPAMCLI=2.0;\
+             \n        build_dir=$(opam var prefix)/.opam-switch/build;\
+             \n        failed=$(ls \"$build_dir\");\
+             \n        partial_fails=\"\";\
+             \n        for pkg in $failed; do\
+             \n          if opam show -f x-ci-accept-failures: \"$pkg\" | grep -qF \"\\\"debian-12\\\"\"; then\
+             \n            echo \"A package failed and has been disabled for CI using the 'x-ci-accept-failures' field.\";\
+             \n          fi;\
+             \n          test \"$pkg\" != 'happy-eyeballs-lwt.0.1.2' && partial_fails=\"$partial_fails $pkg\";\
+             \n        done;\
+             \n        test \"${partial_fails}\" != \"\" && echo \"opam-repo-ci detected dependencies failing: ${partial_fails}\";\
+             \n        exit 1"))
+ (run (network host)
+      (shell "(opam reinstall --with-test happy-eyeballs-lwt.0.1.2) || true"))
+ (run (shell  "opam reinstall --with-test --verbose happy-eyeballs-lwt.0.1.2;\
+             \n        res=$?;\
+             \n        test \"$res\" != 31 && exit \"$res\";\
+             \n        export OPAMCLI=2.0;\
+             \n        build_dir=$(opam var prefix)/.opam-switch/build;\
+             \n        failed=$(ls \"$build_dir\");\
+             \n        partial_fails=\"\";\
+             \n        for pkg in $failed; do\
+             \n          if opam show -f x-ci-accept-failures: \"$pkg\" | grep -qF \"\\\"debian-12\\\"\"; then\
+             \n            echo \"A package failed and has been disabled for CI using the 'x-ci-accept-failures' field.\";\
+             \n          fi;\
+             \n          test \"$pkg\" != 'happy-eyeballs-lwt.0.1.2' && partial_fails=\"$partial_fails $pkg\";\
+             \n        done;\
+             \n        test \"${partial_fails}\" != \"\" && echo \"opam-repo-ci detected dependencies failing: ${partial_fails}\";\
+             \n        exit 1"))
+)
+
+2024-07-03 13:03.24: Waiting for resource in pool OCluster
+2024-07-03 16:08.15: Waiting for worker…
+2024-07-03 16:13.12: Got resource from pool OCluster
+Building on x86-bm-c14.sw.ocaml.org
+All commits already cached
+Updating files:  66% (21021/31669)Updating files:  67% (21219/31669)Updating files:  68% (21535/31669)Updating files:  69% (21852/31669)Updating files:  70% (22169/31669)Updating files:  71% (22485/31669)Updating files:  72% (22802/31669)Updating files:  73% (23119/31669)Updating files:  74% (23436/31669)Updating files:  75% (23752/31669)Updating files:  76% (24069/31669)Updating files:  77% (24386/31669)Updating files:  78% (24702/31669)Updating files:  79% (25019/31669)Updating files:  80% (25336/31669)Updating files:  81% (25652/31669)Updating files:  82% (25969/31669)Updating files:  83% (26286/31669)Updating files:  84% (26602/31669)Updating files:  85% (26919/31669)Updating files:  86% (27236/31669)Updating files:  87% (27553/31669)Updating files:  88% (27869/31669)Updating files:  89% (28186/31669)Updating files:  90% (28503/31669)Updating files:  91% (28819/31669)Updating files:  92% (29136/31669)Updating files:  93% (29453/31669)Updating files:  94% (29769/31669)Updating files:  95% (30086/31669)Updating files:  96% (30403/31669)Updating files:  97% (30719/31669)Updating files:  98% (31036/31669)Updating files:  99% (31353/31669)Updating files: 100% (31669/31669)Updating files: 100% (31669/31669), done.
+HEAD is now at f11abb6589 Merge pull request #26180 from mseri/fix-async_ssl
+Merge made by the 'ort' strategy.
+ .../conf-gmp-powm-sec.4/files/test.c               | 26 ++++++++++++
+ .../conf-gmp-powm-sec/conf-gmp-powm-sec.4/opam     | 17 ++++++++
+ packages/conf-gmp/conf-gmp.5/files/test.c          | 10 +++++
+ packages/conf-gmp/conf-gmp.5/opam                  | 32 +++++++++++++++
+ packages/zarith/zarith.1.12-1/opam                 | 47 ++++++++++++++++++++++
+ 5 files changed, 132 insertions(+)
+ create mode 100644 packages/conf-gmp-powm-sec/conf-gmp-powm-sec.4/files/test.c
+ create mode 100644 packages/conf-gmp-powm-sec/conf-gmp-powm-sec.4/opam
+ create mode 100644 packages/conf-gmp/conf-gmp.5/files/test.c
+ create mode 100644 packages/conf-gmp/conf-gmp.5/opam
+ create mode 100644 packages/zarith/zarith.1.12-1/opam
+
+[01;34m(from ocaml/opam:debian-12-ocaml-5.2@sha256:583bd84391ee71ae55caa44262c64c2260af63906c7c0231d7561504ac61b650)[0m
+[01;2m[01;35m2024-07-03 16:13.15 ---> using "9db33b4bb054733b7edf7c000bfa2223fb2a5578295224f53737a047b78cd615" from cache[0m
+
+[01;34m/: (user (uid 1000) (gid 1000))[0m
+
+[01;34m/: (workdir /home/opam)[0m
+
+[01;34m/home/opam: (run (shell "sudo ln -f /usr/bin/opam-dev /usr/bin/opam"))[0m
+[01;2m[01;35m2024-07-03 16:13.15 ---> using "8252a6b7cac13d21fd440da8f14de1380f71877f7f352e35c4869ec0d15987e6" from cache[0m
+
+[01;34m/home/opam: (run (network host)
+                 (shell "opam init --reinit --config .opamrc-sandbox -ni"))[0m
+Configuring from /home/opam/.opamrc-sandbox, then /home/opam/.opamrc, and finally from built-in defaults.
+Checking for available remotes: rsync and local, git.
+  - you won't be able to use mercurial repositories unless you install the hg command on your system.
+  - you won't be able to use darcs repositories unless you install the darcs command on your system.
+
+This development version of opam requires an update to the layout of /home/opam/.opam from version 2.0 to version 2.2~beta, which can't be reverted.
+You may want to back it up before going further.
+
+Continue? [y/n] y
+Format upgrade done.
+
+<><> Updating repositories ><><><><><><><><><><><><><><><><><><><><><><><><><><>
+[default] synchronised from file:///home/opam/opam-repository
+[01;2m[01;35m2024-07-03 16:13.15 ---> using "7307acb780431de9b8a2cf61fce2e31cac34d318fb8259ace1403298a7145fc3" from cache[0m
+
+[01;34m/home/opam: (run (shell "uname -rs && opam exec -- ocaml -version && opam --version"))[0m
+Linux 5.15.0-113-generic
+The OCaml toplevel, version 5.2.0
+2.2.0~rc1
+[01;2m[01;35m2024-07-03 16:13.15 ---> using "c064eef16a2a2d098179728c78fa9e0229e4b9b32fbc4db544ae1017758abe31" from cache[0m
+
+[01;34m/home/opam: (env OPAMDOWNLOADJOBS 1)[0m
+
+[01;34m/home/opam: (env OPAMERRLOGLEN 0)[0m
+
+[01;34m/home/opam: (env OPAMSOLVERTIMEOUT 500)[0m
+
+[01;34m/home/opam: (env OPAMPRECISETRACKING 1)[0m
+
+[01;34m/home/opam: (env CI true)[0m
+
+[01;34m/home/opam: (env OPAM_REPO_CI true)[0m
+
+[01;34m/home/opam: (run (shell "rm -rf opam-repository/"))[0m
+[01;2m[01;35m2024-07-03 16:13.15 ---> using "3fcc22a591adc4fba1849f596cb02b575bc7932f25a239a6a1e48cbfa6f6eb8d" from cache[0m
+
+[01;34m/home/opam: (copy (src .) (dst opam-repository/))[0m
+[01;2m[01;35m2024-07-03 16:13.17 ---> using "4ec1ed8b693ab24cb3fddc2decf158c4046d8ceb52644118d1cd373ff13d05c6" from cache[0m
+
+[01;34m/home/opam: (run (shell "opam repository set-url --strict default opam-repository/"))[0m
+[default] Initialised
+[01;2m[01;35m2024-07-03 16:13.17 ---> using "e3f55d660e1162699fe18b07ffcd8d101d267a59e039a5df0b54222d2f8151c2" from cache[0m
+
+[01;34m/home/opam: (run (network host)
+                 (shell "opam update --depexts || true"))[0m
++ /usr/bin/sudo "apt-get" "update"
+- Get:1 http://deb.debian.org/debian bookworm InRelease [151 kB]
+- Get:2 http://deb.debian.org/debian bookworm-updates InRelease [55.4 kB]
+- Get:3 http://deb.debian.org/debian-security bookworm-security InRelease [48.0 kB]
+- Get:4 http://deb.debian.org/debian bookworm/main amd64 Packages [8788 kB]
+- Get:5 http://deb.debian.org/debian-security bookworm-security/main amd64 Packages [164 kB]
+- Fetched 9206 kB in 3s (3524 kB/s)
+- Reading package lists...
+- 
+[01;2m[01;35m2024-07-03 16:13.17 ---> using "be18883c1e457356130ab6f91a58a16d191af7511801ba708c7c7cc0540c0b5d" from cache[0m
+
+[01;34m/home/opam: (run (shell "opam pin add -k version -yn conf-gmp.5 5"))[0m
+conf-gmp is now pinned to version 5
+[01;2m[01;35m2024-07-03 16:13.17 ---> using "00d8f8326cbd159fedd69769e483b2c3c64af12e996104c34a1241f9dd868416" from cache[0m
+
+[01;34m/home/opam: (run (cache (opam-archives (target /home/opam/.opam/download-cache)))
+                 (network host)
+                 (shell  "opam reinstall conf-gmp.5;\
+                        \n        res=$?;\
+                        \n        test \"$res\" != 31 && exit \"$res\";\
+                        \n        export OPAMCLI=2.0;\
+                        \n        build_dir=$(opam var prefix)/.opam-switch/build;\
+                        \n        failed=$(ls \"$build_dir\");\
+                        \n        partial_fails=\"\";\
+                        \n        for pkg in $failed; do\
+                        \n          if opam show -f x-ci-accept-failures: \"$pkg\" | grep -qF \"\\\"debian-12\\\"\"; then\
+                        \n            echo \"A package failed and has been disabled for CI using the 'x-ci-accept-failures' field.\";\
+                        \n          fi;\
+                        \n          test \"$pkg\" != 'conf-gmp.5' && partial_fails=\"$partial_fails $pkg\";\
+                        \n        done;\
+                        \n        test \"${partial_fails}\" != \"\" && echo \"opam-repo-ci detected dependencies failing: ${partial_fails}\";\
+                        \n        exit 1"))[0m
+conf-gmp.5 is not installed. Install it? [y/n] y
+The following actions will be performed:
+=== install 2 packages
+  - install conf-gmp        5 (pinned)
+  - install conf-pkg-config 3          [required by conf-gmp]
+
+The following system packages will first need to be installed:
+    libgmp-dev pkg-config
+
+<><> Handling external dependencies <><><><><><><><><><><><><><><><><><><><><><>
+
+opam believes some required external dependencies are missing. opam can:
+> 1. Run apt-get to install them (may need root/sudo access)
+  2. Display the recommended apt-get command and wait while you run it manually (e.g. in another terminal)
+  3. Continue anyway, and, upon success, permanently register that this external dependency is present, but not detectable
+  4. Abort the installation
+
+[1/2/3/4] 1
+
++ /usr/bin/sudo "apt-get" "install" "-qq" "-yy" "libgmp-dev" "pkg-config"
+- debconf: delaying package configuration, since apt-utils is not installed
+- Selecting previously unselected package libgmpxx4ldbl:amd64.
+- (Reading database ... (Reading database ... 5%(Reading database ... 10%(Reading database ... 15%(Reading database ... 20%(Reading database ... 25%(Reading database ... 30%(Reading database ... 35%(Reading database ... 40%(Reading database ... 45%(Reading database ... 50%(Reading database ... 55%(Reading database ... 60%(Reading database ... 65%(Reading database ... 70%(Reading database ... 75%(Reading database ... 80%(Reading database ... 85%(Reading database ... 90%(Reading database ... 95%(Reading database ... 100%(Reading database ... 18766 files and directories currently installed.)
+- Preparing to unpack .../0-libgmpxx4ldbl_2%3a6.2.1+dfsg1-1.1_amd64.deb ...
+- Unpacking libgmpxx4ldbl:amd64 (2:6.2.1+dfsg1-1.1) ...
+- Selecting previously unselected package libgmp-dev:amd64.
+- Preparing to unpack .../1-libgmp-dev_2%3a6.2.1+dfsg1-1.1_amd64.deb ...
+- Unpacking libgmp-dev:amd64 (2:6.2.1+dfsg1-1.1) ...
+- Selecting previously unselected package libpkgconf3:amd64.
+- Preparing to unpack .../2-libpkgconf3_1.8.1-1_amd64.deb ...
+- Unpacking libpkgconf3:amd64 (1.8.1-1) ...
+- Selecting previously unselected package pkgconf-bin.
+- Preparing to unpack .../3-pkgconf-bin_1.8.1-1_amd64.deb ...
+- Unpacking pkgconf-bin (1.8.1-1) ...
+- Selecting previously unselected package pkgconf:amd64.
+- Preparing to unpack .../4-pkgconf_1.8.1-1_amd64.deb ...
+- Unpacking pkgconf:amd64 (1.8.1-1) ...
+- Selecting previously unselected package pkg-config:amd64.
+- Preparing to unpack .../5-pkg-config_1.8.1-1_amd64.deb ...
+- Unpacking pkg-config:amd64 (1.8.1-1) ...
+- Setting up libpkgconf3:amd64 (1.8.1-1) ...
+- Setting up libgmpxx4ldbl:amd64 (2:6.2.1+dfsg1-1.1) ...
+- Setting up pkgconf-bin (1.8.1-1) ...
+- Setting up libgmp-dev:amd64 (2:6.2.1+dfsg1-1.1) ...
+- Setting up pkgconf:amd64 (1.8.1-1) ...
+- Setting up pkg-config:amd64 (1.8.1-1) ...
+- Processing triggers for libc-bin (2.36-9+deb12u7) ...
+
+<><> Processing actions <><><><><><><><><><><><><><><><><><><><><><><><><><><><>
+-> installed conf-pkg-config.3
+-> installed conf-gmp.5
+Done.
+# Run eval $(opam env) to update the current shell environment
+[01;2m[01;35m2024-07-03 16:13.17 ---> using "7a24ce9259aed40d988137f9921cb84479c65d6004d46d780d10e60705838b2b" from cache[0m
+
+[01;34m/home/opam: (run (cache (opam-archives (target /home/opam/.opam/download-cache)))
+                 (network host)
+                 (shell  "opam reinstall happy-eyeballs-lwt.0.1.2;\
+                        \n        res=$?;\
+                        \n        test \"$res\" != 31 && exit \"$res\";\
+                        \n        export OPAMCLI=2.0;\
+                        \n        build_dir=$(opam var prefix)/.opam-switch/build;\
+                        \n        failed=$(ls \"$build_dir\");\
+                        \n        partial_fails=\"\";\
+                        \n        for pkg in $failed; do\
+                        \n          if opam show -f x-ci-accept-failures: \"$pkg\" | grep -qF \"\\\"debian-12\\\"\"; then\
+                        \n            echo \"A package failed and has been disabled for CI using the 'x-ci-accept-failures' field.\";\
+                        \n          fi;\
+                        \n          test \"$pkg\" != 'happy-eyeballs-lwt.0.1.2' && partial_fails=\"$partial_fails $pkg\";\
+                        \n        done;\
+                        \n        test \"${partial_fails}\" != \"\" && echo \"opam-repo-ci detected dependencies failing: ${partial_fails}\";\
+                        \n        exit 1"))[0m
+happy-eyeballs-lwt.0.1.2 is not installed. Install it? [y/n] y
+[ERROR] Sorry, resolution of the request timed out.
+        Try to specify a more precise request, use a different solver, or increase the allowed time by setting OPAMSOLVERTIMEOUT to a bigger value (currently, it is set to 500.0 seconds).
+"/usr/bin/env" "bash" "-c" "opam reinstall happy-eyeballs-lwt.0.1.2;
+        res=$?;
+        test "$res" != 31 && exit "$res";
+        export OPAMCLI=2.0;
+        build_dir=$(opam var prefix)/.opam-switch/build;
+        failed=$(ls "$build_dir");
+        partial_fails="";
+        for pkg in $failed; do
+          if opam show -f x-ci-accept-failures: "$pkg" | grep -qF "\"debian-12\""; then
+            echo "A package failed and has been disabled for CI using the 'x-ci-accept-failures' field.";
+          fi;
+          test "$pkg" != 'happy-eyeballs-lwt.0.1.2' && partial_fails="$partial_fails $pkg";
+        done;
+        test "${partial_fails}" != "" && echo "opam-repo-ci detected dependencies failing: ${partial_fails}";
+        exit 1" failed with exit status 60
+2024-07-03 16:22.06: Job failed: Failed: Build failed
+2024-07-03 16:22.06: Log analysis:
+2024-07-03 16:22.06: >>> 
+[ERROR] Sorry, resolution of the request timed out.
+ (score = 20)
+2024-07-03 16:22.06: Sorry, resolution of the request timed out.

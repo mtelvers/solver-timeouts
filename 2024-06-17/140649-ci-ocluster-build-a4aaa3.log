@@ -1,0 +1,425 @@
+2024-06-17 14:06.49: New job: test x509.0.11.0 with dune-secondary.3.8.1, using opam dev
+                              from https://github.com/ocaml/opam-repository.git#refs/pull/25928/head (c304dd1b82c80ef5c39a690b2ee6594540fd65b1)
+                              on debian-12-ocaml-4.14/amd64
+
+To reproduce locally:
+
+cd $(mktemp -d)
+git clone --recursive "https://github.com/ocaml/opam-repository.git" && cd "opam-repository" && git fetch origin "refs/pull/25928/head" && git reset --hard c304dd1b
+git fetch origin master
+git merge --no-edit e06bf2b8c3dce7604e27950cb51b3eb2d9cbc4e5
+cat > ../Dockerfile <<'END-OF-DOCKERFILE'
+[34mFROM ocaml/opam:debian-12-ocaml-4.14@sha256:68ecefb12259af7ac8f85f40002bb77c47ee641474979fd6a320ed7bf1222c7c
+USER 1000:1000
+WORKDIR /home/opam
+RUN sudo ln -f /usr/bin/opam-dev /usr/bin/opam
+RUN opam init --reinit -ni
+RUN uname -rs && opam exec -- ocaml -version && opam --version
+ENV OPAMDOWNLOADJOBS="1"
+ENV OPAMERRLOGLEN="0"
+ENV OPAMSOLVERTIMEOUT="500"
+ENV OPAMPRECISETRACKING="1"
+ENV CI="true"
+ENV OPAM_REPO_CI="true"
+RUN rm -rf opam-repository/
+COPY --chown=1000:1000 . opam-repository/
+RUN opam repository set-url --strict default opam-repository/
+RUN opam update --depexts || true
+RUN opam pin add -k version -yn dune-secondary.3.8.1 3.8.1
+RUN opam reinstall dune-secondary.3.8.1; \
+    res=$?; \
+    test "$res" != 31 && exit "$res"; \
+    export OPAMCLI=2.0; \
+    build_dir=$(opam var prefix)/.opam-switch/build; \
+    failed=$(ls "$build_dir"); \
+    partial_fails=""; \
+    for pkg in $failed; do \
+    if opam show -f x-ci-accept-failures: "$pkg" | grep -qF "\"debian-12\""; then \
+    echo "A package failed and has been disabled for CI using the 'x-ci-accept-failures' field."; \
+    fi; \
+    test "$pkg" != 'dune-secondary.3.8.1' && partial_fails="$partial_fails $pkg"; \
+    done; \
+    test "${partial_fails}" != "" && echo "opam-repo-ci detected dependencies failing: ${partial_fails}"; \
+    exit 1
+RUN opam reinstall x509.0.11.0; \
+    res=$?; \
+    test "$res" != 31 && exit "$res"; \
+    export OPAMCLI=2.0; \
+    build_dir=$(opam var prefix)/.opam-switch/build; \
+    failed=$(ls "$build_dir"); \
+    partial_fails=""; \
+    for pkg in $failed; do \
+    if opam show -f x-ci-accept-failures: "$pkg" | grep -qF "\"debian-12\""; then \
+    echo "A package failed and has been disabled for CI using the 'x-ci-accept-failures' field."; \
+    fi; \
+    test "$pkg" != 'x509.0.11.0' && partial_fails="$partial_fails $pkg"; \
+    done; \
+    test "${partial_fails}" != "" && echo "opam-repo-ci detected dependencies failing: ${partial_fails}"; \
+    exit 1
+RUN (opam reinstall --with-test x509.0.11.0) || true
+RUN opam reinstall --with-test --verbose x509.0.11.0; \
+    res=$?; \
+    test "$res" != 31 && exit "$res"; \
+    export OPAMCLI=2.0; \
+    build_dir=$(opam var prefix)/.opam-switch/build; \
+    failed=$(ls "$build_dir"); \
+    partial_fails=""; \
+    for pkg in $failed; do \
+    if opam show -f x-ci-accept-failures: "$pkg" | grep -qF "\"debian-12\""; then \
+    echo "A package failed and has been disabled for CI using the 'x-ci-accept-failures' field."; \
+    fi; \
+    test "$pkg" != 'x509.0.11.0' && partial_fails="$partial_fails $pkg"; \
+    done; \
+    test "${partial_fails}" != "" && echo "opam-repo-ci detected dependencies failing: ${partial_fails}"; \
+    exit 1
+[0m
+END-OF-DOCKERFILE
+docker build -f ../Dockerfile .
+
+2024-06-17 14:06.49: Using cache hint "ocaml/opam:debian-12-ocaml-4.14@sha256:68ecefb12259af7ac8f85f40002bb77c47ee641474979fd6a320ed7bf1222c7c-dune-secondary.3.8.1-x509.0.11.0-c304dd1b82c80ef5c39a690b2ee6594540fd65b1"
+2024-06-17 14:06.49: Using OBuilder spec:
+((from ocaml/opam:debian-12-ocaml-4.14@sha256:68ecefb12259af7ac8f85f40002bb77c47ee641474979fd6a320ed7bf1222c7c)
+ (user (uid 1000) (gid 1000))
+ (workdir /home/opam)
+ (run (shell "sudo ln -f /usr/bin/opam-dev /usr/bin/opam"))
+ (run (network host)
+      (shell "opam init --reinit --config .opamrc-sandbox -ni"))
+ (run (shell "uname -rs && opam exec -- ocaml -version && opam --version"))
+ (env OPAMDOWNLOADJOBS 1)
+ (env OPAMERRLOGLEN 0)
+ (env OPAMSOLVERTIMEOUT 500)
+ (env OPAMPRECISETRACKING 1)
+ (env CI true)
+ (env OPAM_REPO_CI true)
+ (run (shell "rm -rf opam-repository/"))
+ (copy (src .) (dst opam-repository/))
+ (run (shell "opam repository set-url --strict default opam-repository/"))
+ (run (network host)
+      (shell "opam update --depexts || true"))
+ (run (shell "opam pin add -k version -yn dune-secondary.3.8.1 3.8.1"))
+ (run (cache (opam-archives (target /home/opam/.opam/download-cache)))
+      (network host)
+      (shell  "opam reinstall dune-secondary.3.8.1;\
+             \n        res=$?;\
+             \n        test \"$res\" != 31 && exit \"$res\";\
+             \n        export OPAMCLI=2.0;\
+             \n        build_dir=$(opam var prefix)/.opam-switch/build;\
+             \n        failed=$(ls \"$build_dir\");\
+             \n        partial_fails=\"\";\
+             \n        for pkg in $failed; do\
+             \n          if opam show -f x-ci-accept-failures: \"$pkg\" | grep -qF \"\\\"debian-12\\\"\"; then\
+             \n            echo \"A package failed and has been disabled for CI using the 'x-ci-accept-failures' field.\";\
+             \n          fi;\
+             \n          test \"$pkg\" != 'dune-secondary.3.8.1' && partial_fails=\"$partial_fails $pkg\";\
+             \n        done;\
+             \n        test \"${partial_fails}\" != \"\" && echo \"opam-repo-ci detected dependencies failing: ${partial_fails}\";\
+             \n        exit 1"))
+ (run (cache (opam-archives (target /home/opam/.opam/download-cache)))
+      (network host)
+      (shell  "opam reinstall x509.0.11.0;\
+             \n        res=$?;\
+             \n        test \"$res\" != 31 && exit \"$res\";\
+             \n        export OPAMCLI=2.0;\
+             \n        build_dir=$(opam var prefix)/.opam-switch/build;\
+             \n        failed=$(ls \"$build_dir\");\
+             \n        partial_fails=\"\";\
+             \n        for pkg in $failed; do\
+             \n          if opam show -f x-ci-accept-failures: \"$pkg\" | grep -qF \"\\\"debian-12\\\"\"; then\
+             \n            echo \"A package failed and has been disabled for CI using the 'x-ci-accept-failures' field.\";\
+             \n          fi;\
+             \n          test \"$pkg\" != 'x509.0.11.0' && partial_fails=\"$partial_fails $pkg\";\
+             \n        done;\
+             \n        test \"${partial_fails}\" != \"\" && echo \"opam-repo-ci detected dependencies failing: ${partial_fails}\";\
+             \n        exit 1"))
+ (run (network host)
+      (shell "(opam reinstall --with-test x509.0.11.0) || true"))
+ (run (shell  "opam reinstall --with-test --verbose x509.0.11.0;\
+             \n        res=$?;\
+             \n        test \"$res\" != 31 && exit \"$res\";\
+             \n        export OPAMCLI=2.0;\
+             \n        build_dir=$(opam var prefix)/.opam-switch/build;\
+             \n        failed=$(ls \"$build_dir\");\
+             \n        partial_fails=\"\";\
+             \n        for pkg in $failed; do\
+             \n          if opam show -f x-ci-accept-failures: \"$pkg\" | grep -qF \"\\\"debian-12\\\"\"; then\
+             \n            echo \"A package failed and has been disabled for CI using the 'x-ci-accept-failures' field.\";\
+             \n          fi;\
+             \n          test \"$pkg\" != 'x509.0.11.0' && partial_fails=\"$partial_fails $pkg\";\
+             \n        done;\
+             \n        test \"${partial_fails}\" != \"\" && echo \"opam-repo-ci detected dependencies failing: ${partial_fails}\";\
+             \n        exit 1"))
+)
+
+2024-06-17 14:06.49: Waiting for resource in pool OCluster
+2024-06-17 14:35.27: Waiting for worker…
+2024-06-17 14:39.44: Got resource from pool OCluster
+Building on x86-bm-c13.sw.ocaml.org
+All commits already cached
+Updating files:  41% (13043/31547)Updating files:  42% (13250/31547)Updating files:  43% (13566/31547)Updating files:  44% (13881/31547)Updating files:  45% (14197/31547)Updating files:  46% (14512/31547)Updating files:  47% (14828/31547)Updating files:  48% (15143/31547)Updating files:  49% (15459/31547)Updating files:  50% (15774/31547)Updating files:  51% (16089/31547)Updating files:  52% (16405/31547)Updating files:  53% (16720/31547)Updating files:  54% (17036/31547)Updating files:  55% (17351/31547)Updating files:  56% (17667/31547)Updating files:  57% (17982/31547)Updating files:  58% (18298/31547)Updating files:  59% (18613/31547)Updating files:  60% (18929/31547)Updating files:  61% (19244/31547)Updating files:  62% (19560/31547)Updating files:  63% (19875/31547)Updating files:  64% (20191/31547)Updating files:  65% (20506/31547)Updating files:  66% (20822/31547)Updating files:  67% (21137/31547)Updating files:  68% (21452/31547)Updating files:  69% (21768/31547)Updating files:  70% (22083/31547)Updating files:  71% (22399/31547)Updating files:  72% (22714/31547)Updating files:  73% (23030/31547)Updating files:  74% (23345/31547)Updating files:  75% (23661/31547)Updating files:  76% (23976/31547)Updating files:  77% (24292/31547)Updating files:  78% (24607/31547)Updating files:  79% (24923/31547)Updating files:  80% (25238/31547)Updating files:  81% (25554/31547)Updating files:  82% (25869/31547)Updating files:  83% (26185/31547)Updating files:  84% (26500/31547)Updating files:  85% (26815/31547)Updating files:  86% (27131/31547)Updating files:  87% (27446/31547)Updating files:  87% (27530/31547)Updating files:  88% (27762/31547)Updating files:  89% (28077/31547)Updating files:  90% (28393/31547)Updating files:  91% (28708/31547)Updating files:  92% (29024/31547)Updating files:  93% (29339/31547)Updating files:  94% (29655/31547)Updating files:  95% (29970/31547)Updating files:  96% (30286/31547)Updating files:  97% (30601/31547)Updating files:  98% (30917/31547)Updating files:  99% (31232/31547)Updating files: 100% (31547/31547)Updating files: 100% (31547/31547), done.
+HEAD is now at e06bf2b8c3 Merge pull request #26097 from yawaramin/release-fun-sql-v0.2.3
+Merge made by the 'ort' strategy.
+ packages/base-flambda2/base-flambda2.base/opam     |  8 +++
+ packages/dune-secondary/dune-secondary.3.8.1/opam  | 60 ++++++++++++++++++++++
+ .../menhir-secondary.20210419/opam                 | 34 ++++++++++++
+ .../ocaml-secondary-compiler.4.14.2/opam           | 30 +++++++++++
+ .../ocaml-variants.5.1.1+flambda2/opam             | 45 ++++++++++++++++
+ 5 files changed, 177 insertions(+)
+ create mode 100644 packages/base-flambda2/base-flambda2.base/opam
+ create mode 100644 packages/dune-secondary/dune-secondary.3.8.1/opam
+ create mode 100644 packages/menhir-secondary/menhir-secondary.20210419/opam
+ create mode 100644 packages/ocaml-secondary-compiler/ocaml-secondary-compiler.4.14.2/opam
+ create mode 100644 packages/ocaml-variants/ocaml-variants.5.1.1+flambda2/opam
+
+[01;34m(from ocaml/opam:debian-12-ocaml-4.14@sha256:68ecefb12259af7ac8f85f40002bb77c47ee641474979fd6a320ed7bf1222c7c)[0m
+[01;2m[01;35m2024-06-17 14:39.48 ---> using "be6362479294069b96a78ceb45e5e59b696aa4ead55eec8c4ca81a46ae6af254" from cache[0m
+
+[01;34m/: (user (uid 1000) (gid 1000))[0m
+
+[01;34m/: (workdir /home/opam)[0m
+
+[01;34m/home/opam: (run (shell "sudo ln -f /usr/bin/opam-dev /usr/bin/opam"))[0m
+[01;2m[01;35m2024-06-17 14:39.48 ---> using "8ad80d6a0debeaed101481b8cff66e1eafb8b0e653f48d497136a3cd6c73afd4" from cache[0m
+
+[01;34m/home/opam: (run (network host)
+                 (shell "opam init --reinit --config .opamrc-sandbox -ni"))[0m
+Configuring from /home/opam/.opamrc-sandbox, then /home/opam/.opamrc, and finally from built-in defaults.
+Checking for available remotes: rsync and local, git.
+  - you won't be able to use mercurial repositories unless you install the hg command on your system.
+  - you won't be able to use darcs repositories unless you install the darcs command on your system.
+
+This development version of opam requires an update to the layout of /home/opam/.opam from version 2.0 to version 2.2~beta, which can't be reverted.
+You may want to back it up before going further.
+
+Continue? [y/n] y
+Format upgrade done.
+
+<><> Updating repositories ><><><><><><><><><><><><><><><><><><><><><><><><><><>
+[default] synchronised from file:///home/opam/opam-repository
+[01;2m[01;35m2024-06-17 14:39.48 ---> using "56bbd298ac51fe1e7634bdd19c2541599a9d163a08dafe773745bbf4eb18410c" from cache[0m
+
+[01;34m/home/opam: (run (shell "uname -rs && opam exec -- ocaml -version && opam --version"))[0m
+Linux 5.15.0-112-generic
+The OCaml toplevel, version 4.14.2
+2.2.0~beta3~dev
+[01;2m[01;35m2024-06-17 14:39.48 ---> using "152abb09d7c0ec6a6b81839d18fba96e3d05ed398f577cd267f0f4b08f6eb24b" from cache[0m
+
+[01;34m/home/opam: (env OPAMDOWNLOADJOBS 1)[0m
+
+[01;34m/home/opam: (env OPAMERRLOGLEN 0)[0m
+
+[01;34m/home/opam: (env OPAMSOLVERTIMEOUT 500)[0m
+
+[01;34m/home/opam: (env OPAMPRECISETRACKING 1)[0m
+
+[01;34m/home/opam: (env CI true)[0m
+
+[01;34m/home/opam: (env OPAM_REPO_CI true)[0m
+
+[01;34m/home/opam: (run (shell "rm -rf opam-repository/"))[0m
+[01;2m[01;35m2024-06-17 14:39.48 ---> using "ed21e7d865a19fc202b822ef2e288487fef395f0eb5a1334ec4e29366b626f01" from cache[0m
+
+[01;34m/home/opam: (copy (src .) (dst opam-repository/))[0m
+[01;2m[01;35m2024-06-17 14:39.51 ---> using "82ec14b99bf5f8ede5c8224b3eb0f08cb0d5250487c8ddd68c30454a5f9db86e" from cache[0m
+
+[01;34m/home/opam: (run (shell "opam repository set-url --strict default opam-repository/"))[0m
+[default] Initialised
+[01;2m[01;35m2024-06-17 14:39.51 ---> using "cd3817c3995b25fe0ed8701a49d4dd974a82f705d534c18d188d9a4e99ab95c2" from cache[0m
+
+[01;34m/home/opam: (run (network host)
+                 (shell "opam update --depexts || true"))[0m
++ /usr/bin/sudo "apt-get" "update"
+- Hit:1 http://deb.debian.org/debian bookworm InRelease
+- Get:2 http://deb.debian.org/debian bookworm-updates InRelease [55.4 kB]
+- Get:3 http://deb.debian.org/debian-security bookworm-security InRelease [48.0 kB]
+- Get:4 http://deb.debian.org/debian-security bookworm-security/main amd64 Packages [160 kB]
+- Fetched 263 kB in 0s (1037 kB/s)
+- Reading package lists...
+- 
+[01;2m[01;35m2024-06-17 14:39.51 ---> using "5711c3b564023e6625f1dc00437868499e692ceded5089eb8ccf4452e65ac7e5" from cache[0m
+
+[01;34m/home/opam: (run (shell "opam pin add -k version -yn dune-secondary.3.8.1 3.8.1"))[0m
+dune-secondary is now pinned to version 3.8.1
+[01;2m[01;35m2024-06-17 14:39.51 ---> using "5c82bdfb1361ff0749621cf9f1c3d5a3bf8f99ddd1e5c27025e2f7de2aec1a90" from cache[0m
+
+[01;34m/home/opam: (run (cache (opam-archives (target /home/opam/.opam/download-cache)))
+                 (network host)
+                 (shell  "opam reinstall dune-secondary.3.8.1;\
+                        \n        res=$?;\
+                        \n        test \"$res\" != 31 && exit \"$res\";\
+                        \n        export OPAMCLI=2.0;\
+                        \n        build_dir=$(opam var prefix)/.opam-switch/build;\
+                        \n        failed=$(ls \"$build_dir\");\
+                        \n        partial_fails=\"\";\
+                        \n        for pkg in $failed; do\
+                        \n          if opam show -f x-ci-accept-failures: \"$pkg\" | grep -qF \"\\\"debian-12\\\"\"; then\
+                        \n            echo \"A package failed and has been disabled for CI using the 'x-ci-accept-failures' field.\";\
+                        \n          fi;\
+                        \n          test \"$pkg\" != 'dune-secondary.3.8.1' && partial_fails=\"$partial_fails $pkg\";\
+                        \n        done;\
+                        \n        test \"${partial_fails}\" != \"\" && echo \"opam-repo-ci detected dependencies failing: ${partial_fails}\";\
+                        \n        exit 1"))[0m
+dune-secondary.3.8.1 is not installed. Install it? [y/n] y
+The following actions will be performed:
+=== install 2 packages
+  - install dune-secondary           3.8.1 (pinned)
+  - install ocaml-secondary-compiler 4.14.2         [required by dune-secondary]
+
+<><> Processing actions <><><><><><><><><><><><><><><><><><><><><><><><><><><><>
+-> retrieved dune-secondary.3.8.1  (cached)
+-> retrieved ocaml-secondary-compiler.4.14.2  (cached)
+-> installed ocaml-secondary-compiler.4.14.2
+-> installed dune-secondary.3.8.1
+Done.
+# Run eval $(opam env) to update the current shell environment
+[01;2m[01;35m2024-06-17 14:39.51 ---> using "ecfb52764bc8d1ee830093f25aca9eb356834a680f54c6e4557283b5ae2a0cff" from cache[0m
+
+[01;34m/home/opam: (run (cache (opam-archives (target /home/opam/.opam/download-cache)))
+                 (network host)
+                 (shell  "opam reinstall x509.0.11.0;\
+                        \n        res=$?;\
+                        \n        test \"$res\" != 31 && exit \"$res\";\
+                        \n        export OPAMCLI=2.0;\
+                        \n        build_dir=$(opam var prefix)/.opam-switch/build;\
+                        \n        failed=$(ls \"$build_dir\");\
+                        \n        partial_fails=\"\";\
+                        \n        for pkg in $failed; do\
+                        \n          if opam show -f x-ci-accept-failures: \"$pkg\" | grep -qF \"\\\"debian-12\\\"\"; then\
+                        \n            echo \"A package failed and has been disabled for CI using the 'x-ci-accept-failures' field.\";\
+                        \n          fi;\
+                        \n          test \"$pkg\" != 'x509.0.11.0' && partial_fails=\"$partial_fails $pkg\";\
+                        \n        done;\
+                        \n        test \"${partial_fails}\" != \"\" && echo \"opam-repo-ci detected dependencies failing: ${partial_fails}\";\
+                        \n        exit 1"))[0m
+x509.0.11.0 is not installed. Install it? [y/n] y
+The following actions will be performed:
+=== install 26 packages
+  - install asn1-combinators  0.2.6   [required by x509]
+  - install base64            3.5.1   [required by x509]
+  - install bigarray-compat   1.1.0   [required by cstruct]
+  - install conf-gmp          4       [required by zarith, conf-gmp-powm-sec]
+  - install conf-gmp-powm-sec 3       [required by mirage-crypto-pk]
+  - install csexp             1.5.2   [required by dune-configurator]
+  - install cstruct           6.0.1   [required by x509]
+  - install domain-name       0.4.0   [required by x509]
+  - install dune              3.16.0  [required by x509]
+  - install dune-configurator 3.16.0  [required by mirage-crypto]
+  - install duration          0.2.1   [required by mirage-crypto-rng]
+  - install eqaf              0.9     [required by mirage-crypto, mirage-crypto-pk]
+  - install fmt               0.9.0   [required by x509]
+  - install gmap              0.3.0   [required by x509]
+  - install logs              0.7.0   [required by x509]
+  - install mirage-crypto     0.11.3  [required by x509]
+  - install mirage-crypto-pk  0.11.3  [required by x509]
+  - install mirage-crypto-rng 0.11.3  [required by mirage-crypto-pk]
+  - install ocamlbuild        0.14.3  [required by logs, fmt, rresult]
+  - install ocamlfind         1.9.6   [required by logs, fmt, rresult]
+  - install ptime             1.1.0   [required by x509]
+  - install rresult           0.7.0   [required by x509]
+  - install sexplib0          v0.17.0 [required by mirage-crypto-pk]
+  - install topkg             1.0.7   [required by logs, fmt, rresult]
+  - install x509              0.11.0
+  - install zarith            1.13    [required by asn1-combinators, mirage-crypto-pk]
+
+The following system packages will first need to be installed:
+    libgmp-dev
+
+<><> Handling external dependencies <><><><><><><><><><><><><><><><><><><><><><>
+
+opam believes some required external dependencies are missing. opam can:
+> 1. Run apt-get to install them (may need root/sudo access)
+  2. Display the recommended apt-get command and wait while you run it manually (e.g. in another terminal)
+  3. Continue anyway, and, upon success, permanently register that this external dependency is present, but not detectable
+  4. Abort the installation
+
+[1/2/3/4] 1
+
++ /usr/bin/sudo "apt-get" "install" "-qq" "-yy" "libgmp-dev"
+- debconf: delaying package configuration, since apt-utils is not installed
+- Selecting previously unselected package libgmpxx4ldbl:amd64.
+- (Reading database ... (Reading database ... 5%(Reading database ... 10%(Reading database ... 15%(Reading database ... 20%(Reading database ... 25%(Reading database ... 30%(Reading database ... 35%(Reading database ... 40%(Reading database ... 45%(Reading database ... 50%(Reading database ... 55%(Reading database ... 60%(Reading database ... 65%(Reading database ... 70%(Reading database ... 75%(Reading database ... 80%(Reading database ... 85%(Reading database ... 90%(Reading database ... 95%(Reading database ... 100%(Reading database ... 18735 files and directories currently installed.)
+- Preparing to unpack .../libgmpxx4ldbl_2%3a6.2.1+dfsg1-1.1_amd64.deb ...
+- Unpacking libgmpxx4ldbl:amd64 (2:6.2.1+dfsg1-1.1) ...
+- Selecting previously unselected package libgmp-dev:amd64.
+- Preparing to unpack .../libgmp-dev_2%3a6.2.1+dfsg1-1.1_amd64.deb ...
+- Unpacking libgmp-dev:amd64 (2:6.2.1+dfsg1-1.1) ...
+- Setting up libgmpxx4ldbl:amd64 (2:6.2.1+dfsg1-1.1) ...
+- Setting up libgmp-dev:amd64 (2:6.2.1+dfsg1-1.1) ...
+- Processing triggers for libc-bin (2.36-9+deb12u7) ...
+
+<><> Processing actions <><><><><><><><><><><><><><><><><><><><><><><><><><><><>
+-> retrieved asn1-combinators.0.2.6  (cached)
+-> retrieved base64.3.5.1  (cached)
+-> retrieved bigarray-compat.1.1.0  (cached)
+-> retrieved conf-gmp.4  (cached)
+-> retrieved conf-gmp-powm-sec.3  (cached)
+-> retrieved csexp.1.5.2  (cached)
+-> retrieved cstruct.6.0.1  (cached)
+-> installed conf-gmp.4
+-> retrieved domain-name.0.4.0  (cached)
+-> installed conf-gmp-powm-sec.3
+-> retrieved dune.3.16.0, dune-configurator.3.16.0  (cached)
+-> retrieved duration.0.2.1  (cached)
+-> retrieved eqaf.0.9  (cached)
+-> retrieved fmt.0.9.0  (cached)
+-> retrieved gmap.0.3.0  (cached)
+-> retrieved logs.0.7.0  (cached)
+-> retrieved mirage-crypto.0.11.3, mirage-crypto-pk.0.11.3, mirage-crypto-rng.0.11.3  (cached)
+-> retrieved ocamlbuild.0.14.3  (cached)
+-> retrieved ocamlfind.1.9.6  (cached)
+-> retrieved ptime.1.1.0  (cached)
+-> retrieved rresult.0.7.0  (cached)
+-> retrieved sexplib0.v0.17.0  (cached)
+-> retrieved topkg.1.0.7  (cached)
+-> retrieved x509.0.11.0  (cached)
+-> retrieved zarith.1.13  (cached)
+-> installed ocamlfind.1.9.6
+-> installed ocamlbuild.0.14.3
+-> installed zarith.1.13
+-> installed topkg.1.0.7
+-> installed rresult.0.7.0
+-> installed fmt.0.9.0
+-> installed ptime.1.1.0
+-> installed logs.0.7.0
+-> installed dune.3.16.0
+-> installed duration.0.2.1
+-> installed gmap.0.3.0
+-> installed csexp.1.5.2
+-> installed base64.3.5.1
+-> installed bigarray-compat.1.1.0
+-> installed domain-name.0.4.0
+-> installed sexplib0.v0.17.0
+-> installed cstruct.6.0.1
+-> installed eqaf.0.9
+-> installed asn1-combinators.0.2.6
+-> installed dune-configurator.3.16.0
+-> installed mirage-crypto.0.11.3
+-> installed mirage-crypto-rng.0.11.3
+-> installed mirage-crypto-pk.0.11.3
+-> installed x509.0.11.0
+Done.
+# Run eval $(opam env) to update the current shell environment
+[01;2m[01;35m2024-06-17 14:40.54 ---> saved as "ce56feaa13f31c2377b689f516fea317aafd8b9242c086ed7cf7186816676e39"[0m
+
+[01;34m/home/opam: (run (network host)
+                 (shell "(opam reinstall --with-test x509.0.11.0) || true"))[0m
+[ERROR] Sorry, resolution of the request timed out.
+        Try to specify a more precise request, use a different solver, or increase the allowed time by setting OPAMSOLVERTIMEOUT to a bigger value (currently, it is set to 500.0 seconds).
+[01;2m[01;35m2024-06-17 14:49.30 ---> saved as "33d420c99d24c9a15a1c3b0b734af5670481809eed41c97ed79137c750f0cda9"[0m
+
+[01;34m/home/opam: (run (shell  "opam reinstall --with-test --verbose x509.0.11.0;\
+                        \n        res=$?;\
+                        \n        test \"$res\" != 31 && exit \"$res\";\
+                        \n        export OPAMCLI=2.0;\
+                        \n        build_dir=$(opam var prefix)/.opam-switch/build;\
+                        \n        failed=$(ls \"$build_dir\");\
+                        \n        partial_fails=\"\";\
+                        \n        for pkg in $failed; do\
+                        \n          if opam show -f x-ci-accept-failures: \"$pkg\" | grep -qF \"\\\"debian-12\\\"\"; then\
+                        \n            echo \"A package failed and has been disabled for CI using the 'x-ci-accept-failures' field.\";\
+                        \n          fi;\
+                        \n          test \"$pkg\" != 'x509.0.11.0' && partial_fails=\"$partial_fails $pkg\";\
+                        \n        done;\
+                        \n        test \"${partial_fails}\" != \"\" && echo \"opam-repo-ci detected dependencies failing: ${partial_fails}\";\
+                        \n        exit 1"))[0m
+2024-06-17 14:55.35: Cancelling: Auto-cancelling job because it is no longer needed
+Job cancelled

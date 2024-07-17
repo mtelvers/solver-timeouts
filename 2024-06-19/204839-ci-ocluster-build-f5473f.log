@@ -1,0 +1,348 @@
+2024-06-19 20:48.39: New job: test irmin-mirage-git.2.0.0 with conf-gmp-powm-sec.3, using opam dev
+                              from https://github.com/ocaml/opam-repository.git#refs/pull/26102/head (796c0cc8af436190f8caaf87e9abc10984c46de3)
+                              on debian-12-ocaml-4.14/amd64
+
+To reproduce locally:
+
+cd $(mktemp -d)
+git clone --recursive "https://github.com/ocaml/opam-repository.git" && cd "opam-repository" && git fetch origin "refs/pull/26102/head" && git reset --hard 796c0cc8
+git fetch origin master
+git merge --no-edit 59c0c5493490109700f4a2097537c79d5aaad06c
+cat > ../Dockerfile <<'END-OF-DOCKERFILE'
+[34mFROM ocaml/opam:debian-12-ocaml-4.14@sha256:4d7a572d404d36939e168890aca26321e3b11b6db855489442950a10aad99061
+USER 1000:1000
+WORKDIR /home/opam
+RUN sudo ln -f /usr/bin/opam-dev /usr/bin/opam
+RUN opam init --reinit -ni
+RUN uname -rs && opam exec -- ocaml -version && opam --version
+ENV OPAMDOWNLOADJOBS="1"
+ENV OPAMERRLOGLEN="0"
+ENV OPAMSOLVERTIMEOUT="500"
+ENV OPAMPRECISETRACKING="1"
+ENV CI="true"
+ENV OPAM_REPO_CI="true"
+RUN rm -rf opam-repository/
+COPY --chown=1000:1000 . opam-repository/
+RUN opam repository set-url --strict default opam-repository/
+RUN opam update --depexts || true
+RUN opam pin add -k version -yn conf-gmp-powm-sec.3 3
+RUN opam reinstall conf-gmp-powm-sec.3; \
+    res=$?; \
+    test "$res" != 31 && exit "$res"; \
+    export OPAMCLI=2.0; \
+    build_dir=$(opam var prefix)/.opam-switch/build; \
+    failed=$(ls "$build_dir"); \
+    partial_fails=""; \
+    for pkg in $failed; do \
+    if opam show -f x-ci-accept-failures: "$pkg" | grep -qF "\"debian-12\""; then \
+    echo "A package failed and has been disabled for CI using the 'x-ci-accept-failures' field."; \
+    fi; \
+    test "$pkg" != 'conf-gmp-powm-sec.3' && partial_fails="$partial_fails $pkg"; \
+    done; \
+    test "${partial_fails}" != "" && echo "opam-repo-ci detected dependencies failing: ${partial_fails}"; \
+    exit 1
+RUN opam reinstall irmin-mirage-git.2.0.0; \
+    res=$?; \
+    test "$res" != 31 && exit "$res"; \
+    export OPAMCLI=2.0; \
+    build_dir=$(opam var prefix)/.opam-switch/build; \
+    failed=$(ls "$build_dir"); \
+    partial_fails=""; \
+    for pkg in $failed; do \
+    if opam show -f x-ci-accept-failures: "$pkg" | grep -qF "\"debian-12\""; then \
+    echo "A package failed and has been disabled for CI using the 'x-ci-accept-failures' field."; \
+    fi; \
+    test "$pkg" != 'irmin-mirage-git.2.0.0' && partial_fails="$partial_fails $pkg"; \
+    done; \
+    test "${partial_fails}" != "" && echo "opam-repo-ci detected dependencies failing: ${partial_fails}"; \
+    exit 1
+RUN (opam reinstall --with-test irmin-mirage-git.2.0.0) || true
+RUN opam reinstall --with-test --verbose irmin-mirage-git.2.0.0; \
+    res=$?; \
+    test "$res" != 31 && exit "$res"; \
+    export OPAMCLI=2.0; \
+    build_dir=$(opam var prefix)/.opam-switch/build; \
+    failed=$(ls "$build_dir"); \
+    partial_fails=""; \
+    for pkg in $failed; do \
+    if opam show -f x-ci-accept-failures: "$pkg" | grep -qF "\"debian-12\""; then \
+    echo "A package failed and has been disabled for CI using the 'x-ci-accept-failures' field."; \
+    fi; \
+    test "$pkg" != 'irmin-mirage-git.2.0.0' && partial_fails="$partial_fails $pkg"; \
+    done; \
+    test "${partial_fails}" != "" && echo "opam-repo-ci detected dependencies failing: ${partial_fails}"; \
+    exit 1
+[0m
+END-OF-DOCKERFILE
+docker build -f ../Dockerfile .
+
+2024-06-19 20:48.39: Using cache hint "ocaml/opam:debian-12-ocaml-4.14@sha256:4d7a572d404d36939e168890aca26321e3b11b6db855489442950a10aad99061-conf-gmp-powm-sec.3-irmin-mirage-git.2.0.0-796c0cc8af436190f8caaf87e9abc10984c46de3"
+2024-06-19 20:48.39: Using OBuilder spec:
+((from ocaml/opam:debian-12-ocaml-4.14@sha256:4d7a572d404d36939e168890aca26321e3b11b6db855489442950a10aad99061)
+ (user (uid 1000) (gid 1000))
+ (workdir /home/opam)
+ (run (shell "sudo ln -f /usr/bin/opam-dev /usr/bin/opam"))
+ (run (network host)
+      (shell "opam init --reinit --config .opamrc-sandbox -ni"))
+ (run (shell "uname -rs && opam exec -- ocaml -version && opam --version"))
+ (env OPAMDOWNLOADJOBS 1)
+ (env OPAMERRLOGLEN 0)
+ (env OPAMSOLVERTIMEOUT 500)
+ (env OPAMPRECISETRACKING 1)
+ (env CI true)
+ (env OPAM_REPO_CI true)
+ (run (shell "rm -rf opam-repository/"))
+ (copy (src .) (dst opam-repository/))
+ (run (shell "opam repository set-url --strict default opam-repository/"))
+ (run (network host)
+      (shell "opam update --depexts || true"))
+ (run (shell "opam pin add -k version -yn conf-gmp-powm-sec.3 3"))
+ (run (cache (opam-archives (target /home/opam/.opam/download-cache)))
+      (network host)
+      (shell  "opam reinstall conf-gmp-powm-sec.3;\
+             \n        res=$?;\
+             \n        test \"$res\" != 31 && exit \"$res\";\
+             \n        export OPAMCLI=2.0;\
+             \n        build_dir=$(opam var prefix)/.opam-switch/build;\
+             \n        failed=$(ls \"$build_dir\");\
+             \n        partial_fails=\"\";\
+             \n        for pkg in $failed; do\
+             \n          if opam show -f x-ci-accept-failures: \"$pkg\" | grep -qF \"\\\"debian-12\\\"\"; then\
+             \n            echo \"A package failed and has been disabled for CI using the 'x-ci-accept-failures' field.\";\
+             \n          fi;\
+             \n          test \"$pkg\" != 'conf-gmp-powm-sec.3' && partial_fails=\"$partial_fails $pkg\";\
+             \n        done;\
+             \n        test \"${partial_fails}\" != \"\" && echo \"opam-repo-ci detected dependencies failing: ${partial_fails}\";\
+             \n        exit 1"))
+ (run (cache (opam-archives (target /home/opam/.opam/download-cache)))
+      (network host)
+      (shell  "opam reinstall irmin-mirage-git.2.0.0;\
+             \n        res=$?;\
+             \n        test \"$res\" != 31 && exit \"$res\";\
+             \n        export OPAMCLI=2.0;\
+             \n        build_dir=$(opam var prefix)/.opam-switch/build;\
+             \n        failed=$(ls \"$build_dir\");\
+             \n        partial_fails=\"\";\
+             \n        for pkg in $failed; do\
+             \n          if opam show -f x-ci-accept-failures: \"$pkg\" | grep -qF \"\\\"debian-12\\\"\"; then\
+             \n            echo \"A package failed and has been disabled for CI using the 'x-ci-accept-failures' field.\";\
+             \n          fi;\
+             \n          test \"$pkg\" != 'irmin-mirage-git.2.0.0' && partial_fails=\"$partial_fails $pkg\";\
+             \n        done;\
+             \n        test \"${partial_fails}\" != \"\" && echo \"opam-repo-ci detected dependencies failing: ${partial_fails}\";\
+             \n        exit 1"))
+ (run (network host)
+      (shell "(opam reinstall --with-test irmin-mirage-git.2.0.0) || true"))
+ (run (shell  "opam reinstall --with-test --verbose irmin-mirage-git.2.0.0;\
+             \n        res=$?;\
+             \n        test \"$res\" != 31 && exit \"$res\";\
+             \n        export OPAMCLI=2.0;\
+             \n        build_dir=$(opam var prefix)/.opam-switch/build;\
+             \n        failed=$(ls \"$build_dir\");\
+             \n        partial_fails=\"\";\
+             \n        for pkg in $failed; do\
+             \n          if opam show -f x-ci-accept-failures: \"$pkg\" | grep -qF \"\\\"debian-12\\\"\"; then\
+             \n            echo \"A package failed and has been disabled for CI using the 'x-ci-accept-failures' field.\";\
+             \n          fi;\
+             \n          test \"$pkg\" != 'irmin-mirage-git.2.0.0' && partial_fails=\"$partial_fails $pkg\";\
+             \n        done;\
+             \n        test \"${partial_fails}\" != \"\" && echo \"opam-repo-ci detected dependencies failing: ${partial_fails}\";\
+             \n        exit 1"))
+)
+
+2024-06-19 20:48.39: Waiting for resource in pool OCluster
+2024-06-19 23:39.13: Waiting for worker…
+2024-06-19 23:47.13: Got resource from pool OCluster
+Building on x86-bm-c7.sw.ocaml.org
+All commits already cached
+Updating files:  74% (23546/31552)Updating files:  75% (23664/31552)Updating files:  76% (23980/31552)Updating files:  77% (24296/31552)Updating files:  78% (24611/31552)Updating files:  79% (24927/31552)Updating files:  80% (25242/31552)Updating files:  81% (25558/31552)Updating files:  82% (25873/31552)Updating files:  83% (26189/31552)Updating files:  84% (26504/31552)Updating files:  85% (26820/31552)Updating files:  86% (27135/31552)Updating files:  87% (27451/31552)Updating files:  88% (27766/31552)Updating files:  89% (28082/31552)Updating files:  90% (28397/31552)Updating files:  91% (28713/31552)Updating files:  92% (29028/31552)Updating files:  93% (29344/31552)Updating files:  94% (29659/31552)Updating files:  95% (29975/31552)Updating files:  96% (30290/31552)Updating files:  97% (30606/31552)Updating files:  98% (30921/31552)Updating files:  99% (31237/31552)Updating files: 100% (31552/31552)Updating files: 100% (31552/31552), done.
+HEAD is now at 59c0c54934 Merge pull request #26119 from fpottier/opam-publish-oma.20240619
+Updating 59c0c54934..796c0cc8af
+Fast-forward
+ packages/conf-gmp-powm-sec/conf-gmp-powm-sec.3/opam | 11 +++++++++--
+ packages/conf-gmp/conf-gmp.4/opam                   |  9 +++++++++
+ .../conf-mingw-w64-gmp-i686.1/opam                  | 21 +++++++++++++++++++++
+ .../conf-mingw-w64-gmp-x86_64.1/opam                | 21 +++++++++++++++++++++
+ 4 files changed, 60 insertions(+), 2 deletions(-)
+ create mode 100644 packages/conf-mingw-w64-gmp-i686/conf-mingw-w64-gmp-i686.1/opam
+ create mode 100644 packages/conf-mingw-w64-gmp-x86_64/conf-mingw-w64-gmp-x86_64.1/opam
+
+[01;34m(from ocaml/opam:debian-12-ocaml-4.14@sha256:4d7a572d404d36939e168890aca26321e3b11b6db855489442950a10aad99061)[0m
+Unable to find image 'ocaml/opam:debian-12-ocaml-4.14@sha256:4d7a572d404d36939e168890aca26321e3b11b6db855489442950a10aad99061' locally
+docker.io/ocaml/opam@sha256:4d7a572d404d36939e168890aca26321e3b11b6db855489442950a10aad99061: Pulling from ocaml/opam
+934a6b35b2f1: Pulling fs layer
+934a6b35b2f1: Verifying Checksum
+934a6b35b2f1: Pull complete
+Digest: sha256:4d7a572d404d36939e168890aca26321e3b11b6db855489442950a10aad99061
+Status: Downloaded newer image for ocaml/opam@sha256:4d7a572d404d36939e168890aca26321e3b11b6db855489442950a10aad99061
+[01;2m[01;35m2024-06-19 23:47.16 ---> using "0b728e115504f3ec74b909aa8e7860c0980a6123689ebc691b4ba328ccf72c32" from cache[0m
+
+[01;34m/: (user (uid 1000) (gid 1000))[0m
+
+[01;34m/: (workdir /home/opam)[0m
+
+[01;34m/home/opam: (run (shell "sudo ln -f /usr/bin/opam-dev /usr/bin/opam"))[0m
+[01;2m[01;35m2024-06-19 23:47.16 ---> using "a049b5fc3643eb7ae7a609b3d987da701400c85c3eec1ba7fb488cdc769742f8" from cache[0m
+
+[01;34m/home/opam: (run (network host)
+                 (shell "opam init --reinit --config .opamrc-sandbox -ni"))[0m
+Configuring from /home/opam/.opamrc-sandbox, then /home/opam/.opamrc, and finally from built-in defaults.
+Checking for available remotes: rsync and local, git.
+  - you won't be able to use mercurial repositories unless you install the hg command on your system.
+  - you won't be able to use darcs repositories unless you install the darcs command on your system.
+
+This development version of opam requires an update to the layout of /home/opam/.opam from version 2.0 to version 2.2~beta, which can't be reverted.
+You may want to back it up before going further.
+
+Continue? [y/n] y
+[NOTE] The 'jobs' option was reset, its value was 39 and its new value will vary according to the current number of cores on your machine. You can restore the fixed value using:
+           opam option jobs=39 --global
+Format upgrade done.
+
+<><> Updating repositories ><><><><><><><><><><><><><><><><><><><><><><><><><><>
+[default] synchronised from file:///home/opam/opam-repository
+[01;2m[01;35m2024-06-19 23:47.16 ---> using "a13664352812b488e3e954aae3a87cf624d3c5dc53bcfc29e3d81d5f28903622" from cache[0m
+
+[01;34m/home/opam: (run (shell "uname -rs && opam exec -- ocaml -version && opam --version"))[0m
+Linux 5.15.0-112-generic
+The OCaml toplevel, version 4.14.2
+2.2.0~rc1~dev
+[01;2m[01;35m2024-06-19 23:47.16 ---> using "8f0bdcfdfbebb88ffa7c2fd13c7e8fb7bdc0fc7189c5b39f7761dea1dcc09dc9" from cache[0m
+
+[01;34m/home/opam: (env OPAMDOWNLOADJOBS 1)[0m
+
+[01;34m/home/opam: (env OPAMERRLOGLEN 0)[0m
+
+[01;34m/home/opam: (env OPAMSOLVERTIMEOUT 500)[0m
+
+[01;34m/home/opam: (env OPAMPRECISETRACKING 1)[0m
+
+[01;34m/home/opam: (env CI true)[0m
+
+[01;34m/home/opam: (env OPAM_REPO_CI true)[0m
+
+[01;34m/home/opam: (run (shell "rm -rf opam-repository/"))[0m
+[01;2m[01;35m2024-06-19 23:47.16 ---> using "6f6f05aebf4dfefaacc9899c3f75343a934c7621616350f6d4592bfaeb465ed5" from cache[0m
+
+[01;34m/home/opam: (copy (src .) (dst opam-repository/))[0m
+[01;2m[01;35m2024-06-19 23:47.18 ---> using "02c4c9a07be719811d3aa9b9b0245ba3ad5f133c05c1d147d3b75162e2d431b9" from cache[0m
+
+[01;34m/home/opam: (run (shell "opam repository set-url --strict default opam-repository/"))[0m
+[default] Initialised
+[01;2m[01;35m2024-06-19 23:47.18 ---> using "caec81025fce16c82547fa58f02882bfeb2a3df873a1a2bc2cb38afe13fee82c" from cache[0m
+
+[01;34m/home/opam: (run (network host)
+                 (shell "opam update --depexts || true"))[0m
++ /usr/bin/sudo "apt-get" "update"
+- Hit:1 http://deb.debian.org/debian bookworm InRelease
+- Get:2 http://deb.debian.org/debian bookworm-updates InRelease [55.4 kB]
+- Get:3 http://deb.debian.org/debian-security bookworm-security InRelease [48.0 kB]
+- Get:4 http://deb.debian.org/debian-security bookworm-security/main amd64 Packages [160 kB]
+- Fetched 263 kB in 1s (378 kB/s)
+- Reading package lists...
+- 
+[01;2m[01;35m2024-06-19 23:47.18 ---> using "e8f25f1938ccd3b2f001c4797525136e96e15c3729a9175d2905552d82a08460" from cache[0m
+
+[01;34m/home/opam: (run (shell "opam pin add -k version -yn conf-gmp-powm-sec.3 3"))[0m
+conf-gmp-powm-sec is now pinned to version 3
+[01;2m[01;35m2024-06-19 23:47.18 ---> using "15c656365b22cc950adc3d7e8458206090fa37f30bf3e5f98bf9f950273012b7" from cache[0m
+
+[01;34m/home/opam: (run (cache (opam-archives (target /home/opam/.opam/download-cache)))
+                 (network host)
+                 (shell  "opam reinstall conf-gmp-powm-sec.3;\
+                        \n        res=$?;\
+                        \n        test \"$res\" != 31 && exit \"$res\";\
+                        \n        export OPAMCLI=2.0;\
+                        \n        build_dir=$(opam var prefix)/.opam-switch/build;\
+                        \n        failed=$(ls \"$build_dir\");\
+                        \n        partial_fails=\"\";\
+                        \n        for pkg in $failed; do\
+                        \n          if opam show -f x-ci-accept-failures: \"$pkg\" | grep -qF \"\\\"debian-12\\\"\"; then\
+                        \n            echo \"A package failed and has been disabled for CI using the 'x-ci-accept-failures' field.\";\
+                        \n          fi;\
+                        \n          test \"$pkg\" != 'conf-gmp-powm-sec.3' && partial_fails=\"$partial_fails $pkg\";\
+                        \n        done;\
+                        \n        test \"${partial_fails}\" != \"\" && echo \"opam-repo-ci detected dependencies failing: ${partial_fails}\";\
+                        \n        exit 1"))[0m
+conf-gmp-powm-sec.3 is not installed. Install it? [y/n] y
+The following actions will be performed:
+=== install 2 packages
+  - install conf-gmp          4          [required by conf-gmp-powm-sec]
+  - install conf-gmp-powm-sec 3 (pinned)
+
+The following system packages will first need to be installed:
+    libgmp-dev
+
+<><> Handling external dependencies <><><><><><><><><><><><><><><><><><><><><><>
+
+opam believes some required external dependencies are missing. opam can:
+> 1. Run apt-get to install them (may need root/sudo access)
+  2. Display the recommended apt-get command and wait while you run it manually (e.g. in another terminal)
+  3. Continue anyway, and, upon success, permanently register that this external dependency is present, but not detectable
+  4. Abort the installation
+
+[1/2/3/4] 1
+
++ /usr/bin/sudo "apt-get" "install" "-qq" "-yy" "libgmp-dev"
+- debconf: delaying package configuration, since apt-utils is not installed
+- Selecting previously unselected package libgmpxx4ldbl:amd64.
+- (Reading database ... (Reading database ... 5%(Reading database ... 10%(Reading database ... 15%(Reading database ... 20%(Reading database ... 25%(Reading database ... 30%(Reading database ... 35%(Reading database ... 40%(Reading database ... 45%(Reading database ... 50%(Reading database ... 55%(Reading database ... 60%(Reading database ... 65%(Reading database ... 70%(Reading database ... 75%(Reading database ... 80%(Reading database ... 85%(Reading database ... 90%(Reading database ... 95%(Reading database ... 100%(Reading database ... 18735 files and directories currently installed.)
+- Preparing to unpack .../libgmpxx4ldbl_2%3a6.2.1+dfsg1-1.1_amd64.deb ...
+- Unpacking libgmpxx4ldbl:amd64 (2:6.2.1+dfsg1-1.1) ...
+- Selecting previously unselected package libgmp-dev:amd64.
+- Preparing to unpack .../libgmp-dev_2%3a6.2.1+dfsg1-1.1_amd64.deb ...
+- Unpacking libgmp-dev:amd64 (2:6.2.1+dfsg1-1.1) ...
+- Setting up libgmpxx4ldbl:amd64 (2:6.2.1+dfsg1-1.1) ...
+- Setting up libgmp-dev:amd64 (2:6.2.1+dfsg1-1.1) ...
+- Processing triggers for libc-bin (2.36-9+deb12u7) ...
+
+<><> Processing actions <><><><><><><><><><><><><><><><><><><><><><><><><><><><>
+-> retrieved conf-gmp.4  (cached)
+-> retrieved conf-gmp-powm-sec.3  (cached)
+-> installed conf-gmp.4
+-> installed conf-gmp-powm-sec.3
+Done.
+# Run eval $(opam env) to update the current shell environment
+[01;2m[01;35m2024-06-19 23:47.18 ---> using "108581cb32b38f9187d30690bd82f67faf09e2df9a7626816f043e482a590c8e" from cache[0m
+
+[01;34m/home/opam: (run (cache (opam-archives (target /home/opam/.opam/download-cache)))
+                 (network host)
+                 (shell  "opam reinstall irmin-mirage-git.2.0.0;\
+                        \n        res=$?;\
+                        \n        test \"$res\" != 31 && exit \"$res\";\
+                        \n        export OPAMCLI=2.0;\
+                        \n        build_dir=$(opam var prefix)/.opam-switch/build;\
+                        \n        failed=$(ls \"$build_dir\");\
+                        \n        partial_fails=\"\";\
+                        \n        for pkg in $failed; do\
+                        \n          if opam show -f x-ci-accept-failures: \"$pkg\" | grep -qF \"\\\"debian-12\\\"\"; then\
+                        \n            echo \"A package failed and has been disabled for CI using the 'x-ci-accept-failures' field.\";\
+                        \n          fi;\
+                        \n          test \"$pkg\" != 'irmin-mirage-git.2.0.0' && partial_fails=\"$partial_fails $pkg\";\
+                        \n        done;\
+                        \n        test \"${partial_fails}\" != \"\" && echo \"opam-repo-ci detected dependencies failing: ${partial_fails}\";\
+                        \n        exit 1"))[0m
+irmin-mirage-git.2.0.0 is not installed. Install it? [y/n] y
+[ERROR] Sorry, resolution of the request timed out.
+        Try to specify a more precise request, use a different solver, or increase the allowed time by setting OPAMSOLVERTIMEOUT to a bigger value (currently, it is set to 500.0 seconds).
+"/usr/bin/env" "bash" "-c" "opam reinstall irmin-mirage-git.2.0.0;
+        res=$?;
+        test "$res" != 31 && exit "$res";
+        export OPAMCLI=2.0;
+        build_dir=$(opam var prefix)/.opam-switch/build;
+        failed=$(ls "$build_dir");
+        partial_fails="";
+        for pkg in $failed; do
+          if opam show -f x-ci-accept-failures: "$pkg" | grep -qF "\"debian-12\""; then
+            echo "A package failed and has been disabled for CI using the 'x-ci-accept-failures' field.";
+          fi;
+          test "$pkg" != 'irmin-mirage-git.2.0.0' && partial_fails="$partial_fails $pkg";
+        done;
+        test "${partial_fails}" != "" && echo "opam-repo-ci detected dependencies failing: ${partial_fails}";
+        exit 1" failed with exit status 60
+2024-06-19 23:56.03: Job failed: Failed: Build failed
+2024-06-19 23:56.03: Log analysis:
+2024-06-19 23:56.03: >>> 
+[ERROR] Sorry, resolution of the request timed out.
+ (score = 20)
+2024-06-19 23:56.03: Sorry, resolution of the request timed out.

@@ -1,0 +1,316 @@
+2024-07-12 13:59.17: New job: build passage.0.1.1, using opam 2.0
+                              from https://github.com/ocaml/opam-repository.git#refs/pull/26234/head (15d95c1b30ae74704c70a85d0b03b1ab697838cf)
+                              on debian-12-ocaml-4.14/amd64
+
+To reproduce locally:
+
+cd $(mktemp -d)
+git clone --recursive "https://github.com/ocaml/opam-repository.git" && cd "opam-repository" && git fetch origin "refs/pull/26234/head" && git reset --hard 15d95c1b
+git fetch origin master
+git merge --no-edit 04cef9a869bd1fec0090edd2cbb25bb6aaed8c6d
+cat > ../Dockerfile <<'END-OF-DOCKERFILE'
+[34mFROM ocaml/opam:debian-12-ocaml-4.14@sha256:6861d2cea2df02e6467c0d6cf723eb199c902ae60e8e96b88bdfafcfab7b3a2f
+USER 1000:1000
+WORKDIR /home/opam
+RUN sudo ln -f /usr/bin/opam-2.0 /usr/bin/opam
+RUN opam init --reinit -ni
+RUN uname -rs && opam exec -- ocaml -version && opam --version
+ENV OPAMDOWNLOADJOBS="1"
+ENV OPAMERRLOGLEN="0"
+ENV OPAMSOLVERTIMEOUT="500"
+ENV OPAMPRECISETRACKING="1"
+ENV CI="true"
+ENV OPAM_REPO_CI="true"
+RUN rm -rf opam-repository/
+COPY --chown=1000:1000 . opam-repository/
+RUN opam repository set-url --strict default opam-repository/
+RUN opam depext -u || true
+RUN opam pin add -k version -yn passage.0.1.1 0.1.1
+RUN opam depext passage.0.1.1 && opam reinstall passage.0.1.1; \
+    res=$?; \
+    test "$res" != 31 && exit "$res"; \
+    export OPAMCLI=2.0; \
+    build_dir=$(opam var prefix)/.opam-switch/build; \
+    failed=$(ls "$build_dir"); \
+    partial_fails=""; \
+    for pkg in $failed; do \
+    if opam show -f x-ci-accept-failures: "$pkg" | grep -qF "\"debian-12\""; then \
+    echo "A package failed and has been disabled for CI using the 'x-ci-accept-failures' field."; \
+    fi; \
+    test "$pkg" != 'passage.0.1.1' && partial_fails="$partial_fails $pkg"; \
+    done; \
+    test "${partial_fails}" != "" && echo "opam-repo-ci detected dependencies failing: ${partial_fails}"; \
+    exit 1
+[0m
+END-OF-DOCKERFILE
+docker build -f ../Dockerfile .
+
+2024-07-12 13:59.17: Using cache hint "ocaml/opam:debian-12-ocaml-4.14@sha256:6861d2cea2df02e6467c0d6cf723eb199c902ae60e8e96b88bdfafcfab7b3a2f-passage.0.1.1-15d95c1b30ae74704c70a85d0b03b1ab697838cf"
+2024-07-12 13:59.17: Using OBuilder spec:
+((from ocaml/opam:debian-12-ocaml-4.14@sha256:6861d2cea2df02e6467c0d6cf723eb199c902ae60e8e96b88bdfafcfab7b3a2f)
+ (user (uid 1000) (gid 1000))
+ (workdir /home/opam)
+ (run (shell "sudo ln -f /usr/bin/opam-2.0 /usr/bin/opam"))
+ (run (network host)
+      (shell "opam init --reinit --config .opamrc-sandbox -ni"))
+ (run (shell "uname -rs && opam exec -- ocaml -version && opam --version"))
+ (env OPAMDOWNLOADJOBS 1)
+ (env OPAMERRLOGLEN 0)
+ (env OPAMSOLVERTIMEOUT 500)
+ (env OPAMPRECISETRACKING 1)
+ (env CI true)
+ (env OPAM_REPO_CI true)
+ (run (shell "rm -rf opam-repository/"))
+ (copy (src .) (dst opam-repository/))
+ (run (shell "opam repository set-url --strict default opam-repository/"))
+ (run (network host)
+      (shell "opam depext -u || true"))
+ (run (shell "opam pin add -k version -yn passage.0.1.1 0.1.1"))
+ (run (cache (opam-archives (target /home/opam/.opam/download-cache)))
+      (network host)
+      (shell  "opam depext passage.0.1.1 && opam reinstall passage.0.1.1;\
+             \n        res=$?;\
+             \n        test \"$res\" != 31 && exit \"$res\";\
+             \n        export OPAMCLI=2.0;\
+             \n        build_dir=$(opam var prefix)/.opam-switch/build;\
+             \n        failed=$(ls \"$build_dir\");\
+             \n        partial_fails=\"\";\
+             \n        for pkg in $failed; do\
+             \n          if opam show -f x-ci-accept-failures: \"$pkg\" | grep -qF \"\\\"debian-12\\\"\"; then\
+             \n            echo \"A package failed and has been disabled for CI using the 'x-ci-accept-failures' field.\";\
+             \n          fi;\
+             \n          test \"$pkg\" != 'passage.0.1.1' && partial_fails=\"$partial_fails $pkg\";\
+             \n        done;\
+             \n        test \"${partial_fails}\" != \"\" && echo \"opam-repo-ci detected dependencies failing: ${partial_fails}\";\
+             \n        exit 1"))
+)
+
+2024-07-12 13:59.17: Waiting for resource in pool OCluster
+2024-07-12 14:23.38: Waiting for worker…
+2024-07-12 14:28.07: Got resource from pool OCluster
+Building on doris.caelum.ci.dev
+All commits already cached
+Updating files:  66% (21053/31825)Updating files:  67% (21323/31825)Updating files:  68% (21641/31825)Updating files:  69% (21960/31825)Updating files:  70% (22278/31825)Updating files:  71% (22596/31825)Updating files:  72% (22914/31825)Updating files:  73% (23233/31825)Updating files:  74% (23551/31825)Updating files:  75% (23869/31825)Updating files:  76% (24187/31825)Updating files:  77% (24506/31825)Updating files:  78% (24824/31825)Updating files:  79% (25142/31825)Updating files:  80% (25460/31825)Updating files:  81% (25779/31825)Updating files:  82% (26097/31825)Updating files:  83% (26415/31825)Updating files:  84% (26733/31825)Updating files:  85% (27052/31825)Updating files:  86% (27370/31825)Updating files:  87% (27688/31825)Updating files:  88% (28006/31825)Updating files:  89% (28325/31825)Updating files:  90% (28643/31825)Updating files:  91% (28961/31825)Updating files:  92% (29279/31825)Updating files:  93% (29598/31825)Updating files:  94% (29916/31825)Updating files:  95% (30234/31825)Updating files:  96% (30552/31825)Updating files:  97% (30871/31825)Updating files:  98% (31189/31825)Updating files:  99% (31507/31825)Updating files: 100% (31825/31825)Updating files: 100% (31825/31825), done.
+HEAD is now at 04cef9a869 Merge pull request #26223 from bobot/release-flint-0.4.0
+Updating 04cef9a869..15d95c1b30
+Fast-forward
+ packages/conf-age/conf-age.1/opam   | 24 +++++++++++++++++
+ packages/passage/passage.0.1.1/opam | 51 +++++++++++++++++++++++++++++++++++++
+ 2 files changed, 75 insertions(+)
+ create mode 100644 packages/conf-age/conf-age.1/opam
+ create mode 100644 packages/passage/passage.0.1.1/opam
+
+[01;34m(from ocaml/opam:debian-12-ocaml-4.14@sha256:6861d2cea2df02e6467c0d6cf723eb199c902ae60e8e96b88bdfafcfab7b3a2f)[0m
+Unable to find image 'ocaml/opam:debian-12-ocaml-4.14@sha256:6861d2cea2df02e6467c0d6cf723eb199c902ae60e8e96b88bdfafcfab7b3a2f' locally
+docker.io/ocaml/opam@sha256:6861d2cea2df02e6467c0d6cf723eb199c902ae60e8e96b88bdfafcfab7b3a2f: Pulling from ocaml/opam
+26226a1182b7: Pulling fs layer
+26226a1182b7: Verifying Checksum
+26226a1182b7: Download complete
+26226a1182b7: Pull complete
+Digest: sha256:6861d2cea2df02e6467c0d6cf723eb199c902ae60e8e96b88bdfafcfab7b3a2f
+Status: Downloaded newer image for ocaml/opam@sha256:6861d2cea2df02e6467c0d6cf723eb199c902ae60e8e96b88bdfafcfab7b3a2f
+[01;2m[01;35m2024-07-12 14:28.16 ---> using "4a2062430b518b8cfbc5c574841529a30ba3d6de7679379ca94f79d85d164cd8" from cache[0m
+
+[01;34m/: (user (uid 1000) (gid 1000))[0m
+
+[01;34m/: (workdir /home/opam)[0m
+
+[01;34m/home/opam: (run (shell "sudo ln -f /usr/bin/opam-2.0 /usr/bin/opam"))[0m
+[01;2m[01;35m2024-07-12 14:28.16 ---> saved as "d9b7df007e5b34bf2b28817906e084748c162675320de47eb575f89576a1316e"[0m
+
+[01;34m/home/opam: (run (network host)
+                 (shell "opam init --reinit --config .opamrc-sandbox -ni"))[0m
+[NOTE] Will configure from /home/opam/.opamrc-sandbox, then /home/opam/.opamrc, and finally from built-in defaults.
+Checking for available remotes: rsync and local, git.
+  - you won't be able to use mercurial repositories unless you install the hg command on your system.
+  - you won't be able to use darcs repositories unless you install the darcs command on your system.
+
+[WARNING] Recommended dependencies -- most packages rely on these:
+  - m4
+
+<><> Updating repositories ><><><><><><><><><><><><><><><><><><><><><><><><><><>
+[default] synchronised from file:///home/opam/opam-repository
+default (at file:///home/opam/opam-repository): 
+    [INFO] opam 2.1 includes many performance improvements over 2.0; please consider upgrading (https://opam.ocaml.org/doc/Install.html)
+
+[01;2m[01;35m2024-07-12 14:29.05 ---> saved as "cd5bc9417262bb224d393c17afe52d4ff3d332000d684a6e7f2792b28f335f0b"[0m
+
+[01;34m/home/opam: (run (shell "uname -rs && opam exec -- ocaml -version && opam --version"))[0m
+Linux 5.15.0-113-generic
+The OCaml toplevel, version 4.14.2
+2.0.10
+[01;2m[01;35m2024-07-12 14:29.06 ---> saved as "b3c8ffc96dd68a726bc7d7affa4a9f36f8e6a7060802cdf9e57caa4f930d07e8"[0m
+
+[01;34m/home/opam: (env OPAMDOWNLOADJOBS 1)[0m
+
+[01;34m/home/opam: (env OPAMERRLOGLEN 0)[0m
+
+[01;34m/home/opam: (env OPAMSOLVERTIMEOUT 500)[0m
+
+[01;34m/home/opam: (env OPAMPRECISETRACKING 1)[0m
+
+[01;34m/home/opam: (env CI true)[0m
+
+[01;34m/home/opam: (env OPAM_REPO_CI true)[0m
+
+[01;34m/home/opam: (run (shell "rm -rf opam-repository/"))[0m
+[01;2m[01;35m2024-07-12 14:29.24 ---> saved as "e820b3df6e047b3233c31d849089a0c58734aeb18616a09ed96f6ea9e301051e"[0m
+
+[01;34m/home/opam: (copy (src .) (dst opam-repository/))[0m
+[01;2m[01;35m2024-07-12 14:30.24 ---> saved as "542796a4c48caa53c66a44672b2ecee123a1671caca93b1253b40f12910b8ee5"[0m
+
+[01;34m/home/opam: (run (shell "opam repository set-url --strict default opam-repository/"))[0m
+[default] Initialised
+default (at file:///home/opam/opam-repository): 
+    [INFO] opam 2.1 and 2.2 include many performance improvements over 2.0; please consider upgrading (https://opam.ocaml.org/doc/Install.html)
+
+[01;2m[01;35m2024-07-12 14:30.50 ---> saved as "a6ab43274f08ac424c1ace27f082267d383c3ffdd331cdd42179b1c0794ec4a7"[0m
+
+[01;34m/home/opam: (run (network host)
+                 (shell "opam depext -u || true"))[0m
+# Detecting depexts using vars: arch=x86_64, os=linux, os-distribution=debian, os-family=debian
+# No extra OS packages requirements found.
+# All required OS packages found.
+The following command needs to be run through "sudo":
+    apt-get update
+Hit:1 http://deb.debian.org/debian bookworm InRelease
+Get:2 http://deb.debian.org/debian bookworm-updates InRelease [55.4 kB]
+Get:3 http://deb.debian.org/debian-security bookworm-security InRelease [48.0 kB]
+Get:4 http://deb.debian.org/debian-security bookworm-security/main amd64 Packages [168 kB]
+Fetched 271 kB in 0s (775 kB/s)
+Reading package lists...
+# OS package update successful
+[01;2m[01;35m2024-07-12 14:30.52 ---> saved as "6f3db86250d2221149fdffb3a9269b530d6a713aa6cb1908f30cc7ececbfca5f"[0m
+
+[01;34m/home/opam: (run (shell "opam pin add -k version -yn passage.0.1.1 0.1.1"))[0m
+passage is now pinned to version 0.1.1
+[01;2m[01;35m2024-07-12 14:30.54 ---> saved as "d592490926c87eb5e5bc65f6425d83661b1434a7f5a804965de1ede7b5a44187"[0m
+
+[01;34m/home/opam: (run (cache (opam-archives (target /home/opam/.opam/download-cache)))
+                 (network host)
+                 (shell  "opam depext passage.0.1.1 && opam reinstall passage.0.1.1;\
+                        \n        res=$?;\
+                        \n        test \"$res\" != 31 && exit \"$res\";\
+                        \n        export OPAMCLI=2.0;\
+                        \n        build_dir=$(opam var prefix)/.opam-switch/build;\
+                        \n        failed=$(ls \"$build_dir\");\
+                        \n        partial_fails=\"\";\
+                        \n        for pkg in $failed; do\
+                        \n          if opam show -f x-ci-accept-failures: \"$pkg\" | grep -qF \"\\\"debian-12\\\"\"; then\
+                        \n            echo \"A package failed and has been disabled for CI using the 'x-ci-accept-failures' field.\";\
+                        \n          fi;\
+                        \n          test \"$pkg\" != 'passage.0.1.1' && partial_fails=\"$partial_fails $pkg\";\
+                        \n        done;\
+                        \n        test \"${partial_fails}\" != \"\" && echo \"opam-repo-ci detected dependencies failing: ${partial_fails}\";\
+                        \n        exit 1"))[0m
+# Detecting depexts using vars: arch=x86_64, os=linux, os-distribution=debian, os-family=debian
+# The following system packages are needed:
+age
+g++
+libcurl4-gnutls-dev
+libevent-dev
+libpcre3-dev
+pkg-config
+zlib1g-dev
+The following command needs to be run through "sudo":
+    apt-get install -qq -yy age g++ libcurl4-gnutls-dev libevent-dev libpcre3-dev pkg-config zlib1g-dev
+debconf: delaying package configuration, since apt-utils is not installed
+Selecting previously unselected package age.
+(Reading database ... (Reading database ... 5%(Reading database ... 10%(Reading database ... 15%(Reading database ... 20%(Reading database ... 25%(Reading database ... 30%(Reading database ... 35%(Reading database ... 40%(Reading database ... 45%(Reading database ... 50%(Reading database ... 55%(Reading database ... 60%(Reading database ... 65%(Reading database ... 70%(Reading database ... 75%(Reading database ... 80%(Reading database ... 85%(Reading database ... 90%(Reading database ... 95%(Reading database ... 100%(Reading database ... 18734 files and directories currently installed.)
+Preparing to unpack .../00-age_1.1.1-1+b3_amd64.deb ...
+Unpacking age (1.1.1-1+b3) ...
+Selecting previously unselected package libcurl4-gnutls-dev:amd64.
+Preparing to unpack .../01-libcurl4-gnutls-dev_7.88.1-10+deb12u6_amd64.deb ...
+Unpacking libcurl4-gnutls-dev:amd64 (7.88.1-10+deb12u6) ...
+Selecting previously unselected package libevent-2.1-7:amd64.
+Preparing to unpack .../02-libevent-2.1-7_2.1.12-stable-8_amd64.deb ...
+Unpacking libevent-2.1-7:amd64 (2.1.12-stable-8) ...
+Selecting previously unselected package libevent-core-2.1-7:amd64.
+Preparing to unpack .../03-libevent-core-2.1-7_2.1.12-stable-8_amd64.deb ...
+Unpacking libevent-core-2.1-7:amd64 (2.1.12-stable-8) ...
+Selecting previously unselected package libevent-extra-2.1-7:amd64.
+Preparing to unpack .../04-libevent-extra-2.1-7_2.1.12-stable-8_amd64.deb ...
+Unpacking libevent-extra-2.1-7:amd64 (2.1.12-stable-8) ...
+Selecting previously unselected package libevent-pthreads-2.1-7:amd64.
+Preparing to unpack .../05-libevent-pthreads-2.1-7_2.1.12-stable-8_amd64.deb ...
+Unpacking libevent-pthreads-2.1-7:amd64 (2.1.12-stable-8) ...
+Selecting previously unselected package libevent-openssl-2.1-7:amd64.
+Preparing to unpack .../06-libevent-openssl-2.1-7_2.1.12-stable-8_amd64.deb ...
+Unpacking libevent-openssl-2.1-7:amd64 (2.1.12-stable-8) ...
+Selecting previously unselected package libevent-dev.
+Preparing to unpack .../07-libevent-dev_2.1.12-stable-8_amd64.deb ...
+Unpacking libevent-dev (2.1.12-stable-8) ...
+Selecting previously unselected package libpcre16-3:amd64.
+Preparing to unpack .../08-libpcre16-3_2%3a8.39-15_amd64.deb ...
+Unpacking libpcre16-3:amd64 (2:8.39-15) ...
+Selecting previously unselected package libpcre3:amd64.
+Preparing to unpack .../09-libpcre3_2%3a8.39-15_amd64.deb ...
+Unpacking libpcre3:amd64 (2:8.39-15) ...
+Selecting previously unselected package libpcre32-3:amd64.
+Preparing to unpack .../10-libpcre32-3_2%3a8.39-15_amd64.deb ...
+Unpacking libpcre32-3:amd64 (2:8.39-15) ...
+Selecting previously unselected package libpcrecpp0v5:amd64.
+Preparing to unpack .../11-libpcrecpp0v5_2%3a8.39-15_amd64.deb ...
+Unpacking libpcrecpp0v5:amd64 (2:8.39-15) ...
+Selecting previously unselected package libpcre3-dev:amd64.
+Preparing to unpack .../12-libpcre3-dev_2%3a8.39-15_amd64.deb ...
+Unpacking libpcre3-dev:amd64 (2:8.39-15) ...
+Selecting previously unselected package libpkgconf3:amd64.
+Preparing to unpack .../13-libpkgconf3_1.8.1-1_amd64.deb ...
+Unpacking libpkgconf3:amd64 (1.8.1-1) ...
+Selecting previously unselected package pkgconf-bin.
+Preparing to unpack .../14-pkgconf-bin_1.8.1-1_amd64.deb ...
+Unpacking pkgconf-bin (1.8.1-1) ...
+Selecting previously unselected package pkgconf:amd64.
+Preparing to unpack .../15-pkgconf_1.8.1-1_amd64.deb ...
+Unpacking pkgconf:amd64 (1.8.1-1) ...
+Selecting previously unselected package pkg-config:amd64.
+Preparing to unpack .../16-pkg-config_1.8.1-1_amd64.deb ...
+Unpacking pkg-config:amd64 (1.8.1-1) ...
+Selecting previously unselected package zlib1g-dev:amd64.
+Preparing to unpack .../17-zlib1g-dev_1%3a1.2.13.dfsg-1_amd64.deb ...
+Unpacking zlib1g-dev:amd64 (1:1.2.13.dfsg-1) ...
+Setting up libpcre16-3:amd64 (2:8.39-15) ...
+Setting up libcurl4-gnutls-dev:amd64 (7.88.1-10+deb12u6) ...
+Setting up libpcre3:amd64 (2:8.39-15) ...
+Setting up libpkgconf3:amd64 (1.8.1-1) ...
+Setting up libpcre32-3:amd64 (2:8.39-15) ...
+Setting up libevent-core-2.1-7:amd64 (2.1.12-stable-8) ...
+Setting up libevent-2.1-7:amd64 (2.1.12-stable-8) ...
+Setting up pkgconf-bin (1.8.1-1) ...
+Setting up zlib1g-dev:amd64 (1:1.2.13.dfsg-1) ...
+Setting up age (1.1.1-1+b3) ...
+Setting up libevent-pthreads-2.1-7:amd64 (2.1.12-stable-8) ...
+Setting up libpcrecpp0v5:amd64 (2:8.39-15) ...
+Setting up libevent-extra-2.1-7:amd64 (2.1.12-stable-8) ...
+Setting up libpcre3-dev:amd64 (2:8.39-15) ...
+Setting up libevent-openssl-2.1-7:amd64 (2.1.12-stable-8) ...
+Setting up pkgconf:amd64 (1.8.1-1) ...
+Setting up libevent-dev (2.1.12-stable-8) ...
+Setting up pkg-config:amd64 (1.8.1-1) ...
+Processing triggers for libc-bin (2.36-9+deb12u7) ...
+# OS packages installation successful
+passage.0.1.1 is not installed. Install it? [Y/n] y
+[ERROR] Sorry, resolution of the request timed out.
+        Try to specify a simpler request, use a different solver, or increase the allowed time by setting OPAMSOLVERTIMEOUT to a bigger value (currently, it is set to 500.0 seconds).
+"/usr/bin/env" "bash" "-c" "opam depext passage.0.1.1 && opam reinstall passage.0.1.1;
+        res=$?;
+        test "$res" != 31 && exit "$res";
+        export OPAMCLI=2.0;
+        build_dir=$(opam var prefix)/.opam-switch/build;
+        failed=$(ls "$build_dir");
+        partial_fails="";
+        for pkg in $failed; do
+          if opam show -f x-ci-accept-failures: "$pkg" | grep -qF "\"debian-12\""; then
+            echo "A package failed and has been disabled for CI using the 'x-ci-accept-failures' field.";
+          fi;
+          test "$pkg" != 'passage.0.1.1' && partial_fails="$partial_fails $pkg";
+        done;
+        test "${partial_fails}" != "" && echo "opam-repo-ci detected dependencies failing: ${partial_fails}";
+        exit 1" failed with exit status 60
+2024-07-12 14:39.44: Job failed: Failed: Build failed
+2024-07-12 14:39.44: Log analysis:
+2024-07-12 14:39.44: >>> 
+[ERROR] Sorry, resolution of the request timed out.
+ (score = 20)
+2024-07-12 14:39.44: Sorry, resolution of the request timed out.

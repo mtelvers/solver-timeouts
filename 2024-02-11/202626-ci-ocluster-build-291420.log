@@ -1,0 +1,367 @@
+2024-02-11 20:26.26: New job: test irmin-unix.2.5.0 with conf-pkg-config.1.2, using opam dev
+                              from https://github.com/ocaml/opam-repository.git#refs/pull/25235/head (8c7391d6ec81e93f24de221eb32a886b72d1ede6)
+                              on debian-12-ocaml-4.14/amd64
+
+To reproduce locally:
+
+cd $(mktemp -d)
+git clone --recursive "https://github.com/ocaml/opam-repository.git" && cd "opam-repository" && git fetch origin "refs/pull/25235/head" && git reset --hard 8c7391d6
+git fetch origin master
+git merge --no-edit 8477e9a74beb40d85534ab7653b65d45607a147f
+cat > ../Dockerfile <<'END-OF-DOCKERFILE'
+[34mFROM ocaml/opam:debian-12-ocaml-4.14@sha256:4021ca3252741ce621e03f973d64272c2ac47b3b1e7c780e5a51dcc96f76a20c
+USER 1000:1000
+WORKDIR /home/opam
+RUN sudo ln -f /usr/bin/opam-dev /usr/bin/opam
+RUN opam init --reinit -ni
+ENV OPAMDOWNLOADJOBS="1"
+ENV OPAMERRLOGLEN="0"
+ENV OPAMSOLVERTIMEOUT="500"
+ENV OPAMPRECISETRACKING="1"
+ENV CI="true"
+ENV OPAM_REPO_CI="true"
+RUN rm -rf opam-repository/
+COPY --chown=1000:1000 . opam-repository/
+RUN opam repository set-url --strict default opam-repository/
+RUN opam update --depexts || true
+ENV OPAMCRITERIA="-removed,-count[avoid-version,changed],-count[version-lag,request],-count[version-lag,changed],-count[missing-depexts,changed],-changed"
+ENV OPAMFIXUPCRITERIA="-removed,-count[avoid-version,changed],-count[version-lag,request],-count[version-lag,changed],-count[missing-depexts,changed],-changed"
+ENV OPAMUPGRADECRITERIA="-removed,-count[avoid-version,changed],-count[version-lag,request],-count[version-lag,changed],-count[missing-depexts,changed],-changed"
+RUN opam pin add -k version -yn conf-pkg-config.1.2 1.2
+RUN opam reinstall conf-pkg-config.1.2; \
+    res=$?; \
+    test "$res" != 31 && exit "$res"; \
+    export OPAMCLI=2.0; \
+    build_dir=$(opam var prefix)/.opam-switch/build; \
+    failed=$(ls "$build_dir"); \
+    partial_fails=""; \
+    for pkg in $failed; do \
+    if opam show -f x-ci-accept-failures: "$pkg" | grep -qF "\"debian-12\""; then \
+    echo "A package failed and has been disabled for CI using the 'x-ci-accept-failures' field."; \
+    fi; \
+    test "$pkg" != 'conf-pkg-config.1.2' && partial_fails="$partial_fails $pkg"; \
+    done; \
+    test "${partial_fails}" != "" && echo "opam-repo-ci detected dependencies failing: ${partial_fails}"; \
+    exit 1
+ENV OPAMCRITERIA="-removed,-count[avoid-version,changed],-count[version-lag,request],-count[version-lag,changed],-count[missing-depexts,changed],-changed"
+ENV OPAMFIXUPCRITERIA="-removed,-count[avoid-version,changed],-count[version-lag,request],-count[version-lag,changed],-count[missing-depexts,changed],-changed"
+ENV OPAMUPGRADECRITERIA="-removed,-count[avoid-version,changed],-count[version-lag,request],-count[version-lag,changed],-count[missing-depexts,changed],-changed"
+RUN opam reinstall irmin-unix.2.5.0; \
+    res=$?; \
+    test "$res" != 31 && exit "$res"; \
+    export OPAMCLI=2.0; \
+    build_dir=$(opam var prefix)/.opam-switch/build; \
+    failed=$(ls "$build_dir"); \
+    partial_fails=""; \
+    for pkg in $failed; do \
+    if opam show -f x-ci-accept-failures: "$pkg" | grep -qF "\"debian-12\""; then \
+    echo "A package failed and has been disabled for CI using the 'x-ci-accept-failures' field."; \
+    fi; \
+    test "$pkg" != 'irmin-unix.2.5.0' && partial_fails="$partial_fails $pkg"; \
+    done; \
+    test "${partial_fails}" != "" && echo "opam-repo-ci detected dependencies failing: ${partial_fails}"; \
+    exit 1
+ENV OPAMCRITERIA="-removed,-count[avoid-version,changed],-count[version-lag,request],-count[version-lag,changed],-count[missing-depexts,changed],-changed"
+ENV OPAMFIXUPCRITERIA="-removed,-count[avoid-version,changed],-count[version-lag,request],-count[version-lag,changed],-count[missing-depexts,changed],-changed"
+ENV OPAMUPGRADECRITERIA="-removed,-count[avoid-version,changed],-count[version-lag,request],-count[version-lag,changed],-count[missing-depexts,changed],-changed"
+RUN (opam reinstall --with-test irmin-unix.2.5.0) || true
+RUN opam reinstall --with-test --verbose irmin-unix.2.5.0; \
+    res=$?; \
+    test "$res" != 31 && exit "$res"; \
+    export OPAMCLI=2.0; \
+    build_dir=$(opam var prefix)/.opam-switch/build; \
+    failed=$(ls "$build_dir"); \
+    partial_fails=""; \
+    for pkg in $failed; do \
+    if opam show -f x-ci-accept-failures: "$pkg" | grep -qF "\"debian-12\""; then \
+    echo "A package failed and has been disabled for CI using the 'x-ci-accept-failures' field."; \
+    fi; \
+    test "$pkg" != 'irmin-unix.2.5.0' && partial_fails="$partial_fails $pkg"; \
+    done; \
+    test "${partial_fails}" != "" && echo "opam-repo-ci detected dependencies failing: ${partial_fails}"; \
+    exit 1
+[0m
+END-OF-DOCKERFILE
+docker build -f ../Dockerfile .
+
+2024-02-11 20:26.26: Using cache hint "ocaml/opam:debian-12-ocaml-4.14@sha256:4021ca3252741ce621e03f973d64272c2ac47b3b1e7c780e5a51dcc96f76a20c-conf-pkg-config.1.2-irmin-unix.2.5.0-8c7391d6ec81e93f24de221eb32a886b72d1ede6"
+2024-02-11 20:26.26: Using OBuilder spec:
+((from ocaml/opam:debian-12-ocaml-4.14@sha256:4021ca3252741ce621e03f973d64272c2ac47b3b1e7c780e5a51dcc96f76a20c)
+ (user (uid 1000) (gid 1000))
+ (workdir /home/opam)
+ (run (shell "sudo ln -f /usr/bin/opam-dev /usr/bin/opam"))
+ (run (network host)
+      (shell "opam init --reinit --config .opamrc-sandbox -ni"))
+ (env OPAMDOWNLOADJOBS 1)
+ (env OPAMERRLOGLEN 0)
+ (env OPAMSOLVERTIMEOUT 500)
+ (env OPAMPRECISETRACKING 1)
+ (env CI true)
+ (env OPAM_REPO_CI true)
+ (run (shell "rm -rf opam-repository/"))
+ (copy (src .) (dst opam-repository/))
+ (run (shell "opam repository set-url --strict default opam-repository/"))
+ (run (network host)
+      (shell "opam update --depexts || true"))
+ (env OPAMCRITERIA -removed,-count[avoid-version,changed],-count[version-lag,request],-count[version-lag,changed],-count[missing-depexts,changed],-changed)
+ (env OPAMFIXUPCRITERIA -removed,-count[avoid-version,changed],-count[version-lag,request],-count[version-lag,changed],-count[missing-depexts,changed],-changed)
+ (env OPAMUPGRADECRITERIA -removed,-count[avoid-version,changed],-count[version-lag,request],-count[version-lag,changed],-count[missing-depexts,changed],-changed)
+ (run (shell "opam pin add -k version -yn conf-pkg-config.1.2 1.2"))
+ (run (cache (opam-archives (target /home/opam/.opam/download-cache)))
+      (network host)
+      (shell  "opam reinstall conf-pkg-config.1.2;\
+             \n        res=$?;\
+             \n        test \"$res\" != 31 && exit \"$res\";\
+             \n        export OPAMCLI=2.0;\
+             \n        build_dir=$(opam var prefix)/.opam-switch/build;\
+             \n        failed=$(ls \"$build_dir\");\
+             \n        partial_fails=\"\";\
+             \n        for pkg in $failed; do\
+             \n          if opam show -f x-ci-accept-failures: \"$pkg\" | grep -qF \"\\\"debian-12\\\"\"; then\
+             \n            echo \"A package failed and has been disabled for CI using the 'x-ci-accept-failures' field.\";\
+             \n          fi;\
+             \n          test \"$pkg\" != 'conf-pkg-config.1.2' && partial_fails=\"$partial_fails $pkg\";\
+             \n        done;\
+             \n        test \"${partial_fails}\" != \"\" && echo \"opam-repo-ci detected dependencies failing: ${partial_fails}\";\
+             \n        exit 1"))
+ (env OPAMCRITERIA -removed,-count[avoid-version,changed],-count[version-lag,request],-count[version-lag,changed],-count[missing-depexts,changed],-changed)
+ (env OPAMFIXUPCRITERIA -removed,-count[avoid-version,changed],-count[version-lag,request],-count[version-lag,changed],-count[missing-depexts,changed],-changed)
+ (env OPAMUPGRADECRITERIA -removed,-count[avoid-version,changed],-count[version-lag,request],-count[version-lag,changed],-count[missing-depexts,changed],-changed)
+ (run (cache (opam-archives (target /home/opam/.opam/download-cache)))
+      (network host)
+      (shell  "opam reinstall irmin-unix.2.5.0;\
+             \n        res=$?;\
+             \n        test \"$res\" != 31 && exit \"$res\";\
+             \n        export OPAMCLI=2.0;\
+             \n        build_dir=$(opam var prefix)/.opam-switch/build;\
+             \n        failed=$(ls \"$build_dir\");\
+             \n        partial_fails=\"\";\
+             \n        for pkg in $failed; do\
+             \n          if opam show -f x-ci-accept-failures: \"$pkg\" | grep -qF \"\\\"debian-12\\\"\"; then\
+             \n            echo \"A package failed and has been disabled for CI using the 'x-ci-accept-failures' field.\";\
+             \n          fi;\
+             \n          test \"$pkg\" != 'irmin-unix.2.5.0' && partial_fails=\"$partial_fails $pkg\";\
+             \n        done;\
+             \n        test \"${partial_fails}\" != \"\" && echo \"opam-repo-ci detected dependencies failing: ${partial_fails}\";\
+             \n        exit 1"))
+ (env OPAMCRITERIA -removed,-count[avoid-version,changed],-count[version-lag,request],-count[version-lag,changed],-count[missing-depexts,changed],-changed)
+ (env OPAMFIXUPCRITERIA -removed,-count[avoid-version,changed],-count[version-lag,request],-count[version-lag,changed],-count[missing-depexts,changed],-changed)
+ (env OPAMUPGRADECRITERIA -removed,-count[avoid-version,changed],-count[version-lag,request],-count[version-lag,changed],-count[missing-depexts,changed],-changed)
+ (run (network host)
+      (shell "(opam reinstall --with-test irmin-unix.2.5.0) || true"))
+ (run (shell  "opam reinstall --with-test --verbose irmin-unix.2.5.0;\
+             \n        res=$?;\
+             \n        test \"$res\" != 31 && exit \"$res\";\
+             \n        export OPAMCLI=2.0;\
+             \n        build_dir=$(opam var prefix)/.opam-switch/build;\
+             \n        failed=$(ls \"$build_dir\");\
+             \n        partial_fails=\"\";\
+             \n        for pkg in $failed; do\
+             \n          if opam show -f x-ci-accept-failures: \"$pkg\" | grep -qF \"\\\"debian-12\\\"\"; then\
+             \n            echo \"A package failed and has been disabled for CI using the 'x-ci-accept-failures' field.\";\
+             \n          fi;\
+             \n          test \"$pkg\" != 'irmin-unix.2.5.0' && partial_fails=\"$partial_fails $pkg\";\
+             \n        done;\
+             \n        test \"${partial_fails}\" != \"\" && echo \"opam-repo-ci detected dependencies failing: ${partial_fails}\";\
+             \n        exit 1"))
+)
+
+2024-02-11 20:26.26: Waiting for resource in pool OCluster
+2024-02-14 07:55.10: Waiting for worker…
+2024-02-14 07:56.51: Got resource from pool OCluster
+Building on x86-bm-c6.sw.ocaml.org
+All commits already cached
+Updating files:  55% (18298/32918)Updating files:  56% (18435/32918)Updating files:  57% (18764/32918)Updating files:  58% (19093/32918)Updating files:  59% (19422/32918)Updating files:  60% (19751/32918)Updating files:  61% (20080/32918)Updating files:  62% (20410/32918)Updating files:  63% (20739/32918)Updating files:  64% (21068/32918)Updating files:  65% (21397/32918)Updating files:  66% (21726/32918)Updating files:  67% (22056/32918)Updating files:  68% (22385/32918)Updating files:  69% (22714/32918)Updating files:  70% (23043/32918)Updating files:  71% (23372/32918)Updating files:  72% (23701/32918)Updating files:  73% (24031/32918)Updating files:  74% (24360/32918)Updating files:  75% (24689/32918)Updating files:  76% (25018/32918)Updating files:  77% (25347/32918)Updating files:  78% (25677/32918)Updating files:  79% (26006/32918)Updating files:  80% (26335/32918)Updating files:  81% (26664/32918)Updating files:  82% (26993/32918)Updating files:  83% (27322/32918)Updating files:  84% (27652/32918)Updating files:  85% (27981/32918)Updating files:  86% (28310/32918)Updating files:  87% (28639/32918)Updating files:  88% (28968/32918)Updating files:  89% (29298/32918)Updating files:  90% (29627/32918)Updating files:  91% (29956/32918)Updating files:  92% (30285/32918)Updating files:  93% (30614/32918)Updating files:  94% (30943/32918)Updating files:  95% (31273/32918)Updating files:  96% (31602/32918)Updating files:  97% (31931/32918)Updating files:  98% (32260/32918)Updating files:  99% (32589/32918)Updating files: 100% (32918/32918)Updating files: 100% (32918/32918), done.
+HEAD is now at 8477e9a74b Merge pull request #25221 from nberth/mlgmpidl-1.3.0
+Updating 8477e9a74b..8c7391d6ec
+Fast-forward
+ packages/conf-pkg-config/conf-pkg-config.1.0/opam | 2 +-
+ packages/conf-pkg-config/conf-pkg-config.1.1/opam | 1 +
+ packages/conf-pkg-config/conf-pkg-config.1.2/opam | 1 +
+ packages/conf-pkg-config/conf-pkg-config.1.3/opam | 1 +
+ packages/conf-pkg-config/conf-pkg-config.2/opam   | 1 +
+ packages/conf-pkg-config/conf-pkg-config.3/opam   | 4 +++-
+ 6 files changed, 8 insertions(+), 2 deletions(-)
+
+[01;34m(from ocaml/opam:debian-12-ocaml-4.14@sha256:4021ca3252741ce621e03f973d64272c2ac47b3b1e7c780e5a51dcc96f76a20c)[0m
+[01;2m[01;35m2024-02-14 07:56.56 ---> using "0acf803dd11b376b386511f6c168c184aeafb2a98b15ad3a7c37861e7c214376" from cache[0m
+
+[01;34m/: (user (uid 1000) (gid 1000))[0m
+
+[01;34m/: (workdir /home/opam)[0m
+
+[01;34m/home/opam: (run (shell "sudo ln -f /usr/bin/opam-dev /usr/bin/opam"))[0m
+[01;2m[01;35m2024-02-14 07:56.56 ---> using "5f75a484ee0a4a54dce687581c08c0e0126d54be845e13f0e0f4cb297e6a2d76" from cache[0m
+
+[01;34m/home/opam: (run (network host)
+                 (shell "opam init --reinit --config .opamrc-sandbox -ni"))[0m
+Configuring from /home/opam/.opamrc-sandbox, then /home/opam/.opamrc, and finally from built-in defaults.
+Checking for available remotes: rsync and local, git.
+  - you won't be able to use mercurial repositories unless you install the hg command on your system.
+  - you won't be able to use darcs repositories unless you install the darcs command on your system.
+
+This development version of opam requires an update to the layout of /home/opam/.opam from version 2.0 to version 2.2~alpha, which can't be reverted.
+You may want to back it up before going further.
+
+Continue? [y/n] y
+[NOTE] The 'jobs' option was reset, its value was 71 and its new value will vary according to the current number of cores on your machine. You can restore the fixed value using:
+           opam option jobs=71 --global
+Format upgrade done.
+
+<><> Updating repositories ><><><><><><><><><><><><><><><><><><><><><><><><><><>
+[default] synchronised from file:///home/opam/opam-repository
+[01;2m[01;35m2024-02-14 07:56.56 ---> using "e04cc2bb434ef69b32eefedf55fe47d43efe975bcbb2b548ccfaa5ac32346591" from cache[0m
+
+[01;34m/home/opam: (env OPAMDOWNLOADJOBS 1)[0m
+
+[01;34m/home/opam: (env OPAMERRLOGLEN 0)[0m
+
+[01;34m/home/opam: (env OPAMSOLVERTIMEOUT 500)[0m
+
+[01;34m/home/opam: (env OPAMPRECISETRACKING 1)[0m
+
+[01;34m/home/opam: (env CI true)[0m
+
+[01;34m/home/opam: (env OPAM_REPO_CI true)[0m
+
+[01;34m/home/opam: (run (shell "rm -rf opam-repository/"))[0m
+[01;2m[01;35m2024-02-14 07:56.56 ---> using "00564ecdfc417b769e9fdfcd2bb57e2f10222db9d58be942fda044ce7d492d99" from cache[0m
+
+[01;34m/home/opam: (copy (src .) (dst opam-repository/))[0m
+[01;2m[01;35m2024-02-14 07:56.59 ---> using "ea33f3359176f37447c8d8f7126321a7ae5371a4695eb4935be80fffa2b72366" from cache[0m
+
+[01;34m/home/opam: (run (shell "opam repository set-url --strict default opam-repository/"))[0m
+[default] Initialised
+[01;2m[01;35m2024-02-14 07:56.59 ---> using "53132e557c2ce4324fced9b09093c683ac85303eb8344294b5cb4218fc29f5ea" from cache[0m
+
+[01;34m/home/opam: (run (network host)
+                 (shell "opam update --depexts || true"))[0m
++ /usr/bin/sudo "apt-get" "update"
+- Get:1 http://deb.debian.org/debian bookworm InRelease [151 kB]
+- Get:2 http://deb.debian.org/debian bookworm-updates InRelease [52.1 kB]
+- Get:3 http://deb.debian.org/debian-security bookworm-security InRelease [48.0 kB]
+- Get:4 http://deb.debian.org/debian bookworm/main amd64 Packages [8786 kB]
+- Get:5 http://deb.debian.org/debian-security bookworm-security/main amd64 Packages [137 kB]
+- Fetched 9175 kB in 1s (6918 kB/s)
+- Reading package lists...
+[01;2m[01;35m2024-02-14 07:56.59 ---> using "3c39f0f3e2cba1fdbff7030f10768ebd234d80507425a02c9f6fe1c3c6b21305" from cache[0m
+
+[01;34m/home/opam: (env OPAMCRITERIA -removed,-count[avoid-version,changed],-count[version-lag,request],-count[version-lag,changed],-count[missing-depexts,changed],-changed)[0m
+
+[01;34m/home/opam: (env OPAMFIXUPCRITERIA -removed,-count[avoid-version,changed],-count[version-lag,request],-count[version-lag,changed],-count[missing-depexts,changed],-changed)[0m
+
+[01;34m/home/opam: (env OPAMUPGRADECRITERIA -removed,-count[avoid-version,changed],-count[version-lag,request],-count[version-lag,changed],-count[missing-depexts,changed],-changed)[0m
+
+[01;34m/home/opam: (run (shell "opam pin add -k version -yn conf-pkg-config.1.2 1.2"))[0m
+conf-pkg-config is now pinned to version 1.2
+[01;2m[01;35m2024-02-14 07:56.59 ---> using "9ea315f81156dd41d8158aae16c472911be05c0a426818f14075098ce9762478" from cache[0m
+
+[01;34m/home/opam: (run (cache (opam-archives (target /home/opam/.opam/download-cache)))
+                 (network host)
+                 (shell  "opam reinstall conf-pkg-config.1.2;\
+                        \n        res=$?;\
+                        \n        test \"$res\" != 31 && exit \"$res\";\
+                        \n        export OPAMCLI=2.0;\
+                        \n        build_dir=$(opam var prefix)/.opam-switch/build;\
+                        \n        failed=$(ls \"$build_dir\");\
+                        \n        partial_fails=\"\";\
+                        \n        for pkg in $failed; do\
+                        \n          if opam show -f x-ci-accept-failures: \"$pkg\" | grep -qF \"\\\"debian-12\\\"\"; then\
+                        \n            echo \"A package failed and has been disabled for CI using the 'x-ci-accept-failures' field.\";\
+                        \n          fi;\
+                        \n          test \"$pkg\" != 'conf-pkg-config.1.2' && partial_fails=\"$partial_fails $pkg\";\
+                        \n        done;\
+                        \n        test \"${partial_fails}\" != \"\" && echo \"opam-repo-ci detected dependencies failing: ${partial_fails}\";\
+                        \n        exit 1"))[0m
+conf-pkg-config.1.2 is not installed. Install it? [y/n] y
+The following actions will be performed:
+=== install 1 package
+  - install conf-pkg-config 1.2 (pinned)
+
+The following system packages will first need to be installed:
+    pkg-config
+
+<><> Handling external dependencies <><><><><><><><><><><><><><><><><><><><><><>
+
+opam believes some required external dependencies are missing. opam can:
+> 1. Run apt-get to install them (may need root/sudo access)
+  2. Display the recommended apt-get command and wait while you run it manually (e.g. in another terminal)
+  3. Continue anyway, and, upon success, permanently register that this external dependency is present, but not detectable
+  4. Abort the installation
+
+[1/2/3/4] 1
+
++ /usr/bin/sudo "apt-get" "install" "-qq" "-yy" "pkg-config"
+- debconf: delaying package configuration, since apt-utils is not installed
+- Selecting previously unselected package libpkgconf3:amd64.
+- (Reading database ... (Reading database ... 5%(Reading database ... 10%(Reading database ... 15%(Reading database ... 20%(Reading database ... 25%(Reading database ... 30%(Reading database ... 35%(Reading database ... 40%(Reading database ... 45%(Reading database ... 50%(Reading database ... 55%(Reading database ... 60%(Reading database ... 65%(Reading database ... 70%(Reading database ... 75%(Reading database ... 80%(Reading database ... 85%(Reading database ... 90%(Reading database ... 95%(Reading database ... 100%(Reading database ... 18743 files and directories currently installed.)
+- Preparing to unpack .../libpkgconf3_1.8.1-1_amd64.deb ...
+- Unpacking libpkgconf3:amd64 (1.8.1-1) ...
+- Selecting previously unselected package pkgconf-bin.
+- Preparing to unpack .../pkgconf-bin_1.8.1-1_amd64.deb ...
+- Unpacking pkgconf-bin (1.8.1-1) ...
+- Selecting previously unselected package pkgconf:amd64.
+- Preparing to unpack .../pkgconf_1.8.1-1_amd64.deb ...
+- Unpacking pkgconf:amd64 (1.8.1-1) ...
+- Selecting previously unselected package pkg-config:amd64.
+- Preparing to unpack .../pkg-config_1.8.1-1_amd64.deb ...
+- Unpacking pkg-config:amd64 (1.8.1-1) ...
+- Setting up libpkgconf3:amd64 (1.8.1-1) ...
+- Setting up pkgconf-bin (1.8.1-1) ...
+- Setting up pkgconf:amd64 (1.8.1-1) ...
+- Setting up pkg-config:amd64 (1.8.1-1) ...
+- Processing triggers for libc-bin (2.36-9+deb12u4) ...
+
+<><> Processing actions <><><><><><><><><><><><><><><><><><><><><><><><><><><><>
+-> installed conf-pkg-config.1.2
+Done.
+# Run eval $(opam env) to update the current shell environment
+[01;2m[01;35m2024-02-14 07:56.59 ---> using "333ce4f87f1d46ac5225a2f4187446724ad5806ccce44f1429e8f1db0fa4908b" from cache[0m
+
+[01;34m/home/opam: (env OPAMCRITERIA -removed,-count[avoid-version,changed],-count[version-lag,request],-count[version-lag,changed],-count[missing-depexts,changed],-changed)[0m
+
+[01;34m/home/opam: (env OPAMFIXUPCRITERIA -removed,-count[avoid-version,changed],-count[version-lag,request],-count[version-lag,changed],-count[missing-depexts,changed],-changed)[0m
+
+[01;34m/home/opam: (env OPAMUPGRADECRITERIA -removed,-count[avoid-version,changed],-count[version-lag,request],-count[version-lag,changed],-count[missing-depexts,changed],-changed)[0m
+
+[01;34m/home/opam: (run (cache (opam-archives (target /home/opam/.opam/download-cache)))
+                 (network host)
+                 (shell  "opam reinstall irmin-unix.2.5.0;\
+                        \n        res=$?;\
+                        \n        test \"$res\" != 31 && exit \"$res\";\
+                        \n        export OPAMCLI=2.0;\
+                        \n        build_dir=$(opam var prefix)/.opam-switch/build;\
+                        \n        failed=$(ls \"$build_dir\");\
+                        \n        partial_fails=\"\";\
+                        \n        for pkg in $failed; do\
+                        \n          if opam show -f x-ci-accept-failures: \"$pkg\" | grep -qF \"\\\"debian-12\\\"\"; then\
+                        \n            echo \"A package failed and has been disabled for CI using the 'x-ci-accept-failures' field.\";\
+                        \n          fi;\
+                        \n          test \"$pkg\" != 'irmin-unix.2.5.0' && partial_fails=\"$partial_fails $pkg\";\
+                        \n        done;\
+                        \n        test \"${partial_fails}\" != \"\" && echo \"opam-repo-ci detected dependencies failing: ${partial_fails}\";\
+                        \n        exit 1"))[0m
+irmin-unix.2.5.0 is not installed. Install it? [y/n] y
+[ERROR] Sorry, resolution of the request timed out.
+        Try to specify a more precise request, use a different solver, or increase the allowed time by setting OPAMSOLVERTIMEOUT to a bigger value (currently, it is set to 500.0 seconds).
+"/usr/bin/env" "bash" "-c" "opam reinstall irmin-unix.2.5.0;
+        res=$?;
+        test "$res" != 31 && exit "$res";
+        export OPAMCLI=2.0;
+        build_dir=$(opam var prefix)/.opam-switch/build;
+        failed=$(ls "$build_dir");
+        partial_fails="";
+        for pkg in $failed; do
+          if opam show -f x-ci-accept-failures: "$pkg" | grep -qF "\"debian-12\""; then
+            echo "A package failed and has been disabled for CI using the 'x-ci-accept-failures' field.";
+          fi;
+          test "$pkg" != 'irmin-unix.2.5.0' && partial_fails="$partial_fails $pkg";
+        done;
+        test "${partial_fails}" != "" && echo "opam-repo-ci detected dependencies failing: ${partial_fails}";
+        exit 1" failed with exit status 60
+2024-02-14 08:05.53: Job failed: Failed: Build failed
+2024-02-14 08:05.53: Log analysis:
+2024-02-14 08:05.53: >>> 
+[ERROR] Sorry, resolution of the request timed out.
+ (score = 20)
+2024-02-14 08:05.53: Sorry, resolution of the request timed out.

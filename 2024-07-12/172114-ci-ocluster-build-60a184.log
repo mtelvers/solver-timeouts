@@ -1,0 +1,246 @@
+2024-07-12 17:21.14: New job: test passage.0.1.1, using opam 2.1
+                              from https://github.com/ocaml/opam-repository.git#refs/pull/26234/head (6f946b7a13fa7e6e43c97c7bb35511a5b268cda2)
+                              on debian-12-ocaml-4.14/amd64
+
+To reproduce locally:
+
+cd $(mktemp -d)
+git clone --recursive "https://github.com/ocaml/opam-repository.git" && cd "opam-repository" && git fetch origin "refs/pull/26234/head" && git reset --hard 6f946b7a
+git fetch origin master
+git merge --no-edit 80f59f9d12c0e9dda29eb80811ac7689a7ec392b
+cat > ../Dockerfile <<'END-OF-DOCKERFILE'
+[34mFROM ocaml/opam:debian-12-ocaml-4.14@sha256:6861d2cea2df02e6467c0d6cf723eb199c902ae60e8e96b88bdfafcfab7b3a2f
+USER 1000:1000
+WORKDIR /home/opam
+RUN sudo ln -f /usr/bin/opam-2.1 /usr/bin/opam
+RUN opam init --reinit -ni
+RUN uname -rs && opam exec -- ocaml -version && opam --version
+ENV OPAMDOWNLOADJOBS="1"
+ENV OPAMERRLOGLEN="0"
+ENV OPAMSOLVERTIMEOUT="500"
+ENV OPAMPRECISETRACKING="1"
+ENV CI="true"
+ENV OPAM_REPO_CI="true"
+RUN rm -rf opam-repository/
+COPY --chown=1000:1000 . opam-repository/
+RUN opam repository set-url --strict default opam-repository/
+RUN opam update --depexts || true
+RUN opam pin add -k version -yn passage.0.1.1 0.1.1
+RUN opam reinstall passage.0.1.1; \
+    res=$?; \
+    test "$res" != 31 && exit "$res"; \
+    export OPAMCLI=2.0; \
+    build_dir=$(opam var prefix)/.opam-switch/build; \
+    failed=$(ls "$build_dir"); \
+    partial_fails=""; \
+    for pkg in $failed; do \
+    if opam show -f x-ci-accept-failures: "$pkg" | grep -qF "\"debian-12\""; then \
+    echo "A package failed and has been disabled for CI using the 'x-ci-accept-failures' field."; \
+    fi; \
+    test "$pkg" != 'passage.0.1.1' && partial_fails="$partial_fails $pkg"; \
+    done; \
+    test "${partial_fails}" != "" && echo "opam-repo-ci detected dependencies failing: ${partial_fails}"; \
+    exit 1
+RUN (opam reinstall --with-test passage.0.1.1) || true
+RUN opam reinstall --with-test --verbose passage.0.1.1; \
+    res=$?; \
+    test "$res" != 31 && exit "$res"; \
+    export OPAMCLI=2.0; \
+    build_dir=$(opam var prefix)/.opam-switch/build; \
+    failed=$(ls "$build_dir"); \
+    partial_fails=""; \
+    for pkg in $failed; do \
+    if opam show -f x-ci-accept-failures: "$pkg" | grep -qF "\"debian-12\""; then \
+    echo "A package failed and has been disabled for CI using the 'x-ci-accept-failures' field."; \
+    fi; \
+    test "$pkg" != 'passage.0.1.1' && partial_fails="$partial_fails $pkg"; \
+    done; \
+    test "${partial_fails}" != "" && echo "opam-repo-ci detected dependencies failing: ${partial_fails}"; \
+    exit 1
+[0m
+END-OF-DOCKERFILE
+docker build -f ../Dockerfile .
+
+2024-07-12 17:21.14: Using cache hint "ocaml/opam:debian-12-ocaml-4.14@sha256:6861d2cea2df02e6467c0d6cf723eb199c902ae60e8e96b88bdfafcfab7b3a2f-passage.0.1.1-6f946b7a13fa7e6e43c97c7bb35511a5b268cda2"
+2024-07-12 17:21.14: Using OBuilder spec:
+((from ocaml/opam:debian-12-ocaml-4.14@sha256:6861d2cea2df02e6467c0d6cf723eb199c902ae60e8e96b88bdfafcfab7b3a2f)
+ (user (uid 1000) (gid 1000))
+ (workdir /home/opam)
+ (run (shell "sudo ln -f /usr/bin/opam-2.1 /usr/bin/opam"))
+ (run (network host)
+      (shell "opam init --reinit --config .opamrc-sandbox -ni"))
+ (run (shell "uname -rs && opam exec -- ocaml -version && opam --version"))
+ (env OPAMDOWNLOADJOBS 1)
+ (env OPAMERRLOGLEN 0)
+ (env OPAMSOLVERTIMEOUT 500)
+ (env OPAMPRECISETRACKING 1)
+ (env CI true)
+ (env OPAM_REPO_CI true)
+ (run (shell "rm -rf opam-repository/"))
+ (copy (src .) (dst opam-repository/))
+ (run (shell "opam repository set-url --strict default opam-repository/"))
+ (run (network host)
+      (shell "opam update --depexts || true"))
+ (run (shell "opam pin add -k version -yn passage.0.1.1 0.1.1"))
+ (run (cache (opam-archives (target /home/opam/.opam/download-cache)))
+      (network host)
+      (shell  "opam reinstall passage.0.1.1;\
+             \n        res=$?;\
+             \n        test \"$res\" != 31 && exit \"$res\";\
+             \n        export OPAMCLI=2.0;\
+             \n        build_dir=$(opam var prefix)/.opam-switch/build;\
+             \n        failed=$(ls \"$build_dir\");\
+             \n        partial_fails=\"\";\
+             \n        for pkg in $failed; do\
+             \n          if opam show -f x-ci-accept-failures: \"$pkg\" | grep -qF \"\\\"debian-12\\\"\"; then\
+             \n            echo \"A package failed and has been disabled for CI using the 'x-ci-accept-failures' field.\";\
+             \n          fi;\
+             \n          test \"$pkg\" != 'passage.0.1.1' && partial_fails=\"$partial_fails $pkg\";\
+             \n        done;\
+             \n        test \"${partial_fails}\" != \"\" && echo \"opam-repo-ci detected dependencies failing: ${partial_fails}\";\
+             \n        exit 1"))
+ (run (network host)
+      (shell "(opam reinstall --with-test passage.0.1.1) || true"))
+ (run (shell  "opam reinstall --with-test --verbose passage.0.1.1;\
+             \n        res=$?;\
+             \n        test \"$res\" != 31 && exit \"$res\";\
+             \n        export OPAMCLI=2.0;\
+             \n        build_dir=$(opam var prefix)/.opam-switch/build;\
+             \n        failed=$(ls \"$build_dir\");\
+             \n        partial_fails=\"\";\
+             \n        for pkg in $failed; do\
+             \n          if opam show -f x-ci-accept-failures: \"$pkg\" | grep -qF \"\\\"debian-12\\\"\"; then\
+             \n            echo \"A package failed and has been disabled for CI using the 'x-ci-accept-failures' field.\";\
+             \n          fi;\
+             \n          test \"$pkg\" != 'passage.0.1.1' && partial_fails=\"$partial_fails $pkg\";\
+             \n        done;\
+             \n        test \"${partial_fails}\" != \"\" && echo \"opam-repo-ci detected dependencies failing: ${partial_fails}\";\
+             \n        exit 1"))
+)
+
+2024-07-12 17:21.14: Waiting for resource in pool OCluster
+2024-07-12 17:22.19: Waiting for worker…
+2024-07-12 17:30.36: Got resource from pool OCluster
+Building on x86-bm-c12.sw.ocaml.org
+All commits already cached
+Updating files:  63% (20181/31829)Updating files:  64% (20371/31829)Updating files:  65% (20689/31829)Updating files:  66% (21008/31829)Updating files:  67% (21326/31829)Updating files:  68% (21644/31829)Updating files:  69% (21963/31829)Updating files:  70% (22281/31829)Updating files:  71% (22599/31829)Updating files:  72% (22917/31829)Updating files:  73% (23236/31829)Updating files:  74% (23554/31829)Updating files:  75% (23872/31829)Updating files:  76% (24191/31829)Updating files:  77% (24509/31829)Updating files:  78% (24827/31829)Updating files:  79% (25145/31829)Updating files:  80% (25464/31829)Updating files:  81% (25782/31829)Updating files:  82% (26100/31829)Updating files:  83% (26419/31829)Updating files:  84% (26737/31829)Updating files:  85% (27055/31829)Updating files:  86% (27373/31829)Updating files:  87% (27692/31829)Updating files:  88% (28010/31829)Updating files:  89% (28328/31829)Updating files:  90% (28647/31829)Updating files:  91% (28965/31829)Updating files:  92% (29283/31829)Updating files:  93% (29601/31829)Updating files:  94% (29920/31829)Updating files:  95% (30238/31829)Updating files:  96% (30556/31829)Updating files:  97% (30875/31829)Updating files:  98% (31193/31829)Updating files:  99% (31511/31829)Updating files: 100% (31829/31829)Updating files: 100% (31829/31829), done.
+HEAD is now at 80f59f9d12 Merge pull request #26230 from dinosaure/release-http-mirage-client-v0.0.6
+Updating 80f59f9d12..6f946b7a13
+Fast-forward
+ packages/conf-age/conf-age.1/opam   | 24 +++++++++++++++++
+ packages/passage/passage.0.1.1/opam | 51 +++++++++++++++++++++++++++++++++++++
+ 2 files changed, 75 insertions(+)
+ create mode 100644 packages/conf-age/conf-age.1/opam
+ create mode 100644 packages/passage/passage.0.1.1/opam
+
+[01;34m(from ocaml/opam:debian-12-ocaml-4.14@sha256:6861d2cea2df02e6467c0d6cf723eb199c902ae60e8e96b88bdfafcfab7b3a2f)[0m
+[01;2m[01;35m2024-07-12 17:30.39 ---> using "4a2062430b518b8cfbc5c574841529a30ba3d6de7679379ca94f79d85d164cd8" from cache[0m
+
+[01;34m/: (user (uid 1000) (gid 1000))[0m
+
+[01;34m/: (workdir /home/opam)[0m
+
+[01;34m/home/opam: (run (shell "sudo ln -f /usr/bin/opam-2.1 /usr/bin/opam"))[0m
+[01;2m[01;35m2024-07-12 17:30.39 ---> using "be62f8c11945547d92b450aed4b604f555d9fd2b2dff5076d32d9e9c428fba33" from cache[0m
+
+[01;34m/home/opam: (run (network host)
+                 (shell "opam init --reinit --config .opamrc-sandbox -ni"))[0m
+Configuring from /home/opam/.opamrc-sandbox, then /home/opam/.opamrc, and finally from built-in defaults.
+Checking for available remotes: rsync and local, git.
+  - you won't be able to use mercurial repositories unless you install the hg command on your system.
+  - you won't be able to use darcs repositories unless you install the darcs command on your system.
+
+This version of opam requires an update to the layout of /home/opam/.opam from version 2.0 to version 2.1, which can't be reverted.
+You may want to back it up before going further.
+
+Continue? [Y/n] y
+Format upgrade done.
+
+<><> Updating repositories ><><><><><><><><><><><><><><><><><><><><><><><><><><>
+[default] synchronised from file:///home/opam/opam-repository
+[01;2m[01;35m2024-07-12 17:31.46 ---> saved as "c7d27537b81a43525429e3a0456fea127c27bc75aef5c9fbafe466449d224853"[0m
+
+[01;34m/home/opam: (run (shell "uname -rs && opam exec -- ocaml -version && opam --version"))[0m
+Linux 5.15.0-113-generic
+The OCaml toplevel, version 4.14.2
+2.1.6
+[01;2m[01;35m2024-07-12 17:31.46 ---> saved as "02b9c135bfb100e3cb31cda18a93a3eff42c2ebc80f6d02d48a94e60ba5ded67"[0m
+
+[01;34m/home/opam: (env OPAMDOWNLOADJOBS 1)[0m
+
+[01;34m/home/opam: (env OPAMERRLOGLEN 0)[0m
+
+[01;34m/home/opam: (env OPAMSOLVERTIMEOUT 500)[0m
+
+[01;34m/home/opam: (env OPAMPRECISETRACKING 1)[0m
+
+[01;34m/home/opam: (env CI true)[0m
+
+[01;34m/home/opam: (env OPAM_REPO_CI true)[0m
+
+[01;34m/home/opam: (run (shell "rm -rf opam-repository/"))[0m
+[01;2m[01;35m2024-07-12 17:31.55 ---> saved as "090a673add84c4aeaac754801f3499db787b91695d20dffde266b59d6958c839"[0m
+
+[01;34m/home/opam: (copy (src .) (dst opam-repository/))[0m
+[01;2m[01;35m2024-07-12 17:32.04 ---> saved as "73592d062236d19be6ae62729a8dd5e7b9a1ad213a7cd391cc6cc4259991647c"[0m
+
+[01;34m/home/opam: (run (shell "opam repository set-url --strict default opam-repository/"))[0m
+[default] Initialised
+[01;2m[01;35m2024-07-12 17:32.23 ---> saved as "911f76a37b9bfac3a365c889a69f5c9c981f436d67f24e90b0492cf9f4ed9a30"[0m
+
+[01;34m/home/opam: (run (network host)
+                 (shell "opam update --depexts || true"))[0m
++ /usr/bin/sudo "apt-get" "update"
+- Hit:1 http://deb.debian.org/debian bookworm InRelease
+- Get:2 http://deb.debian.org/debian bookworm-updates InRelease [55.4 kB]
+- Get:3 http://deb.debian.org/debian-security bookworm-security InRelease [48.0 kB]
+- Get:4 http://deb.debian.org/debian-security bookworm-security/main amd64 Packages [168 kB]
+- Fetched 271 kB in 0s (1127 kB/s)
+- Reading package lists...
+[01;2m[01;35m2024-07-12 17:32.24 ---> saved as "e3f99980715987a39919bb28770204061100b80d151b103d8f2de7910eacf147"[0m
+
+[01;34m/home/opam: (run (shell "opam pin add -k version -yn passage.0.1.1 0.1.1"))[0m
+passage is now pinned to version 0.1.1
+[01;2m[01;35m2024-07-12 17:32.25 ---> saved as "34424f4ac6dcd9de4f7e308963c7c0e50022f89e350481450d00e99e987d9527"[0m
+
+[01;34m/home/opam: (run (cache (opam-archives (target /home/opam/.opam/download-cache)))
+                 (network host)
+                 (shell  "opam reinstall passage.0.1.1;\
+                        \n        res=$?;\
+                        \n        test \"$res\" != 31 && exit \"$res\";\
+                        \n        export OPAMCLI=2.0;\
+                        \n        build_dir=$(opam var prefix)/.opam-switch/build;\
+                        \n        failed=$(ls \"$build_dir\");\
+                        \n        partial_fails=\"\";\
+                        \n        for pkg in $failed; do\
+                        \n          if opam show -f x-ci-accept-failures: \"$pkg\" | grep -qF \"\\\"debian-12\\\"\"; then\
+                        \n            echo \"A package failed and has been disabled for CI using the 'x-ci-accept-failures' field.\";\
+                        \n          fi;\
+                        \n          test \"$pkg\" != 'passage.0.1.1' && partial_fails=\"$partial_fails $pkg\";\
+                        \n        done;\
+                        \n        test \"${partial_fails}\" != \"\" && echo \"opam-repo-ci detected dependencies failing: ${partial_fails}\";\
+                        \n        exit 1"))[0m
+passage.0.1.1 is not installed. Install it? [Y/n] y
+[ERROR] Sorry, resolution of the request timed out.
+        Try to specify a more precise request, use a different solver, or increase the allowed time by setting OPAMSOLVERTIMEOUT to a bigger value (currently, it is set to 500.0 seconds).
+"/usr/bin/env" "bash" "-c" "opam reinstall passage.0.1.1;
+        res=$?;
+        test "$res" != 31 && exit "$res";
+        export OPAMCLI=2.0;
+        build_dir=$(opam var prefix)/.opam-switch/build;
+        failed=$(ls "$build_dir");
+        partial_fails="";
+        for pkg in $failed; do
+          if opam show -f x-ci-accept-failures: "$pkg" | grep -qF "\"debian-12\""; then
+            echo "A package failed and has been disabled for CI using the 'x-ci-accept-failures' field.";
+          fi;
+          test "$pkg" != 'passage.0.1.1' && partial_fails="$partial_fails $pkg";
+        done;
+        test "${partial_fails}" != "" && echo "opam-repo-ci detected dependencies failing: ${partial_fails}";
+        exit 1" failed with exit status 60
+2024-07-12 17:43.54: Job failed: Failed: Build failed
+2024-07-12 17:43.54: Log analysis:
+2024-07-12 17:43.54: >>> 
+[ERROR] Sorry, resolution of the request timed out.
+ (score = 20)
+2024-07-12 17:43.54: Sorry, resolution of the request timed out.

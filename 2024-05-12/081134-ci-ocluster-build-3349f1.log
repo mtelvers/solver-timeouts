@@ -1,0 +1,470 @@
+2024-05-12 08:11.34: New job: test happy-eyeballs-lwt.0.3.0 with ocaml.4.14.2, using opam dev
+                              from https://github.com/ocaml/opam-repository.git#refs/pull/25861/head (87c3caa8e8025fbeb6be3fea49759b482963b0b2)
+                              on debian-12-ocaml-4.14/amd64
+
+To reproduce locally:
+
+cd $(mktemp -d)
+git clone --recursive "https://github.com/ocaml/opam-repository.git" && cd "opam-repository" && git fetch origin "refs/pull/25861/head" && git reset --hard 87c3caa8
+git fetch origin master
+git merge --no-edit fec8ff50cdf61e200702c668040d941b0c7a5f89
+cat > ../Dockerfile <<'END-OF-DOCKERFILE'
+[34mFROM ocaml/opam:debian-12-ocaml-4.14@sha256:35b1aa76181479f2ba40039ae0c5fa5d94e24300e1eb606117587a8e82e9d89e
+USER 1000:1000
+WORKDIR /home/opam
+RUN sudo ln -f /usr/bin/opam-dev /usr/bin/opam
+RUN opam init --reinit -ni
+RUN uname -rs && opam exec -- ocaml -version && opam --version
+ENV OPAMDOWNLOADJOBS="1"
+ENV OPAMERRLOGLEN="0"
+ENV OPAMSOLVERTIMEOUT="500"
+ENV OPAMPRECISETRACKING="1"
+ENV CI="true"
+ENV OPAM_REPO_CI="true"
+RUN rm -rf opam-repository/
+COPY --chown=1000:1000 . opam-repository/
+RUN opam repository set-url --strict default opam-repository/
+RUN opam update --depexts || true
+RUN opam pin add -k version -yn ocaml.4.14.2 4.14.2
+RUN opam reinstall ocaml.4.14.2; \
+    res=$?; \
+    test "$res" != 31 && exit "$res"; \
+    export OPAMCLI=2.0; \
+    build_dir=$(opam var prefix)/.opam-switch/build; \
+    failed=$(ls "$build_dir"); \
+    partial_fails=""; \
+    for pkg in $failed; do \
+    if opam show -f x-ci-accept-failures: "$pkg" | grep -qF "\"debian-12\""; then \
+    echo "A package failed and has been disabled for CI using the 'x-ci-accept-failures' field."; \
+    fi; \
+    test "$pkg" != 'ocaml.4.14.2' && partial_fails="$partial_fails $pkg"; \
+    done; \
+    test "${partial_fails}" != "" && echo "opam-repo-ci detected dependencies failing: ${partial_fails}"; \
+    exit 1
+RUN opam reinstall happy-eyeballs-lwt.0.3.0; \
+    res=$?; \
+    test "$res" != 31 && exit "$res"; \
+    export OPAMCLI=2.0; \
+    build_dir=$(opam var prefix)/.opam-switch/build; \
+    failed=$(ls "$build_dir"); \
+    partial_fails=""; \
+    for pkg in $failed; do \
+    if opam show -f x-ci-accept-failures: "$pkg" | grep -qF "\"debian-12\""; then \
+    echo "A package failed and has been disabled for CI using the 'x-ci-accept-failures' field."; \
+    fi; \
+    test "$pkg" != 'happy-eyeballs-lwt.0.3.0' && partial_fails="$partial_fails $pkg"; \
+    done; \
+    test "${partial_fails}" != "" && echo "opam-repo-ci detected dependencies failing: ${partial_fails}"; \
+    exit 1
+RUN (opam reinstall --with-test happy-eyeballs-lwt.0.3.0) || true
+RUN opam reinstall --with-test --verbose happy-eyeballs-lwt.0.3.0; \
+    res=$?; \
+    test "$res" != 31 && exit "$res"; \
+    export OPAMCLI=2.0; \
+    build_dir=$(opam var prefix)/.opam-switch/build; \
+    failed=$(ls "$build_dir"); \
+    partial_fails=""; \
+    for pkg in $failed; do \
+    if opam show -f x-ci-accept-failures: "$pkg" | grep -qF "\"debian-12\""; then \
+    echo "A package failed and has been disabled for CI using the 'x-ci-accept-failures' field."; \
+    fi; \
+    test "$pkg" != 'happy-eyeballs-lwt.0.3.0' && partial_fails="$partial_fails $pkg"; \
+    done; \
+    test "${partial_fails}" != "" && echo "opam-repo-ci detected dependencies failing: ${partial_fails}"; \
+    exit 1
+[0m
+END-OF-DOCKERFILE
+docker build -f ../Dockerfile .
+
+2024-05-12 08:11.34: Using cache hint "ocaml/opam:debian-12-ocaml-4.14@sha256:35b1aa76181479f2ba40039ae0c5fa5d94e24300e1eb606117587a8e82e9d89e-ocaml.4.14.2-happy-eyeballs-lwt.0.3.0-87c3caa8e8025fbeb6be3fea49759b482963b0b2"
+2024-05-12 08:11.34: Using OBuilder spec:
+((from ocaml/opam:debian-12-ocaml-4.14@sha256:35b1aa76181479f2ba40039ae0c5fa5d94e24300e1eb606117587a8e82e9d89e)
+ (user (uid 1000) (gid 1000))
+ (workdir /home/opam)
+ (run (shell "sudo ln -f /usr/bin/opam-dev /usr/bin/opam"))
+ (run (network host)
+      (shell "opam init --reinit --config .opamrc-sandbox -ni"))
+ (run (shell "uname -rs && opam exec -- ocaml -version && opam --version"))
+ (env OPAMDOWNLOADJOBS 1)
+ (env OPAMERRLOGLEN 0)
+ (env OPAMSOLVERTIMEOUT 500)
+ (env OPAMPRECISETRACKING 1)
+ (env CI true)
+ (env OPAM_REPO_CI true)
+ (run (shell "rm -rf opam-repository/"))
+ (copy (src .) (dst opam-repository/))
+ (run (shell "opam repository set-url --strict default opam-repository/"))
+ (run (network host)
+      (shell "opam update --depexts || true"))
+ (run (shell "opam pin add -k version -yn ocaml.4.14.2 4.14.2"))
+ (run (cache (opam-archives (target /home/opam/.opam/download-cache)))
+      (network host)
+      (shell  "opam reinstall ocaml.4.14.2;\
+             \n        res=$?;\
+             \n        test \"$res\" != 31 && exit \"$res\";\
+             \n        export OPAMCLI=2.0;\
+             \n        build_dir=$(opam var prefix)/.opam-switch/build;\
+             \n        failed=$(ls \"$build_dir\");\
+             \n        partial_fails=\"\";\
+             \n        for pkg in $failed; do\
+             \n          if opam show -f x-ci-accept-failures: \"$pkg\" | grep -qF \"\\\"debian-12\\\"\"; then\
+             \n            echo \"A package failed and has been disabled for CI using the 'x-ci-accept-failures' field.\";\
+             \n          fi;\
+             \n          test \"$pkg\" != 'ocaml.4.14.2' && partial_fails=\"$partial_fails $pkg\";\
+             \n        done;\
+             \n        test \"${partial_fails}\" != \"\" && echo \"opam-repo-ci detected dependencies failing: ${partial_fails}\";\
+             \n        exit 1"))
+ (run (cache (opam-archives (target /home/opam/.opam/download-cache)))
+      (network host)
+      (shell  "opam reinstall happy-eyeballs-lwt.0.3.0;\
+             \n        res=$?;\
+             \n        test \"$res\" != 31 && exit \"$res\";\
+             \n        export OPAMCLI=2.0;\
+             \n        build_dir=$(opam var prefix)/.opam-switch/build;\
+             \n        failed=$(ls \"$build_dir\");\
+             \n        partial_fails=\"\";\
+             \n        for pkg in $failed; do\
+             \n          if opam show -f x-ci-accept-failures: \"$pkg\" | grep -qF \"\\\"debian-12\\\"\"; then\
+             \n            echo \"A package failed and has been disabled for CI using the 'x-ci-accept-failures' field.\";\
+             \n          fi;\
+             \n          test \"$pkg\" != 'happy-eyeballs-lwt.0.3.0' && partial_fails=\"$partial_fails $pkg\";\
+             \n        done;\
+             \n        test \"${partial_fails}\" != \"\" && echo \"opam-repo-ci detected dependencies failing: ${partial_fails}\";\
+             \n        exit 1"))
+ (run (network host)
+      (shell "(opam reinstall --with-test happy-eyeballs-lwt.0.3.0) || true"))
+ (run (shell  "opam reinstall --with-test --verbose happy-eyeballs-lwt.0.3.0;\
+             \n        res=$?;\
+             \n        test \"$res\" != 31 && exit \"$res\";\
+             \n        export OPAMCLI=2.0;\
+             \n        build_dir=$(opam var prefix)/.opam-switch/build;\
+             \n        failed=$(ls \"$build_dir\");\
+             \n        partial_fails=\"\";\
+             \n        for pkg in $failed; do\
+             \n          if opam show -f x-ci-accept-failures: \"$pkg\" | grep -qF \"\\\"debian-12\\\"\"; then\
+             \n            echo \"A package failed and has been disabled for CI using the 'x-ci-accept-failures' field.\";\
+             \n          fi;\
+             \n          test \"$pkg\" != 'happy-eyeballs-lwt.0.3.0' && partial_fails=\"$partial_fails $pkg\";\
+             \n        done;\
+             \n        test \"${partial_fails}\" != \"\" && echo \"opam-repo-ci detected dependencies failing: ${partial_fails}\";\
+             \n        exit 1"))
+)
+
+2024-05-12 08:11.34: Waiting for resource in pool OCluster
+2024-05-12 17:14.56: Waiting for worker…
+2024-05-12 17:18.15: Got resource from pool OCluster
+Building on asteria.caelum.ci.dev
+All commits already cached
+Updating files:  76% (25884/33674)Updating files:  77% (25929/33674)Updating files:  78% (26266/33674)Updating files:  79% (26603/33674)Updating files:  80% (26940/33674)Updating files:  81% (27276/33674)Updating files:  82% (27613/33674)Updating files:  83% (27950/33674)Updating files:  84% (28287/33674)Updating files:  85% (28623/33674)Updating files:  86% (28960/33674)Updating files:  87% (29297/33674)Updating files:  88% (29634/33674)Updating files:  89% (29970/33674)Updating files:  90% (30307/33674)Updating files:  91% (30644/33674)Updating files:  92% (30981/33674)Updating files:  93% (31317/33674)Updating files:  94% (31654/33674)Updating files:  95% (31991/33674)Updating files:  96% (32328/33674)Updating files:  97% (32664/33674)Updating files:  98% (33001/33674)Updating files:  99% (33338/33674)Updating files: 100% (33674/33674)Updating files: 100% (33674/33674), done.
+HEAD is now at fec8ff50cd Merge pull request #25853 from kit-ty-kate/fix-303
+Merge made by the 'ort' strategy.
+ packages/arch-x86_32/arch-x86_32.1/opam            | 22 ++++++
+ packages/arch-x86_64/arch-x86_64.1/opam            | 27 +++++++
+ packages/conf-c++/conf-c++.1.0/opam                | 10 ++-
+ packages/conf-g++/conf-g++.1.0/opam                | 10 ++-
+ .../conf-mingw-w64-gcc-i686.1/opam                 |  4 ++
+ .../conf-mingw-w64-gcc-x86_64.1/opam               |  4 ++
+ .../conf-mingw-w64-pkgconf-i686.1/opam             |  4 ++
+ .../conf-mingw-w64-pkgconf-x86_64.1/opam           |  4 ++
+ .../conf-mingw-w64-zstd-i686.1/opam                |  2 +
+ .../conf-mingw-w64-zstd-x86_64.1/opam              |  2 +
+ packages/conf-pkg-config/conf-pkg-config.3/opam    |  6 +-
+ packages/conf-zstd/conf-zstd.1.3.8/opam            | 12 +++-
+ packages/host-arch-arm32/host-arch-arm32.1/opam    | 16 +++++
+ packages/host-arch-arm64/host-arch-arm64.1/opam    | 16 +++++
+ packages/host-arch-ppc64/host-arch-ppc64.1/opam    | 17 +++++
+ .../host-arch-riscv64/host-arch-riscv64.1/opam     | 16 +++++
+ packages/host-arch-s390x/host-arch-s390x.1/opam    | 17 +++++
+ .../host-arch-unknown/host-arch-unknown.1/opam     | 16 +++++
+ packages/host-arch-x86_32/host-arch-x86_32.1/opam  | 17 +++++
+ packages/host-arch-x86_64/host-arch-x86_64.1/opam  | 17 +++++
+ .../host-system-mingw/host-system-mingw.1/opam     | 17 +++++
+ packages/host-system-msvc/host-system-msvc.1/opam  | 17 +++++
+ .../host-system-other/host-system-other.1/opam     | 15 ++++
+ packages/msys2-clang32/msys2-clang32.1/opam        | 17 +++++
+ packages/msys2-clang64/msys2-clang64.1/opam        | 17 +++++
+ packages/msys2-clangarm64/msys2-clangarm64.1/opam  | 17 +++++
+ packages/msys2-mingw32/msys2-mingw32.1/opam        | 17 +++++
+ packages/msys2-mingw64/msys2-mingw64.1/opam        | 17 +++++
+ packages/msys2-ucrt64/msys2-ucrt64.1/opam          | 17 +++++
+ packages/msys2/msys2.0.1.0/opam                    | 83 ++++++++++++++++++++++
+ .../ocaml-base-compiler.4.13.0/opam                | 44 ++++++++++++
+ .../ocaml-base-compiler.4.13.1/opam                | 44 ++++++++++++
+ .../ocaml-base-compiler.4.14.0/opam                | 44 ++++++++++++
+ .../ocaml-base-compiler.4.14.1/opam                | 44 ++++++++++++
+ .../ocaml-base-compiler.4.14.2/opam                | 44 ++++++++++++
+ .../ocaml-base-compiler.5.0.0/opam                 | 42 ++++++++++-
+ .../ocaml-base-compiler.5.1.0/opam                 | 40 +++++++++++
+ .../ocaml-base-compiler.5.1.1/opam                 | 40 +++++++++++
+ .../ocaml-base-compiler.5.2.0~alpha1/opam          | 43 ++++++++++-
+ .../ocaml-base-compiler.5.2.0~beta1/opam           | 43 ++++++++++-
+ .../ocaml-base-compiler.5.2.0~beta2/opam           | 43 ++++++++++-
+ .../ocaml-base-compiler.5.2.0~rc1/opam             | 43 ++++++++++-
+ packages/ocaml-beta/ocaml-beta.disabled/opam       |  1 +
+ packages/ocaml-config/ocaml-config.0/opam          |  3 +-
+ packages/ocaml-config/ocaml-config.1/opam          |  3 +-
+ packages/ocaml-config/ocaml-config.2/opam          |  2 +
+ .../ocaml-mingw32-env/ocaml-mingw32-env.1/opam     | 28 ++++++++
+ .../ocaml-mingw64-env/ocaml-mingw64-env.1/opam     | 28 ++++++++
+ packages/ocaml-msvc32-env/ocaml-msvc32-env.1/opam  | 38 ++++++++++
+ packages/ocaml-msvc64-env/ocaml-msvc64-env.1/opam  | 38 ++++++++++
+ .../ocaml-option-32bit/ocaml-option-32bit.1/opam   |  7 ++
+ .../ocaml-option-address-sanitizer.1/opam          |  7 ++
+ packages/ocaml-option-afl/ocaml-option-afl.1/opam  |  7 ++
+ .../ocaml-option-bytecode-only.1/opam              | 15 +++-
+ .../ocaml-option-default-unsafe-string.1/opam      |  7 ++
+ .../ocaml-option-flambda.1/opam                    |  7 ++
+ packages/ocaml-option-fp/ocaml-option-fp.1/opam    |  7 ++
+ .../ocaml-option-leak-sanitizer.1/opam             |  7 ++
+ .../ocaml-option-mingw/ocaml-option-mingw.1/opam   | 19 +++++
+ .../ocaml-option-musl/ocaml-option-musl.1/opam     |  7 ++
+ packages/ocaml-option-nnp/ocaml-option-nnp.1/opam  |  7 ++
+ .../ocaml-option-nnpchecker.1/opam                 | 10 ++-
+ .../ocaml-option-no-compression.1/opam             |  7 ++
+ .../ocaml-option-no-flat-float-array.1/opam        |  7 ++
+ .../ocaml-option-spacetime.1/opam                  |  7 ++
+ .../ocaml-option-static/ocaml-option-static.1/opam |  7 ++
+ .../ocaml-option-tsan/ocaml-option-tsan.1/opam     |  8 +++
+ .../ocaml-options-only-afl.1/opam                  |  8 +++
+ .../ocaml-options-only-flambda-fp.1/opam           |  8 +++
+ .../ocaml-options-only-flambda.1/opam              |  8 +++
+ .../ocaml-options-only-fp.1/opam                   |  8 +++
+ .../ocaml-options-only-nnp.1/opam                  |  8 +++
+ .../ocaml-options-only-nnpchecker.1/opam           |  8 +++
+ .../opam                                           |  8 +++
+ .../ocaml-options-only-no-flat-float-array.1/opam  |  8 +++
+ .../ocaml-options-only-tsan.1/opam                 |  8 +++
+ .../ocaml-options-vanilla.1/opam                   | 16 ++++-
+ packages/ocaml-system/ocaml-system.4.13.0/opam     | 39 +++++++++-
+ packages/ocaml-system/ocaml-system.4.13.1/opam     | 39 +++++++++-
+ packages/ocaml-system/ocaml-system.4.14.0/opam     | 39 +++++++++-
+ packages/ocaml-system/ocaml-system.4.14.1/opam     | 39 +++++++++-
+ packages/ocaml-system/ocaml-system.4.14.2/opam     | 39 +++++++++-
+ packages/ocaml-system/ocaml-system.5.0.0/opam      | 40 ++++++++++-
+ packages/ocaml-system/ocaml-system.5.1.0/opam      | 42 ++++++++++-
+ packages/ocaml-system/ocaml-system.5.1.1/opam      | 42 ++++++++++-
+ .../ocaml-variants.4.13.0+options/opam             | 43 +++++++++++
+ .../ocaml-variants.4.13.1+options/opam             | 43 +++++++++++
+ .../ocaml-variants.4.13.2+trunk/opam               | 44 ++++++++++++
+ .../ocaml-variants.4.14.0+options/opam             | 43 +++++++++++
+ .../ocaml-variants.4.14.1+options/opam             | 43 +++++++++++
+ .../ocaml-variants.4.14.2+options/opam             | 43 +++++++++++
+ .../ocaml-variants.4.14.3+trunk/opam               | 44 ++++++++++++
+ .../ocaml-variants.5.0.0+options/opam              | 46 +++++++++++-
+ .../ocaml-variants/ocaml-variants.5.0.1+trunk/opam | 48 ++++++++++++-
+ .../ocaml-variants.5.1.0+options/opam              | 45 +++++++++++-
+ .../ocaml-variants.5.1.1+effect-syntax/opam        | 46 +++++++++++-
+ .../ocaml-variants.5.1.1+options/opam              | 45 +++++++++++-
+ .../ocaml-variants/ocaml-variants.5.1.2+trunk/opam | 61 +++++++++++-----
+ .../ocaml-variants/ocaml-variants.5.2.0+trunk/opam | 46 +++++++++++-
+ .../ocaml-variants.5.2.0~alpha1+options/opam       | 46 +++++++++++-
+ .../ocaml-variants.5.2.0~beta1+options/opam        | 46 +++++++++++-
+ .../ocaml-variants.5.2.0~beta2+options/opam        | 46 +++++++++++-
+ .../ocaml-variants.5.2.0~rc1+options/opam          | 46 +++++++++++-
+ .../ocaml-variants/ocaml-variants.5.3.0+trunk/opam | 49 ++++++++++++-
+ packages/ocaml/ocaml.4.13.0/opam                   |  3 +
+ packages/ocaml/ocaml.4.13.1/opam                   |  3 +
+ packages/ocaml/ocaml.4.13.2/opam                   |  3 +
+ packages/ocaml/ocaml.4.14.0/opam                   |  3 +
+ packages/ocaml/ocaml.4.14.1/opam                   |  3 +
+ packages/ocaml/ocaml.4.14.2/opam                   |  3 +
+ packages/ocaml/ocaml.4.14.3/opam                   |  3 +
+ packages/ocaml/ocaml.5.0.0/opam                    |  3 +
+ packages/ocaml/ocaml.5.0.1/opam                    |  3 +
+ packages/ocaml/ocaml.5.1.0/opam                    |  3 +
+ packages/ocaml/ocaml.5.1.1/opam                    |  3 +
+ packages/ocaml/ocaml.5.1.2/opam                    |  3 +
+ packages/ocaml/ocaml.5.2.0/opam                    |  3 +
+ packages/ocaml/ocaml.5.3.0/opam                    |  3 +
+ packages/system-mingw/system-mingw.1/opam          | 20 ++++++
+ packages/system-msvc/system-msvc.1/opam            | 20 ++++++
+ 120 files changed, 2573 insertions(+), 60 deletions(-)
+ create mode 100644 packages/arch-x86_32/arch-x86_32.1/opam
+ create mode 100644 packages/arch-x86_64/arch-x86_64.1/opam
+ create mode 100644 packages/host-arch-arm32/host-arch-arm32.1/opam
+ create mode 100644 packages/host-arch-arm64/host-arch-arm64.1/opam
+ create mode 100644 packages/host-arch-ppc64/host-arch-ppc64.1/opam
+ create mode 100644 packages/host-arch-riscv64/host-arch-riscv64.1/opam
+ create mode 100644 packages/host-arch-s390x/host-arch-s390x.1/opam
+ create mode 100644 packages/host-arch-unknown/host-arch-unknown.1/opam
+ create mode 100644 packages/host-arch-x86_32/host-arch-x86_32.1/opam
+ create mode 100644 packages/host-arch-x86_64/host-arch-x86_64.1/opam
+ create mode 100644 packages/host-system-mingw/host-system-mingw.1/opam
+ create mode 100644 packages/host-system-msvc/host-system-msvc.1/opam
+ create mode 100644 packages/host-system-other/host-system-other.1/opam
+ create mode 100644 packages/msys2-clang32/msys2-clang32.1/opam
+ create mode 100644 packages/msys2-clang64/msys2-clang64.1/opam
+ create mode 100644 packages/msys2-clangarm64/msys2-clangarm64.1/opam
+ create mode 100644 packages/msys2-mingw32/msys2-mingw32.1/opam
+ create mode 100644 packages/msys2-mingw64/msys2-mingw64.1/opam
+ create mode 100644 packages/msys2-ucrt64/msys2-ucrt64.1/opam
+ create mode 100644 packages/msys2/msys2.0.1.0/opam
+ create mode 100644 packages/ocaml-mingw32-env/ocaml-mingw32-env.1/opam
+ create mode 100644 packages/ocaml-mingw64-env/ocaml-mingw64-env.1/opam
+ create mode 100644 packages/ocaml-msvc32-env/ocaml-msvc32-env.1/opam
+ create mode 100644 packages/ocaml-msvc64-env/ocaml-msvc64-env.1/opam
+ create mode 100644 packages/ocaml-option-mingw/ocaml-option-mingw.1/opam
+ create mode 100644 packages/system-mingw/system-mingw.1/opam
+ create mode 100644 packages/system-msvc/system-msvc.1/opam
+
+[01;34m(from ocaml/opam:debian-12-ocaml-4.14@sha256:35b1aa76181479f2ba40039ae0c5fa5d94e24300e1eb606117587a8e82e9d89e)[0m
+[01;2m[01;35m2024-05-12 17:19.02 ---> using "6bc7e89b5725106f75c11a8b774d971b425f7dab532e626727166f8fc8501d75" from cache[0m
+
+[01;34m/: (user (uid 1000) (gid 1000))[0m
+
+[01;34m/: (workdir /home/opam)[0m
+
+[01;34m/home/opam: (run (shell "sudo ln -f /usr/bin/opam-dev /usr/bin/opam"))[0m
+[01;2m[01;35m2024-05-12 17:19.02 ---> using "6c46928c87bd33edd5e231c6d2911f55a5eec75b812a3d7fda9fca2b12f57d18" from cache[0m
+
+[01;34m/home/opam: (run (network host)
+                 (shell "opam init --reinit --config .opamrc-sandbox -ni"))[0m
+Configuring from /home/opam/.opamrc-sandbox, then /home/opam/.opamrc, and finally from built-in defaults.
+Checking for available remotes: rsync and local, git.
+  - you won't be able to use mercurial repositories unless you install the hg command on your system.
+  - you won't be able to use darcs repositories unless you install the darcs command on your system.
+
+This development version of opam requires an update to the layout of /home/opam/.opam from version 2.0 to version 2.2~alpha, which can't be reverted.
+You may want to back it up before going further.
+
+Continue? [y/n] y
+Format upgrade done.
+
+<><> Updating repositories ><><><><><><><><><><><><><><><><><><><><><><><><><><>
+[default] synchronised from file:///home/opam/opam-repository
+[01;2m[01;35m2024-05-12 17:19.02 ---> using "3788b182527ec34e6f4ace4f954db383e2985afce7b5a5d65b696ddea02578e3" from cache[0m
+
+[01;34m/home/opam: (run (shell "uname -rs && opam exec -- ocaml -version && opam --version"))[0m
+Linux 5.15.0-106-generic
+The OCaml toplevel, version 4.14.2
+2.2.0~beta3~dev
+[01;2m[01;35m2024-05-12 17:19.02 ---> using "c7bf2e2bd9245a43ecc8d21b4a2e1fa9eed2aa27ec394d7eebda31d38857e6c9" from cache[0m
+
+[01;34m/home/opam: (env OPAMDOWNLOADJOBS 1)[0m
+
+[01;34m/home/opam: (env OPAMERRLOGLEN 0)[0m
+
+[01;34m/home/opam: (env OPAMSOLVERTIMEOUT 500)[0m
+
+[01;34m/home/opam: (env OPAMPRECISETRACKING 1)[0m
+
+[01;34m/home/opam: (env CI true)[0m
+
+[01;34m/home/opam: (env OPAM_REPO_CI true)[0m
+
+[01;34m/home/opam: (run (shell "rm -rf opam-repository/"))[0m
+[01;2m[01;35m2024-05-12 17:19.02 ---> using "112dde4704bddd0267c8982796c8bcbcc4f65cf21c3dfeb42addcfb7cee9ac89" from cache[0m
+
+[01;34m/home/opam: (copy (src .) (dst opam-repository/))[0m
+[01;2m[01;35m2024-05-12 17:19.03 ---> using "81c008595ea254c629714ffb6126a8f2f7a59fbb78992f4096feaaba845847b3" from cache[0m
+
+[01;34m/home/opam: (run (shell "opam repository set-url --strict default opam-repository/"))[0m
+[default] Initialised
+[01;2m[01;35m2024-05-12 17:19.03 ---> using "3ffd0f7fd69ea56041daa09016d5a175eeb07b030f297d6da250f3ef97e5ea51" from cache[0m
+
+[01;34m/home/opam: (run (network host)
+                 (shell "opam update --depexts || true"))[0m
++ /usr/bin/sudo "apt-get" "update"
+- Hit:1 http://deb.debian.org/debian bookworm InRelease
+- Get:2 http://deb.debian.org/debian bookworm-updates InRelease [55.4 kB]
+- Get:3 http://deb.debian.org/debian-security bookworm-security InRelease [48.0 kB]
+- Get:4 http://deb.debian.org/debian bookworm-updates/main amd64 Packages.diff/Index [10.6 kB]
+- Get:5 http://deb.debian.org/debian bookworm-updates/main amd64 Packages T-2024-04-23-2036.10-F-2024-04-23-2036.10.pdiff [1595 B]
+- Get:5 http://deb.debian.org/debian bookworm-updates/main amd64 Packages T-2024-04-23-2036.10-F-2024-04-23-2036.10.pdiff [1595 B]
+- Get:6 http://deb.debian.org/debian-security bookworm-security/main amd64 Packages [155 kB]
+- Fetched 271 kB in 0s (695 kB/s)
+- Reading package lists...
+[01;2m[01;35m2024-05-12 17:19.03 ---> using "83fb76dfeeaa5940be713d917d4bf4baf4c7446d581209f0c1fe4381da1a1e09" from cache[0m
+
+[01;34m/home/opam: (run (shell "opam pin add -k version -yn ocaml.4.14.2 4.14.2"))[0m
+ocaml is now pinned to version 4.14.2
+[01;2m[01;35m2024-05-12 17:19.03 ---> using "479ed28c4c82661e93426e179a3e789f5fbe66ba9c6da30d698d963fe9cae1a0" from cache[0m
+
+[01;34m/home/opam: (run (cache (opam-archives (target /home/opam/.opam/download-cache)))
+                 (network host)
+                 (shell  "opam reinstall ocaml.4.14.2;\
+                        \n        res=$?;\
+                        \n        test \"$res\" != 31 && exit \"$res\";\
+                        \n        export OPAMCLI=2.0;\
+                        \n        build_dir=$(opam var prefix)/.opam-switch/build;\
+                        \n        failed=$(ls \"$build_dir\");\
+                        \n        partial_fails=\"\";\
+                        \n        for pkg in $failed; do\
+                        \n          if opam show -f x-ci-accept-failures: \"$pkg\" | grep -qF \"\\\"debian-12\\\"\"; then\
+                        \n            echo \"A package failed and has been disabled for CI using the 'x-ci-accept-failures' field.\";\
+                        \n          fi;\
+                        \n          test \"$pkg\" != 'ocaml.4.14.2' && partial_fails=\"$partial_fails $pkg\";\
+                        \n        done;\
+                        \n        test \"${partial_fails}\" != \"\" && echo \"opam-repo-ci detected dependencies failing: ${partial_fails}\";\
+                        \n        exit 1"))[0m
+The following actions will be performed:
+=== recompile 4 packages
+  - recompile ocaml               4.14.2 (pinned)
+  - recompile ocaml-base-compiler 4.14.2 (pinned) [upstream or system changes]
+  - recompile ocaml-config        2               [uses ocaml-base-compiler]
+  - recompile opam-depext         1.2.1-1         [uses ocaml]
+=== install 2 packages
+  - install   host-arch-x86_64    1
+  - install   host-system-other   1
+
+<><> Processing actions <><><><><><><><><><><><><><><><><><><><><><><><><><><><>
+-> installed host-arch-x86_64.1
+-> installed host-system-other.1
+-> retrieved ocaml-base-compiler.4.14.2  (cached)
+-> retrieved opam-depext.1.2.1-1  (cached)
+-> removed   opam-depext.1.2.1-1
+-> removed   ocaml.4.14.2
+-> removed   ocaml-config.2
+-> removed   ocaml-base-compiler.4.14.2
+-> installed ocaml-base-compiler.4.14.2
+-> installed ocaml-config.2
+-> installed ocaml.4.14.2
+-> installed opam-depext.1.2.1-1
+Done.
+
+<><> opam-depext.1.2.1-1 installed successfully <><><><><><><><><><><><><><><><>
+=> opam-depext is unnecessary when used with opam >= 2.1. Please use opam install directly instead
+# Run eval $(opam env) to update the current shell environment
+[01;2m[01;35m2024-05-12 17:19.03 ---> using "3c2cf9d09bbd5470bea94671f91f759f981ee632131198f3ee4c6c08039780f7" from cache[0m
+
+[01;34m/home/opam: (run (cache (opam-archives (target /home/opam/.opam/download-cache)))
+                 (network host)
+                 (shell  "opam reinstall happy-eyeballs-lwt.0.3.0;\
+                        \n        res=$?;\
+                        \n        test \"$res\" != 31 && exit \"$res\";\
+                        \n        export OPAMCLI=2.0;\
+                        \n        build_dir=$(opam var prefix)/.opam-switch/build;\
+                        \n        failed=$(ls \"$build_dir\");\
+                        \n        partial_fails=\"\";\
+                        \n        for pkg in $failed; do\
+                        \n          if opam show -f x-ci-accept-failures: \"$pkg\" | grep -qF \"\\\"debian-12\\\"\"; then\
+                        \n            echo \"A package failed and has been disabled for CI using the 'x-ci-accept-failures' field.\";\
+                        \n          fi;\
+                        \n          test \"$pkg\" != 'happy-eyeballs-lwt.0.3.0' && partial_fails=\"$partial_fails $pkg\";\
+                        \n        done;\
+                        \n        test \"${partial_fails}\" != \"\" && echo \"opam-repo-ci detected dependencies failing: ${partial_fails}\";\
+                        \n        exit 1"))[0m
+happy-eyeballs-lwt.0.3.0 is not installed. Install it? [y/n] y
+[ERROR] Sorry, resolution of the request timed out.
+        Try to specify a more precise request, use a different solver, or increase the allowed time by setting OPAMSOLVERTIMEOUT to a bigger value (currently, it is set to 500.0 seconds).
+"/usr/bin/env" "bash" "-c" "opam reinstall happy-eyeballs-lwt.0.3.0;
+        res=$?;
+        test "$res" != 31 && exit "$res";
+        export OPAMCLI=2.0;
+        build_dir=$(opam var prefix)/.opam-switch/build;
+        failed=$(ls "$build_dir");
+        partial_fails="";
+        for pkg in $failed; do
+          if opam show -f x-ci-accept-failures: "$pkg" | grep -qF "\"debian-12\""; then
+            echo "A package failed and has been disabled for CI using the 'x-ci-accept-failures' field.";
+          fi;
+          test "$pkg" != 'happy-eyeballs-lwt.0.3.0' && partial_fails="$partial_fails $pkg";
+        done;
+        test "${partial_fails}" != "" && echo "opam-repo-ci detected dependencies failing: ${partial_fails}";
+        exit 1" failed with exit status 60
+2024-05-12 17:27.51: Job failed: Failed: Build failed
+2024-05-12 17:27.51: Log analysis:
+2024-05-12 17:27.51: >>> 
+[ERROR] Sorry, resolution of the request timed out.
+ (score = 20)
+2024-05-12 17:27.51: Sorry, resolution of the request timed out.

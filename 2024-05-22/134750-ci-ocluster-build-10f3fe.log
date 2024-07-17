@@ -1,0 +1,461 @@
+2024-05-22 13:47.50: New job: test git-kv.0.0.5, using opam dev
+                              from https://github.com/ocaml/opam-repository.git#refs/pull/25894/head (777a342f85004b1ec44804b28181c37f4bf6dcfe)
+                              on macos-homebrew-ocaml-5.2/arm64
+
+To reproduce locally:
+
+cd $(mktemp -d)
+git clone --recursive "https://github.com/ocaml/opam-repository.git" && cd "opam-repository" && git fetch origin "refs/pull/25894/head" && git reset --hard 777a342f
+git fetch origin master
+git merge --no-edit 3505472c3fc3f0d0d3c69dc4ec5fcc252487070e
+cat > ../Dockerfile <<'END-OF-DOCKERFILE'
+[34mFROM macos-homebrew-ocaml-5.2
+USER 1000:1000
+RUN ln -f ~/local/bin/opam-dev ~/local/bin/opam
+RUN opam init --reinit -ni
+RUN uname -rs && opam exec -- ocaml -version && opam --version
+ENV OPAMDOWNLOADJOBS="1"
+ENV OPAMERRLOGLEN="0"
+ENV OPAMSOLVERTIMEOUT="500"
+ENV OPAMPRECISETRACKING="1"
+ENV CI="true"
+ENV OPAM_REPO_CI="true"
+RUN rm -rf opam-repository/
+COPY --chown=1000:1000 . opam-repository/
+RUN opam repository set-url -k local --strict default opam-repository/
+RUN opam update --depexts || true
+RUN opam pin add -k version -yn git-kv.0.0.5 0.0.5
+RUN opam reinstall git-kv.0.0.5; \
+    res=$?; \
+    test "$res" != 31 && exit "$res"; \
+    export OPAMCLI=2.0; \
+    build_dir=$(opam var prefix)/.opam-switch/build; \
+    failed=$(ls "$build_dir"); \
+    partial_fails=""; \
+    for pkg in $failed; do \
+    if opam show -f x-ci-accept-failures: "$pkg" | grep -qF "\"macos-homebrew\""; then \
+    echo "A package failed and has been disabled for CI using the 'x-ci-accept-failures' field."; \
+    fi; \
+    test "$pkg" != 'git-kv.0.0.5' && partial_fails="$partial_fails $pkg"; \
+    done; \
+    test "${partial_fails}" != "" && echo "opam-repo-ci detected dependencies failing: ${partial_fails}"; \
+    exit 1
+RUN (opam reinstall --with-test git-kv.0.0.5) || true
+RUN opam reinstall --with-test --verbose git-kv.0.0.5; \
+    res=$?; \
+    test "$res" != 31 && exit "$res"; \
+    export OPAMCLI=2.0; \
+    build_dir=$(opam var prefix)/.opam-switch/build; \
+    failed=$(ls "$build_dir"); \
+    partial_fails=""; \
+    for pkg in $failed; do \
+    if opam show -f x-ci-accept-failures: "$pkg" | grep -qF "\"macos-homebrew\""; then \
+    echo "A package failed and has been disabled for CI using the 'x-ci-accept-failures' field."; \
+    fi; \
+    test "$pkg" != 'git-kv.0.0.5' && partial_fails="$partial_fails $pkg"; \
+    done; \
+    test "${partial_fails}" != "" && echo "opam-repo-ci detected dependencies failing: ${partial_fails}"; \
+    exit 1
+[0m
+END-OF-DOCKERFILE
+docker build -f ../Dockerfile .
+
+2024-05-22 13:47.50: Using cache hint "macos-homebrew-ocaml-5.2-git-kv.0.0.5-777a342f85004b1ec44804b28181c37f4bf6dcfe"
+2024-05-22 13:47.50: Using OBuilder spec:
+((from macos-homebrew-ocaml-5.2)
+ (user (uid 1000) (gid 1000))
+ (run (shell "ln -f ~/local/bin/opam-dev ~/local/bin/opam"))
+ (run (network host)
+      (shell "opam init --reinit -ni"))
+ (run (shell "uname -rs && opam exec -- ocaml -version && opam --version"))
+ (env OPAMDOWNLOADJOBS 1)
+ (env OPAMERRLOGLEN 0)
+ (env OPAMSOLVERTIMEOUT 500)
+ (env OPAMPRECISETRACKING 1)
+ (env CI true)
+ (env OPAM_REPO_CI true)
+ (run (shell "rm -rf opam-repository/"))
+ (copy (src .) (dst opam-repository/))
+ (run (shell "opam repository set-url -k local --strict default opam-repository/"))
+ (run (network host)
+      (shell "opam update --depexts || true"))
+ (run (shell "opam pin add -k version -yn git-kv.0.0.5 0.0.5"))
+ (run (cache (opam-archives (target /Users/mac1000/.opam/download-cache)) (homebrew (target /Users/mac1000/Library/Caches/Homebrew)))
+      (network host)
+      (shell  "opam reinstall git-kv.0.0.5;\
+             \n        res=$?;\
+             \n        test \"$res\" != 31 && exit \"$res\";\
+             \n        export OPAMCLI=2.0;\
+             \n        build_dir=$(opam var prefix)/.opam-switch/build;\
+             \n        failed=$(ls \"$build_dir\");\
+             \n        partial_fails=\"\";\
+             \n        for pkg in $failed; do\
+             \n          if opam show -f x-ci-accept-failures: \"$pkg\" | grep -qF \"\\\"macos-homebrew\\\"\"; then\
+             \n            echo \"A package failed and has been disabled for CI using the 'x-ci-accept-failures' field.\";\
+             \n          fi;\
+             \n          test \"$pkg\" != 'git-kv.0.0.5' && partial_fails=\"$partial_fails $pkg\";\
+             \n        done;\
+             \n        test \"${partial_fails}\" != \"\" && echo \"opam-repo-ci detected dependencies failing: ${partial_fails}\";\
+             \n        exit 1"))
+ (run (network host)
+      (shell "(opam reinstall --with-test git-kv.0.0.5) || true"))
+ (run (shell  "opam reinstall --with-test --verbose git-kv.0.0.5;\
+             \n        res=$?;\
+             \n        test \"$res\" != 31 && exit \"$res\";\
+             \n        export OPAMCLI=2.0;\
+             \n        build_dir=$(opam var prefix)/.opam-switch/build;\
+             \n        failed=$(ls \"$build_dir\");\
+             \n        partial_fails=\"\";\
+             \n        for pkg in $failed; do\
+             \n          if opam show -f x-ci-accept-failures: \"$pkg\" | grep -qF \"\\\"macos-homebrew\\\"\"; then\
+             \n            echo \"A package failed and has been disabled for CI using the 'x-ci-accept-failures' field.\";\
+             \n          fi;\
+             \n          test \"$pkg\" != 'git-kv.0.0.5' && partial_fails=\"$partial_fails $pkg\";\
+             \n        done;\
+             \n        test \"${partial_fails}\" != \"\" && echo \"opam-repo-ci detected dependencies failing: ${partial_fails}\";\
+             \n        exit 1"))
+)
+
+2024-05-22 13:47.50: Waiting for resource in pool OCluster
+2024-05-22 13:47.50: Waiting for worker…
+2024-05-22 13:47.50: Got resource from pool OCluster
+Building on m1-worker-04
+Updating files:  38% (13027/33710)Updating files:  39% (13147/33710)Updating files:  40% (13484/33710)Updating files:  41% (13822/33710)Updating files:  42% (14159/33710)Updating files:  43% (14496/33710)Updating files:  44% (14833/33710)Updating files:  45% (15170/33710)Updating files:  46% (15507/33710)Updating files:  47% (15844/33710)Updating files:  48% (16181/33710)Updating files:  49% (16518/33710)Updating files:  50% (16855/33710)Updating files:  51% (17193/33710)Updating files:  52% (17530/33710)Updating files:  53% (17867/33710)Updating files:  54% (18204/33710)Updating files:  55% (18541/33710)Updating files:  56% (18878/33710)Updating files:  57% (19215/33710)Updating files:  58% (19552/33710)Updating files:  59% (19889/33710)Updating files:  60% (20226/33710)Updating files:  61% (20564/33710)Updating files:  62% (20901/33710)Updating files:  63% (21238/33710)Updating files:  64% (21575/33710)Updating files:  65% (21912/33710)Updating files:  66% (22249/33710)Updating files:  67% (22586/33710)Updating files:  68% (22923/33710)Updating files:  68% (23161/33710)Updating files:  69% (23260/33710)Updating files:  70% (23597/33710)Updating files:  71% (23935/33710)Updating files:  72% (24272/33710)Updating files:  73% (24609/33710)Updating files:  74% (24946/33710)Updating files:  75% (25283/33710)Updating files:  76% (25620/33710)Updating files:  77% (25957/33710)Updating files:  78% (26294/33710)Updating files:  79% (26631/33710)Updating files:  80% (26968/33710)Updating files:  81% (27306/33710)Updating files:  82% (27643/33710)Updating files:  83% (27980/33710)Updating files:  84% (28317/33710)Updating files:  85% (28654/33710)Updating files:  86% (28991/33710)Updating files:  87% (29328/33710)Updating files:  88% (29665/33710)Updating files:  89% (30002/33710)Updating files:  90% (30339/33710)Updating files:  91% (30677/33710)Updating files:  92% (31014/33710)Updating files:  93% (31351/33710)Updating files:  94% (31688/33710)Updating files:  95% (32025/33710)Updating files:  96% (32362/33710)Updating files:  97% (32699/33710)Updating files:  98% (33036/33710)Updating files:  99% (33373/33710)Updating files: 100% (33710/33710)Updating files: 100% (33710/33710), done.
+HEAD is now at 008f4b67f3 tcpip: require older vnetif
+HEAD is now at 3505472c3f Merge pull request #25909 from hannesm/release-mirage-bootvar-v1.0.1
+Merge made by the 'ort' strategy.
+ packages/git-kv/git-kv.0.0.5/opam | 39 +++++++++++++++++++++++++++++++++++++++
+ 1 file changed, 39 insertions(+)
+ create mode 100644 packages/git-kv/git-kv.0.0.5/opam
+
+[01;34m(from macos-homebrew-ocaml-5.2)[0m
+[01;2m[01;35m2024-05-22 13:48.06 ---> using "9b46fe3d2429f2b9195a02468cb57ac45cfa11fb4a87cb32b5e5375232223327" from cache[0m
+
+[01;34m/: (user (uid 1000) (gid 1000))[0m
+
+[01;34m/: (run (shell "ln -f ~/local/bin/opam-dev ~/local/bin/opam"))[0m
+[01;2m[01;35m2024-05-22 13:48.06 ---> using "76494d5748538bbd6acd56b9f4c44f002a942b930047010040ce7bac6fed0faa" from cache[0m
+
+[01;34m/: (run (network host)
+        (shell "opam init --reinit -ni"))[0m
+No configuration file found, using built-in defaults.
+Checking for available remotes: rsync and local, git.
+  - you won't be able to use mercurial repositories unless you install the hg command on your system.
+  - you won't be able to use darcs repositories unless you install the darcs command on your system.
+
+This version of opam requires an update to the layout of /Users/mac1000/.opam from version 2.1 to version 2.2~alpha, which can't be reverted.
+You may want to back it up before going further.
+
+Continue? [y/n] y
+Format upgrade done.
+
+<><> Updating repositories ><><><><><><><><><><><><><><><><><><><><><><><><><><>
+[default] no changes from git+file:///Users/mac1000/opam-repository
+[01;2m[01;35m2024-05-22 13:48.06 ---> using "39674c71ff99accc6151f1e2dba23444b23d47c2e601e49395d207c44e38a3d0" from cache[0m
+
+[01;34m/: (run (shell "uname -rs && opam exec -- ocaml -version && opam --version"))[0m
+Darwin 23.4.0
+The OCaml toplevel, version 5.2.0
+2.2.0~beta2
+[01;2m[01;35m2024-05-22 13:48.06 ---> using "8061d430d2970675af509e9fdb286e656be2c73e642bba2a1c66e40d1ca7cc79" from cache[0m
+
+[01;34m/: (env OPAMDOWNLOADJOBS 1)[0m
+
+[01;34m/: (env OPAMERRLOGLEN 0)[0m
+
+[01;34m/: (env OPAMSOLVERTIMEOUT 500)[0m
+
+[01;34m/: (env OPAMPRECISETRACKING 1)[0m
+
+[01;34m/: (env CI true)[0m
+
+[01;34m/: (env OPAM_REPO_CI true)[0m
+
+[01;34m/: (run (shell "rm -rf opam-repository/"))[0m
+[01;2m[01;35m2024-05-22 13:48.06 ---> using "d9984a50b0862c67467c5a94e46d6171aa5d19f5c78e20fe883477adf57fb5a2" from cache[0m
+
+[01;34m/: (copy (src .) (dst opam-repository/))[0m
+[01;2m[01;35m2024-05-22 13:48.16 ---> saved as "d1b9defc8eebb9fd18e8f337ed9de075cae72a8bc21490098e0633119e5df8e2"[0m
+
+[01;34m/: (run (shell "opam repository set-url -k local --strict default opam-repository/"))[0m
+[default] Initialised
+[01;2m[01;35m2024-05-22 13:48.33 ---> saved as "657be3810e5cc966ec9ef8a1375e5d9d9fb7eb231e9ba15bebb8276852eb3731"[0m
+
+[01;34m/: (run (network host)
+        (shell "opam update --depexts || true"))[0m
++ /opt/homebrew/bin/brew "update"
+- ==> Updating Homebrew...
+- ==> Downloading https://ghcr.io/v2/homebrew/portable-ruby/portable-ruby/blobs/sha256:86ff822590529e8e9093cdc1702a1d3321678c85347d30f82db4f993db8f9eb1
+- #=#=#                                                                                                                                                    0.2%                                                                           0.5%#                                                                          1.5%#                                                                          2.1%#                                                                          2.5%
+- ##                                                                         2.9%##                                                                         3.3%##                                                                         3.7%##                                                                         4.0%###                                                                        4.4%###                                                                        4.8%###                                                                        5.1%###                                                                        5.4%####                                                                       5.8%####                                                                       6.1%
+- ####                                                                       6.4%####                                                                       6.7%#####                                                                      7.2%#####                                                                      7.5%#####                                                                      7.8%#####                                                                      8.2%######                                                                     8.5%######                                                                     8.9%######                                                                     9.4%#######                                                                   10.0%#######                                                                   10.7%########                                                                  11.3%
+- ########                                                                  12.0%#########                                                                 12.6%#########                                                                 13.4%#########                                                                 13.7%##########                                                                14.0%##########                                                                14.5%##########                                                                14.8%##########                                                                15.1%###########                                                               15.4%###########                                                               15.8%###########                                                               16.2%
+- ###########                                                               16.5%############                                                              17.0%############                                                              17.3%############                                                              17.6%############                                                              17.9%#############                                                             18.3%#############                                                             18.7%#############                                                             19.0%#############                                                             19.4%##############                                                            19.7%##############                                                            20.0%
+- ##############                                                            20.4%##############                                                            20.8%###############                                                           21.1%###############                                                           21.4%###############                                                           21.8%###############                                                           22.1%################                                                          22.5%################                                                          22.8%################                                                          23.2%################                                                          23.6%#################                                                         23.9%
+- #################                                                         24.3%#################                                                         24.6%#################                                                         24.9%##################                                                        25.3%##################                                                        25.7%##################                                                        26.0%##################                                                        26.3%###################                                                       26.8%###################                                                       27.1%###################                                                       27.4%####################                                                      27.8%
+- ####################                                                      28.2%####################                                                      28.5%####################                                                      28.8%####################                                                      29.1%#####################                                                     29.5%#####################                                                     29.9%#####################                                                     30.3%######################                                                    30.7%######################                                                    31.0%######################                                                    31.3%
+- ######################                                                    31.6%#######################                                                   32.1%#######################                                                   32.4%#######################                                                   32.7%#######################                                                   33.1%########################                                                  33.4%########################                                                  33.7%########################                                                  34.1%########################                                                  34.5%#########################                                                 34.8%#########################                                                 35.1%
+- #########################                                                 35.5%#########################                                                 35.8%##########################                                                36.2%##########################                                                36.5%##########################                                                36.9%##########################                                                37.2%###########################                                               37.5%###########################                                               37.8%###########################                                               38.3%###########################                                               38.6%############################                                              38.9%
+- ############################                                              39.3%############################                                              39.6%############################                                              39.9%#############################                                             40.3%#############################                                             40.7%#############################                                             41.0%#############################                                             41.3%##############################                                            41.8%##############################                                            42.1%##############################                                            42.4%##############################                                            42.9%
+- ###############################                                           43.2%###############################                                           43.5%###############################                                           43.8%###############################                                           44.2%################################                                          44.5%################################                                          44.9%################################                                          45.2%################################                                          45.6%#################################                                         45.9%#################################                                         46.2%#################################                                         46.7%
+- #################################                                         47.0%##################################                                        47.3%##################################                                        47.6%##################################                                        48.0%##################################                                        48.3%###################################                                       48.7%###################################                                       49.0%###################################                                       49.4%###################################                                       49.7%####################################                                      50.0%####################################                                      50.5%
+- ####################################                                      50.8%####################################                                      51.1%#####################################                                     51.4%#####################################                                     51.8%#####################################                                     52.1%#####################################                                     52.5%######################################                                    52.9%######################################                                    53.3%######################################                                    53.6%######################################                                    54.1%#######################################                                   54.4%
+- #######################################                                   54.7%#######################################                                   55.0%#######################################                                   55.5%########################################                                  55.8%########################################                                  56.1%########################################                                  56.4%########################################                                  56.8%#########################################                                 57.1%#########################################                                 57.5%#########################################                                 57.9%#########################################                                 58.2%
+- ##########################################                                58.5%##########################################                                58.8%##########################################                                59.3%##########################################                                59.6%###########################################                               59.9%###########################################                               60.3%###########################################                               60.6%###########################################                               61.0%############################################                              61.3%############################################                              61.7%############################################                              62.0%
+- ############################################                              62.3%#############################################                             62.6%#############################################                             63.1%#############################################                             63.4%#############################################                             63.7%##############################################                            64.1%##############################################                            64.4%##############################################                            64.7%##############################################                            65.1%###############################################                           65.5%
+- ###############################################                           65.8%###############################################                           66.1%###############################################                           66.6%################################################                          66.9%################################################                          67.2%################################################                          67.6%################################################                          68.0%#################################################                         68.3%#################################################                         68.6%#################################################                         69.1%#################################################                         69.4%
+- ##################################################                        69.7%##################################################                        70.0%##################################################                        70.4%##################################################                        70.7%###################################################                       71.1%###################################################                       71.5%###################################################                       71.8%###################################################                       72.1%####################################################                      72.4%####################################################                      72.9%####################################################                      73.2%
+- ####################################################                      73.5%#####################################################                     73.8%#####################################################                     74.2%#####################################################                     74.5%#####################################################                     74.9%######################################################                    75.3%######################################################                    75.6%######################################################                    75.9%######################################################                    76.2%#######################################################                   76.6%#######################################################                   77.0%
+- #######################################################                   77.3%#######################################################                   77.7%########################################################                  78.0%########################################################                  78.4%########################################################                  78.7%########################################################                  79.1%#########################################################                 79.5%#########################################################                 79.8%#########################################################                 80.2%##########################################################                80.6%##########################################################                80.9%
+- ##########################################################                81.2%##########################################################                81.6%##########################################################                81.9%###########################################################               82.3%###########################################################               82.7%###########################################################               83.1%############################################################              83.4%############################################################              83.9%############################################################              84.2%############################################################              84.5%
+- #############################################################             84.9%#############################################################             85.3%#############################################################             85.6%#############################################################             85.9%##############################################################            86.2%##############################################################            86.6%##############################################################            87.0%##############################################################            87.3%###############################################################           87.7%###############################################################           88.0%###############################################################           88.3%
+- ###############################################################           88.6%################################################################          89.1%################################################################          89.4%################################################################          89.7%################################################################          90.1%#################################################################         90.5%#################################################################         90.8%#################################################################         91.1%#################################################################         91.5%##################################################################        91.9%##################################################################        92.2%
+- ##################################################################        92.6%##################################################################        92.9%###################################################################       93.2%###################################################################       93.5%###################################################################       94.0%###################################################################       94.3%####################################################################      94.6%####################################################################      95.1%####################################################################      95.4%####################################################################      95.7%#####################################################################     96.0%
+- #####################################################################     96.4%#####################################################################     96.7%#####################################################################     97.1%######################################################################    97.4%######################################################################    97.8%######################################################################    98.1%######################################################################    98.4%#######################################################################   98.9%#######################################################################   99.2%#######################################################################   99.5%
+- #######################################################################   99.8%######################################################################## 100.0%
+- ==> Pouring portable-ruby-3.3.1.arm64_big_sur.bottle.tar.gz
+- ==> Homebrew collects anonymous analytics.
+- Read the analytics documentation (and how to opt-out) here:
+-   https://docs.brew.sh/Analytics
+- No analytics have been recorded yet (nor will be during this `brew` run).
+- 
+- ==> Homebrew is run entirely by unpaid volunteers. Please consider donating:
+-   https://github.com/Homebrew/brew#donations
+- 
+- Already up-to-date.
+[01;2m[01;35m2024-05-22 13:49.17 ---> saved as "57a9bab3238e6de60f5b5fe9efb0f55bef1e6d7116310c896efd25b0eaea1857"[0m
+
+[01;34m/: (run (shell "opam pin add -k version -yn git-kv.0.0.5 0.0.5"))[0m
+git-kv is now pinned to version 0.0.5
+[01;2m[01;35m2024-05-22 13:49.19 ---> saved as "30308f716ecefac07d79fdce5a8c2d6e3ec140f57ad06d2a74fee5ce405c85a3"[0m
+
+[01;34m/: (run (cache (opam-archives (target /Users/mac1000/.opam/download-cache)) (homebrew (target /Users/mac1000/Library/Caches/Homebrew)))
+        (network host)
+        (shell  "opam reinstall git-kv.0.0.5;\
+               \n        res=$?;\
+               \n        test \"$res\" != 31 && exit \"$res\";\
+               \n        export OPAMCLI=2.0;\
+               \n        build_dir=$(opam var prefix)/.opam-switch/build;\
+               \n        failed=$(ls \"$build_dir\");\
+               \n        partial_fails=\"\";\
+               \n        for pkg in $failed; do\
+               \n          if opam show -f x-ci-accept-failures: \"$pkg\" | grep -qF \"\\\"macos-homebrew\\\"\"; then\
+               \n            echo \"A package failed and has been disabled for CI using the 'x-ci-accept-failures' field.\";\
+               \n          fi;\
+               \n          test \"$pkg\" != 'git-kv.0.0.5' && partial_fails=\"$partial_fails $pkg\";\
+               \n        done;\
+               \n        test \"${partial_fails}\" != \"\" && echo \"opam-repo-ci detected dependencies failing: ${partial_fails}\";\
+               \n        exit 1"))[0m
+git-kv.0.0.5 is not installed. Install it? [y/n] y
+The following actions will be performed:
+=== install 54 packages
+  - install angstrom           0.16.0         [required by git]
+  - install astring            0.8.5          [required by git]
+  - install base-bytes         base           [required by ocplib-endian]
+  - install base64             3.5.1          [required by git]
+  - install bigstringaf        0.9.1          [required by carton-lwt, carton, git]
+  - install bos                0.2.1          [required by carton]
+  - install carton             0.7.1          [required by git-kv]
+  - install carton-git         0.7.1          [required by git]
+  - install carton-lwt         0.7.1          [required by git-kv]
+  - install checkseum          0.5.2          [required by carton, git]
+  - install cmdliner           1.2.0          [required by carton]
+  - install cppo               1.6.9          [required by lwt]
+  - install csexp              1.5.2          [required by dune-configurator]
+  - install cstruct            6.2.0          [required by carton, git]
+  - install decompress         1.5.3          [required by carton-lwt, carton, git]
+  - install digestif           1.2.0          [required by carton, git]
+  - install domain-name        0.4.0          [required by git]
+  - install duff               0.5            [required by carton]
+  - install dune               3.15.2         [required by git-kv]
+  - install dune-configurator  3.15.2         [required by checkseum, bigstringaf, hxd]
+  - install emile              1.1            [required by git]
+  - install encore             0.8            [required by git]
+  - install eqaf               0.9            [required by digestif]
+  - install fmt                0.9.0          [required by git-kv]
+  - install fpath              0.7.3          [required by carton, git]
+  - install git                3.15.0         [required by git-kv]
+  - install git-kv             0.0.5 (pinned)
+  - install hxd                0.3.2          [required by carton, git]
+  - install ipaddr             5.5.0          [required by git]
+  - install ke                 0.6            [required by carton, git]
+  - install logs               0.7.0          [required by carton, git]
+  - install lwt                5.7.0          [required by git, carton-lwt, mirage-kv]
+  - install macaddr            5.5.0          [required by ipaddr]
+  - install mimic              0.0.7          [required by git]
+  - install mirage-clock       4.2.0          [required by git-kv]
+  - install mirage-flow        4.0.2          [required by git]
+  - install mirage-kv          6.1.1          [required by git-kv]
+  - install ocaml-syntax-shims 1.0.0          [required by angstrom]
+  - install ocamlbuild         0.14.3         [required by bos, ptime]
+  - install ocamlfind          1.9.6          [required by bos, ptime]
+  - install ocamlgraph         2.1.0          [required by git]
+  - install ocplib-endian      1.2            [required by lwt]
+  - install optint             0.3.0          [required by git, carton, carton-lwt, mirage-kv]
+  - install pecu               0.7            [required by emile]
+  - install psq                0.2.1          [required by carton, git]
+  - install ptime              1.1.0          [required by git-kv]
+  - install result             1.5            [required by carton, git]
+  - install rresult            0.7.0          [required by carton, git]
+  - install seq                base           [required by psq]
+  - install stdlib-shims       0.3.0          [required by ocamlgraph]
+  - install stringext          1.6.0          [required by uri]
+  - install topkg              1.0.7          [required by bos, ptime]
+  - install uri                4.4.0          [required by git]
+  - install uutf               1.0.3          [required by emile]
+
+<><> Processing actions <><><><><><><><><><><><><><><><><><><><><><><><><><><><>
+-> retrieved angstrom.0.16.0  (cached)
+-> retrieved astring.0.8.5  (cached)
+-> retrieved base64.3.5.1  (cached)
+-> retrieved bigstringaf.0.9.1  (cached)
+-> retrieved bos.0.2.1  (cached)
+-> retrieved carton.0.7.1, carton-git.0.7.1, carton-lwt.0.7.1  (cached)
+-> retrieved checkseum.0.5.2  (cached)
+-> retrieved cmdliner.1.2.0  (cached)
+-> retrieved cppo.1.6.9  (cached)
+-> retrieved csexp.1.5.2  (cached)
+-> retrieved cstruct.6.2.0  (cached)
+-> retrieved decompress.1.5.3  (cached)
+-> retrieved digestif.1.2.0  (cached)
+-> retrieved domain-name.0.4.0  (cached)
+-> retrieved duff.0.5  (cached)
+-> retrieved dune.3.15.2, dune-configurator.3.15.2  (cached)
+-> retrieved emile.1.1  (cached)
+-> retrieved encore.0.8  (cached)
+-> retrieved eqaf.0.9  (cached)
+-> retrieved fmt.0.9.0  (cached)
+-> retrieved fpath.0.7.3  (cached)
+-> installed cmdliner.1.2.0
+-> retrieved git.3.15.0  (cached)
+-> retrieved git-kv.0.0.5  (https://github.com/robur-coop/git-kv/releases/download/v0.0.5/git-kv-0.0.5.tbz)
+-> retrieved hxd.0.3.2  (cached)
+-> retrieved ipaddr.5.5.0, macaddr.5.5.0  (cached)
+-> retrieved ke.0.6  (cached)
+-> retrieved logs.0.7.0  (cached)
+-> retrieved lwt.5.7.0  (cached)
+-> retrieved mimic.0.0.7  (cached)
+-> retrieved mirage-clock.4.2.0  (cached)
+-> retrieved mirage-flow.4.0.2  (cached)
+-> retrieved mirage-kv.6.1.1  (cached)
+-> retrieved ocaml-syntax-shims.1.0.0  (cached)
+-> retrieved ocamlbuild.0.14.3  (cached)
+-> retrieved ocamlfind.1.9.6  (cached)
+-> retrieved ocamlgraph.2.1.0  (cached)
+-> retrieved ocplib-endian.1.2  (cached)
+-> retrieved optint.0.3.0  (cached)
+-> retrieved pecu.0.7  (cached)
+-> retrieved psq.0.2.1  (cached)
+-> retrieved ptime.1.1.0  (cached)
+-> retrieved result.1.5  (cached)
+-> retrieved rresult.0.7.0  (cached)
+-> installed seq.base
+-> retrieved stdlib-shims.0.3.0  (cached)
+-> retrieved stringext.1.6.0  (cached)
+-> retrieved topkg.1.0.7  (cached)
+-> retrieved uri.4.4.0  (cached)
+-> retrieved uutf.1.0.3  (cached)
+-> installed ocamlfind.1.9.6
+-> installed base-bytes.base
+-> installed ocamlbuild.0.14.3
+-> installed topkg.1.0.7
+-> installed rresult.0.7.0
+-> installed uutf.1.0.3
+-> installed ptime.1.1.0
+-> installed fmt.0.9.0
+-> installed astring.0.8.5
+-> installed fpath.0.7.3
+-> installed dune.3.15.2
+-> installed csexp.1.5.2
+-> installed duff.0.5
+-> installed macaddr.5.5.0
+-> installed ke.0.6
+-> installed domain-name.0.4.0
+-> installed cstruct.6.2.0
+-> installed cppo.1.6.9
+-> installed base64.3.5.1
+-> installed mirage-clock.4.2.0
+-> installed optint.0.3.0
+-> installed ocplib-endian.1.2
+-> installed pecu.0.7
+-> installed ocaml-syntax-shims.1.0.0
+-> installed eqaf.0.9
+-> installed ipaddr.5.5.0
+-> installed psq.0.2.1
+-> installed stdlib-shims.0.3.0
+-> installed stringext.1.6.0
+-> installed result.1.5
+-> installed dune-configurator.3.15.2
+-> installed bigstringaf.0.9.1
+-> installed checkseum.0.5.2
+-> installed digestif.1.2.0
+-> installed angstrom.0.16.0
+-> installed encore.0.8
+-> installed emile.1.1
+-> installed ocamlgraph.2.1.0
+-> installed decompress.1.5.3
+-> installed uri.4.4.0
+-> installed lwt.5.7.0
+-> installed mirage-kv.6.1.1
+-> installed mirage-flow.4.0.2
+-> installed hxd.0.3.2
+-> installed logs.0.7.0
+-> installed mimic.0.0.7
+-> installed bos.0.2.1
+-> installed carton.0.7.1
+-> installed carton-lwt.0.7.1
+-> installed carton-git.0.7.1
+-> installed git.3.15.0
+-> installed git-kv.0.0.5
+Done.
+# Run eval $(opam env) to update the current shell environment
+[01;2m[01;35m2024-05-22 13:50.15 ---> saved as "fab445e2c271f623f34e97a501da650f4a102aae088e3bc7d998f6e06e26771f"[0m
+
+[01;34m/: (run (network host)
+        (shell "(opam reinstall --with-test git-kv.0.0.5) || true"))[0m
+[ERROR] Sorry, resolution of the request timed out.
+        Try to specify a more precise request, use a different solver, or increase the allowed time by setting OPAMSOLVERTIMEOUT to a bigger value (currently, it is set to 500.0 seconds).
+[01;2m[01;35m2024-05-22 13:58.40 ---> saved as "eea9b347f86089dfb22f870c61689e83651167f9aa7daa0b0519af0d17e745ef"[0m
+
+[01;34m/: (run (shell  "opam reinstall --with-test --verbose git-kv.0.0.5;\
+               \n        res=$?;\
+               \n        test \"$res\" != 31 && exit \"$res\";\
+               \n        export OPAMCLI=2.0;\
+               \n        build_dir=$(opam var prefix)/.opam-switch/build;\
+               \n        failed=$(ls \"$build_dir\");\
+               \n        partial_fails=\"\";\
+               \n        for pkg in $failed; do\
+               \n          if opam show -f x-ci-accept-failures: \"$pkg\" | grep -qF \"\\\"macos-homebrew\\\"\"; then\
+               \n            echo \"A package failed and has been disabled for CI using the 'x-ci-accept-failures' field.\";\
+               \n          fi;\
+               \n          test \"$pkg\" != 'git-kv.0.0.5' && partial_fails=\"$partial_fails $pkg\";\
+               \n        done;\
+               \n        test \"${partial_fails}\" != \"\" && echo \"opam-repo-ci detected dependencies failing: ${partial_fails}\";\
+               \n        exit 1"))[0m
+[ERROR] Sorry, resolution of the request timed out.
+        Try to specify a more precise request, use a different solver, or increase the allowed time by setting OPAMSOLVERTIMEOUT to a bigger value (currently, it is set to 500.0 seconds).
+'opam reinstall --with-test --verbose git-kv.0.0.5' failed.
+"/usr/bin/env" "bash" "-c" "opam reinstall --with-test --verbose git-kv.0.0.5;
+        res=$?;
+        test "$res" != 31 && exit "$res";
+        export OPAMCLI=2.0;
+        build_dir=$(opam var prefix)/.opam-switch/build;
+        failed=$(ls "$build_dir");
+        partial_fails="";
+        for pkg in $failed; do
+          if opam show -f x-ci-accept-failures: "$pkg" | grep -qF "\"macos-homebrew\""; then
+            echo "A package failed and has been disabled for CI using the 'x-ci-accept-failures' field.";
+          fi;
+          test "$pkg" != 'git-kv.0.0.5' && partial_fails="$partial_fails $pkg";
+        done;
+        test "${partial_fails}" != "" && echo "opam-repo-ci detected dependencies failing: ${partial_fails}";
+        exit 1" failed with exit status 60
+2024-05-22 14:07.15: Job failed: Failed: Build failed
+2024-05-22 14:07.15: Log analysis:
+2024-05-22 14:07.15: >>> 
+[ERROR] Sorry, resolution of the request timed out.
+ (score = 20)
+2024-05-22 14:07.15: >>> 
+[ERROR] Sorry, resolution of the request timed out.
+ (score = 20)
+2024-05-22 14:07.15: Sorry, resolution of the request timed out.

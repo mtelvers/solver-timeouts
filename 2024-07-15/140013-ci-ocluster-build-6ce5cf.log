@@ -1,0 +1,343 @@
+2024-07-15 14:00.13: New job: test salsa20.1.1.0, using opam dev
+                              from https://github.com/ocaml/opam-repository.git#refs/pull/26244/head (0bf26dfc2e6b8fc4d6a515b333504c3f5ce17d4e)
+                              on debian-12-ocaml-4.08/amd64
+
+To reproduce locally:
+
+cd $(mktemp -d)
+git clone --recursive "https://github.com/ocaml/opam-repository.git" && cd "opam-repository" && git fetch origin "refs/pull/26244/head" && git reset --hard 0bf26dfc
+git fetch origin master
+git merge --no-edit 0f5da2ecbbc1a96666db1facfb27ad5202c1ae9f
+cat > ../Dockerfile <<'END-OF-DOCKERFILE'
+[34mFROM ocaml/opam:debian-12-ocaml-4.08@sha256:bc46189135330ae4b934dd8593a72b65458c13524222668cbb2dfb98f47fed80
+USER 1000:1000
+WORKDIR /home/opam
+RUN sudo ln -f /usr/bin/opam-dev /usr/bin/opam
+RUN opam init --reinit -ni
+RUN uname -rs && opam exec -- ocaml -version && opam --version
+ENV OPAMDOWNLOADJOBS="1"
+ENV OPAMERRLOGLEN="0"
+ENV OPAMSOLVERTIMEOUT="500"
+ENV OPAMPRECISETRACKING="1"
+ENV CI="true"
+ENV OPAM_REPO_CI="true"
+RUN rm -rf opam-repository/
+COPY --chown=1000:1000 . opam-repository/
+RUN opam repository set-url --strict default opam-repository/
+RUN opam update --depexts || true
+RUN opam pin add -k version -yn salsa20.1.1.0 1.1.0
+RUN opam reinstall salsa20.1.1.0; \
+    res=$?; \
+    test "$res" != 31 && exit "$res"; \
+    export OPAMCLI=2.0; \
+    build_dir=$(opam var prefix)/.opam-switch/build; \
+    failed=$(ls "$build_dir"); \
+    partial_fails=""; \
+    for pkg in $failed; do \
+    if opam show -f x-ci-accept-failures: "$pkg" | grep -qF "\"debian-12\""; then \
+    echo "A package failed and has been disabled for CI using the 'x-ci-accept-failures' field."; \
+    fi; \
+    test "$pkg" != 'salsa20.1.1.0' && partial_fails="$partial_fails $pkg"; \
+    done; \
+    test "${partial_fails}" != "" && echo "opam-repo-ci detected dependencies failing: ${partial_fails}"; \
+    exit 1
+RUN (opam reinstall --with-test salsa20.1.1.0) || true
+RUN opam reinstall --with-test --verbose salsa20.1.1.0; \
+    res=$?; \
+    test "$res" != 31 && exit "$res"; \
+    export OPAMCLI=2.0; \
+    build_dir=$(opam var prefix)/.opam-switch/build; \
+    failed=$(ls "$build_dir"); \
+    partial_fails=""; \
+    for pkg in $failed; do \
+    if opam show -f x-ci-accept-failures: "$pkg" | grep -qF "\"debian-12\""; then \
+    echo "A package failed and has been disabled for CI using the 'x-ci-accept-failures' field."; \
+    fi; \
+    test "$pkg" != 'salsa20.1.1.0' && partial_fails="$partial_fails $pkg"; \
+    done; \
+    test "${partial_fails}" != "" && echo "opam-repo-ci detected dependencies failing: ${partial_fails}"; \
+    exit 1
+[0m
+END-OF-DOCKERFILE
+docker build -f ../Dockerfile .
+
+2024-07-15 14:00.13: Using cache hint "ocaml/opam:debian-12-ocaml-4.08@sha256:bc46189135330ae4b934dd8593a72b65458c13524222668cbb2dfb98f47fed80-salsa20.1.1.0-0bf26dfc2e6b8fc4d6a515b333504c3f5ce17d4e"
+2024-07-15 14:00.13: Using OBuilder spec:
+((from ocaml/opam:debian-12-ocaml-4.08@sha256:bc46189135330ae4b934dd8593a72b65458c13524222668cbb2dfb98f47fed80)
+ (user (uid 1000) (gid 1000))
+ (workdir /home/opam)
+ (run (shell "sudo ln -f /usr/bin/opam-dev /usr/bin/opam"))
+ (run (network host)
+      (shell "opam init --reinit --config .opamrc-sandbox -ni"))
+ (run (shell "uname -rs && opam exec -- ocaml -version && opam --version"))
+ (env OPAMDOWNLOADJOBS 1)
+ (env OPAMERRLOGLEN 0)
+ (env OPAMSOLVERTIMEOUT 500)
+ (env OPAMPRECISETRACKING 1)
+ (env CI true)
+ (env OPAM_REPO_CI true)
+ (run (shell "rm -rf opam-repository/"))
+ (copy (src .) (dst opam-repository/))
+ (run (shell "opam repository set-url --strict default opam-repository/"))
+ (run (network host)
+      (shell "opam update --depexts || true"))
+ (run (shell "opam pin add -k version -yn salsa20.1.1.0 1.1.0"))
+ (run (cache (opam-archives (target /home/opam/.opam/download-cache)))
+      (network host)
+      (shell  "opam reinstall salsa20.1.1.0;\
+             \n        res=$?;\
+             \n        test \"$res\" != 31 && exit \"$res\";\
+             \n        export OPAMCLI=2.0;\
+             \n        build_dir=$(opam var prefix)/.opam-switch/build;\
+             \n        failed=$(ls \"$build_dir\");\
+             \n        partial_fails=\"\";\
+             \n        for pkg in $failed; do\
+             \n          if opam show -f x-ci-accept-failures: \"$pkg\" | grep -qF \"\\\"debian-12\\\"\"; then\
+             \n            echo \"A package failed and has been disabled for CI using the 'x-ci-accept-failures' field.\";\
+             \n          fi;\
+             \n          test \"$pkg\" != 'salsa20.1.1.0' && partial_fails=\"$partial_fails $pkg\";\
+             \n        done;\
+             \n        test \"${partial_fails}\" != \"\" && echo \"opam-repo-ci detected dependencies failing: ${partial_fails}\";\
+             \n        exit 1"))
+ (run (network host)
+      (shell "(opam reinstall --with-test salsa20.1.1.0) || true"))
+ (run (shell  "opam reinstall --with-test --verbose salsa20.1.1.0;\
+             \n        res=$?;\
+             \n        test \"$res\" != 31 && exit \"$res\";\
+             \n        export OPAMCLI=2.0;\
+             \n        build_dir=$(opam var prefix)/.opam-switch/build;\
+             \n        failed=$(ls \"$build_dir\");\
+             \n        partial_fails=\"\";\
+             \n        for pkg in $failed; do\
+             \n          if opam show -f x-ci-accept-failures: \"$pkg\" | grep -qF \"\\\"debian-12\\\"\"; then\
+             \n            echo \"A package failed and has been disabled for CI using the 'x-ci-accept-failures' field.\";\
+             \n          fi;\
+             \n          test \"$pkg\" != 'salsa20.1.1.0' && partial_fails=\"$partial_fails $pkg\";\
+             \n        done;\
+             \n        test \"${partial_fails}\" != \"\" && echo \"opam-repo-ci detected dependencies failing: ${partial_fails}\";\
+             \n        exit 1"))
+)
+
+2024-07-15 14:00.13: Waiting for resource in pool OCluster
+2024-07-15 14:04.47: Waiting for worker…
+2024-07-15 14:09.44: Got resource from pool OCluster
+Building on x86-bm-c14.sw.ocaml.org
+All commits already cached
+Updating files:  86% (27455/31831)Updating files:  87% (27693/31831)Updating files:  88% (28012/31831)Updating files:  89% (28330/31831)Updating files:  90% (28648/31831)Updating files:  91% (28967/31831)Updating files:  92% (29285/31831)Updating files:  93% (29603/31831)Updating files:  94% (29922/31831)Updating files:  95% (30240/31831)Updating files:  96% (30558/31831)Updating files:  97% (30877/31831)Updating files:  98% (31195/31831)Updating files:  99% (31513/31831)Updating files: 100% (31831/31831)Updating files: 100% (31831/31831), done.
+HEAD is now at 0f5da2ecbb Merge pull request #26243 from mseri/libevent
+Updating 0f5da2ecbb..0bf26dfc2e
+Fast-forward
+ packages/salsa20/salsa20.1.1.0/opam       | 2 +-
+ packages/salsa20/salsa20.1.2.0/opam       | 2 +-
+ packages/scrypt-kdf/scrypt-kdf.0.4.0/opam | 2 +-
+ packages/scrypt-kdf/scrypt-kdf.1.0.0/opam | 2 +-
+ packages/scrypt-kdf/scrypt-kdf.1.1.0/opam | 2 +-
+ packages/scrypt-kdf/scrypt-kdf.1.2.0/opam | 2 +-
+ 6 files changed, 6 insertions(+), 6 deletions(-)
+
+[01;34m(from ocaml/opam:debian-12-ocaml-4.08@sha256:bc46189135330ae4b934dd8593a72b65458c13524222668cbb2dfb98f47fed80)[0m
+[01;2m[01;35m2024-07-15 14:10.22 ---> saved as "e3bc19661a8ca0ed1ca7d447afe303afa7cd21a34965336465259f16d4660584"[0m
+
+[01;34m/: (user (uid 1000) (gid 1000))[0m
+
+[01;34m/: (workdir /home/opam)[0m
+
+[01;34m/home/opam: (run (shell "sudo ln -f /usr/bin/opam-dev /usr/bin/opam"))[0m
+[01;2m[01;35m2024-07-15 14:10.22 ---> saved as "a3613c42818b33f97e6d46a10df35aa4e916bc289ab53e89ec4596d15fb550d5"[0m
+
+[01;34m/home/opam: (run (network host)
+                 (shell "opam init --reinit --config .opamrc-sandbox -ni"))[0m
+Configuring from /home/opam/.opamrc-sandbox, then /home/opam/.opamrc, and finally from built-in defaults.
+Checking for available remotes: rsync and local, git.
+  - you won't be able to use mercurial repositories unless you install the hg command on your system.
+  - you won't be able to use darcs repositories unless you install the darcs command on your system.
+
+This development version of opam requires an update to the layout of /home/opam/.opam from version 2.0 to version 2.2, which can't be reverted.
+You may want to back it up before going further.
+
+Continue? [y/n] y
+Format upgrade done.
+
+<><> Updating repositories ><><><><><><><><><><><><><><><><><><><><><><><><><><>
+[default] synchronised from file:///home/opam/opam-repository
+[01;2m[01;35m2024-07-15 14:11.53 ---> saved as "bd0b6f7083bd83cffd336d36be2b3185dc68af7904e794090bccb9554c774203"[0m
+
+[01;34m/home/opam: (run (shell "uname -rs && opam exec -- ocaml -version && opam --version"))[0m
+Linux 5.15.0-113-generic
+The OCaml toplevel, version 4.08.1
+2.3.0~alpha~dev
+[01;2m[01;35m2024-07-15 14:11.53 ---> saved as "c3c77d3132a8c9ed0dca0fed0b87128e62db1a42940148faef6419f6ebad2819"[0m
+
+[01;34m/home/opam: (env OPAMDOWNLOADJOBS 1)[0m
+
+[01;34m/home/opam: (env OPAMERRLOGLEN 0)[0m
+
+[01;34m/home/opam: (env OPAMSOLVERTIMEOUT 500)[0m
+
+[01;34m/home/opam: (env OPAMPRECISETRACKING 1)[0m
+
+[01;34m/home/opam: (env CI true)[0m
+
+[01;34m/home/opam: (env OPAM_REPO_CI true)[0m
+
+[01;34m/home/opam: (run (shell "rm -rf opam-repository/"))[0m
+[01;2m[01;35m2024-07-15 14:12.05 ---> saved as "c7c3166553411f059fec4d323d29d1ec913bf6a8108142a8f8d45bbcaf10237f"[0m
+
+[01;34m/home/opam: (copy (src .) (dst opam-repository/))[0m
+[01;2m[01;35m2024-07-15 14:12.18 ---> saved as "19bee9f8176d4bd3f3acb885f5357a619df646aee67806807d63fec703777b5f"[0m
+
+[01;34m/home/opam: (run (shell "opam repository set-url --strict default opam-repository/"))[0m
+[default] Initialised
+[01;2m[01;35m2024-07-15 14:13.20 ---> saved as "aedca286bcdcef8d2ed42f83c5000a14069c1caf7abb563f21b0ffb7aa2a0106"[0m
+
+[01;34m/home/opam: (run (network host)
+                 (shell "opam update --depexts || true"))[0m
++ /usr/bin/sudo "apt-get" "update"
+- Hit:1 http://deb.debian.org/debian bookworm InRelease
+- Get:2 http://deb.debian.org/debian bookworm-updates InRelease [55.4 kB]
+- Get:3 http://deb.debian.org/debian-security bookworm-security InRelease [48.0 kB]
+- Get:4 http://deb.debian.org/debian-security bookworm-security/main amd64 Packages [168 kB]
+- Fetched 271 kB in 0s (1075 kB/s)
+- Reading package lists...
+[01;2m[01;35m2024-07-15 14:13.21 ---> saved as "9b9d15c82954990ffeb13bc0154eec24ad1049f34faa122a7d839ed2fb500e05"[0m
+
+[01;34m/home/opam: (run (shell "opam pin add -k version -yn salsa20.1.1.0 1.1.0"))[0m
+salsa20 is now pinned to version 1.1.0
+[01;2m[01;35m2024-07-15 14:13.23 ---> saved as "edca66812d6344aff6878ce2b370cac9ee555c51f3a6e8047b589aadedac60c7"[0m
+
+[01;34m/home/opam: (run (cache (opam-archives (target /home/opam/.opam/download-cache)))
+                 (network host)
+                 (shell  "opam reinstall salsa20.1.1.0;\
+                        \n        res=$?;\
+                        \n        test \"$res\" != 31 && exit \"$res\";\
+                        \n        export OPAMCLI=2.0;\
+                        \n        build_dir=$(opam var prefix)/.opam-switch/build;\
+                        \n        failed=$(ls \"$build_dir\");\
+                        \n        partial_fails=\"\";\
+                        \n        for pkg in $failed; do\
+                        \n          if opam show -f x-ci-accept-failures: \"$pkg\" | grep -qF \"\\\"debian-12\\\"\"; then\
+                        \n            echo \"A package failed and has been disabled for CI using the 'x-ci-accept-failures' field.\";\
+                        \n          fi;\
+                        \n          test \"$pkg\" != 'salsa20.1.1.0' && partial_fails=\"$partial_fails $pkg\";\
+                        \n        done;\
+                        \n        test \"${partial_fails}\" != \"\" && echo \"opam-repo-ci detected dependencies failing: ${partial_fails}\";\
+                        \n        exit 1"))[0m
+salsa20.1.1.0 is not installed. Install it? [y/n] y
+The following actions will be performed:
+=== install 10 packages
+  - install bigarray-compat   1.1.0          [required by cstruct]
+  - install conf-pkg-config   3              [required by salsa20-core]
+  - install csexp             1.5.2          [required by dune-configurator]
+  - install cstruct           6.0.1          [required by salsa20]
+  - install dune              3.16.0         [required by salsa20]
+  - install dune-configurator 3.16.0         [required by mirage-crypto]
+  - install eqaf              0.9            [required by mirage-crypto]
+  - install mirage-crypto     0.11.3         [required by salsa20]
+  - install salsa20           1.1.0 (pinned)
+  - install salsa20-core      1.1.0          [required by salsa20]
+
+The following system packages will first need to be installed:
+    pkg-config
+
+<><> Handling external dependencies <><><><><><><><><><><><><><><><><><><><><><>
+
+opam believes some required external dependencies are missing. opam can:
+> 1. Run apt-get to install them (may need root/sudo access)
+  2. Display the recommended apt-get command and wait while you run it manually (e.g. in another terminal)
+  3. Continue anyway, and, upon success, permanently register that this external dependency is present, but not detectable
+  4. Abort the installation
+
+[1/2/3/4] 1
+
++ /usr/bin/sudo "apt-get" "install" "-qq" "-yy" "pkg-config"
+- debconf: delaying package configuration, since apt-utils is not installed
+- Selecting previously unselected package libpkgconf3:amd64.
+- (Reading database ... (Reading database ... 5%(Reading database ... 10%(Reading database ... 15%(Reading database ... 20%(Reading database ... 25%(Reading database ... 30%(Reading database ... 35%(Reading database ... 40%(Reading database ... 45%(Reading database ... 50%(Reading database ... 55%(Reading database ... 60%(Reading database ... 65%(Reading database ... 70%(Reading database ... 75%(Reading database ... 80%(Reading database ... 85%(Reading database ... 90%(Reading database ... 95%(Reading database ... 100%(Reading database ... 18734 files and directories currently installed.)
+- Preparing to unpack .../libpkgconf3_1.8.1-1_amd64.deb ...
+- Unpacking libpkgconf3:amd64 (1.8.1-1) ...
+- Selecting previously unselected package pkgconf-bin.
+- Preparing to unpack .../pkgconf-bin_1.8.1-1_amd64.deb ...
+- Unpacking pkgconf-bin (1.8.1-1) ...
+- Selecting previously unselected package pkgconf:amd64.
+- Preparing to unpack .../pkgconf_1.8.1-1_amd64.deb ...
+- Unpacking pkgconf:amd64 (1.8.1-1) ...
+- Selecting previously unselected package pkg-config:amd64.
+- Preparing to unpack .../pkg-config_1.8.1-1_amd64.deb ...
+- Unpacking pkg-config:amd64 (1.8.1-1) ...
+- Setting up libpkgconf3:amd64 (1.8.1-1) ...
+- Setting up pkgconf-bin (1.8.1-1) ...
+- Setting up pkgconf:amd64 (1.8.1-1) ...
+- Setting up pkg-config:amd64 (1.8.1-1) ...
+- Processing triggers for libc-bin (2.36-9+deb12u7) ...
+
+<><> Processing actions <><><><><><><><><><><><><><><><><><><><><><><><><><><><>
+-> retrieved bigarray-compat.1.1.0  (cached)
+-> retrieved csexp.1.5.2  (cached)
+-> installed conf-pkg-config.3
+-> retrieved cstruct.6.0.1  (cached)
+-> retrieved dune.3.16.0, dune-configurator.3.16.0  (cached)
+-> retrieved eqaf.0.9  (cached)
+-> retrieved mirage-crypto.0.11.3  (cached)
+-> retrieved salsa20.1.1.0  (cached)
+-> retrieved salsa20-core.1.1.0  (cached)
+-> installed dune.3.16.0
+-> installed csexp.1.5.2
+-> installed bigarray-compat.1.1.0
+-> installed cstruct.6.0.1
+-> installed salsa20-core.1.1.0
+-> installed eqaf.0.9
+-> installed dune-configurator.3.16.0
+-> installed mirage-crypto.0.11.3
+-> installed salsa20.1.1.0
+Done.
+# Run eval $(opam env) to update the current shell environment
+[01;2m[01;35m2024-07-15 14:14.18 ---> saved as "0e311ef3d6a524be0c81507f8761e5ebe165a80dca093b00d7c5b3d0fdc5a0c4"[0m
+
+[01;34m/home/opam: (run (network host)
+                 (shell "(opam reinstall --with-test salsa20.1.1.0) || true"))[0m
+[ERROR] Sorry, resolution of the request timed out.
+        Try to specify a more precise request, use a different solver, or increase the allowed time by setting OPAMSOLVERTIMEOUT to a bigger value (currently, it is set to 500.0 seconds).
+[01;2m[01;35m2024-07-15 14:22.53 ---> saved as "9de74b8c5eba9b2c81dedbdf6fc2b752faca03b5f669b53a93909513034696a2"[0m
+
+[01;34m/home/opam: (run (shell  "opam reinstall --with-test --verbose salsa20.1.1.0;\
+                        \n        res=$?;\
+                        \n        test \"$res\" != 31 && exit \"$res\";\
+                        \n        export OPAMCLI=2.0;\
+                        \n        build_dir=$(opam var prefix)/.opam-switch/build;\
+                        \n        failed=$(ls \"$build_dir\");\
+                        \n        partial_fails=\"\";\
+                        \n        for pkg in $failed; do\
+                        \n          if opam show -f x-ci-accept-failures: \"$pkg\" | grep -qF \"\\\"debian-12\\\"\"; then\
+                        \n            echo \"A package failed and has been disabled for CI using the 'x-ci-accept-failures' field.\";\
+                        \n          fi;\
+                        \n          test \"$pkg\" != 'salsa20.1.1.0' && partial_fails=\"$partial_fails $pkg\";\
+                        \n        done;\
+                        \n        test \"${partial_fails}\" != \"\" && echo \"opam-repo-ci detected dependencies failing: ${partial_fails}\";\
+                        \n        exit 1"))[0m
+[ERROR] Sorry, resolution of the request timed out.
+        Try to specify a more precise request, use a different solver, or increase the allowed time by setting OPAMSOLVERTIMEOUT to a bigger value (currently, it is set to 500.0 seconds).
+'opam reinstall --with-test --verbose salsa20.1.1.0' failed.
+"/usr/bin/env" "bash" "-c" "opam reinstall --with-test --verbose salsa20.1.1.0;
+        res=$?;
+        test "$res" != 31 && exit "$res";
+        export OPAMCLI=2.0;
+        build_dir=$(opam var prefix)/.opam-switch/build;
+        failed=$(ls "$build_dir");
+        partial_fails="";
+        for pkg in $failed; do
+          if opam show -f x-ci-accept-failures: "$pkg" | grep -qF "\"debian-12\""; then
+            echo "A package failed and has been disabled for CI using the 'x-ci-accept-failures' field.";
+          fi;
+          test "$pkg" != 'salsa20.1.1.0' && partial_fails="$partial_fails $pkg";
+        done;
+        test "${partial_fails}" != "" && echo "opam-repo-ci detected dependencies failing: ${partial_fails}";
+        exit 1" failed with exit status 60
+2024-07-15 14:31.35: Job failed: Failed: Build failed
+2024-07-15 14:31.35: Log analysis:
+2024-07-15 14:31.35: >>> 
+[ERROR] Sorry, resolution of the request timed out.
+ (score = 20)
+2024-07-15 14:31.35: >>> 
+[ERROR] Sorry, resolution of the request timed out.
+ (score = 20)
+2024-07-15 14:31.35: Sorry, resolution of the request timed out.

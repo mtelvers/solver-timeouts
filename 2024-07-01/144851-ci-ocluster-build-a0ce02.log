@@ -1,0 +1,497 @@
+2024-07-01 14:48.51: New job: test pyml_bindgen.0.1.1, using opam dev
+                              from https://github.com/ocaml/opam-repository.git#refs/pull/26169/head (2818ca4784e742dda71b490fc25eea919cbbbd23)
+                              on debian-12-ocaml-4.09/amd64
+
+To reproduce locally:
+
+cd $(mktemp -d)
+git clone --recursive "https://github.com/ocaml/opam-repository.git" && cd "opam-repository" && git fetch origin "refs/pull/26169/head" && git reset --hard 2818ca47
+git fetch origin master
+git merge --no-edit 01e40b8e399ee05919702bc532082a8c9ba79626
+cat > ../Dockerfile <<'END-OF-DOCKERFILE'
+[34mFROM ocaml/opam:debian-12-ocaml-4.09@sha256:da771522d40488fe0e488be1ce4ccf9362a2a94825c561cc57373070160adba2
+USER 1000:1000
+WORKDIR /home/opam
+RUN sudo ln -f /usr/bin/opam-dev /usr/bin/opam
+RUN opam init --reinit -ni
+RUN uname -rs && opam exec -- ocaml -version && opam --version
+ENV OPAMDOWNLOADJOBS="1"
+ENV OPAMERRLOGLEN="0"
+ENV OPAMSOLVERTIMEOUT="500"
+ENV OPAMPRECISETRACKING="1"
+ENV CI="true"
+ENV OPAM_REPO_CI="true"
+RUN rm -rf opam-repository/
+COPY --chown=1000:1000 . opam-repository/
+RUN opam repository set-url --strict default opam-repository/
+RUN opam update --depexts || true
+RUN opam pin add -k version -yn pyml_bindgen.0.1.1 0.1.1
+RUN opam reinstall pyml_bindgen.0.1.1; \
+    res=$?; \
+    test "$res" != 31 && exit "$res"; \
+    export OPAMCLI=2.0; \
+    build_dir=$(opam var prefix)/.opam-switch/build; \
+    failed=$(ls "$build_dir"); \
+    partial_fails=""; \
+    for pkg in $failed; do \
+    if opam show -f x-ci-accept-failures: "$pkg" | grep -qF "\"debian-12\""; then \
+    echo "A package failed and has been disabled for CI using the 'x-ci-accept-failures' field."; \
+    fi; \
+    test "$pkg" != 'pyml_bindgen.0.1.1' && partial_fails="$partial_fails $pkg"; \
+    done; \
+    test "${partial_fails}" != "" && echo "opam-repo-ci detected dependencies failing: ${partial_fails}"; \
+    exit 1
+RUN (opam reinstall --with-test pyml_bindgen.0.1.1) || true
+RUN opam reinstall --with-test --verbose pyml_bindgen.0.1.1; \
+    res=$?; \
+    test "$res" != 31 && exit "$res"; \
+    export OPAMCLI=2.0; \
+    build_dir=$(opam var prefix)/.opam-switch/build; \
+    failed=$(ls "$build_dir"); \
+    partial_fails=""; \
+    for pkg in $failed; do \
+    if opam show -f x-ci-accept-failures: "$pkg" | grep -qF "\"debian-12\""; then \
+    echo "A package failed and has been disabled for CI using the 'x-ci-accept-failures' field."; \
+    fi; \
+    test "$pkg" != 'pyml_bindgen.0.1.1' && partial_fails="$partial_fails $pkg"; \
+    done; \
+    test "${partial_fails}" != "" && echo "opam-repo-ci detected dependencies failing: ${partial_fails}"; \
+    exit 1
+[0m
+END-OF-DOCKERFILE
+docker build -f ../Dockerfile .
+
+2024-07-01 14:48.51: Using cache hint "ocaml/opam:debian-12-ocaml-4.09@sha256:da771522d40488fe0e488be1ce4ccf9362a2a94825c561cc57373070160adba2-pyml_bindgen.0.1.1-2818ca4784e742dda71b490fc25eea919cbbbd23"
+2024-07-01 14:48.51: Using OBuilder spec:
+((from ocaml/opam:debian-12-ocaml-4.09@sha256:da771522d40488fe0e488be1ce4ccf9362a2a94825c561cc57373070160adba2)
+ (user (uid 1000) (gid 1000))
+ (workdir /home/opam)
+ (run (shell "sudo ln -f /usr/bin/opam-dev /usr/bin/opam"))
+ (run (network host)
+      (shell "opam init --reinit --config .opamrc-sandbox -ni"))
+ (run (shell "uname -rs && opam exec -- ocaml -version && opam --version"))
+ (env OPAMDOWNLOADJOBS 1)
+ (env OPAMERRLOGLEN 0)
+ (env OPAMSOLVERTIMEOUT 500)
+ (env OPAMPRECISETRACKING 1)
+ (env CI true)
+ (env OPAM_REPO_CI true)
+ (run (shell "rm -rf opam-repository/"))
+ (copy (src .) (dst opam-repository/))
+ (run (shell "opam repository set-url --strict default opam-repository/"))
+ (run (network host)
+      (shell "opam update --depexts || true"))
+ (run (shell "opam pin add -k version -yn pyml_bindgen.0.1.1 0.1.1"))
+ (run (cache (opam-archives (target /home/opam/.opam/download-cache)))
+      (network host)
+      (shell  "opam reinstall pyml_bindgen.0.1.1;\
+             \n        res=$?;\
+             \n        test \"$res\" != 31 && exit \"$res\";\
+             \n        export OPAMCLI=2.0;\
+             \n        build_dir=$(opam var prefix)/.opam-switch/build;\
+             \n        failed=$(ls \"$build_dir\");\
+             \n        partial_fails=\"\";\
+             \n        for pkg in $failed; do\
+             \n          if opam show -f x-ci-accept-failures: \"$pkg\" | grep -qF \"\\\"debian-12\\\"\"; then\
+             \n            echo \"A package failed and has been disabled for CI using the 'x-ci-accept-failures' field.\";\
+             \n          fi;\
+             \n          test \"$pkg\" != 'pyml_bindgen.0.1.1' && partial_fails=\"$partial_fails $pkg\";\
+             \n        done;\
+             \n        test \"${partial_fails}\" != \"\" && echo \"opam-repo-ci detected dependencies failing: ${partial_fails}\";\
+             \n        exit 1"))
+ (run (network host)
+      (shell "(opam reinstall --with-test pyml_bindgen.0.1.1) || true"))
+ (run (shell  "opam reinstall --with-test --verbose pyml_bindgen.0.1.1;\
+             \n        res=$?;\
+             \n        test \"$res\" != 31 && exit \"$res\";\
+             \n        export OPAMCLI=2.0;\
+             \n        build_dir=$(opam var prefix)/.opam-switch/build;\
+             \n        failed=$(ls \"$build_dir\");\
+             \n        partial_fails=\"\";\
+             \n        for pkg in $failed; do\
+             \n          if opam show -f x-ci-accept-failures: \"$pkg\" | grep -qF \"\\\"debian-12\\\"\"; then\
+             \n            echo \"A package failed and has been disabled for CI using the 'x-ci-accept-failures' field.\";\
+             \n          fi;\
+             \n          test \"$pkg\" != 'pyml_bindgen.0.1.1' && partial_fails=\"$partial_fails $pkg\";\
+             \n        done;\
+             \n        test \"${partial_fails}\" != \"\" && echo \"opam-repo-ci detected dependencies failing: ${partial_fails}\";\
+             \n        exit 1"))
+)
+
+2024-07-01 14:48.51: Waiting for resource in pool OCluster
+2024-07-01 15:00.23: Waiting for worker…
+2024-07-01 15:04.38: Got resource from pool OCluster
+Building on doris.caelum.ci.dev
+All commits already cached
+Updating files:  71% (22690/31655)Updating files:  72% (22792/31655)Updating files:  73% (23109/31655)Updating files:  74% (23425/31655)Updating files:  75% (23742/31655)Updating files:  76% (24058/31655)Updating files:  77% (24375/31655)Updating files:  78% (24691/31655)Updating files:  79% (25008/31655)Updating files:  80% (25324/31655)Updating files:  81% (25641/31655)Updating files:  82% (25958/31655)Updating files:  83% (26274/31655)Updating files:  84% (26591/31655)Updating files:  85% (26907/31655)Updating files:  86% (27224/31655)Updating files:  87% (27540/31655)Updating files:  88% (27857/31655)Updating files:  89% (28173/31655)Updating files:  90% (28490/31655)Updating files:  91% (28807/31655)Updating files:  92% (29123/31655)Updating files:  93% (29440/31655)Updating files:  94% (29756/31655)Updating files:  95% (30073/31655)Updating files:  96% (30389/31655)Updating files:  97% (30706/31655)Updating files:  98% (31022/31655)Updating files:  99% (31339/31655)Updating files: 100% (31655/31655)Updating files: 100% (31655/31655), done.
+HEAD is now at 01e40b8e39 Merge pull request #26166 from pveber/release-biotk-v0.3
+Merge made by the 'ort' strategy.
+ packages/ambient-context-lwt/ambient-context-lwt.0.1.0/opam | 2 +-
+ packages/dbf/dbf.0.1.1/opam                                 | 2 +-
+ packages/distributed/distributed.0.2.0/opam                 | 2 +-
+ packages/distributed/distributed.0.3.0/opam                 | 2 +-
+ packages/distributed/distributed.0.4.0/opam                 | 2 +-
+ packages/distributed/distributed.0.5.0/opam                 | 2 +-
+ packages/distributed/distributed.0.6.0/opam                 | 2 +-
+ packages/http/http.6.0.0~alpha0/opam                        | 2 +-
+ packages/http/http.6.0.0~alpha1/opam                        | 2 +-
+ packages/phylogenetics/phylogenetics.0.2.0/opam             | 2 +-
+ packages/ppx_parser/ppx_parser.0.1.1/opam                   | 2 +-
+ packages/pyml_bindgen/pyml_bindgen.0.1.1/opam               | 2 +-
+ packages/pyml_bindgen/pyml_bindgen.0.1.2/opam               | 2 +-
+ packages/pyml_bindgen/pyml_bindgen.0.2.0/opam               | 2 +-
+ packages/pyml_bindgen/pyml_bindgen.0.3.0/opam               | 2 +-
+ packages/qcheck-core/qcheck-core.0.18.1/opam                | 2 +-
+ packages/qcheck-core/qcheck-core.0.18/opam                  | 2 +-
+ packages/qcheck-core/qcheck-core.0.19.1/opam                | 2 +-
+ packages/qcheck-core/qcheck-core.0.19/opam                  | 2 +-
+ packages/qcheck-core/qcheck-core.0.20/opam                  | 2 +-
+ packages/qcheck-core/qcheck-core.0.21.1/opam                | 2 +-
+ packages/qcheck-core/qcheck-core.0.21.2/opam                | 2 +-
+ packages/qcheck-core/qcheck-core.0.21.3/opam                | 2 +-
+ packages/qcheck-core/qcheck-core.0.21/opam                  | 2 +-
+ packages/shuttle/shuttle.0.4.0/opam                         | 2 +-
+ packages/shuttle/shuttle.0.5.0/opam                         | 2 +-
+ packages/shuttle/shuttle.0.6.0/opam                         | 2 +-
+ packages/shuttle/shuttle.0.7.0/opam                         | 2 +-
+ packages/shuttle/shuttle.0.8.1/opam                         | 2 +-
+ packages/shuttle/shuttle.0.9.0/opam                         | 2 +-
+ packages/shuttle/shuttle.0.9.1/opam                         | 2 +-
+ packages/shuttle/shuttle.0.9.2/opam                         | 2 +-
+ packages/shuttle/shuttle.0.9.4/opam                         | 2 +-
+ packages/shuttle_http/shuttle_http.0.10.0/opam              | 2 +-
+ packages/shuttle_http/shuttle_http.0.10.1/opam              | 2 +-
+ packages/shuttle_http/shuttle_http.0.11.0/opam              | 2 +-
+ 36 files changed, 36 insertions(+), 36 deletions(-)
+
+[01;34m(from ocaml/opam:debian-12-ocaml-4.09@sha256:da771522d40488fe0e488be1ce4ccf9362a2a94825c561cc57373070160adba2)[0m
+[01;2m[01;35m2024-07-01 15:04.58 ---> saved as "02531b0e382dfee8bc780599f99a7ddbd9222a00e7680d601a68f937a162fe4a"[0m
+
+[01;34m/: (user (uid 1000) (gid 1000))[0m
+
+[01;34m/: (workdir /home/opam)[0m
+
+[01;34m/home/opam: (run (shell "sudo ln -f /usr/bin/opam-dev /usr/bin/opam"))[0m
+[01;2m[01;35m2024-07-01 15:04.58 ---> saved as "d14d0da1f3f41e25710cb2e379d38181efb08e8514ae38fe1ff77be8d67b762a"[0m
+
+[01;34m/home/opam: (run (network host)
+                 (shell "opam init --reinit --config .opamrc-sandbox -ni"))[0m
+Configuring from /home/opam/.opamrc-sandbox, then /home/opam/.opamrc, and finally from built-in defaults.
+Checking for available remotes: rsync and local, git.
+  - you won't be able to use mercurial repositories unless you install the hg command on your system.
+  - you won't be able to use darcs repositories unless you install the darcs command on your system.
+
+This development version of opam requires an update to the layout of /home/opam/.opam from version 2.0 to version 2.2~beta, which can't be reverted.
+You may want to back it up before going further.
+
+Continue? [y/n] y
+[NOTE] The 'jobs' option was reset, its value was 39 and its new value will vary according to the current number of cores on your machine. You can restore the fixed value using:
+           opam option jobs=39 --global
+Format upgrade done.
+
+<><> Updating repositories ><><><><><><><><><><><><><><><><><><><><><><><><><><>
+[default] synchronised from file:///home/opam/opam-repository
+[01;2m[01;35m2024-07-01 15:06.03 ---> saved as "8ab313702746068cf068aab655d923862c59125fe9346756303eb94c94e9f5ff"[0m
+
+[01;34m/home/opam: (run (shell "uname -rs && opam exec -- ocaml -version && opam --version"))[0m
+Linux 5.15.0-112-generic
+The OCaml toplevel, version 4.09.1
+2.2.0~rc1~dev
+[01;2m[01;35m2024-07-01 15:06.04 ---> saved as "724992efc7daadf60ef8385f73e7bdcbefad805ae640ffd5b820e044cf740bf9"[0m
+
+[01;34m/home/opam: (env OPAMDOWNLOADJOBS 1)[0m
+
+[01;34m/home/opam: (env OPAMERRLOGLEN 0)[0m
+
+[01;34m/home/opam: (env OPAMSOLVERTIMEOUT 500)[0m
+
+[01;34m/home/opam: (env OPAMPRECISETRACKING 1)[0m
+
+[01;34m/home/opam: (env CI true)[0m
+
+[01;34m/home/opam: (env OPAM_REPO_CI true)[0m
+
+[01;34m/home/opam: (run (shell "rm -rf opam-repository/"))[0m
+[01;2m[01;35m2024-07-01 15:06.24 ---> saved as "0a2e2be4053f4b419c4d5fcda260cf2852d11ba547021d12d8c195cce24ad2b9"[0m
+
+[01;34m/home/opam: (copy (src .) (dst opam-repository/))[0m
+[01;2m[01;35m2024-07-01 15:06.44 ---> saved as "974fd8ea6035c3520db5f9b865e7fab0f86aea6d0b0c182c945d44ee589be770"[0m
+
+[01;34m/home/opam: (run (shell "opam repository set-url --strict default opam-repository/"))[0m
+[default] Initialised
+[01;2m[01;35m2024-07-01 15:07.40 ---> saved as "9a8125d8395ebc098d4743a7105b47dacde8946af2be7f93298c9267843fc1ce"[0m
+
+[01;34m/home/opam: (run (network host)
+                 (shell "opam update --depexts || true"))[0m
++ /usr/bin/sudo "apt-get" "update"
+- Get:1 http://deb.debian.org/debian bookworm InRelease [151 kB]
+- Get:2 http://deb.debian.org/debian bookworm-updates InRelease [55.4 kB]
+- Get:3 http://deb.debian.org/debian-security bookworm-security InRelease [48.0 kB]
+- Get:4 http://deb.debian.org/debian bookworm/main amd64 Packages [8788 kB]
+- Get:5 http://deb.debian.org/debian-security bookworm-security/main amd64 Packages [164 kB]
+- Fetched 9206 kB in 1s (6959 kB/s)
+- Reading package lists...
+[01;2m[01;35m2024-07-01 15:07.42 ---> saved as "925f3940d5640e2d34a8ec1a9a949ece9c297ff82c0ce824b55c02f6696b2a48"[0m
+
+[01;34m/home/opam: (run (shell "opam pin add -k version -yn pyml_bindgen.0.1.1 0.1.1"))[0m
+pyml_bindgen is now pinned to version 0.1.1
+[01;2m[01;35m2024-07-01 15:07.44 ---> saved as "41462e6273484ef6d81c096c1d9efac2710463f20689671ea5f2cf32df400cf6"[0m
+
+[01;34m/home/opam: (run (cache (opam-archives (target /home/opam/.opam/download-cache)))
+                 (network host)
+                 (shell  "opam reinstall pyml_bindgen.0.1.1;\
+                        \n        res=$?;\
+                        \n        test \"$res\" != 31 && exit \"$res\";\
+                        \n        export OPAMCLI=2.0;\
+                        \n        build_dir=$(opam var prefix)/.opam-switch/build;\
+                        \n        failed=$(ls \"$build_dir\");\
+                        \n        partial_fails=\"\";\
+                        \n        for pkg in $failed; do\
+                        \n          if opam show -f x-ci-accept-failures: \"$pkg\" | grep -qF \"\\\"debian-12\\\"\"; then\
+                        \n            echo \"A package failed and has been disabled for CI using the 'x-ci-accept-failures' field.\";\
+                        \n          fi;\
+                        \n          test \"$pkg\" != 'pyml_bindgen.0.1.1' && partial_fails=\"$partial_fails $pkg\";\
+                        \n        done;\
+                        \n        test \"${partial_fails}\" != \"\" && echo \"opam-repo-ci detected dependencies failing: ${partial_fails}\";\
+                        \n        exit 1"))[0m
+pyml_bindgen.0.1.1 is not installed. Install it? [y/n] y
+The following actions will be performed:
+=== install 62 packages
+  - install angstrom            0.16.0         [required by pyml_bindgen]
+  - install base                v0.14.3        [required by pyml_bindgen]
+  - install base_bigstring      v0.14.0        [required by core_kernel]
+  - install base_quickcheck     v0.14.1        [required by core_kernel]
+  - install bigstringaf         0.9.1          [required by angstrom]
+  - install bin_prot            v0.14.1        [required by core_kernel]
+  - install cmdliner            1.3.0          [required by pyml_bindgen]
+  - install conf-g++            1.0            [required by re2]
+  - install core_kernel         v0.14.2        [required by re2]
+  - install csexp               1.5.2          [required by dune-configurator]
+  - install dune                3.16.0         [required by pyml_bindgen]
+  - install dune-configurator   3.16.0         [required by base]
+  - install fieldslib           v0.14.0        [required by core_kernel]
+  - install jane-street-headers v0.14.0        [required by core_kernel]
+  - install jst-config          v0.14.1        [required by core_kernel]
+  - install num                 1.5            [required by sexplib]
+  - install ocaml-compiler-libs v0.12.4        [required by ppxlib]
+  - install ocaml-syntax-shims  1.0.0          [required by angstrom]
+  - install octavius            1.2.2          [required by ppx_js_style]
+  - install parsexp             v0.14.2        [required by sexplib]
+  - install ppx_assert          v0.14.0        [required by core_kernel]
+  - install ppx_base            v0.14.0        [required by ppx_string]
+  - install ppx_bench           v0.14.1        [required by ppx_jane]
+  - install ppx_bin_prot        v0.14.0        [required by ppx_jane]
+  - install ppx_cold            v0.14.0        [required by ppx_base]
+  - install ppx_compare         v0.14.0        [required by ppx_base]
+  - install ppx_custom_printf   v0.14.1        [required by ppx_jane]
+  - install ppx_derivers        1.2.1          [required by ppxlib]
+  - install ppx_enumerate       v0.14.0        [required by ppx_base]
+  - install ppx_expect          v0.14.2        [required by ppx_jane]
+  - install ppx_fields_conv     v0.14.2        [required by ppx_jane]
+  - install ppx_fixed_literal   v0.14.0        [required by ppx_jane]
+  - install ppx_hash            v0.14.0        [required by ppx_base, core_kernel]
+  - install ppx_here            v0.14.0        [required by ppx_jane]
+  - install ppx_inline_test     v0.14.1        [required by core_kernel]
+  - install ppx_jane            v0.14.0        [required by re2]
+  - install ppx_js_style        v0.14.1        [required by ppx_base]
+  - install ppx_let             v0.14.0        [required by pyml_bindgen]
+  - install ppx_module_timer    v0.14.0        [required by ppx_jane]
+  - install ppx_optcomp         v0.14.3        [required by core_kernel]
+  - install ppx_optional        v0.14.0        [required by ppx_jane]
+  - install ppx_pipebang        v0.14.0        [required by ppx_jane]
+  - install ppx_sexp_conv       v0.14.3        [required by pyml_bindgen]
+  - install ppx_sexp_message    v0.14.1        [required by core_kernel]
+  - install ppx_sexp_value      v0.14.0        [required by ppx_jane]
+  - install ppx_stable          v0.14.1        [required by ppx_jane]
+  - install ppx_string          v0.14.1        [required by pyml_bindgen]
+  - install ppx_typerep_conv    v0.14.2        [required by ppx_jane]
+  - install ppx_variants_conv   v0.14.2        [required by ppx_jane]
+  - install ppxlib              0.25.1         [required by ppx_sexp_conv, ppx_let, ppx_string]
+  - install pyml_bindgen        0.1.1 (pinned)
+  - install re                  1.11.0         [required by ppx_expect]
+  - install re2                 v0.14.0        [required by pyml_bindgen]
+  - install seq                 base           [required by re]
+  - install sexplib             v0.14.0        [required by core_kernel]
+  - install sexplib0            v0.14.0        [required by base, ppx_sexp_conv]
+  - install splittable_random   v0.14.0        [required by core_kernel]
+  - install stdio               v0.14.0        [required by pyml_bindgen]
+  - install stdlib-shims        0.3.0          [required by ppxlib]
+  - install time_now            v0.14.0        [required by core_kernel]
+  - install typerep             v0.14.0        [required by core_kernel]
+  - install variantslib         v0.14.0        [required by core_kernel]
+
+<><> Processing actions <><><><><><><><><><><><><><><><><><><><><><><><><><><><>
+-> retrieved angstrom.0.16.0  (cached)
+-> retrieved base.v0.14.3  (cached)
+-> retrieved base_bigstring.v0.14.0  (cached)
+-> retrieved base_quickcheck.v0.14.1  (cached)
+-> retrieved bigstringaf.0.9.1  (cached)
+-> retrieved bin_prot.v0.14.1  (cached)
+-> retrieved cmdliner.1.3.0  (cached)
+-> retrieved core_kernel.v0.14.2  (cached)
+-> installed conf-g++.1.0
+-> retrieved csexp.1.5.2  (cached)
+-> retrieved dune.3.16.0, dune-configurator.3.16.0  (cached)
+-> retrieved fieldslib.v0.14.0  (cached)
+-> retrieved jane-street-headers.v0.14.0  (cached)
+-> retrieved jst-config.v0.14.1  (cached)
+-> retrieved num.1.5  (cached)
+-> retrieved ocaml-compiler-libs.v0.12.4  (cached)
+-> retrieved ocaml-syntax-shims.1.0.0  (cached)
+-> retrieved octavius.1.2.2  (cached)
+-> retrieved parsexp.v0.14.2  (cached)
+-> retrieved ppx_assert.v0.14.0  (cached)
+-> retrieved ppx_base.v0.14.0  (cached)
+-> retrieved ppx_bench.v0.14.1  (cached)
+-> retrieved ppx_bin_prot.v0.14.0  (cached)
+-> retrieved ppx_cold.v0.14.0  (cached)
+-> retrieved ppx_compare.v0.14.0  (cached)
+-> retrieved ppx_custom_printf.v0.14.1  (cached)
+-> retrieved ppx_derivers.1.2.1  (cached)
+-> retrieved ppx_enumerate.v0.14.0  (cached)
+-> installed cmdliner.1.3.0
+-> retrieved ppx_expect.v0.14.2  (cached)
+-> retrieved ppx_fields_conv.v0.14.2  (cached)
+-> retrieved ppx_fixed_literal.v0.14.0  (cached)
+-> retrieved ppx_hash.v0.14.0  (cached)
+-> retrieved ppx_here.v0.14.0  (cached)
+-> retrieved ppx_inline_test.v0.14.1  (cached)
+-> retrieved ppx_jane.v0.14.0  (cached)
+-> retrieved ppx_js_style.v0.14.1  (cached)
+-> retrieved ppx_let.v0.14.0  (cached)
+-> retrieved ppx_module_timer.v0.14.0  (cached)
+-> retrieved ppx_optcomp.v0.14.3  (cached)
+-> retrieved ppx_optional.v0.14.0  (cached)
+-> retrieved ppx_pipebang.v0.14.0  (cached)
+-> retrieved ppx_sexp_conv.v0.14.3  (cached)
+-> retrieved ppx_sexp_message.v0.14.1  (cached)
+-> retrieved ppx_sexp_value.v0.14.0  (cached)
+-> retrieved ppx_stable.v0.14.1  (cached)
+-> retrieved ppx_string.v0.14.1  (cached)
+-> retrieved ppx_typerep_conv.v0.14.2  (cached)
+-> retrieved ppx_variants_conv.v0.14.2  (cached)
+-> retrieved ppxlib.0.25.1  (cached)
+-> retrieved pyml_bindgen.0.1.1  (cached)
+-> retrieved re.1.11.0  (cached)
+-> retrieved re2.v0.14.0  (cached)
+-> retrieved seq.base  (cached)
+-> installed seq.base
+-> retrieved sexplib.v0.14.0  (cached)
+-> retrieved sexplib0.v0.14.0  (cached)
+-> retrieved splittable_random.v0.14.0  (cached)
+-> retrieved stdio.v0.14.0  (cached)
+-> retrieved stdlib-shims.0.3.0  (cached)
+-> retrieved time_now.v0.14.0  (cached)
+-> retrieved typerep.v0.14.0  (cached)
+-> retrieved variantslib.v0.14.0  (cached)
+-> installed num.1.5
+-> installed dune.3.16.0
+-> installed jane-street-headers.v0.14.0
+-> installed csexp.1.5.2
+-> installed ocaml-compiler-libs.v0.12.4
+-> installed ocaml-syntax-shims.1.0.0
+-> installed octavius.1.2.2
+-> installed ppx_derivers.1.2.1
+-> installed re.1.11.0
+-> installed sexplib0.v0.14.0
+-> installed stdlib-shims.0.3.0
+-> installed dune-configurator.3.16.0
+-> installed bigstringaf.0.9.1
+-> installed angstrom.0.16.0
+-> installed base.v0.14.3
+-> installed fieldslib.v0.14.0
+-> installed variantslib.v0.14.0
+-> installed stdio.v0.14.0
+-> installed typerep.v0.14.0
+-> installed parsexp.v0.14.2
+-> installed sexplib.v0.14.0
+-> installed ppxlib.0.25.1
+-> installed ppx_cold.v0.14.0
+-> installed ppx_here.v0.14.0
+-> installed ppx_enumerate.v0.14.0
+-> installed ppx_optcomp.v0.14.3
+-> installed ppx_stable.v0.14.1
+-> installed ppx_variants_conv.v0.14.2
+-> installed ppx_let.v0.14.0
+-> installed ppx_fields_conv.v0.14.2
+-> installed ppx_typerep_conv.v0.14.2
+-> installed ppx_compare.v0.14.0
+-> installed ppx_pipebang.v0.14.0
+-> installed ppx_fixed_literal.v0.14.0
+-> installed ppx_optional.v0.14.0
+-> installed ppx_js_style.v0.14.1
+-> installed ppx_sexp_conv.v0.14.3
+-> installed ppx_hash.v0.14.0
+-> installed ppx_sexp_value.v0.14.0
+-> installed ppx_assert.v0.14.0
+-> installed ppx_sexp_message.v0.14.1
+-> installed ppx_custom_printf.v0.14.1
+-> installed ppx_base.v0.14.0
+-> installed jst-config.v0.14.1
+-> installed bin_prot.v0.14.1
+-> installed ppx_string.v0.14.1
+-> installed time_now.v0.14.0
+-> installed ppx_bin_prot.v0.14.0
+-> installed ppx_module_timer.v0.14.0
+-> installed ppx_inline_test.v0.14.1
+-> installed ppx_bench.v0.14.1
+-> installed ppx_expect.v0.14.2
+-> installed splittable_random.v0.14.0
+-> installed base_quickcheck.v0.14.1
+-> installed ppx_jane.v0.14.0
+-> installed base_bigstring.v0.14.0
+-> installed core_kernel.v0.14.2
+-> installed re2.v0.14.0
+-> installed pyml_bindgen.0.1.1
+Done.
+# Run eval $(opam env) to update the current shell environment
+[01;2m[01;35m2024-07-01 15:10.11 ---> saved as "c57d4e7a623fe91329a4796ba2661be8df8567979f320225c3d3cdb1e53446e3"[0m
+
+[01;34m/home/opam: (run (network host)
+                 (shell "(opam reinstall --with-test pyml_bindgen.0.1.1) || true"))[0m
+[ERROR] Sorry, resolution of the request timed out.
+        Try to specify a more precise request, use a different solver, or increase the allowed time by setting OPAMSOLVERTIMEOUT to a bigger value (currently, it is set to 500.0 seconds).
+[01;2m[01;35m2024-07-01 15:18.40 ---> saved as "3f5cb232b3f7f3d3fb6b339babda6a7b096f6de9b6b43d43c16edff801942bf9"[0m
+
+[01;34m/home/opam: (run (shell  "opam reinstall --with-test --verbose pyml_bindgen.0.1.1;\
+                        \n        res=$?;\
+                        \n        test \"$res\" != 31 && exit \"$res\";\
+                        \n        export OPAMCLI=2.0;\
+                        \n        build_dir=$(opam var prefix)/.opam-switch/build;\
+                        \n        failed=$(ls \"$build_dir\");\
+                        \n        partial_fails=\"\";\
+                        \n        for pkg in $failed; do\
+                        \n          if opam show -f x-ci-accept-failures: \"$pkg\" | grep -qF \"\\\"debian-12\\\"\"; then\
+                        \n            echo \"A package failed and has been disabled for CI using the 'x-ci-accept-failures' field.\";\
+                        \n          fi;\
+                        \n          test \"$pkg\" != 'pyml_bindgen.0.1.1' && partial_fails=\"$partial_fails $pkg\";\
+                        \n        done;\
+                        \n        test \"${partial_fails}\" != \"\" && echo \"opam-repo-ci detected dependencies failing: ${partial_fails}\";\
+                        \n        exit 1"))[0m
+[ERROR] Sorry, resolution of the request timed out.
+        Try to specify a more precise request, use a different solver, or increase the allowed time by setting OPAMSOLVERTIMEOUT to a bigger value (currently, it is set to 500.0 seconds).
+'opam reinstall --with-test --verbose pyml_bindgen.0.1.1' failed.
+"/usr/bin/env" "bash" "-c" "opam reinstall --with-test --verbose pyml_bindgen.0.1.1;
+        res=$?;
+        test "$res" != 31 && exit "$res";
+        export OPAMCLI=2.0;
+        build_dir=$(opam var prefix)/.opam-switch/build;
+        failed=$(ls "$build_dir");
+        partial_fails="";
+        for pkg in $failed; do
+          if opam show -f x-ci-accept-failures: "$pkg" | grep -qF "\"debian-12\""; then
+            echo "A package failed and has been disabled for CI using the 'x-ci-accept-failures' field.";
+          fi;
+          test "$pkg" != 'pyml_bindgen.0.1.1' && partial_fails="$partial_fails $pkg";
+        done;
+        test "${partial_fails}" != "" && echo "opam-repo-ci detected dependencies failing: ${partial_fails}";
+        exit 1" failed with exit status 60
+2024-07-01 15:27.18: Job failed: Failed: Build failed
+2024-07-01 15:27.18: Log analysis:
+2024-07-01 15:27.18: >>> 
+[ERROR] Sorry, resolution of the request timed out.
+ (score = 20)
+2024-07-01 15:27.18: >>> 
+[ERROR] Sorry, resolution of the request timed out.
+ (score = 20)
+2024-07-01 15:27.18: Sorry, resolution of the request timed out.

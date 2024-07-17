@@ -1,0 +1,341 @@
+2024-05-05 13:20.50: New job: test js_of_ocaml-toplevel.5.8.1, using opam dev
+                              from https://github.com/ocaml/opam-repository.git#refs/pull/25796/head (5c437502467fa418e8ec322bfdbbff269e4139e2)
+                              on macos-homebrew-ocaml-4.14/arm64
+
+To reproduce locally:
+
+cd $(mktemp -d)
+git clone --recursive "https://github.com/ocaml/opam-repository.git" && cd "opam-repository" && git fetch origin "refs/pull/25796/head" && git reset --hard 5c437502
+git fetch origin master
+git merge --no-edit 3648176cc095f9106427fe05f07f0dc87ca27773
+cat > ../Dockerfile <<'END-OF-DOCKERFILE'
+[34mFROM macos-homebrew-ocaml-4.14
+USER 1000:1000
+RUN ln -f ~/local/bin/opam-dev ~/local/bin/opam
+RUN opam init --reinit -ni
+RUN uname -rs && opam exec -- ocaml -version && opam --version
+ENV OPAMDOWNLOADJOBS="1"
+ENV OPAMERRLOGLEN="0"
+ENV OPAMSOLVERTIMEOUT="500"
+ENV OPAMPRECISETRACKING="1"
+ENV CI="true"
+ENV OPAM_REPO_CI="true"
+RUN rm -rf opam-repository/
+COPY --chown=1000:1000 . opam-repository/
+RUN opam repository set-url -k local --strict default opam-repository/
+RUN opam update --depexts || true
+RUN opam pin add -k version -yn js_of_ocaml-toplevel.5.8.1 5.8.1
+RUN opam reinstall js_of_ocaml-toplevel.5.8.1; \
+    res=$?; \
+    test "$res" != 31 && exit "$res"; \
+    export OPAMCLI=2.0; \
+    build_dir=$(opam var prefix)/.opam-switch/build; \
+    failed=$(ls "$build_dir"); \
+    partial_fails=""; \
+    for pkg in $failed; do \
+    if opam show -f x-ci-accept-failures: "$pkg" | grep -qF "\"macos-homebrew\""; then \
+    echo "A package failed and has been disabled for CI using the 'x-ci-accept-failures' field."; \
+    fi; \
+    test "$pkg" != 'js_of_ocaml-toplevel.5.8.1' && partial_fails="$partial_fails $pkg"; \
+    done; \
+    test "${partial_fails}" != "" && echo "opam-repo-ci detected dependencies failing: ${partial_fails}"; \
+    exit 1
+RUN (opam reinstall --with-test js_of_ocaml-toplevel.5.8.1) || true
+RUN opam reinstall --with-test --verbose js_of_ocaml-toplevel.5.8.1; \
+    res=$?; \
+    test "$res" != 31 && exit "$res"; \
+    export OPAMCLI=2.0; \
+    build_dir=$(opam var prefix)/.opam-switch/build; \
+    failed=$(ls "$build_dir"); \
+    partial_fails=""; \
+    for pkg in $failed; do \
+    if opam show -f x-ci-accept-failures: "$pkg" | grep -qF "\"macos-homebrew\""; then \
+    echo "A package failed and has been disabled for CI using the 'x-ci-accept-failures' field."; \
+    fi; \
+    test "$pkg" != 'js_of_ocaml-toplevel.5.8.1' && partial_fails="$partial_fails $pkg"; \
+    done; \
+    test "${partial_fails}" != "" && echo "opam-repo-ci detected dependencies failing: ${partial_fails}"; \
+    exit 1
+[0m
+END-OF-DOCKERFILE
+docker build -f ../Dockerfile .
+
+2024-05-05 13:20.50: Using cache hint "macos-homebrew-ocaml-4.14-js_of_ocaml-toplevel.5.8.1-5c437502467fa418e8ec322bfdbbff269e4139e2"
+2024-05-05 13:20.50: Using OBuilder spec:
+((from macos-homebrew-ocaml-4.14)
+ (user (uid 1000) (gid 1000))
+ (run (shell "ln -f ~/local/bin/opam-dev ~/local/bin/opam"))
+ (run (network host)
+      (shell "opam init --reinit -ni"))
+ (run (shell "uname -rs && opam exec -- ocaml -version && opam --version"))
+ (env OPAMDOWNLOADJOBS 1)
+ (env OPAMERRLOGLEN 0)
+ (env OPAMSOLVERTIMEOUT 500)
+ (env OPAMPRECISETRACKING 1)
+ (env CI true)
+ (env OPAM_REPO_CI true)
+ (run (shell "rm -rf opam-repository/"))
+ (copy (src .) (dst opam-repository/))
+ (run (shell "opam repository set-url -k local --strict default opam-repository/"))
+ (run (network host)
+      (shell "opam update --depexts || true"))
+ (run (shell "opam pin add -k version -yn js_of_ocaml-toplevel.5.8.1 5.8.1"))
+ (run (cache (opam-archives (target /Users/mac1000/.opam/download-cache)) (homebrew (target /Users/mac1000/Library/Caches/Homebrew)))
+      (network host)
+      (shell  "opam reinstall js_of_ocaml-toplevel.5.8.1;\
+             \n        res=$?;\
+             \n        test \"$res\" != 31 && exit \"$res\";\
+             \n        export OPAMCLI=2.0;\
+             \n        build_dir=$(opam var prefix)/.opam-switch/build;\
+             \n        failed=$(ls \"$build_dir\");\
+             \n        partial_fails=\"\";\
+             \n        for pkg in $failed; do\
+             \n          if opam show -f x-ci-accept-failures: \"$pkg\" | grep -qF \"\\\"macos-homebrew\\\"\"; then\
+             \n            echo \"A package failed and has been disabled for CI using the 'x-ci-accept-failures' field.\";\
+             \n          fi;\
+             \n          test \"$pkg\" != 'js_of_ocaml-toplevel.5.8.1' && partial_fails=\"$partial_fails $pkg\";\
+             \n        done;\
+             \n        test \"${partial_fails}\" != \"\" && echo \"opam-repo-ci detected dependencies failing: ${partial_fails}\";\
+             \n        exit 1"))
+ (run (network host)
+      (shell "(opam reinstall --with-test js_of_ocaml-toplevel.5.8.1) || true"))
+ (run (shell  "opam reinstall --with-test --verbose js_of_ocaml-toplevel.5.8.1;\
+             \n        res=$?;\
+             \n        test \"$res\" != 31 && exit \"$res\";\
+             \n        export OPAMCLI=2.0;\
+             \n        build_dir=$(opam var prefix)/.opam-switch/build;\
+             \n        failed=$(ls \"$build_dir\");\
+             \n        partial_fails=\"\";\
+             \n        for pkg in $failed; do\
+             \n          if opam show -f x-ci-accept-failures: \"$pkg\" | grep -qF \"\\\"macos-homebrew\\\"\"; then\
+             \n            echo \"A package failed and has been disabled for CI using the 'x-ci-accept-failures' field.\";\
+             \n          fi;\
+             \n          test \"$pkg\" != 'js_of_ocaml-toplevel.5.8.1' && partial_fails=\"$partial_fails $pkg\";\
+             \n        done;\
+             \n        test \"${partial_fails}\" != \"\" && echo \"opam-repo-ci detected dependencies failing: ${partial_fails}\";\
+             \n        exit 1"))
+)
+
+2024-05-05 13:20.50: Waiting for resource in pool OCluster
+2024-05-05 13:20.51: Waiting for worker…
+2024-05-05 13:30.14: Got resource from pool OCluster
+Building on m1-worker-02
+All commits already cached
+Updating files:  37% (12536/33640)Updating files:  38% (12784/33640)Updating files:  39% (13120/33640)Updating files:  40% (13456/33640)Updating files:  41% (13793/33640)Updating files:  42% (14129/33640)Updating files:  43% (14466/33640)Updating files:  44% (14802/33640)Updating files:  45% (15138/33640)Updating files:  46% (15475/33640)Updating files:  47% (15811/33640)Updating files:  48% (16148/33640)Updating files:  49% (16484/33640)Updating files:  50% (16820/33640)Updating files:  51% (17157/33640)Updating files:  52% (17493/33640)Updating files:  53% (17830/33640)Updating files:  54% (18166/33640)Updating files:  55% (18502/33640)Updating files:  56% (18839/33640)Updating files:  57% (19175/33640)Updating files:  58% (19512/33640)Updating files:  59% (19848/33640)Updating files:  60% (20184/33640)Updating files:  61% (20521/33640)Updating files:  62% (20857/33640)Updating files:  63% (21194/33640)Updating files:  64% (21530/33640)Updating files:  65% (21866/33640)Updating files:  65% (22052/33640)Updating files:  66% (22203/33640)Updating files:  67% (22539/33640)Updating files:  68% (22876/33640)Updating files:  69% (23212/33640)Updating files:  70% (23548/33640)Updating files:  71% (23885/33640)Updating files:  72% (24221/33640)Updating files:  73% (24558/33640)Updating files:  74% (24894/33640)Updating files:  75% (25230/33640)Updating files:  76% (25567/33640)Updating files:  77% (25903/33640)Updating files:  78% (26240/33640)Updating files:  79% (26576/33640)Updating files:  80% (26912/33640)Updating files:  81% (27249/33640)Updating files:  82% (27585/33640)Updating files:  83% (27922/33640)Updating files:  84% (28258/33640)Updating files:  85% (28594/33640)Updating files:  86% (28931/33640)Updating files:  87% (29267/33640)Updating files:  88% (29604/33640)Updating files:  89% (29940/33640)Updating files:  90% (30276/33640)Updating files:  91% (30613/33640)Updating files:  92% (30949/33640)Updating files:  93% (31286/33640)Updating files:  94% (31622/33640)Updating files:  95% (31958/33640)Updating files:  96% (32295/33640)Updating files:  97% (32631/33640)Updating files:  97% (32876/33640)Updating files:  98% (32968/33640)Updating files:  99% (33304/33640)Updating files: 100% (33640/33640)Updating files: 100% (33640/33640), done.
+HEAD is now at 3648176cc0 Merge pull request #25790 from ejgallego/release-coq-serapi-8.19.0+0.19.3
+Updating 3648176cc0..5c43750246
+Fast-forward
+ .../js_of_ocaml-compiler.5.8.1/opam                | 55 ++++++++++++++++++++++
+ .../js_of_ocaml-lwt/js_of_ocaml-lwt.5.8.1/opam     | 48 +++++++++++++++++++
+ .../js_of_ocaml-ppx/js_of_ocaml-ppx.5.8.1/opam     | 45 ++++++++++++++++++
+ .../js_of_ocaml-ppx_deriving_json.5.8.1/opam       | 45 ++++++++++++++++++
+ .../js_of_ocaml-toplevel.5.8.1/opam                | 48 +++++++++++++++++++
+ .../js_of_ocaml-tyxml/js_of_ocaml-tyxml.5.8.1/opam | 49 +++++++++++++++++++
+ packages/js_of_ocaml/js_of_ocaml.5.8.1/opam        | 45 ++++++++++++++++++
+ 7 files changed, 335 insertions(+)
+ create mode 100644 packages/js_of_ocaml-compiler/js_of_ocaml-compiler.5.8.1/opam
+ create mode 100644 packages/js_of_ocaml-lwt/js_of_ocaml-lwt.5.8.1/opam
+ create mode 100644 packages/js_of_ocaml-ppx/js_of_ocaml-ppx.5.8.1/opam
+ create mode 100644 packages/js_of_ocaml-ppx_deriving_json/js_of_ocaml-ppx_deriving_json.5.8.1/opam
+ create mode 100644 packages/js_of_ocaml-toplevel/js_of_ocaml-toplevel.5.8.1/opam
+ create mode 100644 packages/js_of_ocaml-tyxml/js_of_ocaml-tyxml.5.8.1/opam
+ create mode 100644 packages/js_of_ocaml/js_of_ocaml.5.8.1/opam
+
+[01;34m(from macos-homebrew-ocaml-4.14)[0m
+[01;2m[01;35m2024-05-05 13:30.18 ---> using "0c60f117aee57abea8364cb033d47bb1d63ff0f68e5ee97378e032498e8442af" from cache[0m
+
+[01;34m/: (user (uid 1000) (gid 1000))[0m
+
+[01;34m/: (run (shell "ln -f ~/local/bin/opam-dev ~/local/bin/opam"))[0m
+[01;2m[01;35m2024-05-05 13:30.18 ---> using "f20a31eccb94af52fa2a3ef86b723bc6460bac3d8a92b8861915540c2498d20a" from cache[0m
+
+[01;34m/: (run (network host)
+        (shell "opam init --reinit -ni"))[0m
+No configuration file found, using built-in defaults.
+Checking for available remotes: rsync and local, git.
+  - you won't be able to use mercurial repositories unless you install the hg command on your system.
+  - you won't be able to use darcs repositories unless you install the darcs command on your system.
+
+This version of opam requires an update to the layout of /Users/mac1000/.opam from version 2.1 to version 2.2~alpha, which can't be reverted.
+You may want to back it up before going further.
+
+Continue? [y/n] y
+Format upgrade done.
+
+<><> Updating repositories ><><><><><><><><><><><><><><><><><><><><><><><><><><>
+[default] no changes from git+file:///Users/mac1000/opam-repository
+[01;2m[01;35m2024-05-05 13:30.18 ---> using "7818e224f85c11d1d318abe9ba4e297be345388b7ed476f912b6900c6bae56aa" from cache[0m
+
+[01;34m/: (run (shell "uname -rs && opam exec -- ocaml -version && opam --version"))[0m
+Darwin 23.4.0
+The OCaml toplevel, version 4.14.2
+2.2.0~beta1
+[01;2m[01;35m2024-05-05 13:30.19 ---> using "b68dfff025f7534bf3966778231000a9d9e4e27525baf87e50daaae0b61c1ee7" from cache[0m
+
+[01;34m/: (env OPAMDOWNLOADJOBS 1)[0m
+
+[01;34m/: (env OPAMERRLOGLEN 0)[0m
+
+[01;34m/: (env OPAMSOLVERTIMEOUT 500)[0m
+
+[01;34m/: (env OPAMPRECISETRACKING 1)[0m
+
+[01;34m/: (env CI true)[0m
+
+[01;34m/: (env OPAM_REPO_CI true)[0m
+
+[01;34m/: (run (shell "rm -rf opam-repository/"))[0m
+[01;2m[01;35m2024-05-05 13:30.19 ---> using "ecd2ca7a1be0523fbde5899fd3a25c0777d10450da4a95444f5209931f6f01dd" from cache[0m
+
+[01;34m/: (copy (src .) (dst opam-repository/))[0m
+[01;2m[01;35m2024-05-05 13:30.20 ---> using "727e4589646f0764ba5d632a3cace04e98d5dcf889379574a61063b916990b59" from cache[0m
+
+[01;34m/: (run (shell "opam repository set-url -k local --strict default opam-repository/"))[0m
+[default] Initialised
+[01;2m[01;35m2024-05-05 13:30.21 ---> using "45a319e719c49b2da04a20c19eb90467d079795927beb2f35968f61917e43eec" from cache[0m
+
+[01;34m/: (run (network host)
+        (shell "opam update --depexts || true"))[0m
++ /opt/homebrew/bin/brew "update"
+- ==> Updating Homebrew...
+- ==> Homebrew collects anonymous analytics.
+- Read the analytics documentation (and how to opt-out) here:
+-   https://docs.brew.sh/Analytics
+- No analytics have been recorded yet (nor will be during this `brew` run).
+- 
+- ==> Homebrew is run entirely by unpaid volunteers. Please consider donating:
+-   https://github.com/Homebrew/brew#donations
+- 
+- Already up-to-date.
+[01;2m[01;35m2024-05-05 13:30.21 ---> using "778b57ac2be36d8f4e06a54b82978d090548412609d6cbb41c223c936e096584" from cache[0m
+
+[01;34m/: (run (shell "opam pin add -k version -yn js_of_ocaml-toplevel.5.8.1 5.8.1"))[0m
+js_of_ocaml-toplevel is now pinned to version 5.8.1
+[01;2m[01;35m2024-05-05 13:30.21 ---> using "621dbbe6bff698797c75aea30412c76f0e5dfac1fd7c9771e6aab3fd5ada2d84" from cache[0m
+
+[01;34m/: (run (cache (opam-archives (target /Users/mac1000/.opam/download-cache)) (homebrew (target /Users/mac1000/Library/Caches/Homebrew)))
+        (network host)
+        (shell  "opam reinstall js_of_ocaml-toplevel.5.8.1;\
+               \n        res=$?;\
+               \n        test \"$res\" != 31 && exit \"$res\";\
+               \n        export OPAMCLI=2.0;\
+               \n        build_dir=$(opam var prefix)/.opam-switch/build;\
+               \n        failed=$(ls \"$build_dir\");\
+               \n        partial_fails=\"\";\
+               \n        for pkg in $failed; do\
+               \n          if opam show -f x-ci-accept-failures: \"$pkg\" | grep -qF \"\\\"macos-homebrew\\\"\"; then\
+               \n            echo \"A package failed and has been disabled for CI using the 'x-ci-accept-failures' field.\";\
+               \n          fi;\
+               \n          test \"$pkg\" != 'js_of_ocaml-toplevel.5.8.1' && partial_fails=\"$partial_fails $pkg\";\
+               \n        done;\
+               \n        test \"${partial_fails}\" != \"\" && echo \"opam-repo-ci detected dependencies failing: ${partial_fails}\";\
+               \n        exit 1"))[0m
+js_of_ocaml-toplevel.5.8.1 is not installed. Install it? [y/n] y
+The following actions will be performed:
+=== install 19 packages
+  - install cmdliner             1.2.0          [required by js_of_ocaml-compiler]
+  - install cppo                 1.6.9          [required by yojson]
+  - install dune                 3.15.2         [required by js_of_ocaml-toplevel]
+  - install gen                  1.1            [required by sedlex]
+  - install js_of_ocaml-compiler 5.8.1          [required by js_of_ocaml-toplevel]
+  - install js_of_ocaml-toplevel 5.8.1 (pinned)
+  - install menhir               20231231       [required by js_of_ocaml-compiler]
+  - install menhirCST            20231231       [required by menhir]
+  - install menhirLib            20231231       [required by js_of_ocaml-compiler]
+  - install menhirSdk            20231231       [required by js_of_ocaml-compiler]
+  - install ocaml-compiler-libs  v0.12.4        [required by ppxlib]
+  - install ocamlfind            1.9.6          [required by js_of_ocaml-toplevel]
+  - install ppx_derivers         1.2.1          [required by ppxlib]
+  - install ppxlib               0.32.1         [required by js_of_ocaml-compiler]
+  - install sedlex               3.2            [required by js_of_ocaml-compiler]
+  - install seq                  base           [required by yojson]
+  - install sexplib0             v0.17.0        [required by ppxlib]
+  - install stdlib-shims         0.3.0          [required by ppxlib]
+  - install yojson               2.1.2          [required by js_of_ocaml-compiler]
+
+<><> Processing actions <><><><><><><><><><><><><><><><><><><><><><><><><><><><>
+-> retrieved cmdliner.1.2.0  (cached)
+-> retrieved cppo.1.6.9  (cached)
+-> retrieved dune.3.15.2  (cached)
+-> retrieved gen.1.1  (cached)
+-> retrieved js_of_ocaml-compiler.5.8.1, js_of_ocaml-toplevel.5.8.1  (cached)
+-> retrieved menhir.20231231, menhirCST.20231231, menhirLib.20231231, menhirSdk.20231231  (cached)
+-> installed cmdliner.1.2.0
+-> retrieved ocaml-compiler-libs.v0.12.4  (cached)
+-> retrieved ocamlfind.1.9.6  (cached)
+-> retrieved ppx_derivers.1.2.1  (cached)
+-> retrieved ppxlib.0.32.1  (cached)
+-> retrieved sedlex.3.2  (cached)
+-> installed seq.base
+-> retrieved sexplib0.v0.17.0  (cached)
+-> retrieved stdlib-shims.0.3.0  (cached)
+-> retrieved yojson.2.1.2  (cached)
+-> installed ocamlfind.1.9.6
+-> installed dune.3.15.2
+-> installed menhirCST.20231231
+-> installed ppx_derivers.1.2.1
+-> installed stdlib-shims.0.3.0
+-> installed menhirSdk.20231231
+-> installed ocaml-compiler-libs.v0.12.4
+-> installed menhirLib.20231231
+-> installed gen.1.1
+-> installed cppo.1.6.9
+-> installed sexplib0.v0.17.0
+-> installed yojson.2.1.2
+-> installed menhir.20231231
+-> installed ppxlib.0.32.1
+-> installed sedlex.3.2
+-> installed js_of_ocaml-compiler.5.8.1
+-> installed js_of_ocaml-toplevel.5.8.1
+Done.
+# Run eval $(opam env) to update the current shell environment
+[01;2m[01;35m2024-05-05 13:30.21 ---> using "fd7b7369304a6cbe307a0ee908d3fd354deacc3924e3f5672a022b0d1ad2ac5f" from cache[0m
+
+[01;34m/: (run (network host)
+        (shell "(opam reinstall --with-test js_of_ocaml-toplevel.5.8.1) || true"))[0m
+[ERROR] Sorry, resolution of the request timed out.
+        Try to specify a more precise request, use a different solver, or increase the allowed time by setting OPAMSOLVERTIMEOUT to a bigger value (currently, it is set to 500.0 seconds).
+[01;2m[01;35m2024-05-05 13:38.47 ---> saved as "38ea0ea4af14f00e031a6809933a10663b2d53cc418e17e8ef3339175f7e677c"[0m
+
+[01;34m/: (run (shell  "opam reinstall --with-test --verbose js_of_ocaml-toplevel.5.8.1;\
+               \n        res=$?;\
+               \n        test \"$res\" != 31 && exit \"$res\";\
+               \n        export OPAMCLI=2.0;\
+               \n        build_dir=$(opam var prefix)/.opam-switch/build;\
+               \n        failed=$(ls \"$build_dir\");\
+               \n        partial_fails=\"\";\
+               \n        for pkg in $failed; do\
+               \n          if opam show -f x-ci-accept-failures: \"$pkg\" | grep -qF \"\\\"macos-homebrew\\\"\"; then\
+               \n            echo \"A package failed and has been disabled for CI using the 'x-ci-accept-failures' field.\";\
+               \n          fi;\
+               \n          test \"$pkg\" != 'js_of_ocaml-toplevel.5.8.1' && partial_fails=\"$partial_fails $pkg\";\
+               \n        done;\
+               \n        test \"${partial_fails}\" != \"\" && echo \"opam-repo-ci detected dependencies failing: ${partial_fails}\";\
+               \n        exit 1"))[0m
+[ERROR] Sorry, resolution of the request timed out.
+        Try to specify a more precise request, use a different solver, or increase the allowed time by setting OPAMSOLVERTIMEOUT to a bigger value (currently, it is set to 500.0 seconds).
+'opam reinstall --with-test --verbose js_of_ocaml-toplevel.5.8.1' failed.
+"/usr/bin/env" "bash" "-c" "opam reinstall --with-test --verbose js_of_ocaml-toplevel.5.8.1;
+        res=$?;
+        test "$res" != 31 && exit "$res";
+        export OPAMCLI=2.0;
+        build_dir=$(opam var prefix)/.opam-switch/build;
+        failed=$(ls "$build_dir");
+        partial_fails="";
+        for pkg in $failed; do
+          if opam show -f x-ci-accept-failures: "$pkg" | grep -qF "\"macos-homebrew\""; then
+            echo "A package failed and has been disabled for CI using the 'x-ci-accept-failures' field.";
+          fi;
+          test "$pkg" != 'js_of_ocaml-toplevel.5.8.1' && partial_fails="$partial_fails $pkg";
+        done;
+        test "${partial_fails}" != "" && echo "opam-repo-ci detected dependencies failing: ${partial_fails}";
+        exit 1" failed with exit status 60
+2024-05-05 13:47.22: Job failed: Failed: Build failed
+2024-05-05 13:47.22: Log analysis:
+2024-05-05 13:47.22: >>> 
+[ERROR] Sorry, resolution of the request timed out.
+ (score = 20)
+2024-05-05 13:47.22: >>> 
+[ERROR] Sorry, resolution of the request timed out.
+ (score = 20)
+2024-05-05 13:47.22: Sorry, resolution of the request timed out.

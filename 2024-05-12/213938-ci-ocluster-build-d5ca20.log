@@ -1,0 +1,295 @@
+2024-05-12 21:39.38: New job: test bam.0.2, using opam 2.1
+                              from https://github.com/ocaml/opam-repository.git#refs/pull/25864/head (d1f5226a1c8960fb0ec35cda0abf2f8499fafc5a)
+                              on debian-12-ocaml-4.14/amd64
+
+To reproduce locally:
+
+cd $(mktemp -d)
+git clone --recursive "https://github.com/ocaml/opam-repository.git" && cd "opam-repository" && git fetch origin "refs/pull/25864/head" && git reset --hard d1f5226a
+git fetch origin master
+git merge --no-edit 4eb8860c29ea0d15da2ebadc4439068b498e20ab
+cat > ../Dockerfile <<'END-OF-DOCKERFILE'
+[34mFROM ocaml/opam:debian-12-ocaml-4.14@sha256:35b1aa76181479f2ba40039ae0c5fa5d94e24300e1eb606117587a8e82e9d89e
+USER 1000:1000
+WORKDIR /home/opam
+RUN sudo ln -f /usr/bin/opam-2.1 /usr/bin/opam
+RUN opam init --reinit -ni
+RUN uname -rs && opam exec -- ocaml -version && opam --version
+ENV OPAMDOWNLOADJOBS="1"
+ENV OPAMERRLOGLEN="0"
+ENV OPAMSOLVERTIMEOUT="500"
+ENV OPAMPRECISETRACKING="1"
+ENV CI="true"
+ENV OPAM_REPO_CI="true"
+RUN rm -rf opam-repository/
+COPY --chown=1000:1000 . opam-repository/
+RUN opam repository set-url --strict default opam-repository/
+RUN opam update --depexts || true
+RUN opam pin add -k version -yn bam.0.2 0.2
+RUN opam reinstall bam.0.2; \
+    res=$?; \
+    test "$res" != 31 && exit "$res"; \
+    export OPAMCLI=2.0; \
+    build_dir=$(opam var prefix)/.opam-switch/build; \
+    failed=$(ls "$build_dir"); \
+    partial_fails=""; \
+    for pkg in $failed; do \
+    if opam show -f x-ci-accept-failures: "$pkg" | grep -qF "\"debian-12\""; then \
+    echo "A package failed and has been disabled for CI using the 'x-ci-accept-failures' field."; \
+    fi; \
+    test "$pkg" != 'bam.0.2' && partial_fails="$partial_fails $pkg"; \
+    done; \
+    test "${partial_fails}" != "" && echo "opam-repo-ci detected dependencies failing: ${partial_fails}"; \
+    exit 1
+RUN (opam reinstall --with-test bam.0.2) || true
+RUN opam reinstall --with-test --verbose bam.0.2; \
+    res=$?; \
+    test "$res" != 31 && exit "$res"; \
+    export OPAMCLI=2.0; \
+    build_dir=$(opam var prefix)/.opam-switch/build; \
+    failed=$(ls "$build_dir"); \
+    partial_fails=""; \
+    for pkg in $failed; do \
+    if opam show -f x-ci-accept-failures: "$pkg" | grep -qF "\"debian-12\""; then \
+    echo "A package failed and has been disabled for CI using the 'x-ci-accept-failures' field."; \
+    fi; \
+    test "$pkg" != 'bam.0.2' && partial_fails="$partial_fails $pkg"; \
+    done; \
+    test "${partial_fails}" != "" && echo "opam-repo-ci detected dependencies failing: ${partial_fails}"; \
+    exit 1
+[0m
+END-OF-DOCKERFILE
+docker build -f ../Dockerfile .
+
+2024-05-12 21:39.38: Using cache hint "ocaml/opam:debian-12-ocaml-4.14@sha256:35b1aa76181479f2ba40039ae0c5fa5d94e24300e1eb606117587a8e82e9d89e-bam.0.2-d1f5226a1c8960fb0ec35cda0abf2f8499fafc5a"
+2024-05-12 21:39.38: Using OBuilder spec:
+((from ocaml/opam:debian-12-ocaml-4.14@sha256:35b1aa76181479f2ba40039ae0c5fa5d94e24300e1eb606117587a8e82e9d89e)
+ (user (uid 1000) (gid 1000))
+ (workdir /home/opam)
+ (run (shell "sudo ln -f /usr/bin/opam-2.1 /usr/bin/opam"))
+ (run (network host)
+      (shell "opam init --reinit --config .opamrc-sandbox -ni"))
+ (run (shell "uname -rs && opam exec -- ocaml -version && opam --version"))
+ (env OPAMDOWNLOADJOBS 1)
+ (env OPAMERRLOGLEN 0)
+ (env OPAMSOLVERTIMEOUT 500)
+ (env OPAMPRECISETRACKING 1)
+ (env CI true)
+ (env OPAM_REPO_CI true)
+ (run (shell "rm -rf opam-repository/"))
+ (copy (src .) (dst opam-repository/))
+ (run (shell "opam repository set-url --strict default opam-repository/"))
+ (run (network host)
+      (shell "opam update --depexts || true"))
+ (run (shell "opam pin add -k version -yn bam.0.2 0.2"))
+ (run (cache (opam-archives (target /home/opam/.opam/download-cache)))
+      (network host)
+      (shell  "opam reinstall bam.0.2;\
+             \n        res=$?;\
+             \n        test \"$res\" != 31 && exit \"$res\";\
+             \n        export OPAMCLI=2.0;\
+             \n        build_dir=$(opam var prefix)/.opam-switch/build;\
+             \n        failed=$(ls \"$build_dir\");\
+             \n        partial_fails=\"\";\
+             \n        for pkg in $failed; do\
+             \n          if opam show -f x-ci-accept-failures: \"$pkg\" | grep -qF \"\\\"debian-12\\\"\"; then\
+             \n            echo \"A package failed and has been disabled for CI using the 'x-ci-accept-failures' field.\";\
+             \n          fi;\
+             \n          test \"$pkg\" != 'bam.0.2' && partial_fails=\"$partial_fails $pkg\";\
+             \n        done;\
+             \n        test \"${partial_fails}\" != \"\" && echo \"opam-repo-ci detected dependencies failing: ${partial_fails}\";\
+             \n        exit 1"))
+ (run (network host)
+      (shell "(opam reinstall --with-test bam.0.2) || true"))
+ (run (shell  "opam reinstall --with-test --verbose bam.0.2;\
+             \n        res=$?;\
+             \n        test \"$res\" != 31 && exit \"$res\";\
+             \n        export OPAMCLI=2.0;\
+             \n        build_dir=$(opam var prefix)/.opam-switch/build;\
+             \n        failed=$(ls \"$build_dir\");\
+             \n        partial_fails=\"\";\
+             \n        for pkg in $failed; do\
+             \n          if opam show -f x-ci-accept-failures: \"$pkg\" | grep -qF \"\\\"debian-12\\\"\"; then\
+             \n            echo \"A package failed and has been disabled for CI using the 'x-ci-accept-failures' field.\";\
+             \n          fi;\
+             \n          test \"$pkg\" != 'bam.0.2' && partial_fails=\"$partial_fails $pkg\";\
+             \n        done;\
+             \n        test \"${partial_fails}\" != \"\" && echo \"opam-repo-ci detected dependencies failing: ${partial_fails}\";\
+             \n        exit 1"))
+)
+
+2024-05-12 21:39.38: Waiting for resource in pool OCluster
+2024-05-12 21:39.41: Waiting for worker…
+2024-05-12 21:45.24: Got resource from pool OCluster
+Building on x86-bm-c14.sw.ocaml.org
+All commits already cached
+Updating files:  60% (20217/33651)Updating files:  61% (20528/33651)Updating files:  62% (20864/33651)Updating files:  63% (21201/33651)Updating files:  64% (21537/33651)Updating files:  65% (21874/33651)Updating files:  66% (22210/33651)Updating files:  67% (22547/33651)Updating files:  68% (22883/33651)Updating files:  69% (23220/33651)Updating files:  70% (23556/33651)Updating files:  71% (23893/33651)Updating files:  72% (24229/33651)Updating files:  73% (24566/33651)Updating files:  74% (24902/33651)Updating files:  75% (25239/33651)Updating files:  76% (25575/33651)Updating files:  77% (25912/33651)Updating files:  78% (26248/33651)Updating files:  79% (26585/33651)Updating files:  80% (26921/33651)Updating files:  81% (27258/33651)Updating files:  82% (27594/33651)Updating files:  83% (27931/33651)Updating files:  84% (28267/33651)Updating files:  85% (28604/33651)Updating files:  86% (28940/33651)Updating files:  87% (29277/33651)Updating files:  88% (29613/33651)Updating files:  89% (29950/33651)Updating files:  90% (30286/33651)Updating files:  91% (30623/33651)Updating files:  92% (30959/33651)Updating files:  93% (31296/33651)Updating files:  94% (31632/33651)Updating files:  95% (31969/33651)Updating files:  96% (32305/33651)Updating files:  97% (32642/33651)Updating files:  98% (32978/33651)Updating files:  99% (33315/33651)Updating files: 100% (33651/33651)Updating files: 100% (33651/33651), done.
+HEAD is now at 4eb8860c29 Merge pull request #25820 from kit-ty-kate/opam-publish-camlp4.5.1
+Updating 4eb8860c29..d1f5226a1c
+Fast-forward
+ packages/bam-ppx/bam-ppx.0.2/opam   | 42 ++++++++++++++++++++++++++++++++++++
+ packages/bam/bam.0.2/opam           | 43 +++++++++++++++++++++++++++++++++++++
+ packages/tezt-bam/tezt-bam.0.2/opam | 42 ++++++++++++++++++++++++++++++++++++
+ 3 files changed, 127 insertions(+)
+ create mode 100644 packages/bam-ppx/bam-ppx.0.2/opam
+ create mode 100644 packages/bam/bam.0.2/opam
+ create mode 100644 packages/tezt-bam/tezt-bam.0.2/opam
+
+[01;34m(from ocaml/opam:debian-12-ocaml-4.14@sha256:35b1aa76181479f2ba40039ae0c5fa5d94e24300e1eb606117587a8e82e9d89e)[0m
+[01;2m[01;35m2024-05-12 21:45.27 ---> using "6bc7e89b5725106f75c11a8b774d971b425f7dab532e626727166f8fc8501d75" from cache[0m
+
+[01;34m/: (user (uid 1000) (gid 1000))[0m
+
+[01;34m/: (workdir /home/opam)[0m
+
+[01;34m/home/opam: (run (shell "sudo ln -f /usr/bin/opam-2.1 /usr/bin/opam"))[0m
+[01;2m[01;35m2024-05-12 21:45.27 ---> using "25b467632dad7baa0c60d17b05653b6a38a1009233fa03211da04eb5d19ad054" from cache[0m
+
+[01;34m/home/opam: (run (network host)
+                 (shell "opam init --reinit --config .opamrc-sandbox -ni"))[0m
+Configuring from /home/opam/.opamrc-sandbox, then /home/opam/.opamrc, and finally from built-in defaults.
+Checking for available remotes: rsync and local, git.
+  - you won't be able to use mercurial repositories unless you install the hg command on your system.
+  - you won't be able to use darcs repositories unless you install the darcs command on your system.
+
+This version of opam requires an update to the layout of /home/opam/.opam from version 2.0 to version 2.1, which can't be reverted.
+You may want to back it up before going further.
+
+Continue? [Y/n] y
+Format upgrade done.
+
+<><> Updating repositories ><><><><><><><><><><><><><><><><><><><><><><><><><><>
+[default] synchronised from file:///home/opam/opam-repository
+[01;2m[01;35m2024-05-12 21:46.31 ---> saved as "3472a78aa86b1a70569d932c974bbfab0b08ef209d548e288cbff8c94e497eb5"[0m
+
+[01;34m/home/opam: (run (shell "uname -rs && opam exec -- ocaml -version && opam --version"))[0m
+Linux 5.15.0-101-generic
+The OCaml toplevel, version 4.14.2
+2.1.5
+[01;2m[01;35m2024-05-12 21:46.31 ---> saved as "37757b2e90b799f4473fd68716d9c95548d1aa264cec122ac950fcdec231978f"[0m
+
+[01;34m/home/opam: (env OPAMDOWNLOADJOBS 1)[0m
+
+[01;34m/home/opam: (env OPAMERRLOGLEN 0)[0m
+
+[01;34m/home/opam: (env OPAMSOLVERTIMEOUT 500)[0m
+
+[01;34m/home/opam: (env OPAMPRECISETRACKING 1)[0m
+
+[01;34m/home/opam: (env CI true)[0m
+
+[01;34m/home/opam: (env OPAM_REPO_CI true)[0m
+
+[01;34m/home/opam: (run (shell "rm -rf opam-repository/"))[0m
+[01;2m[01;35m2024-05-12 21:46.38 ---> saved as "c068b7415e89f62062c8590705142dcf016c6d3d3a0192714d6a9ca7fc591326"[0m
+
+[01;34m/home/opam: (copy (src .) (dst opam-repository/))[0m
+[01;2m[01;35m2024-05-12 21:46.53 ---> saved as "1c3a050483cc896e5724968230cb5963ea8a1e49c781011e8ef3363cd4cd0a78"[0m
+
+[01;34m/home/opam: (run (shell "opam repository set-url --strict default opam-repository/"))[0m
+[default] Initialised
+[01;2m[01;35m2024-05-12 21:47.26 ---> saved as "1959d9b4490bfee9d55098f248fde4cf1dfb3ad8d56ef365f8ad6c18e6193248"[0m
+
+[01;34m/home/opam: (run (network host)
+                 (shell "opam update --depexts || true"))[0m
++ /usr/bin/sudo "apt-get" "update"
+- Hit:1 http://deb.debian.org/debian bookworm InRelease
+- Get:2 http://deb.debian.org/debian bookworm-updates InRelease [55.4 kB]
+- Get:3 http://deb.debian.org/debian-security bookworm-security InRelease [48.0 kB]
+- Get:4 http://deb.debian.org/debian bookworm-updates/main amd64 Packages.diff/Index [10.6 kB]
+- Get:5 http://deb.debian.org/debian bookworm-updates/main amd64 Packages T-2024-04-23-2036.10-F-2024-04-23-2036.10.pdiff [1595 B]
+- Get:5 http://deb.debian.org/debian bookworm-updates/main amd64 Packages T-2024-04-23-2036.10-F-2024-04-23-2036.10.pdiff [1595 B]
+- Get:6 http://deb.debian.org/debian-security bookworm-security/main amd64 Packages [156 kB]
+- Fetched 272 kB in 0s (975 kB/s)
+- Reading package lists...
+[01;2m[01;35m2024-05-12 21:47.27 ---> saved as "aee74fbd19ecd22073d1bd12bfffb87253e15254b1360dd1198775f184e8ff52"[0m
+
+[01;34m/home/opam: (run (shell "opam pin add -k version -yn bam.0.2 0.2"))[0m
+bam is now pinned to version 0.2
+[01;2m[01;35m2024-05-12 21:47.28 ---> saved as "281e8d67f7e999747ef8b08dc425830ff481af5eda66c87f62b166bae86336e0"[0m
+
+[01;34m/home/opam: (run (cache (opam-archives (target /home/opam/.opam/download-cache)))
+                 (network host)
+                 (shell  "opam reinstall bam.0.2;\
+                        \n        res=$?;\
+                        \n        test \"$res\" != 31 && exit \"$res\";\
+                        \n        export OPAMCLI=2.0;\
+                        \n        build_dir=$(opam var prefix)/.opam-switch/build;\
+                        \n        failed=$(ls \"$build_dir\");\
+                        \n        partial_fails=\"\";\
+                        \n        for pkg in $failed; do\
+                        \n          if opam show -f x-ci-accept-failures: \"$pkg\" | grep -qF \"\\\"debian-12\\\"\"; then\
+                        \n            echo \"A package failed and has been disabled for CI using the 'x-ci-accept-failures' field.\";\
+                        \n          fi;\
+                        \n          test \"$pkg\" != 'bam.0.2' && partial_fails=\"$partial_fails $pkg\";\
+                        \n        done;\
+                        \n        test \"${partial_fails}\" != \"\" && echo \"opam-repo-ci detected dependencies failing: ${partial_fails}\";\
+                        \n        exit 1"))[0m
+bam.0.2 is not installed. Install it? [Y/n] y
+The following actions will be performed:
+  - install dune      3.15.2 [required by bam]
+  - install conf-gmp  4      [required by zarith]
+  - install ocamlfind 1.9.6  [required by pringo, zarith]
+  - install zarith    1.13   [required by bam]
+  - install pringo    1.4    [required by bam]
+  - install bam       0.2*
+===== 6 to install =====
+
+The following system packages will first need to be installed:
+    libgmp-dev
+
+<><> Handling external dependencies <><><><><><><><><><><><><><><><><><><><><><>
+Let opam run your package manager to install the required system packages?
+(answer 'n' for other options) [Y/n] y
++ /usr/bin/sudo "apt-get" "install" "-qq" "-yy" "libgmp-dev"
+- debconf: delaying package configuration, since apt-utils is not installed
+- Selecting previously unselected package libgmpxx4ldbl:amd64.
+- (Reading database ... (Reading database ... 5%(Reading database ... 10%(Reading database ... 15%(Reading database ... 20%(Reading database ... 25%(Reading database ... 30%(Reading database ... 35%(Reading database ... 40%(Reading database ... 45%(Reading database ... 50%(Reading database ... 55%(Reading database ... 60%(Reading database ... 65%(Reading database ... 70%(Reading database ... 75%(Reading database ... 80%(Reading database ... 85%(Reading database ... 90%(Reading database ... 95%(Reading database ... 100%(Reading database ... 18735 files and directories currently installed.)
+- Preparing to unpack .../libgmpxx4ldbl_2%3a6.2.1+dfsg1-1.1_amd64.deb ...
+- Unpacking libgmpxx4ldbl:amd64 (2:6.2.1+dfsg1-1.1) ...
+- Selecting previously unselected package libgmp-dev:amd64.
+- Preparing to unpack .../libgmp-dev_2%3a6.2.1+dfsg1-1.1_amd64.deb ...
+- Unpacking libgmp-dev:amd64 (2:6.2.1+dfsg1-1.1) ...
+- Setting up libgmpxx4ldbl:amd64 (2:6.2.1+dfsg1-1.1) ...
+- Setting up libgmp-dev:amd64 (2:6.2.1+dfsg1-1.1) ...
+- Processing triggers for libc-bin (2.36-9+deb12u4) ...
+
+<><> Processing actions <><><><><><><><><><><><><><><><><><><><><><><><><><><><>
+-> retrieved bam.0.2  (cached)
+-> retrieved dune.3.15.2  (cached)
+-> installed conf-gmp.4
+-> retrieved ocamlfind.1.9.6  (cached)
+-> retrieved pringo.1.4  (cached)
+-> retrieved zarith.1.13  (cached)
+-> installed ocamlfind.1.9.6
+-> installed pringo.1.4
+-> installed zarith.1.13
+-> installed dune.3.15.2
+-> installed bam.0.2
+Done.
+# Run eval $(opam env) to update the current shell environment
+[01;2m[01;35m2024-05-12 21:48.10 ---> saved as "cd0a0aa7292fd05996ded6951ef04805fc840738d08b1796e4c64e2cd028f2eb"[0m
+
+[01;34m/home/opam: (run (network host)
+                 (shell "(opam reinstall --with-test bam.0.2) || true"))[0m
+[ERROR] Sorry, resolution of the request timed out.
+        Try to specify a more precise request, use a different solver, or increase the allowed time by setting OPAMSOLVERTIMEOUT to a bigger value (currently, it is set to 500.0 seconds).
+[01;2m[01;35m2024-05-12 21:56.46 ---> saved as "d5468444c4a92580035b80d15c4c01f451beba141a2dc3c4e3aa26e0fed3c0aa"[0m
+
+[01;34m/home/opam: (run (shell  "opam reinstall --with-test --verbose bam.0.2;\
+                        \n        res=$?;\
+                        \n        test \"$res\" != 31 && exit \"$res\";\
+                        \n        export OPAMCLI=2.0;\
+                        \n        build_dir=$(opam var prefix)/.opam-switch/build;\
+                        \n        failed=$(ls \"$build_dir\");\
+                        \n        partial_fails=\"\";\
+                        \n        for pkg in $failed; do\
+                        \n          if opam show -f x-ci-accept-failures: \"$pkg\" | grep -qF \"\\\"debian-12\\\"\"; then\
+                        \n            echo \"A package failed and has been disabled for CI using the 'x-ci-accept-failures' field.\";\
+                        \n          fi;\
+                        \n          test \"$pkg\" != 'bam.0.2' && partial_fails=\"$partial_fails $pkg\";\
+                        \n        done;\
+                        \n        test \"${partial_fails}\" != \"\" && echo \"opam-repo-ci detected dependencies failing: ${partial_fails}\";\
+                        \n        exit 1"))[0m
+2024-05-12 22:00.02: Cancelling: Auto-cancelling job because it is no longer needed
+Job cancelled

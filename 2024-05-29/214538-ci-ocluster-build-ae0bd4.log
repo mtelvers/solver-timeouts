@@ -1,0 +1,271 @@
+2024-05-29 21:45.38: New job: test dkim-mirage.0.5.0, using opam 2.1
+                              from https://github.com/ocaml/opam-repository.git#refs/pull/25965/head (23874db61629686ac4e2668276afbdd82409815f)
+                              on debian-12-ocaml-5.2/amd64
+
+To reproduce locally:
+
+cd $(mktemp -d)
+git clone --recursive "https://github.com/ocaml/opam-repository.git" && cd "opam-repository" && git fetch origin "refs/pull/25965/head" && git reset --hard 23874db6
+git fetch origin master
+git merge --no-edit 0b9453aa6048fe22dfdf9af320fe1dd40296d350
+cat > ../Dockerfile <<'END-OF-DOCKERFILE'
+[34mFROM ocaml/opam:debian-12-ocaml-5.2@sha256:c3648aaaa12427d39407562078858b92695580fc0b6babaf3e2ac8f9a7107280
+USER 1000:1000
+WORKDIR /home/opam
+RUN sudo ln -f /usr/bin/opam-2.1 /usr/bin/opam
+RUN opam init --reinit -ni
+RUN uname -rs && opam exec -- ocaml -version && opam --version
+ENV OPAMDOWNLOADJOBS="1"
+ENV OPAMERRLOGLEN="0"
+ENV OPAMSOLVERTIMEOUT="500"
+ENV OPAMPRECISETRACKING="1"
+ENV CI="true"
+ENV OPAM_REPO_CI="true"
+RUN rm -rf opam-repository/
+COPY --chown=1000:1000 . opam-repository/
+RUN opam repository set-url --strict default opam-repository/
+RUN opam update --depexts || true
+RUN opam pin add -k version -yn dkim-mirage.0.5.0 0.5.0
+RUN opam reinstall dkim-mirage.0.5.0; \
+    res=$?; \
+    test "$res" != 31 && exit "$res"; \
+    export OPAMCLI=2.0; \
+    build_dir=$(opam var prefix)/.opam-switch/build; \
+    failed=$(ls "$build_dir"); \
+    partial_fails=""; \
+    for pkg in $failed; do \
+    if opam show -f x-ci-accept-failures: "$pkg" | grep -qF "\"debian-12\""; then \
+    echo "A package failed and has been disabled for CI using the 'x-ci-accept-failures' field."; \
+    fi; \
+    test "$pkg" != 'dkim-mirage.0.5.0' && partial_fails="$partial_fails $pkg"; \
+    done; \
+    test "${partial_fails}" != "" && echo "opam-repo-ci detected dependencies failing: ${partial_fails}"; \
+    exit 1
+RUN (opam reinstall --with-test dkim-mirage.0.5.0) || true
+RUN opam reinstall --with-test --verbose dkim-mirage.0.5.0; \
+    res=$?; \
+    test "$res" != 31 && exit "$res"; \
+    export OPAMCLI=2.0; \
+    build_dir=$(opam var prefix)/.opam-switch/build; \
+    failed=$(ls "$build_dir"); \
+    partial_fails=""; \
+    for pkg in $failed; do \
+    if opam show -f x-ci-accept-failures: "$pkg" | grep -qF "\"debian-12\""; then \
+    echo "A package failed and has been disabled for CI using the 'x-ci-accept-failures' field."; \
+    fi; \
+    test "$pkg" != 'dkim-mirage.0.5.0' && partial_fails="$partial_fails $pkg"; \
+    done; \
+    test "${partial_fails}" != "" && echo "opam-repo-ci detected dependencies failing: ${partial_fails}"; \
+    exit 1
+[0m
+END-OF-DOCKERFILE
+docker build -f ../Dockerfile .
+
+2024-05-29 21:45.38: Using cache hint "ocaml/opam:debian-12-ocaml-5.2@sha256:c3648aaaa12427d39407562078858b92695580fc0b6babaf3e2ac8f9a7107280-dkim-mirage.0.5.0-23874db61629686ac4e2668276afbdd82409815f"
+2024-05-29 21:45.38: Using OBuilder spec:
+((from ocaml/opam:debian-12-ocaml-5.2@sha256:c3648aaaa12427d39407562078858b92695580fc0b6babaf3e2ac8f9a7107280)
+ (user (uid 1000) (gid 1000))
+ (workdir /home/opam)
+ (run (shell "sudo ln -f /usr/bin/opam-2.1 /usr/bin/opam"))
+ (run (network host)
+      (shell "opam init --reinit --config .opamrc-sandbox -ni"))
+ (run (shell "uname -rs && opam exec -- ocaml -version && opam --version"))
+ (env OPAMDOWNLOADJOBS 1)
+ (env OPAMERRLOGLEN 0)
+ (env OPAMSOLVERTIMEOUT 500)
+ (env OPAMPRECISETRACKING 1)
+ (env CI true)
+ (env OPAM_REPO_CI true)
+ (run (shell "rm -rf opam-repository/"))
+ (copy (src .) (dst opam-repository/))
+ (run (shell "opam repository set-url --strict default opam-repository/"))
+ (run (network host)
+      (shell "opam update --depexts || true"))
+ (run (shell "opam pin add -k version -yn dkim-mirage.0.5.0 0.5.0"))
+ (run (cache (opam-archives (target /home/opam/.opam/download-cache)))
+      (network host)
+      (shell  "opam reinstall dkim-mirage.0.5.0;\
+             \n        res=$?;\
+             \n        test \"$res\" != 31 && exit \"$res\";\
+             \n        export OPAMCLI=2.0;\
+             \n        build_dir=$(opam var prefix)/.opam-switch/build;\
+             \n        failed=$(ls \"$build_dir\");\
+             \n        partial_fails=\"\";\
+             \n        for pkg in $failed; do\
+             \n          if opam show -f x-ci-accept-failures: \"$pkg\" | grep -qF \"\\\"debian-12\\\"\"; then\
+             \n            echo \"A package failed and has been disabled for CI using the 'x-ci-accept-failures' field.\";\
+             \n          fi;\
+             \n          test \"$pkg\" != 'dkim-mirage.0.5.0' && partial_fails=\"$partial_fails $pkg\";\
+             \n        done;\
+             \n        test \"${partial_fails}\" != \"\" && echo \"opam-repo-ci detected dependencies failing: ${partial_fails}\";\
+             \n        exit 1"))
+ (run (network host)
+      (shell "(opam reinstall --with-test dkim-mirage.0.5.0) || true"))
+ (run (shell  "opam reinstall --with-test --verbose dkim-mirage.0.5.0;\
+             \n        res=$?;\
+             \n        test \"$res\" != 31 && exit \"$res\";\
+             \n        export OPAMCLI=2.0;\
+             \n        build_dir=$(opam var prefix)/.opam-switch/build;\
+             \n        failed=$(ls \"$build_dir\");\
+             \n        partial_fails=\"\";\
+             \n        for pkg in $failed; do\
+             \n          if opam show -f x-ci-accept-failures: \"$pkg\" | grep -qF \"\\\"debian-12\\\"\"; then\
+             \n            echo \"A package failed and has been disabled for CI using the 'x-ci-accept-failures' field.\";\
+             \n          fi;\
+             \n          test \"$pkg\" != 'dkim-mirage.0.5.0' && partial_fails=\"$partial_fails $pkg\";\
+             \n        done;\
+             \n        test \"${partial_fails}\" != \"\" && echo \"opam-repo-ci detected dependencies failing: ${partial_fails}\";\
+             \n        exit 1"))
+)
+
+2024-05-29 21:45.38: Waiting for resource in pool OCluster
+2024-05-29 23:01.39: Waiting for worker…
+2024-05-29 23:10.38: Got resource from pool OCluster
+Building on x86-bm-c1.sw.ocaml.org
+All commits already cached
+Updating files:  94% (29534/31390)Updating files:  95% (29821/31390)Updating files:  96% (30135/31390)Updating files:  97% (30449/31390)Updating files:  98% (30763/31390)Updating files:  99% (31077/31390)Updating files: 100% (31390/31390)Updating files: 100% (31390/31390), done.
+HEAD is now at 0b9453aa60 Merge pull request #25962 from hannesm/no-check-for-ocaml-trunk
+Updating 0b9453aa60..23874db616
+Fast-forward
+ .../capnp-rpc-mirage/capnp-rpc-mirage.1.2.3/opam   |  2 +-
+ packages/conduit-mirage/conduit-mirage.6.2.0/opam  |  2 +-
+ packages/conduit-mirage/conduit-mirage.6.2.1/opam  |  2 +-
+ packages/conduit-mirage/conduit-mirage.6.2.2/opam  |  2 +-
+ packages/dkim-mirage/dkim-mirage.0.5.0/opam        |  2 +-
+ packages/dns-certify/dns-certify.8.0.0/opam        | 49 ++++++++++++++++++
+ packages/dns-cli/dns-cli.8.0.0/opam                | 60 ++++++++++++++++++++++
+ packages/dns-client-lwt/dns-client-lwt.8.0.0/opam  | 41 +++++++++++++++
+ .../dns-client-mirage/dns-client-mirage.8.0.0/opam | 44 ++++++++++++++++
+ packages/dns-client/dns-client.8.0.0/opam          | 39 ++++++++++++++
+ packages/dns-mirage/dns-mirage.8.0.0/opam          | 49 ++++++++++++++++++
+ packages/dns-resolver/dns-resolver.8.0.0/opam      | 48 +++++++++++++++++
+ packages/dns-server/dns-server.8.0.0/opam          | 49 ++++++++++++++++++
+ packages/dns-stub/dns-stub.8.0.0/opam              | 49 ++++++++++++++++++
+ packages/dns-tsig/dns-tsig.8.0.0/opam              | 38 ++++++++++++++
+ packages/dns/dns.8.0.0/opam                        | 55 ++++++++++++++++++++
+ packages/dnssec/dnssec.8.0.0/opam                  | 42 +++++++++++++++
+ 17 files changed, 568 insertions(+), 5 deletions(-)
+ create mode 100644 packages/dns-certify/dns-certify.8.0.0/opam
+ create mode 100644 packages/dns-cli/dns-cli.8.0.0/opam
+ create mode 100644 packages/dns-client-lwt/dns-client-lwt.8.0.0/opam
+ create mode 100644 packages/dns-client-mirage/dns-client-mirage.8.0.0/opam
+ create mode 100644 packages/dns-client/dns-client.8.0.0/opam
+ create mode 100644 packages/dns-mirage/dns-mirage.8.0.0/opam
+ create mode 100644 packages/dns-resolver/dns-resolver.8.0.0/opam
+ create mode 100644 packages/dns-server/dns-server.8.0.0/opam
+ create mode 100644 packages/dns-stub/dns-stub.8.0.0/opam
+ create mode 100644 packages/dns-tsig/dns-tsig.8.0.0/opam
+ create mode 100644 packages/dns/dns.8.0.0/opam
+ create mode 100644 packages/dnssec/dnssec.8.0.0/opam
+
+[01;34m(from ocaml/opam:debian-12-ocaml-5.2@sha256:c3648aaaa12427d39407562078858b92695580fc0b6babaf3e2ac8f9a7107280)[0m
+[01;2m[01;35m2024-05-29 23:10.41 ---> using "ed75a14731b6a9ff34cfb0628927e06efa510541d8edd19ef220d9903f45ed0e" from cache[0m
+
+[01;34m/: (user (uid 1000) (gid 1000))[0m
+
+[01;34m/: (workdir /home/opam)[0m
+
+[01;34m/home/opam: (run (shell "sudo ln -f /usr/bin/opam-2.1 /usr/bin/opam"))[0m
+[01;2m[01;35m2024-05-29 23:10.41 ---> using "311e5b4ac33a5968bbb36b7268d7e4f631f9d599b6974fe5cfc7a518976ea751" from cache[0m
+
+[01;34m/home/opam: (run (network host)
+                 (shell "opam init --reinit --config .opamrc-sandbox -ni"))[0m
+Configuring from /home/opam/.opamrc-sandbox, then /home/opam/.opamrc, and finally from built-in defaults.
+Checking for available remotes: rsync and local, git.
+  - you won't be able to use mercurial repositories unless you install the hg command on your system.
+  - you won't be able to use darcs repositories unless you install the darcs command on your system.
+
+This version of opam requires an update to the layout of /home/opam/.opam from version 2.0 to version 2.1, which can't be reverted.
+You may want to back it up before going further.
+
+Continue? [Y/n] y
+Format upgrade done.
+
+<><> Updating repositories ><><><><><><><><><><><><><><><><><><><><><><><><><><>
+[default] synchronised from file:///home/opam/opam-repository
+[01;2m[01;35m2024-05-29 23:12.07 ---> saved as "2ad5f0f15b3d6a4dfb509c0f4ae99c7dfe69ef1d0a4f75eb16fd228d305863ec"[0m
+
+[01;34m/home/opam: (run (shell "uname -rs && opam exec -- ocaml -version && opam --version"))[0m
+Linux 5.15.0-107-generic
+The OCaml toplevel, version 5.2.0
+2.1.6
+[01;2m[01;35m2024-05-29 23:12.08 ---> saved as "524c93f3cfd5d40757c0a859061ef9eab478e83007dc7882c3f01930ba41a341"[0m
+
+[01;34m/home/opam: (env OPAMDOWNLOADJOBS 1)[0m
+
+[01;34m/home/opam: (env OPAMERRLOGLEN 0)[0m
+
+[01;34m/home/opam: (env OPAMSOLVERTIMEOUT 500)[0m
+
+[01;34m/home/opam: (env OPAMPRECISETRACKING 1)[0m
+
+[01;34m/home/opam: (env CI true)[0m
+
+[01;34m/home/opam: (env OPAM_REPO_CI true)[0m
+
+[01;34m/home/opam: (run (shell "rm -rf opam-repository/"))[0m
+[01;2m[01;35m2024-05-29 23:12.20 ---> saved as "e9c2474a776349fe7a37279c3e01ec842041aa22ab59faef861d65b99bc554df"[0m
+
+[01;34m/home/opam: (copy (src .) (dst opam-repository/))[0m
+[01;2m[01;35m2024-05-29 23:12.33 ---> saved as "5f15bea5b603fbbf3b3e2f44c9b48e727d5282192e124a2ea7cd14727b07775e"[0m
+
+[01;34m/home/opam: (run (shell "opam repository set-url --strict default opam-repository/"))[0m
+[default] Initialised
+[01;2m[01;35m2024-05-29 23:12.54 ---> saved as "4deec4d9cb96f1d366e8a7d4f9097069ca4eb805f035eb74da858478acca5f1e"[0m
+
+[01;34m/home/opam: (run (network host)
+                 (shell "opam update --depexts || true"))[0m
++ /usr/bin/sudo "apt-get" "update"
+- Hit:1 http://deb.debian.org/debian bookworm InRelease
+- Get:2 http://deb.debian.org/debian bookworm-updates InRelease [55.4 kB]
+- Get:3 http://deb.debian.org/debian-security bookworm-security InRelease [48.0 kB]
+- Get:4 http://deb.debian.org/debian-security bookworm-security/main amd64 Packages [157 kB]
+- Fetched 261 kB in 0s (1042 kB/s)
+- Reading package lists...
+[01;2m[01;35m2024-05-29 23:12.55 ---> saved as "28a17afbd9be95708f9c1662e99a8aebd187c335212a3ae5ae44cb61af92ee04"[0m
+
+[01;34m/home/opam: (run (shell "opam pin add -k version -yn dkim-mirage.0.5.0 0.5.0"))[0m
+dkim-mirage is now pinned to version 0.5.0
+[01;2m[01;35m2024-05-29 23:12.55 ---> saved as "bbab54f24c6105862dc65822f4600d638d592f5aac9460d8dbe59bc107e6ce7f"[0m
+
+[01;34m/home/opam: (run (cache (opam-archives (target /home/opam/.opam/download-cache)))
+                 (network host)
+                 (shell  "opam reinstall dkim-mirage.0.5.0;\
+                        \n        res=$?;\
+                        \n        test \"$res\" != 31 && exit \"$res\";\
+                        \n        export OPAMCLI=2.0;\
+                        \n        build_dir=$(opam var prefix)/.opam-switch/build;\
+                        \n        failed=$(ls \"$build_dir\");\
+                        \n        partial_fails=\"\";\
+                        \n        for pkg in $failed; do\
+                        \n          if opam show -f x-ci-accept-failures: \"$pkg\" | grep -qF \"\\\"debian-12\\\"\"; then\
+                        \n            echo \"A package failed and has been disabled for CI using the 'x-ci-accept-failures' field.\";\
+                        \n          fi;\
+                        \n          test \"$pkg\" != 'dkim-mirage.0.5.0' && partial_fails=\"$partial_fails $pkg\";\
+                        \n        done;\
+                        \n        test \"${partial_fails}\" != \"\" && echo \"opam-repo-ci detected dependencies failing: ${partial_fails}\";\
+                        \n        exit 1"))[0m
+dkim-mirage.0.5.0 is not installed. Install it? [Y/n] y
+[ERROR] Sorry, resolution of the request timed out.
+        Try to specify a more precise request, use a different solver, or increase the allowed time by setting OPAMSOLVERTIMEOUT to a bigger value (currently, it is set to 500.0 seconds).
+"/usr/bin/env" "bash" "-c" "opam reinstall dkim-mirage.0.5.0;
+        res=$?;
+        test "$res" != 31 && exit "$res";
+        export OPAMCLI=2.0;
+        build_dir=$(opam var prefix)/.opam-switch/build;
+        failed=$(ls "$build_dir");
+        partial_fails="";
+        for pkg in $failed; do
+          if opam show -f x-ci-accept-failures: "$pkg" | grep -qF "\"debian-12\""; then
+            echo "A package failed and has been disabled for CI using the 'x-ci-accept-failures' field.";
+          fi;
+          test "$pkg" != 'dkim-mirage.0.5.0' && partial_fails="$partial_fails $pkg";
+        done;
+        test "${partial_fails}" != "" && echo "opam-repo-ci detected dependencies failing: ${partial_fails}";
+        exit 1" failed with exit status 60
+2024-05-29 23:21.37: Job failed: Failed: Build failed
+2024-05-29 23:21.37: Log analysis:
+2024-05-29 23:21.37: >>> 
+[ERROR] Sorry, resolution of the request timed out.
+ (score = 20)
+2024-05-29 23:21.37: Sorry, resolution of the request timed out.

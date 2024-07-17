@@ -1,0 +1,303 @@
+2024-05-28 13:07.57: New job: test dream-serve.1.0.1, using opam 2.0
+                              from https://github.com/ocaml/opam-repository.git#refs/pull/25949/head (b115ba96baec90c8135e1f7f8a821999485eacb1)
+                              on debian-12-ocaml-4.14/amd64
+
+To reproduce locally:
+
+cd $(mktemp -d)
+git clone --recursive "https://github.com/ocaml/opam-repository.git" && cd "opam-repository" && git fetch origin "refs/pull/25949/head" && git reset --hard b115ba96
+git fetch origin master
+git merge --no-edit fad6b917e0bc31d1e95285300d95a866e3954758
+cat > ../Dockerfile <<'END-OF-DOCKERFILE'
+[34mFROM ocaml/opam:debian-12-ocaml-4.14@sha256:575952ac1a1b71568d969fe2b9788c1516c1252dda6ccffdc995036cc8cc9e3b
+USER 1000:1000
+WORKDIR /home/opam
+RUN sudo ln -f /usr/bin/opam-2.0 /usr/bin/opam
+RUN opam init --reinit -ni
+RUN uname -rs && opam exec -- ocaml -version && opam --version
+ENV OPAMDOWNLOADJOBS="1"
+ENV OPAMERRLOGLEN="0"
+ENV OPAMSOLVERTIMEOUT="500"
+ENV OPAMPRECISETRACKING="1"
+ENV CI="true"
+ENV OPAM_REPO_CI="true"
+RUN rm -rf opam-repository/
+COPY --chown=1000:1000 . opam-repository/
+RUN opam repository set-url --strict default opam-repository/
+RUN opam depext -u || true
+RUN opam pin add -k version -yn dream-serve.1.0.1 1.0.1
+RUN opam depext dream-serve.1.0.1 && opam reinstall dream-serve.1.0.1; \
+    res=$?; \
+    test "$res" != 31 && exit "$res"; \
+    export OPAMCLI=2.0; \
+    build_dir=$(opam var prefix)/.opam-switch/build; \
+    failed=$(ls "$build_dir"); \
+    partial_fails=""; \
+    for pkg in $failed; do \
+    if opam show -f x-ci-accept-failures: "$pkg" | grep -qF "\"debian-12\""; then \
+    echo "A package failed and has been disabled for CI using the 'x-ci-accept-failures' field."; \
+    fi; \
+    test "$pkg" != 'dream-serve.1.0.1' && partial_fails="$partial_fails $pkg"; \
+    done; \
+    test "${partial_fails}" != "" && echo "opam-repo-ci detected dependencies failing: ${partial_fails}"; \
+    exit 1
+RUN (opam depext --with-test dream-serve.1.0.1 && opam reinstall --with-test dream-serve.1.0.1) || true
+RUN opam depext --with-test dream-serve.1.0.1 && opam reinstall --with-test --verbose dream-serve.1.0.1; \
+    res=$?; \
+    test "$res" != 31 && exit "$res"; \
+    export OPAMCLI=2.0; \
+    build_dir=$(opam var prefix)/.opam-switch/build; \
+    failed=$(ls "$build_dir"); \
+    partial_fails=""; \
+    for pkg in $failed; do \
+    if opam show -f x-ci-accept-failures: "$pkg" | grep -qF "\"debian-12\""; then \
+    echo "A package failed and has been disabled for CI using the 'x-ci-accept-failures' field."; \
+    fi; \
+    test "$pkg" != 'dream-serve.1.0.1' && partial_fails="$partial_fails $pkg"; \
+    done; \
+    test "${partial_fails}" != "" && echo "opam-repo-ci detected dependencies failing: ${partial_fails}"; \
+    exit 1
+[0m
+END-OF-DOCKERFILE
+docker build -f ../Dockerfile .
+
+2024-05-28 13:07.57: Using cache hint "ocaml/opam:debian-12-ocaml-4.14@sha256:575952ac1a1b71568d969fe2b9788c1516c1252dda6ccffdc995036cc8cc9e3b-dream-serve.1.0.1-b115ba96baec90c8135e1f7f8a821999485eacb1"
+2024-05-28 13:07.57: Using OBuilder spec:
+((from ocaml/opam:debian-12-ocaml-4.14@sha256:575952ac1a1b71568d969fe2b9788c1516c1252dda6ccffdc995036cc8cc9e3b)
+ (user (uid 1000) (gid 1000))
+ (workdir /home/opam)
+ (run (shell "sudo ln -f /usr/bin/opam-2.0 /usr/bin/opam"))
+ (run (network host)
+      (shell "opam init --reinit --config .opamrc-sandbox -ni"))
+ (run (shell "uname -rs && opam exec -- ocaml -version && opam --version"))
+ (env OPAMDOWNLOADJOBS 1)
+ (env OPAMERRLOGLEN 0)
+ (env OPAMSOLVERTIMEOUT 500)
+ (env OPAMPRECISETRACKING 1)
+ (env CI true)
+ (env OPAM_REPO_CI true)
+ (run (shell "rm -rf opam-repository/"))
+ (copy (src .) (dst opam-repository/))
+ (run (shell "opam repository set-url --strict default opam-repository/"))
+ (run (network host)
+      (shell "opam depext -u || true"))
+ (run (shell "opam pin add -k version -yn dream-serve.1.0.1 1.0.1"))
+ (run (cache (opam-archives (target /home/opam/.opam/download-cache)))
+      (network host)
+      (shell  "opam depext dream-serve.1.0.1 && opam reinstall dream-serve.1.0.1;\
+             \n        res=$?;\
+             \n        test \"$res\" != 31 && exit \"$res\";\
+             \n        export OPAMCLI=2.0;\
+             \n        build_dir=$(opam var prefix)/.opam-switch/build;\
+             \n        failed=$(ls \"$build_dir\");\
+             \n        partial_fails=\"\";\
+             \n        for pkg in $failed; do\
+             \n          if opam show -f x-ci-accept-failures: \"$pkg\" | grep -qF \"\\\"debian-12\\\"\"; then\
+             \n            echo \"A package failed and has been disabled for CI using the 'x-ci-accept-failures' field.\";\
+             \n          fi;\
+             \n          test \"$pkg\" != 'dream-serve.1.0.1' && partial_fails=\"$partial_fails $pkg\";\
+             \n        done;\
+             \n        test \"${partial_fails}\" != \"\" && echo \"opam-repo-ci detected dependencies failing: ${partial_fails}\";\
+             \n        exit 1"))
+ (run (network host)
+      (shell "(opam depext --with-test dream-serve.1.0.1 && opam reinstall --with-test dream-serve.1.0.1) || true"))
+ (run (shell  "opam depext --with-test dream-serve.1.0.1 && opam reinstall --with-test --verbose dream-serve.1.0.1;\
+             \n        res=$?;\
+             \n        test \"$res\" != 31 && exit \"$res\";\
+             \n        export OPAMCLI=2.0;\
+             \n        build_dir=$(opam var prefix)/.opam-switch/build;\
+             \n        failed=$(ls \"$build_dir\");\
+             \n        partial_fails=\"\";\
+             \n        for pkg in $failed; do\
+             \n          if opam show -f x-ci-accept-failures: \"$pkg\" | grep -qF \"\\\"debian-12\\\"\"; then\
+             \n            echo \"A package failed and has been disabled for CI using the 'x-ci-accept-failures' field.\";\
+             \n          fi;\
+             \n          test \"$pkg\" != 'dream-serve.1.0.1' && partial_fails=\"$partial_fails $pkg\";\
+             \n        done;\
+             \n        test \"${partial_fails}\" != \"\" && echo \"opam-repo-ci detected dependencies failing: ${partial_fails}\";\
+             \n        exit 1"))
+)
+
+2024-05-28 13:07.57: Waiting for resource in pool OCluster
+2024-05-28 13:39.48: Waiting for worker…
+2024-05-28 13:45.17: Got resource from pool OCluster
+Building on x86-bm-c6.sw.ocaml.org
+All commits already cached
+Updating files:  67% (22808/33987)Updating files:  68% (23112/33987)Updating files:  69% (23452/33987)Updating files:  70% (23791/33987)Updating files:  71% (24131/33987)Updating files:  72% (24471/33987)Updating files:  73% (24811/33987)Updating files:  74% (25151/33987)Updating files:  75% (25491/33987)Updating files:  76% (25831/33987)Updating files:  77% (26170/33987)Updating files:  78% (26510/33987)Updating files:  79% (26850/33987)Updating files:  80% (27190/33987)Updating files:  81% (27530/33987)Updating files:  82% (27870/33987)Updating files:  83% (28210/33987)Updating files:  84% (28550/33987)Updating files:  85% (28889/33987)Updating files:  86% (29229/33987)Updating files:  87% (29569/33987)Updating files:  88% (29909/33987)Updating files:  89% (30249/33987)Updating files:  90% (30589/33987)Updating files:  91% (30929/33987)Updating files:  92% (31269/33987)Updating files:  93% (31608/33987)Updating files:  94% (31948/33987)Updating files:  95% (32288/33987)Updating files:  96% (32628/33987)Updating files:  97% (32968/33987)Updating files:  98% (33308/33987)Updating files:  99% (33648/33987)Updating files: 100% (33987/33987)Updating files: 100% (33987/33987), done.
+HEAD is now at fad6b917e0 Merge pull request #25951 from mseri/ub-ppx-deriving
+Merge made by the 'ort' strategy.
+ packages/FPauth-core/FPauth-core.1.0.0/opam        |   2 +-
+ .../dream-httpaf/dream-httpaf.1.0.0~alpha3/opam    |  52 ++++++++++
+ packages/dream-serve/dream-serve.1.0.1/opam        |   1 +
+ packages/dream/dream.1.0.0~alpha6/opam             | 107 +++++++++++++++++++++
+ packages/hyper/hyper.1.0.0~alpha2/opam             |   2 +-
+ 5 files changed, 162 insertions(+), 2 deletions(-)
+ create mode 100644 packages/dream-httpaf/dream-httpaf.1.0.0~alpha3/opam
+ create mode 100644 packages/dream/dream.1.0.0~alpha6/opam
+
+[01;34m(from ocaml/opam:debian-12-ocaml-4.14@sha256:575952ac1a1b71568d969fe2b9788c1516c1252dda6ccffdc995036cc8cc9e3b)[0m
+Unable to find image 'ocaml/opam:debian-12-ocaml-4.14@sha256:575952ac1a1b71568d969fe2b9788c1516c1252dda6ccffdc995036cc8cc9e3b' locally
+docker.io/ocaml/opam@sha256:575952ac1a1b71568d969fe2b9788c1516c1252dda6ccffdc995036cc8cc9e3b: Pulling from ocaml/opam
+d8f8273aa989: Pulling fs layer
+d8f8273aa989: Verifying Checksum
+d8f8273aa989: Download complete
+d8f8273aa989: Pull complete
+Digest: sha256:575952ac1a1b71568d969fe2b9788c1516c1252dda6ccffdc995036cc8cc9e3b
+Status: Downloaded newer image for ocaml/opam@sha256:575952ac1a1b71568d969fe2b9788c1516c1252dda6ccffdc995036cc8cc9e3b
+[01;2m[01;35m2024-05-28 13:45.22 ---> using "b70a2807c2cfb3c5680f4fafeddd66a33d7dcdd9d48b1543e8642b8df113fdbf" from cache[0m
+
+[01;34m/: (user (uid 1000) (gid 1000))[0m
+
+[01;34m/: (workdir /home/opam)[0m
+
+[01;34m/home/opam: (run (shell "sudo ln -f /usr/bin/opam-2.0 /usr/bin/opam"))[0m
+[01;2m[01;35m2024-05-28 13:45.22 ---> using "e2427899f4e1b3229ed080c53dbbbc4685ee823796234d7069cbebeb6c939668" from cache[0m
+
+[01;34m/home/opam: (run (network host)
+                 (shell "opam init --reinit --config .opamrc-sandbox -ni"))[0m
+[NOTE] Will configure from /home/opam/.opamrc-sandbox, then /home/opam/.opamrc, and finally from built-in defaults.
+Checking for available remotes: rsync and local, git.
+  - you won't be able to use mercurial repositories unless you install the hg command on your system.
+  - you won't be able to use darcs repositories unless you install the darcs command on your system.
+
+[WARNING] Recommended dependencies -- most packages rely on these:
+  - m4
+
+<><> Updating repositories ><><><><><><><><><><><><><><><><><><><><><><><><><><>
+[default] synchronised from file:///home/opam/opam-repository
+default (at file:///home/opam/opam-repository): 
+    [INFO] opam 2.1 includes many performance improvements over 2.0; please consider upgrading (https://opam.ocaml.org/doc/Install.html)
+
+[01;2m[01;35m2024-05-28 13:46.05 ---> saved as "1b4bb9fcad567c76988e559cb293d6249f194ad7fc13d608069cff71c6461fbb"[0m
+
+[01;34m/home/opam: (run (shell "uname -rs && opam exec -- ocaml -version && opam --version"))[0m
+Linux 5.15.0-107-generic
+The OCaml toplevel, version 4.14.2
+2.0.10
+[01;2m[01;35m2024-05-28 13:46.06 ---> saved as "96e62755b194d168cd90ed36f8fbf3878b898b9b47ea73574c243eb9de849f69"[0m
+
+[01;34m/home/opam: (env OPAMDOWNLOADJOBS 1)[0m
+
+[01;34m/home/opam: (env OPAMERRLOGLEN 0)[0m
+
+[01;34m/home/opam: (env OPAMSOLVERTIMEOUT 500)[0m
+
+[01;34m/home/opam: (env OPAMPRECISETRACKING 1)[0m
+
+[01;34m/home/opam: (env CI true)[0m
+
+[01;34m/home/opam: (env OPAM_REPO_CI true)[0m
+
+[01;34m/home/opam: (run (shell "rm -rf opam-repository/"))[0m
+[01;2m[01;35m2024-05-28 13:46.13 ---> saved as "75757350ebbba9e3c93b31d8885aea6a7b446a0683c3f53f1dd93ca008a91064"[0m
+
+[01;34m/home/opam: (copy (src .) (dst opam-repository/))[0m
+[01;2m[01;35m2024-05-28 13:46.28 ---> saved as "44ceb719d88d80c815df9b6be5b6f1aa17be213fc92d0bc334b5cef717aab028"[0m
+
+[01;34m/home/opam: (run (shell "opam repository set-url --strict default opam-repository/"))[0m
+[default] Initialised
+default (at file:///home/opam/opam-repository): 
+    [INFO] opam 2.1 includes many performance improvements over 2.0; please consider upgrading (https://opam.ocaml.org/doc/Install.html)
+
+[01;2m[01;35m2024-05-28 13:46.59 ---> saved as "e5241482310e1ee9161aff783fcb621ffc14e737f88d21da003ac046bf2a5e87"[0m
+
+[01;34m/home/opam: (run (network host)
+                 (shell "opam depext -u || true"))[0m
+# Detecting depexts using vars: arch=x86_64, os=linux, os-distribution=debian, os-family=debian
+# No extra OS packages requirements found.
+# All required OS packages found.
+The following command needs to be run through "sudo":
+    apt-get update
+Hit:1 http://deb.debian.org/debian bookworm InRelease
+Get:2 http://deb.debian.org/debian bookworm-updates InRelease [55.4 kB]
+Get:3 http://deb.debian.org/debian-security bookworm-security InRelease [48.0 kB]
+Get:4 http://deb.debian.org/debian-security bookworm-security/main amd64 Packages [157 kB]
+Fetched 260 kB in 0s (979 kB/s)
+Reading package lists...
+# OS package update successful
+[01;2m[01;35m2024-05-28 13:47.01 ---> saved as "cff86debf7e7b68d2d8b71d91a27632a3cf2af7a64dd5e5106e7f1dc6c358ebc"[0m
+
+[01;34m/home/opam: (run (shell "opam pin add -k version -yn dream-serve.1.0.1 1.0.1"))[0m
+dream-serve is now pinned to version 1.0.1
+[01;2m[01;35m2024-05-28 13:47.02 ---> saved as "e918b426f84fef11b75f343c2e3c02efe436ec982ffadf640989be5a19d35efa"[0m
+
+[01;34m/home/opam: (run (cache (opam-archives (target /home/opam/.opam/download-cache)))
+                 (network host)
+                 (shell  "opam depext dream-serve.1.0.1 && opam reinstall dream-serve.1.0.1;\
+                        \n        res=$?;\
+                        \n        test \"$res\" != 31 && exit \"$res\";\
+                        \n        export OPAMCLI=2.0;\
+                        \n        build_dir=$(opam var prefix)/.opam-switch/build;\
+                        \n        failed=$(ls \"$build_dir\");\
+                        \n        partial_fails=\"\";\
+                        \n        for pkg in $failed; do\
+                        \n          if opam show -f x-ci-accept-failures: \"$pkg\" | grep -qF \"\\\"debian-12\\\"\"; then\
+                        \n            echo \"A package failed and has been disabled for CI using the 'x-ci-accept-failures' field.\";\
+                        \n          fi;\
+                        \n          test \"$pkg\" != 'dream-serve.1.0.1' && partial_fails=\"$partial_fails $pkg\";\
+                        \n        done;\
+                        \n        test \"${partial_fails}\" != \"\" && echo \"opam-repo-ci detected dependencies failing: ${partial_fails}\";\
+                        \n        exit 1"))[0m
+# Detecting depexts using vars: arch=x86_64, os=linux, os-distribution=debian, os-family=debian
+libev-dev
+libssl-dev
+pkg-config
+# The following system packages are needed:
+The following command needs to be run through "sudo":
+    apt-get install -qq -yy libev-dev libssl-dev pkg-config
+debconf: delaying package configuration, since apt-utils is not installed
+Selecting previously unselected package libev4:amd64.
+(Reading database ... (Reading database ... 5%(Reading database ... 10%(Reading database ... 15%(Reading database ... 20%(Reading database ... 25%(Reading database ... 30%(Reading database ... 35%(Reading database ... 40%(Reading database ... 45%(Reading database ... 50%(Reading database ... 55%(Reading database ... 60%(Reading database ... 65%(Reading database ... 70%(Reading database ... 75%(Reading database ... 80%(Reading database ... 85%(Reading database ... 90%(Reading database ... 95%(Reading database ... 100%(Reading database ... 18735 files and directories currently installed.)
+Preparing to unpack .../0-libev4_1%3a4.33-1_amd64.deb ...
+Unpacking libev4:amd64 (1:4.33-1) ...
+Selecting previously unselected package libev-dev:amd64.
+Preparing to unpack .../1-libev-dev_1%3a4.33-1_amd64.deb ...
+Unpacking libev-dev:amd64 (1:4.33-1) ...
+Selecting previously unselected package libpkgconf3:amd64.
+Preparing to unpack .../2-libpkgconf3_1.8.1-1_amd64.deb ...
+Unpacking libpkgconf3:amd64 (1.8.1-1) ...
+Selecting previously unselected package libssl-dev:amd64.
+Preparing to unpack .../3-libssl-dev_3.0.11-1~deb12u2_amd64.deb ...
+Unpacking libssl-dev:amd64 (3.0.11-1~deb12u2) ...
+Selecting previously unselected package pkgconf-bin.
+Preparing to unpack .../4-pkgconf-bin_1.8.1-1_amd64.deb ...
+Unpacking pkgconf-bin (1.8.1-1) ...
+Selecting previously unselected package pkgconf:amd64.
+Preparing to unpack .../5-pkgconf_1.8.1-1_amd64.deb ...
+Unpacking pkgconf:amd64 (1.8.1-1) ...
+Selecting previously unselected package pkg-config:amd64.
+Preparing to unpack .../6-pkg-config_1.8.1-1_amd64.deb ...
+Unpacking pkg-config:amd64 (1.8.1-1) ...
+Setting up libev4:amd64 (1:4.33-1) ...
+Setting up libpkgconf3:amd64 (1.8.1-1) ...
+Setting up libssl-dev:amd64 (3.0.11-1~deb12u2) ...
+Setting up pkgconf-bin (1.8.1-1) ...
+Setting up libev-dev:amd64 (1:4.33-1) ...
+Setting up pkgconf:amd64 (1.8.1-1) ...
+Setting up pkg-config:amd64 (1.8.1-1) ...
+Processing triggers for libc-bin (2.36-9+deb12u7) ...
+# OS packages installation successful
+dream-serve.1.0.1 is not installed. Install it? [Y/n] y
+[ERROR] Sorry, resolution of the request timed out.
+        Try to specify a simpler request, use a different solver, or increase the allowed time by setting OPAMSOLVERTIMEOUT to a bigger value (currently, it is set to 500.0 seconds).
+"/usr/bin/env" "bash" "-c" "opam depext dream-serve.1.0.1 && opam reinstall dream-serve.1.0.1;
+        res=$?;
+        test "$res" != 31 && exit "$res";
+        export OPAMCLI=2.0;
+        build_dir=$(opam var prefix)/.opam-switch/build;
+        failed=$(ls "$build_dir");
+        partial_fails="";
+        for pkg in $failed; do
+          if opam show -f x-ci-accept-failures: "$pkg" | grep -qF "\"debian-12\""; then
+            echo "A package failed and has been disabled for CI using the 'x-ci-accept-failures' field.";
+          fi;
+          test "$pkg" != 'dream-serve.1.0.1' && partial_fails="$partial_fails $pkg";
+        done;
+        test "${partial_fails}" != "" && echo "opam-repo-ci detected dependencies failing: ${partial_fails}";
+        exit 1" failed with exit status 60
+2024-05-28 13:55.53: Job failed: Failed: Build failed
+2024-05-28 13:55.53: Log analysis:
+2024-05-28 13:55.53: >>> 
+[ERROR] Sorry, resolution of the request timed out.
+ (score = 20)
+2024-05-28 13:55.53: Sorry, resolution of the request timed out.

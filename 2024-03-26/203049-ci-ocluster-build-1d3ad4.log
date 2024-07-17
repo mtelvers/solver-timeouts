@@ -1,0 +1,567 @@
+2024-03-26 20:30.49: New job: test happy-eyeballs-mirage.0.1.2, using opam dev
+                              from https://github.com/ocaml/opam-repository.git#refs/pull/25588/head (2d8be8d06ec43feee4e24391605488ae04858445)
+                              on ubuntu-22.04-ocaml-4.14/riscv64
+
+To reproduce locally:
+
+cd $(mktemp -d)
+git clone --recursive "https://github.com/ocaml/opam-repository.git" && cd "opam-repository" && git fetch origin "refs/pull/25588/head" && git reset --hard 2d8be8d0
+git fetch origin master
+git merge --no-edit 6d17c11f6930230daaef6a30d13bc23c1597fc9f
+cat > ../Dockerfile <<'END-OF-DOCKERFILE'
+[34mFROM ocaml/opam:ubuntu-22.04-ocaml-4.14@sha256:6c89a744b5c470342487a1479ee05a8fc344fc343f257e11f22661ac92b6db05
+USER 1000:1000
+WORKDIR /home/opam
+RUN sudo ln -f /usr/bin/opam-dev /usr/bin/opam
+RUN opam init --reinit -ni
+ENV OPAMDOWNLOADJOBS="1"
+ENV OPAMERRLOGLEN="0"
+ENV OPAMSOLVERTIMEOUT="500"
+ENV OPAMPRECISETRACKING="1"
+ENV CI="true"
+ENV OPAM_REPO_CI="true"
+RUN rm -rf opam-repository/
+COPY --chown=1000:1000 . opam-repository/
+RUN opam repository set-url --strict default opam-repository/
+RUN opam update --depexts || true
+ENV OPAMCRITERIA="-removed,-count[avoid-version,changed],-count[version-lag,request],-count[version-lag,changed],-count[missing-depexts,changed],-changed"
+ENV OPAMFIXUPCRITERIA="-removed,-count[avoid-version,changed],-count[version-lag,request],-count[version-lag,changed],-count[missing-depexts,changed],-changed"
+ENV OPAMUPGRADECRITERIA="-removed,-count[avoid-version,changed],-count[version-lag,request],-count[version-lag,changed],-count[missing-depexts,changed],-changed"
+RUN opam pin add -k version -yn happy-eyeballs-mirage.0.1.2 0.1.2
+RUN opam reinstall happy-eyeballs-mirage.0.1.2; \
+    res=$?; \
+    test "$res" != 31 && exit "$res"; \
+    export OPAMCLI=2.0; \
+    build_dir=$(opam var prefix)/.opam-switch/build; \
+    failed=$(ls "$build_dir"); \
+    partial_fails=""; \
+    for pkg in $failed; do \
+    if opam show -f x-ci-accept-failures: "$pkg" | grep -qF "\"ubuntu-22.04\""; then \
+    echo "A package failed and has been disabled for CI using the 'x-ci-accept-failures' field."; \
+    fi; \
+    test "$pkg" != 'happy-eyeballs-mirage.0.1.2' && partial_fails="$partial_fails $pkg"; \
+    done; \
+    test "${partial_fails}" != "" && echo "opam-repo-ci detected dependencies failing: ${partial_fails}"; \
+    exit 1
+ENV OPAMCRITERIA="-removed,-count[avoid-version,changed],-count[version-lag,request],-count[version-lag,changed],-count[missing-depexts,changed],-changed"
+ENV OPAMFIXUPCRITERIA="-removed,-count[avoid-version,changed],-count[version-lag,request],-count[version-lag,changed],-count[missing-depexts,changed],-changed"
+ENV OPAMUPGRADECRITERIA="-removed,-count[avoid-version,changed],-count[version-lag,request],-count[version-lag,changed],-count[missing-depexts,changed],-changed"
+RUN (opam reinstall --with-test happy-eyeballs-mirage.0.1.2) || true
+RUN opam reinstall --with-test --verbose happy-eyeballs-mirage.0.1.2; \
+    res=$?; \
+    test "$res" != 31 && exit "$res"; \
+    export OPAMCLI=2.0; \
+    build_dir=$(opam var prefix)/.opam-switch/build; \
+    failed=$(ls "$build_dir"); \
+    partial_fails=""; \
+    for pkg in $failed; do \
+    if opam show -f x-ci-accept-failures: "$pkg" | grep -qF "\"ubuntu-22.04\""; then \
+    echo "A package failed and has been disabled for CI using the 'x-ci-accept-failures' field."; \
+    fi; \
+    test "$pkg" != 'happy-eyeballs-mirage.0.1.2' && partial_fails="$partial_fails $pkg"; \
+    done; \
+    test "${partial_fails}" != "" && echo "opam-repo-ci detected dependencies failing: ${partial_fails}"; \
+    exit 1
+[0m
+END-OF-DOCKERFILE
+docker build -f ../Dockerfile .
+
+2024-03-26 20:30.49: Using cache hint "ocaml/opam:ubuntu-22.04-ocaml-4.14@sha256:6c89a744b5c470342487a1479ee05a8fc344fc343f257e11f22661ac92b6db05-happy-eyeballs-mirage.0.1.2-2d8be8d06ec43feee4e24391605488ae04858445"
+2024-03-26 20:30.49: Using OBuilder spec:
+((from ocaml/opam:ubuntu-22.04-ocaml-4.14@sha256:6c89a744b5c470342487a1479ee05a8fc344fc343f257e11f22661ac92b6db05)
+ (user (uid 1000) (gid 1000))
+ (workdir /home/opam)
+ (run (shell "sudo ln -f /usr/bin/opam-dev /usr/bin/opam"))
+ (run (network host)
+      (shell "opam init --reinit --config .opamrc-sandbox -ni"))
+ (env OPAMDOWNLOADJOBS 1)
+ (env OPAMERRLOGLEN 0)
+ (env OPAMSOLVERTIMEOUT 500)
+ (env OPAMPRECISETRACKING 1)
+ (env CI true)
+ (env OPAM_REPO_CI true)
+ (run (shell "rm -rf opam-repository/"))
+ (copy (src .) (dst opam-repository/))
+ (run (shell "opam repository set-url --strict default opam-repository/"))
+ (run (network host)
+      (shell "opam update --depexts || true"))
+ (env OPAMCRITERIA -removed,-count[avoid-version,changed],-count[version-lag,request],-count[version-lag,changed],-count[missing-depexts,changed],-changed)
+ (env OPAMFIXUPCRITERIA -removed,-count[avoid-version,changed],-count[version-lag,request],-count[version-lag,changed],-count[missing-depexts,changed],-changed)
+ (env OPAMUPGRADECRITERIA -removed,-count[avoid-version,changed],-count[version-lag,request],-count[version-lag,changed],-count[missing-depexts,changed],-changed)
+ (run (shell "opam pin add -k version -yn happy-eyeballs-mirage.0.1.2 0.1.2"))
+ (run (cache (opam-archives (target /home/opam/.opam/download-cache)))
+      (network host)
+      (shell  "opam reinstall happy-eyeballs-mirage.0.1.2;\
+             \n        res=$?;\
+             \n        test \"$res\" != 31 && exit \"$res\";\
+             \n        export OPAMCLI=2.0;\
+             \n        build_dir=$(opam var prefix)/.opam-switch/build;\
+             \n        failed=$(ls \"$build_dir\");\
+             \n        partial_fails=\"\";\
+             \n        for pkg in $failed; do\
+             \n          if opam show -f x-ci-accept-failures: \"$pkg\" | grep -qF \"\\\"ubuntu-22.04\\\"\"; then\
+             \n            echo \"A package failed and has been disabled for CI using the 'x-ci-accept-failures' field.\";\
+             \n          fi;\
+             \n          test \"$pkg\" != 'happy-eyeballs-mirage.0.1.2' && partial_fails=\"$partial_fails $pkg\";\
+             \n        done;\
+             \n        test \"${partial_fails}\" != \"\" && echo \"opam-repo-ci detected dependencies failing: ${partial_fails}\";\
+             \n        exit 1"))
+ (env OPAMCRITERIA -removed,-count[avoid-version,changed],-count[version-lag,request],-count[version-lag,changed],-count[missing-depexts,changed],-changed)
+ (env OPAMFIXUPCRITERIA -removed,-count[avoid-version,changed],-count[version-lag,request],-count[version-lag,changed],-count[missing-depexts,changed],-changed)
+ (env OPAMUPGRADECRITERIA -removed,-count[avoid-version,changed],-count[version-lag,request],-count[version-lag,changed],-count[missing-depexts,changed],-changed)
+ (run (network host)
+      (shell "(opam reinstall --with-test happy-eyeballs-mirage.0.1.2) || true"))
+ (run (shell  "opam reinstall --with-test --verbose happy-eyeballs-mirage.0.1.2;\
+             \n        res=$?;\
+             \n        test \"$res\" != 31 && exit \"$res\";\
+             \n        export OPAMCLI=2.0;\
+             \n        build_dir=$(opam var prefix)/.opam-switch/build;\
+             \n        failed=$(ls \"$build_dir\");\
+             \n        partial_fails=\"\";\
+             \n        for pkg in $failed; do\
+             \n          if opam show -f x-ci-accept-failures: \"$pkg\" | grep -qF \"\\\"ubuntu-22.04\\\"\"; then\
+             \n            echo \"A package failed and has been disabled for CI using the 'x-ci-accept-failures' field.\";\
+             \n          fi;\
+             \n          test \"$pkg\" != 'happy-eyeballs-mirage.0.1.2' && partial_fails=\"$partial_fails $pkg\";\
+             \n        done;\
+             \n        test \"${partial_fails}\" != \"\" && echo \"opam-repo-ci detected dependencies failing: ${partial_fails}\";\
+             \n        exit 1"))
+)
+
+2024-03-26 20:30.49: Waiting for resource in pool OCluster
+2024-03-27 02:54.34: Waiting for worker…
+2024-03-27 06:33.29: Got resource from pool OCluster
+Building on riscv-worker-01.caelum.ci.dev
+All commits already cached
+Updating files:   1% (573/33380)Updating files:   2% (668/33380)Updating files:   3% (1002/33380)Updating files:   3% (1162/33380)Updating files:   4% (1336/33380)Updating files:   5% (1669/33380)Updating files:   5% (1750/33380)Updating files:   6% (2003/33380)Updating files:   6% (2122/33380)Updating files:   7% (2337/33380)Updating files:   8% (2671/33380)Updating files:   8% (2727/33380)Updating files:   9% (3005/33380)Updating files:   9% (3322/33380)Updating files:  10% (3338/33380)Updating files:  11% (3672/33380)Updating files:  11% (3952/33380)Updating files:  12% (4006/33380)Updating files:  13% (4340/33380)Updating files:  13% (4563/33380)Updating files:  14% (4674/33380)Updating files:  15% (5007/33380)Updating files:  15% (5107/33380)Updating files:  16% (5341/33380)Updating files:  16% (5597/33380)Updating files:  17% (5675/33380)Updating files:  18% (6009/33380)Updating files:  18% (6232/33380)Updating files:  19% (6343/33380)Updating files:  20% (6676/33380)Updating files:  20% (6869/33380)Updating files:  21% (7010/33380)Updating files:  22% (7344/33380)Updating files:  22% (7466/33380)Updating files:  23% (7678/33380)Updating files:  24% (8012/33380)Updating files:  24% (8096/33380)Updating files:  25% (8345/33380)Updating files:  26% (8679/33380)Updating files:  26% (8705/33380)Updating files:  27% (9013/33380)Updating files:  27% (9246/33380)Updating files:  28% (9347/33380)Updating files:  29% (9681/33380)Updating files:  29% (9858/33380)Updating files:  30% (10014/33380)Updating files:  31% (10348/33380)Updating files:  31% (10462/33380)Updating files:  32% (10682/33380)Updating files:  33% (11016/33380)Updating files:  33% (11119/33380)Updating files:  34% (11350/33380)Updating files:  35% (11683/33380)Updating files:  35% (11716/33380)Updating files:  36% (12017/33380)Updating files:  36% (12246/33380)Updating files:  37% (12351/33380)Updating files:  38% (12685/33380)Updating files:  38% (12890/33380)Updating files:  39% (13019/33380)Updating files:  40% (13352/33380)Updating files:  40% (13493/33380)Updating files:  41% (13686/33380)Updating files:  42% (14020/33380)Updating files:  42% (14109/33380)Updating files:  43% (14354/33380)Updating files:  44% (14688/33380)Updating files:  44% (14735/33380)Updating files:  45% (15021/33380)Updating files:  45% (15346/33380)Updating files:  46% (15355/33380)Updating files:  47% (15689/33380)Updating files:  47% (15951/33380)Updating files:  48% (16023/33380)Updating files:  49% (16357/33380)Updating files:  49% (16508/33380)Updating files:  50% (16690/33380)Updating files:  51% (17024/33380)Updating files:  51% (17067/33380)Updating files:  52% (17358/33380)Updating files:  52% (17679/33380)Updating files:  53% (17692/33380)Updating files:  54% (18026/33380)Updating files:  54% (18291/33380)Updating files:  55% (18359/33380)Updating files:  56% (18693/33380)Updating files:  56% (18903/33380)Updating files:  57% (19027/33380)Updating files:  58% (19361/33380)Updating files:  58% (19531/33380)Updating files:  59% (19695/33380)Updating files:  60% (20028/33380)Updating files:  60% (20115/33380)Updating files:  61% (20362/33380)Updating files:  61% (20634/33380)Updating files:  62% (20696/33380)Updating files:  63% (21030/33380)Updating files:  63% (21265/33380)Updating files:  64% (21364/33380)Updating files:  65% (21697/33380)Updating files:  65% (21881/33380)Updating files:  66% (22031/33380)Updating files:  67% (22365/33380)Updating files:  67% (22500/33380)Updating files:  68% (22699/33380)Updating files:  69% (23033/33380)Updating files:  69% (23116/33380)Updating files:  70% (23366/33380)Updating files:  70% (23654/33380)Updating files:  71% (23700/33380)Updating files:  72% (24034/33380)Updating files:  72% (24262/33380)Updating files:  73% (24368/33380)Updating files:  74% (24702/33380)Updating files:  74% (24877/33380)Updating files:  75% (25035/33380)Updating files:  76% (25369/33380)Updating files:  76% (25486/33380)Updating files:  77% (25703/33380)Updating files:  78% (26037/33380)Updating files:  78% (26046/33380)Updating files:  79% (26371/33380)Updating files:  79% (26643/33380)Updating files:  80% (26704/33380)Updating files:  81% (27038/33380)Updating files:  81% (27202/33380)Updating files:  82% (27372/33380)Updating files:  83% (27706/33380)Updating files:  83% (27805/33380)Updating files:  84% (28040/33380)Updating files:  85% (28373/33380)Updating files:  85% (28414/33380)Updating files:  86% (28707/33380)Updating files:  86% (28949/33380)Updating files:  87% (29041/33380)Updating files:  88% (29375/33380)Updating files:  88% (29566/33380)Updating files:  89% (29709/33380)Updating files:  90% (30042/33380)Updating files:  90% (30168/33380)Updating files:  91% (30376/33380)Updating files:  92% (30710/33380)Updating files:  92% (30768/33380)Updating files:  93% (31044/33380)Updating files:  93% (31324/33380)Updating files:  94% (31378/33380)Updating files:  95% (31711/33380)Updating files:  95% (31922/33380)Updating files:  96% (32045/33380)Updating files:  97% (32379/33380)Updating files:  97% (32529/33380)Updating files:  98% (32713/33380)Updating files:  99% (33047/33380)Updating files:  99% (33114/33380)Updating files: 100% (33380/33380)Updating files: 100% (33380/33380), done.
+HEAD is now at 6d17c11f69 Merge pull request #25549 from jmid/conf-efl-fix
+Updating 6d17c11f69..2d8be8d06e
+Fast-forward
+ packages/arp-mirage/arp-mirage.2.2.0/opam                       | 2 +-
+ packages/arp-mirage/arp-mirage.2.2.1/opam                       | 2 +-
+ packages/arp/arp.2.2.0/opam                                     | 2 +-
+ packages/arp/arp.2.2.1/opam                                     | 2 +-
+ packages/arp/arp.2.3.1/opam                                     | 4 ++--
+ packages/arp/arp.2.3.2/opam                                     | 4 ++--
+ packages/arp/arp.3.0.0/opam                                     | 2 +-
+ packages/arp/arp.3.1.0/opam                                     | 2 +-
+ packages/caldav/caldav.0.1.0/opam                               | 2 +-
+ packages/caldav/caldav.0.1.1/opam                               | 2 +-
+ packages/caldav/caldav.0.2.0/opam                               | 2 +-
+ packages/caldav/caldav.0.2.1/opam                               | 2 +-
+ packages/caqti-mirage/caqti-mirage.2.0.1/opam                   | 2 +-
+ packages/caqti-mirage/caqti-mirage.2.1.1/opam                   | 2 +-
+ packages/charrua-client-lwt/charrua-client-lwt.1.2.0/opam       | 2 +-
+ packages/charrua-client-lwt/charrua-client-lwt.1.2.1/opam       | 2 +-
+ packages/charrua-client-lwt/charrua-client-lwt.1.2.2/opam       | 2 +-
+ packages/charrua-client-mirage/charrua-client-mirage.1.2.0/opam | 2 +-
+ packages/charrua-client-mirage/charrua-client-mirage.1.2.1/opam | 2 +-
+ packages/charrua-client-mirage/charrua-client-mirage.1.2.2/opam | 2 +-
+ packages/charrua-client/charrua-client.1.3.0/opam               | 2 +-
+ packages/charrua-client/charrua-client.1.4.0/opam               | 2 +-
+ packages/charrua-client/charrua-client.1.4.1/opam               | 2 +-
+ packages/charrua-client/charrua-client.1.5.0/opam               | 2 +-
+ packages/conduit-mirage/conduit-mirage.2.0.2/opam               | 2 +-
+ packages/conduit-mirage/conduit-mirage.2.1.0/opam               | 2 +-
+ packages/conduit-mirage/conduit-mirage.2.2.0/opam               | 2 +-
+ packages/conduit-mirage/conduit-mirage.2.2.1/opam               | 2 +-
+ packages/conduit-mirage/conduit-mirage.2.3.0/opam               | 2 +-
+ packages/conduit-mirage/conduit-mirage.4.0.0/opam               | 2 +-
+ packages/conduit-mirage/conduit-mirage.4.0.1/opam               | 2 +-
+ packages/conduit-mirage/conduit-mirage.4.0.2/opam               | 2 +-
+ packages/conduit-mirage/conduit-mirage.5.0.0/opam               | 2 +-
+ packages/conduit-mirage/conduit-mirage.5.1.0/opam               | 2 +-
+ packages/conduit-mirage/conduit-mirage.5.1.1/opam               | 2 +-
+ packages/conduit-mirage/conduit-mirage.6.0.0/opam               | 2 +-
+ packages/conduit-mirage/conduit-mirage.6.0.1/opam               | 2 +-
+ packages/conduit-mirage/conduit-mirage.6.1.0/opam               | 2 +-
+ packages/conduit-mirage/conduit-mirage.6.2.0/opam               | 2 +-
+ packages/conduit-mirage/conduit-mirage.6.2.1/opam               | 2 +-
+ packages/dkim-mirage/dkim-mirage.0.1.0/opam                     | 2 +-
+ packages/dkim-mirage/dkim-mirage.0.2.0/opam                     | 2 +-
+ packages/dkim-mirage/dkim-mirage.0.3.0/opam                     | 2 +-
+ packages/dkim-mirage/dkim-mirage.0.3.1/opam                     | 2 +-
+ packages/dkim-mirage/dkim-mirage.0.4.0/opam                     | 2 +-
+ packages/dkim-mirage/dkim-mirage.0.5.0/opam                     | 2 +-
+ packages/dns-certify/dns-certify.4.1.0/opam                     | 2 +-
+ packages/dns-certify/dns-certify.4.2.0/opam                     | 2 +-
+ packages/dns-certify/dns-certify.4.3.0/opam                     | 2 +-
+ packages/dns-certify/dns-certify.4.3.1/opam                     | 2 +-
+ packages/dns-certify/dns-certify.4.4.0/opam                     | 2 +-
+ packages/dns-certify/dns-certify.4.4.1/opam                     | 2 +-
+ packages/dns-certify/dns-certify.4.5.0/opam                     | 2 +-
+ packages/dns-certify/dns-certify.4.6.0/opam                     | 2 +-
+ packages/dns-certify/dns-certify.4.6.1/opam                     | 2 +-
+ packages/dns-certify/dns-certify.4.6.2/opam                     | 2 +-
+ packages/dns-certify/dns-certify.4.6.3/opam                     | 2 +-
+ packages/dns-certify/dns-certify.5.0.0/opam                     | 2 +-
+ packages/dns-certify/dns-certify.5.0.1/opam                     | 2 +-
+ packages/dns-certify/dns-certify.6.0.0/opam                     | 2 +-
+ packages/dns-certify/dns-certify.6.0.1/opam                     | 2 +-
+ packages/dns-certify/dns-certify.6.0.2/opam                     | 2 +-
+ packages/dns-certify/dns-certify.6.1.0/opam                     | 2 +-
+ packages/dns-certify/dns-certify.6.1.1/opam                     | 2 +-
+ packages/dns-certify/dns-certify.6.1.2/opam                     | 2 +-
+ packages/dns-certify/dns-certify.6.1.3/opam                     | 2 +-
+ packages/dns-certify/dns-certify.6.1.4/opam                     | 2 +-
+ packages/dns-certify/dns-certify.6.2.0/opam                     | 2 +-
+ packages/dns-certify/dns-certify.6.2.1/opam                     | 2 +-
+ packages/dns-certify/dns-certify.6.2.2/opam                     | 2 +-
+ packages/dns-certify/dns-certify.6.3.0/opam                     | 2 +-
+ packages/dns-certify/dns-certify.6.4.0/opam                     | 2 +-
+ packages/dns-certify/dns-certify.6.4.1/opam                     | 2 +-
+ packages/dns-certify/dns-certify.7.0.0/opam                     | 2 +-
+ packages/dns-certify/dns-certify.7.0.1/opam                     | 2 +-
+ packages/dns-certify/dns-certify.7.0.2/opam                     | 2 +-
+ packages/dns-certify/dns-certify.7.0.3/opam                     | 2 +-
+ packages/dns-client-mirage/dns-client-mirage.7.0.0/opam         | 2 +-
+ packages/dns-client-mirage/dns-client-mirage.7.0.1/opam         | 2 +-
+ packages/dns-client-mirage/dns-client-mirage.7.0.2/opam         | 2 +-
+ packages/dns-client-mirage/dns-client-mirage.7.0.3/opam         | 2 +-
+ packages/dns-client/dns-client.4.1.0/opam                       | 2 +-
+ packages/dns-client/dns-client.4.2.0/opam                       | 2 +-
+ packages/dns-client/dns-client.4.3.0/opam                       | 2 +-
+ packages/dns-client/dns-client.4.3.1/opam                       | 2 +-
+ packages/dns-client/dns-client.4.4.0/opam                       | 2 +-
+ packages/dns-client/dns-client.4.4.1/opam                       | 2 +-
+ packages/dns-client/dns-client.4.5.0/opam                       | 2 +-
+ packages/dns-client/dns-client.4.6.0/opam                       | 2 +-
+ packages/dns-client/dns-client.4.6.1/opam                       | 2 +-
+ packages/dns-client/dns-client.4.6.2/opam                       | 2 +-
+ packages/dns-client/dns-client.4.6.3/opam                       | 2 +-
+ packages/dns-client/dns-client.5.0.0/opam                       | 2 +-
+ packages/dns-client/dns-client.5.0.1/opam                       | 2 +-
+ packages/dns-client/dns-client.6.0.0/opam                       | 2 +-
+ packages/dns-client/dns-client.6.0.1/opam                       | 2 +-
+ packages/dns-client/dns-client.6.0.2/opam                       | 2 +-
+ packages/dns-client/dns-client.6.1.0/opam                       | 2 +-
+ packages/dns-client/dns-client.6.1.1/opam                       | 2 +-
+ packages/dns-client/dns-client.6.1.2/opam                       | 2 +-
+ packages/dns-client/dns-client.6.1.3/opam                       | 2 +-
+ packages/dns-client/dns-client.6.1.4/opam                       | 2 +-
+ packages/dns-client/dns-client.6.2.0/opam                       | 2 +-
+ packages/dns-client/dns-client.6.2.1/opam                       | 2 +-
+ packages/dns-client/dns-client.6.2.2/opam                       | 2 +-
+ packages/dns-client/dns-client.6.3.0/opam                       | 2 +-
+ packages/dns-client/dns-client.6.4.0/opam                       | 2 +-
+ packages/dns-client/dns-client.6.4.1/opam                       | 2 +-
+ packages/dns-resolver/dns-resolver.4.1.0/opam                   | 2 +-
+ packages/dns-resolver/dns-resolver.4.2.0/opam                   | 2 +-
+ packages/dns-resolver/dns-resolver.4.3.0/opam                   | 2 +-
+ packages/dns-resolver/dns-resolver.4.3.1/opam                   | 2 +-
+ packages/dns-resolver/dns-resolver.4.4.0/opam                   | 2 +-
+ packages/dns-resolver/dns-resolver.4.4.1/opam                   | 2 +-
+ packages/dns-resolver/dns-resolver.4.5.0/opam                   | 2 +-
+ packages/dns-resolver/dns-resolver.4.6.0/opam                   | 2 +-
+ packages/dns-resolver/dns-resolver.4.6.1/opam                   | 2 +-
+ packages/dns-resolver/dns-resolver.4.6.2/opam                   | 2 +-
+ packages/dns-resolver/dns-resolver.4.6.3/opam                   | 2 +-
+ packages/dns-resolver/dns-resolver.5.0.0/opam                   | 2 +-
+ packages/dns-resolver/dns-resolver.5.0.1/opam                   | 2 +-
+ packages/dns-resolver/dns-resolver.6.0.0/opam                   | 2 +-
+ packages/dns-resolver/dns-resolver.6.0.1/opam                   | 2 +-
+ packages/dns-resolver/dns-resolver.6.0.2/opam                   | 2 +-
+ packages/dns-resolver/dns-resolver.6.1.0/opam                   | 2 +-
+ packages/dns-resolver/dns-resolver.6.1.1/opam                   | 2 +-
+ packages/dns-resolver/dns-resolver.6.1.2/opam                   | 2 +-
+ packages/dns-resolver/dns-resolver.6.1.3/opam                   | 2 +-
+ packages/dns-resolver/dns-resolver.6.1.4/opam                   | 2 +-
+ packages/dns-resolver/dns-resolver.6.2.0/opam                   | 2 +-
+ packages/dns-resolver/dns-resolver.6.2.1/opam                   | 2 +-
+ packages/dns-resolver/dns-resolver.6.2.2/opam                   | 2 +-
+ packages/dns-resolver/dns-resolver.6.3.0/opam                   | 2 +-
+ packages/dns-resolver/dns-resolver.6.4.0/opam                   | 2 +-
+ packages/dns-resolver/dns-resolver.6.4.1/opam                   | 2 +-
+ packages/dns-resolver/dns-resolver.7.0.0/opam                   | 2 +-
+ packages/dns-resolver/dns-resolver.7.0.1/opam                   | 2 +-
+ packages/dns-resolver/dns-resolver.7.0.2/opam                   | 2 +-
+ packages/dns-resolver/dns-resolver.7.0.3/opam                   | 2 +-
+ packages/dns-stub/dns-stub.4.4.0/opam                           | 2 +-
+ packages/dns-stub/dns-stub.4.4.1/opam                           | 2 +-
+ packages/dns-stub/dns-stub.4.5.0/opam                           | 2 +-
+ packages/dns-stub/dns-stub.4.6.0/opam                           | 2 +-
+ packages/dns-stub/dns-stub.4.6.1/opam                           | 2 +-
+ packages/dns-stub/dns-stub.4.6.2/opam                           | 2 +-
+ packages/dns-stub/dns-stub.4.6.3/opam                           | 2 +-
+ packages/dns-stub/dns-stub.5.0.0/opam                           | 2 +-
+ packages/dns-stub/dns-stub.5.0.1/opam                           | 2 +-
+ packages/dns-stub/dns-stub.6.0.0/opam                           | 2 +-
+ packages/dns-stub/dns-stub.6.0.1/opam                           | 2 +-
+ packages/dns-stub/dns-stub.6.0.2/opam                           | 2 +-
+ packages/dns-stub/dns-stub.6.1.0/opam                           | 2 +-
+ packages/dns-stub/dns-stub.6.1.1/opam                           | 2 +-
+ packages/dns-stub/dns-stub.6.1.2/opam                           | 2 +-
+ packages/dns-stub/dns-stub.6.1.3/opam                           | 2 +-
+ packages/dns-stub/dns-stub.6.1.4/opam                           | 2 +-
+ packages/dns-stub/dns-stub.6.2.0/opam                           | 2 +-
+ packages/dns-stub/dns-stub.6.2.1/opam                           | 2 +-
+ packages/dns-stub/dns-stub.6.2.2/opam                           | 2 +-
+ packages/dns-stub/dns-stub.6.3.0/opam                           | 2 +-
+ packages/dns-stub/dns-stub.6.4.0/opam                           | 2 +-
+ packages/dns-stub/dns-stub.6.4.1/opam                           | 2 +-
+ packages/dns-stub/dns-stub.7.0.0/opam                           | 2 +-
+ packages/dns-stub/dns-stub.7.0.1/opam                           | 2 +-
+ packages/dns-stub/dns-stub.7.0.2/opam                           | 2 +-
+ packages/dns-stub/dns-stub.7.0.3/opam                           | 2 +-
+ packages/git-mirage/git-mirage.3.0.0/opam                       | 2 +-
+ packages/git-mirage/git-mirage.3.1.0/opam                       | 2 +-
+ packages/git-mirage/git-mirage.3.1.1/opam                       | 2 +-
+ packages/git-mirage/git-mirage.3.10.0/opam                      | 2 +-
+ packages/git-mirage/git-mirage.3.10.1/opam                      | 2 +-
+ packages/git-mirage/git-mirage.3.11.0/opam                      | 2 +-
+ packages/git-mirage/git-mirage.3.12.0/opam                      | 2 +-
+ packages/git-mirage/git-mirage.3.13.0/opam                      | 2 +-
+ packages/git-mirage/git-mirage.3.14.0/opam                      | 2 +-
+ packages/git-mirage/git-mirage.3.15.0/opam                      | 2 +-
+ packages/git-mirage/git-mirage.3.2.0/opam                       | 2 +-
+ packages/git-mirage/git-mirage.3.3.0/opam                       | 2 +-
+ packages/git-mirage/git-mirage.3.3.1/opam                       | 2 +-
+ packages/git-mirage/git-mirage.3.3.2/opam                       | 2 +-
+ packages/git-mirage/git-mirage.3.3.3/opam                       | 2 +-
+ packages/git-mirage/git-mirage.3.4.0/opam                       | 2 +-
+ packages/git-mirage/git-mirage.3.5.0/opam                       | 2 +-
+ packages/git-mirage/git-mirage.3.6.0/opam                       | 2 +-
+ packages/git-mirage/git-mirage.3.7.0/opam                       | 2 +-
+ packages/git-mirage/git-mirage.3.7.1/opam                       | 2 +-
+ packages/git-mirage/git-mirage.3.8.0/opam                       | 2 +-
+ packages/git-mirage/git-mirage.3.8.1/opam                       | 2 +-
+ packages/git-mirage/git-mirage.3.9.0/opam                       | 2 +-
+ packages/git-mirage/git-mirage.3.9.1/opam                       | 2 +-
+ packages/happy-eyeballs-mirage/happy-eyeballs-mirage.0.0.1/opam | 2 +-
+ packages/happy-eyeballs-mirage/happy-eyeballs-mirage.0.0.2/opam | 2 +-
+ packages/happy-eyeballs-mirage/happy-eyeballs-mirage.0.0.3/opam | 2 +-
+ packages/happy-eyeballs-mirage/happy-eyeballs-mirage.0.0.4/opam | 2 +-
+ packages/happy-eyeballs-mirage/happy-eyeballs-mirage.0.0.5/opam | 2 +-
+ packages/happy-eyeballs-mirage/happy-eyeballs-mirage.0.0.6/opam | 2 +-
+ packages/happy-eyeballs-mirage/happy-eyeballs-mirage.0.0.7/opam | 2 +-
+ packages/happy-eyeballs-mirage/happy-eyeballs-mirage.0.0.8/opam | 2 +-
+ packages/happy-eyeballs-mirage/happy-eyeballs-mirage.0.1.0/opam | 2 +-
+ packages/happy-eyeballs-mirage/happy-eyeballs-mirage.0.1.1/opam | 2 +-
+ packages/happy-eyeballs-mirage/happy-eyeballs-mirage.0.1.2/opam | 2 +-
+ packages/happy-eyeballs-mirage/happy-eyeballs-mirage.0.1.3/opam | 2 +-
+ packages/happy-eyeballs-mirage/happy-eyeballs-mirage.0.2.0/opam | 2 +-
+ packages/happy-eyeballs-mirage/happy-eyeballs-mirage.0.3.0/opam | 2 +-
+ packages/happy-eyeballs-mirage/happy-eyeballs-mirage.0.3.1/opam | 2 +-
+ packages/happy-eyeballs-mirage/happy-eyeballs-mirage.0.4.0/opam | 2 +-
+ packages/happy-eyeballs-mirage/happy-eyeballs-mirage.0.5.0/opam | 2 +-
+ packages/happy-eyeballs-mirage/happy-eyeballs-mirage.0.6.0/opam | 2 +-
+ packages/mirage-qubes-ipv4/mirage-qubes-ipv4.0.8.0/opam         | 2 +-
+ packages/mirage-qubes-ipv4/mirage-qubes-ipv4.0.8.1/opam         | 2 +-
+ packages/mirage-qubes-ipv4/mirage-qubes-ipv4.0.8.2/opam         | 2 +-
+ packages/mirage-qubes-ipv4/mirage-qubes-ipv4.0.8.3/opam         | 2 +-
+ packages/mirage-qubes-ipv4/mirage-qubes-ipv4.0.9.0/opam         | 2 +-
+ packages/mirage-qubes-ipv4/mirage-qubes-ipv4.0.9.1/opam         | 2 +-
+ packages/mirage-qubes-ipv4/mirage-qubes-ipv4.0.9.2/opam         | 2 +-
+ packages/mirage-qubes-ipv4/mirage-qubes-ipv4.0.9.3/opam         | 2 +-
+ packages/mirage-random-stdlib/mirage-random-stdlib.0.1.0/opam   | 2 +-
+ packages/mirage-random-test/mirage-random-test.0.1.0/opam       | 2 +-
+ packages/mirage-types/mirage-types.3.10.0/opam                  | 2 +-
+ packages/mirage-types/mirage-types.3.10.1/opam                  | 2 +-
+ packages/mirage-types/mirage-types.3.10.2/opam                  | 2 +-
+ packages/mirage-types/mirage-types.3.10.3/opam                  | 2 +-
+ packages/mirage-types/mirage-types.3.10.4/opam                  | 2 +-
+ packages/mirage-types/mirage-types.3.10.5/opam                  | 2 +-
+ packages/mirage-types/mirage-types.3.10.6/opam                  | 2 +-
+ packages/mirage-types/mirage-types.3.10.7/opam                  | 2 +-
+ packages/mirage-types/mirage-types.3.10.8/opam                  | 2 +-
+ packages/mirage-types/mirage-types.3.7.1/opam                   | 2 +-
+ packages/mirage-types/mirage-types.3.7.5/opam                   | 2 +-
+ packages/mirage-types/mirage-types.3.7.6/opam                   | 2 +-
+ packages/mirage-types/mirage-types.3.8.0/opam                   | 2 +-
+ packages/mirage-types/mirage-types.3.8.1/opam                   | 2 +-
+ packages/mirage-types/mirage-types.3.9.0/opam                   | 2 +-
+ packages/mirage-vnetif-stack/mirage-vnetif-stack.0.6.0/opam     | 2 +-
+ packages/paf-le/paf-le.0.4.0/opam                               | 2 +-
+ packages/pgx_lwt_mirage/pgx_lwt_mirage.1.0/opam                 | 2 +-
+ packages/pgx_lwt_mirage/pgx_lwt_mirage.2.0/opam                 | 2 +-
+ packages/pgx_lwt_mirage/pgx_lwt_mirage.2.1/opam                 | 2 +-
+ packages/pgx_lwt_mirage/pgx_lwt_mirage.2.2/opam                 | 2 +-
+ packages/tcpip/tcpip.4.0.0/opam                                 | 2 +-
+ packages/tcpip/tcpip.4.1.0/opam                                 | 2 +-
+ packages/tcpip/tcpip.5.0.0/opam                                 | 2 +-
+ packages/tcpip/tcpip.5.0.1/opam                                 | 2 +-
+ packages/tcpip/tcpip.6.0.0/opam                                 | 2 +-
+ packages/tcpip/tcpip.6.1.0/opam                                 | 2 +-
+ packages/tcpip/tcpip.6.2.0/opam                                 | 2 +-
+ packages/tcpip/tcpip.6.3.0/opam                                 | 2 +-
+ packages/tcpip/tcpip.6.4.0/opam                                 | 2 +-
+ packages/tcpip/tcpip.7.0.0/opam                                 | 2 +-
+ packages/tcpip/tcpip.7.0.1/opam                                 | 2 +-
+ packages/tcpip/tcpip.7.1.0/opam                                 | 2 +-
+ packages/tcpip/tcpip.7.1.1/opam                                 | 2 +-
+ packages/tcpip/tcpip.7.1.2/opam                                 | 2 +-
+ packages/tcpip/tcpip.8.0.0/opam                                 | 2 +-
+ 254 files changed, 256 insertions(+), 256 deletions(-)
+
+[01;34m(from ocaml/opam:ubuntu-22.04-ocaml-4.14@sha256:6c89a744b5c470342487a1479ee05a8fc344fc343f257e11f22661ac92b6db05)[0m
+Unable to find image 'ocaml/opam:ubuntu-22.04-ocaml-4.14@sha256:6c89a744b5c470342487a1479ee05a8fc344fc343f257e11f22661ac92b6db05' locally
+docker.io/ocaml/opam@sha256:6c89a744b5c470342487a1479ee05a8fc344fc343f257e11f22661ac92b6db05: Pulling from ocaml/opam
+7548465e3aa5: Already exists
+42d5467c0a01: Already exists
+f3480a6c8389: Already exists
+4244963a5de2: Already exists
+1437e3024f0d: Already exists
+74e98548757d: Already exists
+91c44e8dd416: Already exists
+9d5eb82a741d: Already exists
+82e34ad189a4: Already exists
+6be5e0dc5392: Already exists
+29943783fd67: Already exists
+a1bee57097cd: Already exists
+05e87447c8c6: Already exists
+234ab50b409b: Already exists
+234ab50b409b: Already exists
+4f4fb700ef54: Already exists
+54eec554b2a5: Already exists
+ad2ac5d41764: Already exists
+6664e5a41055: Already exists
+4f4fb700ef54: Already exists
+0559fc74ad7d: Already exists
+2bc6e07d11a7: Already exists
+4d2dcb576216: Already exists
+6154ac9b7bc0: Already exists
+39f61e64ce1a: Already exists
+adbd875cc943: Already exists
+dc2dc0b02bfa: Already exists
+8f2a99c4b492: Already exists
+2165b4bb1a45: Already exists
+18108f9bff6a: Already exists
+6acf98c8b911: Already exists
+02ee759bfd02: Already exists
+618a24e01712: Already exists
+2a3ea1fdcba1: Already exists
+b00cf62097e7: Already exists
+9123c86a625f: Already exists
+7782316ceeb8: Already exists
+d183f08251ca: Pulling fs layer
+b7404b658d58: Pulling fs layer
+76d39ad80d06: Pulling fs layer
+24392b1f78cf: Pulling fs layer
+24392b1f78cf: Waiting
+b7404b658d58: Verifying Checksum
+b7404b658d58: Download complete
+76d39ad80d06: Download complete
+24392b1f78cf: Verifying Checksum
+24392b1f78cf: Download complete
+d183f08251ca: Verifying Checksum
+d183f08251ca: Download complete
+d183f08251ca: Pull complete
+b7404b658d58: Pull complete
+76d39ad80d06: Pull complete
+24392b1f78cf: Pull complete
+Digest: sha256:6c89a744b5c470342487a1479ee05a8fc344fc343f257e11f22661ac92b6db05
+Status: Downloaded newer image for ocaml/opam@sha256:6c89a744b5c470342487a1479ee05a8fc344fc343f257e11f22661ac92b6db05
+[01;2m[01;35m2024-03-27 06:35.07 ---> using "89b49ffa6bc37bea1c58d6504c0244f428f60ca92d56a17a4e13da22487cff20" from cache[0m
+
+[01;34m/: (user (uid 1000) (gid 1000))[0m
+
+[01;34m/: (workdir /home/opam)[0m
+
+[01;34m/home/opam: (run (shell "sudo ln -f /usr/bin/opam-dev /usr/bin/opam"))[0m
+[01;2m[01;35m2024-03-27 06:35.07 ---> using "2d2d2e367c253a8e35f89259d41195d59b8621f03c320dd0cf0829b9a7003026" from cache[0m
+
+[01;34m/home/opam: (run (network host)
+                 (shell "opam init --reinit --config .opamrc-sandbox -ni"))[0m
+Configuring from /home/opam/.opamrc-sandbox, then /home/opam/.opamrc, and finally from built-in defaults.
+Checking for available remotes: rsync and local, git.
+  - you won't be able to use mercurial repositories unless you install the hg command on your system.
+  - you won't be able to use darcs repositories unless you install the darcs command on your system.
+
+This development version of opam requires an update to the layout of /home/opam/.opam from version 2.0 to version 2.2~alpha, which can't be reverted.
+You may want to back it up before going further.
+
+Continue? [y/n] y
+Format upgrade done.
+
+<><> Updating repositories ><><><><><><><><><><><><><><><><><><><><><><><><><><>
+[default] synchronised from file:///home/opam/opam-repository
+[01;2m[01;35m2024-03-27 06:35.07 ---> using "fdada6519175665e2fec4238ac8010556dde157f773c1cf3786d7c54591d7ad3" from cache[0m
+
+[01;34m/home/opam: (env OPAMDOWNLOADJOBS 1)[0m
+
+[01;34m/home/opam: (env OPAMERRLOGLEN 0)[0m
+
+[01;34m/home/opam: (env OPAMSOLVERTIMEOUT 500)[0m
+
+[01;34m/home/opam: (env OPAMPRECISETRACKING 1)[0m
+
+[01;34m/home/opam: (env CI true)[0m
+
+[01;34m/home/opam: (env OPAM_REPO_CI true)[0m
+
+[01;34m/home/opam: (run (shell "rm -rf opam-repository/"))[0m
+[01;2m[01;35m2024-03-27 06:35.07 ---> using "9556632cae772e8b94a4ff81fdf0e030c77523f8e211df70068215733ec0ca67" from cache[0m
+
+[01;34m/home/opam: (copy (src .) (dst opam-repository/))[0m
+[01;2m[01;35m2024-03-27 06:36.00 ---> using "6f1a220a48fae69fbedd57f965e08741f8c4df90c8452d1e733453c725c8f0d5" from cache[0m
+
+[01;34m/home/opam: (run (shell "opam repository set-url --strict default opam-repository/"))[0m
+[default] Initialised
+[01;2m[01;35m2024-03-27 06:36.00 ---> using "aeba623050925f49acad292d83d554ff1c691774b38d9dd4d015f432ebcb4f48" from cache[0m
+
+[01;34m/home/opam: (run (network host)
+                 (shell "opam update --depexts || true"))[0m
++ /usr/bin/sudo "apt-get" "update"
+- Hit:1 http://ports.ubuntu.com/ubuntu-ports jammy InRelease
+- Get:2 http://ports.ubuntu.com/ubuntu-ports jammy-updates InRelease [119 kB]
+- Hit:3 http://ports.ubuntu.com/ubuntu-ports jammy-backports InRelease
+- Get:4 http://ports.ubuntu.com/ubuntu-ports jammy-security InRelease [110 kB]
+- Get:5 http://ports.ubuntu.com/ubuntu-ports jammy-updates/main riscv64 Packages [889 kB]
+- Get:6 http://ports.ubuntu.com/ubuntu-ports jammy-updates/universe riscv64 Packages [972 kB]
+- Get:7 http://ports.ubuntu.com/ubuntu-ports jammy-security/main riscv64 Packages [634 kB]
+- Fetched 2723 kB in 14s (188 kB/s)
+- Reading package lists...
+- 
+[01;2m[01;35m2024-03-27 06:36.00 ---> using "f2fe32c099c3e73e9c26e5a58f26a562f701fb7c369666a2b804b29b9cac6689" from cache[0m
+
+[01;34m/home/opam: (env OPAMCRITERIA -removed,-count[avoid-version,changed],-count[version-lag,request],-count[version-lag,changed],-count[missing-depexts,changed],-changed)[0m
+
+[01;34m/home/opam: (env OPAMFIXUPCRITERIA -removed,-count[avoid-version,changed],-count[version-lag,request],-count[version-lag,changed],-count[missing-depexts,changed],-changed)[0m
+
+[01;34m/home/opam: (env OPAMUPGRADECRITERIA -removed,-count[avoid-version,changed],-count[version-lag,request],-count[version-lag,changed],-count[missing-depexts,changed],-changed)[0m
+
+[01;34m/home/opam: (run (shell "opam pin add -k version -yn happy-eyeballs-mirage.0.1.2 0.1.2"))[0m
+happy-eyeballs-mirage is now pinned to version 0.1.2
+[01;2m[01;35m2024-03-27 06:36.00 ---> using "44bdd85c782658b92ff768ad9b70ada99d9d3972eaa334568fe722a7285dd54c" from cache[0m
+
+[01;34m/home/opam: (run (cache (opam-archives (target /home/opam/.opam/download-cache)))
+                 (network host)
+                 (shell  "opam reinstall happy-eyeballs-mirage.0.1.2;\
+                        \n        res=$?;\
+                        \n        test \"$res\" != 31 && exit \"$res\";\
+                        \n        export OPAMCLI=2.0;\
+                        \n        build_dir=$(opam var prefix)/.opam-switch/build;\
+                        \n        failed=$(ls \"$build_dir\");\
+                        \n        partial_fails=\"\";\
+                        \n        for pkg in $failed; do\
+                        \n          if opam show -f x-ci-accept-failures: \"$pkg\" | grep -qF \"\\\"ubuntu-22.04\\\"\"; then\
+                        \n            echo \"A package failed and has been disabled for CI using the 'x-ci-accept-failures' field.\";\
+                        \n          fi;\
+                        \n          test \"$pkg\" != 'happy-eyeballs-mirage.0.1.2' && partial_fails=\"$partial_fails $pkg\";\
+                        \n        done;\
+                        \n        test \"${partial_fails}\" != \"\" && echo \"opam-repo-ci detected dependencies failing: ${partial_fails}\";\
+                        \n        exit 1"))[0m
+happy-eyeballs-mirage.0.1.2 is not installed. Install it? [y/n] y
+[ERROR] Sorry, resolution of the request timed out.
+        Try to specify a more precise request, use a different solver, or increase the allowed time by setting OPAMSOLVERTIMEOUT to a bigger value (currently, it is set to 500.0 seconds).
+"/bin/bash" "-c" "opam reinstall happy-eyeballs-mirage.0.1.2;
+        res=$?;
+        test "$res" != 31 && exit "$res";
+        export OPAMCLI=2.0;
+        build_dir=$(opam var prefix)/.opam-switch/build;
+        failed=$(ls "$build_dir");
+        partial_fails="";
+        for pkg in $failed; do
+          if opam show -f x-ci-accept-failures: "$pkg" | grep -qF "\"ubuntu-22.04\""; then
+            echo "A package failed and has been disabled for CI using the 'x-ci-accept-failures' field.";
+          fi;
+          test "$pkg" != 'happy-eyeballs-mirage.0.1.2' && partial_fails="$partial_fails $pkg";
+        done;
+        test "${partial_fails}" != "" && echo "opam-repo-ci detected dependencies failing: ${partial_fails}";
+        exit 1" failed with exit status 60
+2024-03-27 06:49.51: Job failed: Failed: Build failed
+2024-03-27 06:49.51: Log analysis:
+2024-03-27 06:49.51: >>> 
+[ERROR] Sorry, resolution of the request timed out.
+ (score = 20)
+2024-03-27 06:49.51: Sorry, resolution of the request timed out.

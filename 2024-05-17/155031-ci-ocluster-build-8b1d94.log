@@ -1,0 +1,434 @@
+2024-05-17 15:50.31: New job: test git-kv.0.0.5, using opam dev
+                              from https://github.com/ocaml/opam-repository.git#refs/pull/25894/head (777a342f85004b1ec44804b28181c37f4bf6dcfe)
+                              on oraclelinux-8-ocaml-4.14/amd64
+
+To reproduce locally:
+
+cd $(mktemp -d)
+git clone --recursive "https://github.com/ocaml/opam-repository.git" && cd "opam-repository" && git fetch origin "refs/pull/25894/head" && git reset --hard 777a342f
+git fetch origin master
+git merge --no-edit ec28f29e7d5229f0ae579130c2c129f9b952efb3
+cat > ../Dockerfile <<'END-OF-DOCKERFILE'
+[34mFROM ocaml/opam:oraclelinux-8-ocaml-4.14@sha256:7fff62c104311c385db60309ad8304d4c3dbdfc5aa02c84b0b8a41ece396a12d
+USER 1000:1000
+WORKDIR /home/opam
+RUN sudo ln -f /usr/bin/opam-dev /usr/bin/opam
+RUN opam init --reinit -ni
+RUN uname -rs && opam exec -- ocaml -version && opam --version
+ENV OPAMDOWNLOADJOBS="1"
+ENV OPAMERRLOGLEN="0"
+ENV OPAMSOLVERTIMEOUT="500"
+ENV OPAMPRECISETRACKING="1"
+ENV CI="true"
+ENV OPAM_REPO_CI="true"
+RUN rm -rf opam-repository/
+COPY --chown=1000:1000 . opam-repository/
+RUN opam repository set-url --strict default opam-repository/
+RUN opam update --depexts || true
+RUN opam pin add -k version -yn git-kv.0.0.5 0.0.5
+RUN opam reinstall git-kv.0.0.5; \
+    res=$?; \
+    test "$res" != 31 && exit "$res"; \
+    export OPAMCLI=2.0; \
+    build_dir=$(opam var prefix)/.opam-switch/build; \
+    failed=$(ls "$build_dir"); \
+    partial_fails=""; \
+    for pkg in $failed; do \
+    if opam show -f x-ci-accept-failures: "$pkg" | grep -qF "\"oraclelinux-8\""; then \
+    echo "A package failed and has been disabled for CI using the 'x-ci-accept-failures' field."; \
+    fi; \
+    test "$pkg" != 'git-kv.0.0.5' && partial_fails="$partial_fails $pkg"; \
+    done; \
+    test "${partial_fails}" != "" && echo "opam-repo-ci detected dependencies failing: ${partial_fails}"; \
+    exit 1
+RUN (opam reinstall --with-test git-kv.0.0.5) || true
+RUN opam reinstall --with-test --verbose git-kv.0.0.5; \
+    res=$?; \
+    test "$res" != 31 && exit "$res"; \
+    export OPAMCLI=2.0; \
+    build_dir=$(opam var prefix)/.opam-switch/build; \
+    failed=$(ls "$build_dir"); \
+    partial_fails=""; \
+    for pkg in $failed; do \
+    if opam show -f x-ci-accept-failures: "$pkg" | grep -qF "\"oraclelinux-8\""; then \
+    echo "A package failed and has been disabled for CI using the 'x-ci-accept-failures' field."; \
+    fi; \
+    test "$pkg" != 'git-kv.0.0.5' && partial_fails="$partial_fails $pkg"; \
+    done; \
+    test "${partial_fails}" != "" && echo "opam-repo-ci detected dependencies failing: ${partial_fails}"; \
+    exit 1
+[0m
+END-OF-DOCKERFILE
+docker build -f ../Dockerfile .
+
+2024-05-17 15:50.31: Using cache hint "ocaml/opam:oraclelinux-8-ocaml-4.14@sha256:7fff62c104311c385db60309ad8304d4c3dbdfc5aa02c84b0b8a41ece396a12d-git-kv.0.0.5-777a342f85004b1ec44804b28181c37f4bf6dcfe"
+2024-05-17 15:50.31: Using OBuilder spec:
+((from ocaml/opam:oraclelinux-8-ocaml-4.14@sha256:7fff62c104311c385db60309ad8304d4c3dbdfc5aa02c84b0b8a41ece396a12d)
+ (user (uid 1000) (gid 1000))
+ (workdir /home/opam)
+ (run (shell "sudo ln -f /usr/bin/opam-dev /usr/bin/opam"))
+ (run (network host)
+      (shell "opam init --reinit --config .opamrc-sandbox -ni"))
+ (run (shell "uname -rs && opam exec -- ocaml -version && opam --version"))
+ (env OPAMDOWNLOADJOBS 1)
+ (env OPAMERRLOGLEN 0)
+ (env OPAMSOLVERTIMEOUT 500)
+ (env OPAMPRECISETRACKING 1)
+ (env CI true)
+ (env OPAM_REPO_CI true)
+ (run (shell "rm -rf opam-repository/"))
+ (copy (src .) (dst opam-repository/))
+ (run (shell "opam repository set-url --strict default opam-repository/"))
+ (run (network host)
+      (shell "opam update --depexts || true"))
+ (run (shell "opam pin add -k version -yn git-kv.0.0.5 0.0.5"))
+ (run (cache (opam-archives (target /home/opam/.opam/download-cache)))
+      (network host)
+      (shell  "opam reinstall git-kv.0.0.5;\
+             \n        res=$?;\
+             \n        test \"$res\" != 31 && exit \"$res\";\
+             \n        export OPAMCLI=2.0;\
+             \n        build_dir=$(opam var prefix)/.opam-switch/build;\
+             \n        failed=$(ls \"$build_dir\");\
+             \n        partial_fails=\"\";\
+             \n        for pkg in $failed; do\
+             \n          if opam show -f x-ci-accept-failures: \"$pkg\" | grep -qF \"\\\"oraclelinux-8\\\"\"; then\
+             \n            echo \"A package failed and has been disabled for CI using the 'x-ci-accept-failures' field.\";\
+             \n          fi;\
+             \n          test \"$pkg\" != 'git-kv.0.0.5' && partial_fails=\"$partial_fails $pkg\";\
+             \n        done;\
+             \n        test \"${partial_fails}\" != \"\" && echo \"opam-repo-ci detected dependencies failing: ${partial_fails}\";\
+             \n        exit 1"))
+ (run (network host)
+      (shell "(opam reinstall --with-test git-kv.0.0.5) || true"))
+ (run (shell  "opam reinstall --with-test --verbose git-kv.0.0.5;\
+             \n        res=$?;\
+             \n        test \"$res\" != 31 && exit \"$res\";\
+             \n        export OPAMCLI=2.0;\
+             \n        build_dir=$(opam var prefix)/.opam-switch/build;\
+             \n        failed=$(ls \"$build_dir\");\
+             \n        partial_fails=\"\";\
+             \n        for pkg in $failed; do\
+             \n          if opam show -f x-ci-accept-failures: \"$pkg\" | grep -qF \"\\\"oraclelinux-8\\\"\"; then\
+             \n            echo \"A package failed and has been disabled for CI using the 'x-ci-accept-failures' field.\";\
+             \n          fi;\
+             \n          test \"$pkg\" != 'git-kv.0.0.5' && partial_fails=\"$partial_fails $pkg\";\
+             \n        done;\
+             \n        test \"${partial_fails}\" != \"\" && echo \"opam-repo-ci detected dependencies failing: ${partial_fails}\";\
+             \n        exit 1"))
+)
+
+2024-05-17 15:50.31: Waiting for resource in pool OCluster
+2024-05-17 16:34.37: Waiting for worker…
+2024-05-17 16:37.25: Got resource from pool OCluster
+Building on doris.caelum.ci.dev
+All commits already cached
+Updating files:  81% (27535/33697)Updating files:  82% (27632/33697)Updating files:  83% (27969/33697)Updating files:  84% (28306/33697)Updating files:  85% (28643/33697)Updating files:  86% (28980/33697)Updating files:  87% (29317/33697)Updating files:  88% (29654/33697)Updating files:  89% (29991/33697)Updating files:  90% (30328/33697)Updating files:  91% (30665/33697)Updating files:  92% (31002/33697)Updating files:  93% (31339/33697)Updating files:  94% (31676/33697)Updating files:  95% (32013/33697)Updating files:  96% (32350/33697)Updating files:  97% (32687/33697)Updating files:  98% (33024/33697)Updating files:  99% (33361/33697)Updating files: 100% (33697/33697)Updating files: 100% (33697/33697), done.
+HEAD is now at ec28f29e7d Merge pull request #25898 from mseri/janestreet-v0.17-core-version-bounds
+Merge made by the 'ort' strategy.
+ packages/git-kv/git-kv.0.0.5/opam | 39 +++++++++++++++++++++++++++++++++++++++
+ 1 file changed, 39 insertions(+)
+ create mode 100644 packages/git-kv/git-kv.0.0.5/opam
+
+[01;34m(from ocaml/opam:oraclelinux-8-ocaml-4.14@sha256:7fff62c104311c385db60309ad8304d4c3dbdfc5aa02c84b0b8a41ece396a12d)[0m
+[01;2m[01;35m2024-05-17 16:42.03 ---> using "e9e16896be5e1a69da16bc300acb6f8c1bf142ebf5046944adc19fb556d1f423" from cache[0m
+
+[01;34m/: (user (uid 1000) (gid 1000))[0m
+
+[01;34m/: (workdir /home/opam)[0m
+
+[01;34m/home/opam: (run (shell "sudo ln -f /usr/bin/opam-dev /usr/bin/opam"))[0m
+[01;2m[01;35m2024-05-17 16:42.03 ---> using "281e4b59e2cd47e184ffcca856566dee914775b9c7395dd96775b8185d3c4737" from cache[0m
+
+[01;34m/home/opam: (run (network host)
+                 (shell "opam init --reinit --config .opamrc-sandbox -ni"))[0m
+Configuring from /home/opam/.opamrc-sandbox, then /home/opam/.opamrc, and finally from built-in defaults.
+Checking for available remotes: rsync and local, git.
+  - you won't be able to use mercurial repositories unless you install the hg command on your system.
+  - you won't be able to use darcs repositories unless you install the darcs command on your system.
+
+This development version of opam requires an update to the layout of /home/opam/.opam from version 2.0 to version 2.2~beta, which can't be reverted.
+You may want to back it up before going further.
+
+Continue? [y/n] y
+[NOTE] The 'jobs' option was reset, its value was 31 and its new value will vary according to the current number of cores on your machine. You can restore the fixed value using:
+           opam option jobs=31 --global
+Format upgrade done.
+
+<><> Updating repositories ><><><><><><><><><><><><><><><><><><><><><><><><><><>
+[default] synchronised from file:///home/opam/opam-repository
+[01;2m[01;35m2024-05-17 16:42.03 ---> using "a5974f3bf6b0363cf919ff5ee86ced3c7b4d59fa026ae5c8401674abe1bd8368" from cache[0m
+
+[01;34m/home/opam: (run (shell "uname -rs && opam exec -- ocaml -version && opam --version"))[0m
+Linux 5.15.0-106-generic
+The OCaml toplevel, version 4.14.2
+2.2.0~beta3~dev
+[01;2m[01;35m2024-05-17 16:42.03 ---> using "dc6b03fb51b6aaec83cc3ca55f19dc2f83a51208af2128f7851b8ada7d4796ce" from cache[0m
+
+[01;34m/home/opam: (env OPAMDOWNLOADJOBS 1)[0m
+
+[01;34m/home/opam: (env OPAMERRLOGLEN 0)[0m
+
+[01;34m/home/opam: (env OPAMSOLVERTIMEOUT 500)[0m
+
+[01;34m/home/opam: (env OPAMPRECISETRACKING 1)[0m
+
+[01;34m/home/opam: (env CI true)[0m
+
+[01;34m/home/opam: (env OPAM_REPO_CI true)[0m
+
+[01;34m/home/opam: (run (shell "rm -rf opam-repository/"))[0m
+[01;2m[01;35m2024-05-17 16:42.03 ---> using "ee26f8053c967454f10ba39b804ca8c951a4a7f817f23a41b6a6d63f4cf5b0e4" from cache[0m
+
+[01;34m/home/opam: (copy (src .) (dst opam-repository/))[0m
+[01;2m[01;35m2024-05-17 16:42.05 ---> using "b7fe6481ae90ae39f88e200bae216c552e9fc1694552a2101a4a394f2da31e03" from cache[0m
+
+[01;34m/home/opam: (run (shell "opam repository set-url --strict default opam-repository/"))[0m
+[default] Initialised
+[01;2m[01;35m2024-05-17 16:42.05 ---> using "e8a07dfd591395b20fe30a044a2d780a093eeb93becb4a9cf1e439fc442098d5" from cache[0m
+
+[01;34m/home/opam: (run (network host)
+                 (shell "opam update --depexts || true"))[0m
++ /usr/bin/sudo "yum" "makecache"
+- Oracle Linux 8 BaseOS Latest (x86_64)           116 kB/s | 3.6 kB     00:00    
+- Oracle Linux 8 BaseOS Latest (x86_64)            56 MB/s |  74 MB     00:01    
+- Oracle Linux 8 Application Stream (x86_64)      100 kB/s | 3.9 kB     00:00    
+- Oracle Linux 8 Application Stream (x86_64)       48 MB/s |  56 MB     00:01    
+- Last metadata expiration check: 0:00:13 ago on Fri May 17 14:00:21 2024.
+- Metadata cache created.
+[01;2m[01;35m2024-05-17 16:42.05 ---> using "ccbedfda97d17ec8f26e78d8f2fdbd4aba9492d5ede802ede091219862705688" from cache[0m
+
+[01;34m/home/opam: (run (shell "opam pin add -k version -yn git-kv.0.0.5 0.0.5"))[0m
+git-kv is now pinned to version 0.0.5
+[01;2m[01;35m2024-05-17 16:42.05 ---> using "f9064ffbdb5d58adfaec2036a9eb27f107dd2ef5fe55b2b34ed49c38b086f295" from cache[0m
+
+[01;34m/home/opam: (run (cache (opam-archives (target /home/opam/.opam/download-cache)))
+                 (network host)
+                 (shell  "opam reinstall git-kv.0.0.5;\
+                        \n        res=$?;\
+                        \n        test \"$res\" != 31 && exit \"$res\";\
+                        \n        export OPAMCLI=2.0;\
+                        \n        build_dir=$(opam var prefix)/.opam-switch/build;\
+                        \n        failed=$(ls \"$build_dir\");\
+                        \n        partial_fails=\"\";\
+                        \n        for pkg in $failed; do\
+                        \n          if opam show -f x-ci-accept-failures: \"$pkg\" | grep -qF \"\\\"oraclelinux-8\\\"\"; then\
+                        \n            echo \"A package failed and has been disabled for CI using the 'x-ci-accept-failures' field.\";\
+                        \n          fi;\
+                        \n          test \"$pkg\" != 'git-kv.0.0.5' && partial_fails=\"$partial_fails $pkg\";\
+                        \n        done;\
+                        \n        test \"${partial_fails}\" != \"\" && echo \"opam-repo-ci detected dependencies failing: ${partial_fails}\";\
+                        \n        exit 1"))[0m
+git-kv.0.0.5 is not installed. Install it? [y/n] y
+The following actions will be performed:
+=== install 54 packages
+  - install angstrom           0.16.0         [required by git]
+  - install astring            0.8.5          [required by git]
+  - install base-bytes         base           [required by ocplib-endian]
+  - install base64             3.5.1          [required by git]
+  - install bigstringaf        0.9.1          [required by carton-lwt, carton, git]
+  - install bos                0.2.1          [required by carton]
+  - install carton             0.7.1          [required by git-kv]
+  - install carton-git         0.7.1          [required by git]
+  - install carton-lwt         0.7.1          [required by git-kv]
+  - install checkseum          0.5.2          [required by carton, git]
+  - install cmdliner           1.2.0          [required by carton]
+  - install cppo               1.6.9          [required by lwt]
+  - install csexp              1.5.2          [required by dune-configurator]
+  - install cstruct            6.2.0          [required by carton, git]
+  - install decompress         1.5.3          [required by carton-lwt, carton, git]
+  - install digestif           1.2.0          [required by carton, git]
+  - install domain-name        0.4.0          [required by git]
+  - install duff               0.5            [required by carton]
+  - install dune               3.15.2         [required by git-kv]
+  - install dune-configurator  3.15.2         [required by checkseum, bigstringaf, hxd]
+  - install emile              1.1            [required by git]
+  - install encore             0.8            [required by git]
+  - install eqaf               0.9            [required by digestif]
+  - install fmt                0.9.0          [required by git-kv]
+  - install fpath              0.7.3          [required by carton, git]
+  - install git                3.15.0         [required by git-kv]
+  - install git-kv             0.0.5 (pinned)
+  - install hxd                0.3.2          [required by carton, git]
+  - install ipaddr             5.5.0          [required by git]
+  - install ke                 0.6            [required by carton, git]
+  - install logs               0.7.0          [required by carton, git]
+  - install lwt                5.7.0          [required by git, carton-lwt, mirage-kv]
+  - install macaddr            5.5.0          [required by ipaddr]
+  - install mimic              0.0.7          [required by git]
+  - install mirage-clock       4.2.0          [required by git-kv]
+  - install mirage-flow        4.0.2          [required by git]
+  - install mirage-kv          6.1.1          [required by git-kv]
+  - install ocaml-syntax-shims 1.0.0          [required by angstrom]
+  - install ocamlbuild         0.14.3         [required by bos, ptime]
+  - install ocamlfind          1.9.6          [required by bos, ptime]
+  - install ocamlgraph         2.1.0          [required by git]
+  - install ocplib-endian      1.2            [required by lwt]
+  - install optint             0.3.0          [required by git, carton, carton-lwt, mirage-kv]
+  - install pecu               0.7            [required by emile]
+  - install psq                0.2.1          [required by carton, git]
+  - install ptime              1.1.0          [required by git-kv]
+  - install result             1.5            [required by carton, git]
+  - install rresult            0.7.0          [required by carton, git]
+  - install seq                base           [required by psq]
+  - install stdlib-shims       0.3.0          [required by ocamlgraph]
+  - install stringext          1.6.0          [required by uri]
+  - install topkg              1.0.7          [required by bos, ptime]
+  - install uri                4.4.0          [required by git]
+  - install uutf               1.0.3          [required by emile]
+
+<><> Processing actions <><><><><><><><><><><><><><><><><><><><><><><><><><><><>
+-> retrieved angstrom.0.16.0  (cached)
+-> retrieved astring.0.8.5  (cached)
+-> retrieved base64.3.5.1  (cached)
+-> retrieved bigstringaf.0.9.1  (cached)
+-> retrieved bos.0.2.1  (cached)
+-> retrieved carton.0.7.1, carton-git.0.7.1, carton-lwt.0.7.1  (cached)
+-> retrieved checkseum.0.5.2  (cached)
+-> retrieved cmdliner.1.2.0  (cached)
+-> retrieved cppo.1.6.9  (cached)
+-> retrieved csexp.1.5.2  (cached)
+-> retrieved cstruct.6.2.0  (cached)
+-> retrieved decompress.1.5.3  (cached)
+-> retrieved digestif.1.2.0  (cached)
+-> retrieved domain-name.0.4.0  (cached)
+-> retrieved duff.0.5  (cached)
+-> retrieved dune.3.15.2, dune-configurator.3.15.2  (cached)
+-> retrieved emile.1.1  (cached)
+-> retrieved encore.0.8  (cached)
+-> retrieved eqaf.0.9  (cached)
+-> retrieved fmt.0.9.0  (cached)
+-> retrieved fpath.0.7.3  (cached)
+-> retrieved git.3.15.0  (cached)
+-> installed cmdliner.1.2.0
+-> retrieved git-kv.0.0.5  (cached)
+-> retrieved hxd.0.3.2  (cached)
+-> retrieved ipaddr.5.5.0, macaddr.5.5.0  (cached)
+-> retrieved ke.0.6  (cached)
+-> retrieved logs.0.7.0  (cached)
+-> retrieved lwt.5.7.0  (cached)
+-> retrieved mimic.0.0.7  (cached)
+-> retrieved mirage-clock.4.2.0  (cached)
+-> retrieved mirage-flow.4.0.2  (cached)
+-> retrieved mirage-kv.6.1.1  (cached)
+-> retrieved ocaml-syntax-shims.1.0.0  (cached)
+-> retrieved ocamlbuild.0.14.3  (cached)
+-> retrieved ocamlfind.1.9.6  (cached)
+-> retrieved ocamlgraph.2.1.0  (cached)
+-> retrieved ocplib-endian.1.2  (cached)
+-> retrieved optint.0.3.0  (cached)
+-> retrieved pecu.0.7  (cached)
+-> retrieved psq.0.2.1  (cached)
+-> retrieved ptime.1.1.0  (cached)
+-> retrieved result.1.5  (cached)
+-> retrieved rresult.0.7.0  (cached)
+-> installed seq.base
+-> retrieved stdlib-shims.0.3.0  (cached)
+-> retrieved stringext.1.6.0  (cached)
+-> retrieved topkg.1.0.7  (cached)
+-> retrieved uri.4.4.0  (cached)
+-> retrieved uutf.1.0.3  (cached)
+-> installed ocamlfind.1.9.6
+-> installed base-bytes.base
+-> installed ocamlbuild.0.14.3
+-> installed topkg.1.0.7
+-> installed rresult.0.7.0
+-> installed uutf.1.0.3
+-> installed fmt.0.9.0
+-> installed ptime.1.1.0
+-> installed astring.0.8.5
+-> installed fpath.0.7.3
+-> installed dune.3.15.2
+-> installed csexp.1.5.2
+-> installed base64.3.5.1
+-> installed cppo.1.6.9
+-> installed cstruct.6.2.0
+-> installed domain-name.0.4.0
+-> installed duff.0.5
+-> installed ke.0.6
+-> installed macaddr.5.5.0
+-> installed mirage-clock.4.2.0
+-> installed ocaml-syntax-shims.1.0.0
+-> installed optint.0.3.0
+-> installed pecu.0.7
+-> installed psq.0.2.1
+-> installed result.1.5
+-> installed stdlib-shims.0.3.0
+-> installed stringext.1.6.0
+-> installed ocplib-endian.1.2
+-> installed eqaf.0.9
+-> installed ipaddr.5.5.0
+-> installed digestif.1.2.0
+-> installed dune-configurator.3.15.2
+-> installed ocamlgraph.2.1.0
+-> installed bigstringaf.0.9.1
+-> installed checkseum.0.5.2
+-> installed angstrom.0.16.0
+-> installed encore.0.8
+-> installed emile.1.1
+-> installed decompress.1.5.3
+-> installed lwt.5.7.0
+-> installed uri.4.4.0
+-> installed mirage-flow.4.0.2
+-> installed mirage-kv.6.1.1
+-> installed hxd.0.3.2
+-> installed logs.0.7.0
+-> installed mimic.0.0.7
+-> installed bos.0.2.1
+-> installed carton.0.7.1
+-> installed carton-lwt.0.7.1
+-> installed carton-git.0.7.1
+-> installed git.3.15.0
+-> installed git-kv.0.0.5
+Done.
+# Run eval $(opam env) to update the current shell environment
+[01;2m[01;35m2024-05-17 16:42.06 ---> saved as "2b3ee1d7cf8859838556271b4b39ae5b2cb59695258be2e241335d37af4ae2e5"[0m
+
+[01;34m/home/opam: (run (network host)
+                 (shell "(opam reinstall --with-test git-kv.0.0.5) || true"))[0m
+[ERROR] Sorry, resolution of the request timed out.
+        Try to specify a more precise request, use a different solver, or increase the allowed time by setting OPAMSOLVERTIMEOUT to a bigger value (currently, it is set to 500.0 seconds).
+[01;2m[01;35m2024-05-17 16:50.37 ---> saved as "f5a3520f552c96763335e67f6d889d56130fea98e7887399e19341581392f183"[0m
+
+[01;34m/home/opam: (run (shell  "opam reinstall --with-test --verbose git-kv.0.0.5;\
+                        \n        res=$?;\
+                        \n        test \"$res\" != 31 && exit \"$res\";\
+                        \n        export OPAMCLI=2.0;\
+                        \n        build_dir=$(opam var prefix)/.opam-switch/build;\
+                        \n        failed=$(ls \"$build_dir\");\
+                        \n        partial_fails=\"\";\
+                        \n        for pkg in $failed; do\
+                        \n          if opam show -f x-ci-accept-failures: \"$pkg\" | grep -qF \"\\\"oraclelinux-8\\\"\"; then\
+                        \n            echo \"A package failed and has been disabled for CI using the 'x-ci-accept-failures' field.\";\
+                        \n          fi;\
+                        \n          test \"$pkg\" != 'git-kv.0.0.5' && partial_fails=\"$partial_fails $pkg\";\
+                        \n        done;\
+                        \n        test \"${partial_fails}\" != \"\" && echo \"opam-repo-ci detected dependencies failing: ${partial_fails}\";\
+                        \n        exit 1"))[0m
+[ERROR] Sorry, resolution of the request timed out.
+        Try to specify a more precise request, use a different solver, or increase the allowed time by setting OPAMSOLVERTIMEOUT to a bigger value (currently, it is set to 500.0 seconds).
+'opam reinstall --with-test --verbose git-kv.0.0.5' failed.
+"/usr/bin/env" "bash" "-c" "opam reinstall --with-test --verbose git-kv.0.0.5;
+        res=$?;
+        test "$res" != 31 && exit "$res";
+        export OPAMCLI=2.0;
+        build_dir=$(opam var prefix)/.opam-switch/build;
+        failed=$(ls "$build_dir");
+        partial_fails="";
+        for pkg in $failed; do
+          if opam show -f x-ci-accept-failures: "$pkg" | grep -qF "\"oraclelinux-8\""; then
+            echo "A package failed and has been disabled for CI using the 'x-ci-accept-failures' field.";
+          fi;
+          test "$pkg" != 'git-kv.0.0.5' && partial_fails="$partial_fails $pkg";
+        done;
+        test "${partial_fails}" != "" && echo "opam-repo-ci detected dependencies failing: ${partial_fails}";
+        exit 1" failed with exit status 60
+2024-05-17 16:59.54: Job failed: Failed: Build failed
+2024-05-17 16:59.54: Log analysis:
+2024-05-17 16:59.54: >>> 
+[ERROR] Sorry, resolution of the request timed out.
+ (score = 20)
+2024-05-17 16:59.54: >>> 
+[ERROR] Sorry, resolution of the request timed out.
+ (score = 20)
+2024-05-17 16:59.54: Sorry, resolution of the request timed out.

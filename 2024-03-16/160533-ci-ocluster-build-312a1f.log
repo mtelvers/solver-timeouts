@@ -1,0 +1,358 @@
+2024-03-16 16:05.33: New job: test cca.0.4 with dune.3.0.3, using opam dev
+                              from https://github.com/ocaml/opam-repository.git#refs/pull/25484/head (aade3f0da3e267a22d59cd8c12772fe1def22ee2)
+                              on debian-12-ocaml-4.14/amd64
+
+To reproduce locally:
+
+cd $(mktemp -d)
+git clone --recursive "https://github.com/ocaml/opam-repository.git" && cd "opam-repository" && git fetch origin "refs/pull/25484/head" && git reset --hard aade3f0d
+git fetch origin master
+git merge --no-edit ac9a846c007d1cde3764459aeae5b75c2f8b7aa8
+cat > ../Dockerfile <<'END-OF-DOCKERFILE'
+[34mFROM ocaml/opam:debian-12-ocaml-4.14@sha256:c5f1e30c557c8db2af2794912a5a9bdfd5cf60ce19f6b896c3ade21e0f83c34b
+USER 1000:1000
+WORKDIR /home/opam
+RUN sudo ln -f /usr/bin/opam-dev /usr/bin/opam
+RUN opam init --reinit -ni
+ENV OPAMDOWNLOADJOBS="1"
+ENV OPAMERRLOGLEN="0"
+ENV OPAMSOLVERTIMEOUT="500"
+ENV OPAMPRECISETRACKING="1"
+ENV CI="true"
+ENV OPAM_REPO_CI="true"
+RUN rm -rf opam-repository/
+COPY --chown=1000:1000 . opam-repository/
+RUN opam repository set-url --strict default opam-repository/
+RUN opam update --depexts || true
+ENV OPAMCRITERIA="-removed,-count[avoid-version,changed],-count[version-lag,request],-count[version-lag,changed],-count[missing-depexts,changed],-changed"
+ENV OPAMFIXUPCRITERIA="-removed,-count[avoid-version,changed],-count[version-lag,request],-count[version-lag,changed],-count[missing-depexts,changed],-changed"
+ENV OPAMUPGRADECRITERIA="-removed,-count[avoid-version,changed],-count[version-lag,request],-count[version-lag,changed],-count[missing-depexts,changed],-changed"
+RUN opam pin add -k version -yn dune.3.0.3 3.0.3
+RUN opam reinstall dune.3.0.3; \
+    res=$?; \
+    test "$res" != 31 && exit "$res"; \
+    export OPAMCLI=2.0; \
+    build_dir=$(opam var prefix)/.opam-switch/build; \
+    failed=$(ls "$build_dir"); \
+    partial_fails=""; \
+    for pkg in $failed; do \
+    if opam show -f x-ci-accept-failures: "$pkg" | grep -qF "\"debian-12\""; then \
+    echo "A package failed and has been disabled for CI using the 'x-ci-accept-failures' field."; \
+    fi; \
+    test "$pkg" != 'dune.3.0.3' && partial_fails="$partial_fails $pkg"; \
+    done; \
+    test "${partial_fails}" != "" && echo "opam-repo-ci detected dependencies failing: ${partial_fails}"; \
+    exit 1
+ENV OPAMCRITERIA="-removed,-count[avoid-version,changed],-count[version-lag,request],-count[version-lag,changed],-count[missing-depexts,changed],-changed"
+ENV OPAMFIXUPCRITERIA="-removed,-count[avoid-version,changed],-count[version-lag,request],-count[version-lag,changed],-count[missing-depexts,changed],-changed"
+ENV OPAMUPGRADECRITERIA="-removed,-count[avoid-version,changed],-count[version-lag,request],-count[version-lag,changed],-count[missing-depexts,changed],-changed"
+RUN opam reinstall cca.0.4; \
+    res=$?; \
+    test "$res" != 31 && exit "$res"; \
+    export OPAMCLI=2.0; \
+    build_dir=$(opam var prefix)/.opam-switch/build; \
+    failed=$(ls "$build_dir"); \
+    partial_fails=""; \
+    for pkg in $failed; do \
+    if opam show -f x-ci-accept-failures: "$pkg" | grep -qF "\"debian-12\""; then \
+    echo "A package failed and has been disabled for CI using the 'x-ci-accept-failures' field."; \
+    fi; \
+    test "$pkg" != 'cca.0.4' && partial_fails="$partial_fails $pkg"; \
+    done; \
+    test "${partial_fails}" != "" && echo "opam-repo-ci detected dependencies failing: ${partial_fails}"; \
+    exit 1
+ENV OPAMCRITERIA="-removed,-count[avoid-version,changed],-count[version-lag,request],-count[version-lag,changed],-count[missing-depexts,changed],-changed"
+ENV OPAMFIXUPCRITERIA="-removed,-count[avoid-version,changed],-count[version-lag,request],-count[version-lag,changed],-count[missing-depexts,changed],-changed"
+ENV OPAMUPGRADECRITERIA="-removed,-count[avoid-version,changed],-count[version-lag,request],-count[version-lag,changed],-count[missing-depexts,changed],-changed"
+RUN (opam reinstall --with-test cca.0.4) || true
+RUN opam reinstall --with-test --verbose cca.0.4; \
+    res=$?; \
+    test "$res" != 31 && exit "$res"; \
+    export OPAMCLI=2.0; \
+    build_dir=$(opam var prefix)/.opam-switch/build; \
+    failed=$(ls "$build_dir"); \
+    partial_fails=""; \
+    for pkg in $failed; do \
+    if opam show -f x-ci-accept-failures: "$pkg" | grep -qF "\"debian-12\""; then \
+    echo "A package failed and has been disabled for CI using the 'x-ci-accept-failures' field."; \
+    fi; \
+    test "$pkg" != 'cca.0.4' && partial_fails="$partial_fails $pkg"; \
+    done; \
+    test "${partial_fails}" != "" && echo "opam-repo-ci detected dependencies failing: ${partial_fails}"; \
+    exit 1
+[0m
+END-OF-DOCKERFILE
+docker build -f ../Dockerfile .
+
+2024-03-16 16:05.33: Using cache hint "ocaml/opam:debian-12-ocaml-4.14@sha256:c5f1e30c557c8db2af2794912a5a9bdfd5cf60ce19f6b896c3ade21e0f83c34b-dune.3.0.3-cca.0.4-aade3f0da3e267a22d59cd8c12772fe1def22ee2"
+2024-03-16 16:05.33: Using OBuilder spec:
+((from ocaml/opam:debian-12-ocaml-4.14@sha256:c5f1e30c557c8db2af2794912a5a9bdfd5cf60ce19f6b896c3ade21e0f83c34b)
+ (user (uid 1000) (gid 1000))
+ (workdir /home/opam)
+ (run (shell "sudo ln -f /usr/bin/opam-dev /usr/bin/opam"))
+ (run (network host)
+      (shell "opam init --reinit --config .opamrc-sandbox -ni"))
+ (env OPAMDOWNLOADJOBS 1)
+ (env OPAMERRLOGLEN 0)
+ (env OPAMSOLVERTIMEOUT 500)
+ (env OPAMPRECISETRACKING 1)
+ (env CI true)
+ (env OPAM_REPO_CI true)
+ (run (shell "rm -rf opam-repository/"))
+ (copy (src .) (dst opam-repository/))
+ (run (shell "opam repository set-url --strict default opam-repository/"))
+ (run (network host)
+      (shell "opam update --depexts || true"))
+ (env OPAMCRITERIA -removed,-count[avoid-version,changed],-count[version-lag,request],-count[version-lag,changed],-count[missing-depexts,changed],-changed)
+ (env OPAMFIXUPCRITERIA -removed,-count[avoid-version,changed],-count[version-lag,request],-count[version-lag,changed],-count[missing-depexts,changed],-changed)
+ (env OPAMUPGRADECRITERIA -removed,-count[avoid-version,changed],-count[version-lag,request],-count[version-lag,changed],-count[missing-depexts,changed],-changed)
+ (run (shell "opam pin add -k version -yn dune.3.0.3 3.0.3"))
+ (run (cache (opam-archives (target /home/opam/.opam/download-cache)))
+      (network host)
+      (shell  "opam reinstall dune.3.0.3;\
+             \n        res=$?;\
+             \n        test \"$res\" != 31 && exit \"$res\";\
+             \n        export OPAMCLI=2.0;\
+             \n        build_dir=$(opam var prefix)/.opam-switch/build;\
+             \n        failed=$(ls \"$build_dir\");\
+             \n        partial_fails=\"\";\
+             \n        for pkg in $failed; do\
+             \n          if opam show -f x-ci-accept-failures: \"$pkg\" | grep -qF \"\\\"debian-12\\\"\"; then\
+             \n            echo \"A package failed and has been disabled for CI using the 'x-ci-accept-failures' field.\";\
+             \n          fi;\
+             \n          test \"$pkg\" != 'dune.3.0.3' && partial_fails=\"$partial_fails $pkg\";\
+             \n        done;\
+             \n        test \"${partial_fails}\" != \"\" && echo \"opam-repo-ci detected dependencies failing: ${partial_fails}\";\
+             \n        exit 1"))
+ (env OPAMCRITERIA -removed,-count[avoid-version,changed],-count[version-lag,request],-count[version-lag,changed],-count[missing-depexts,changed],-changed)
+ (env OPAMFIXUPCRITERIA -removed,-count[avoid-version,changed],-count[version-lag,request],-count[version-lag,changed],-count[missing-depexts,changed],-changed)
+ (env OPAMUPGRADECRITERIA -removed,-count[avoid-version,changed],-count[version-lag,request],-count[version-lag,changed],-count[missing-depexts,changed],-changed)
+ (run (cache (opam-archives (target /home/opam/.opam/download-cache)))
+      (network host)
+      (shell  "opam reinstall cca.0.4;\
+             \n        res=$?;\
+             \n        test \"$res\" != 31 && exit \"$res\";\
+             \n        export OPAMCLI=2.0;\
+             \n        build_dir=$(opam var prefix)/.opam-switch/build;\
+             \n        failed=$(ls \"$build_dir\");\
+             \n        partial_fails=\"\";\
+             \n        for pkg in $failed; do\
+             \n          if opam show -f x-ci-accept-failures: \"$pkg\" | grep -qF \"\\\"debian-12\\\"\"; then\
+             \n            echo \"A package failed and has been disabled for CI using the 'x-ci-accept-failures' field.\";\
+             \n          fi;\
+             \n          test \"$pkg\" != 'cca.0.4' && partial_fails=\"$partial_fails $pkg\";\
+             \n        done;\
+             \n        test \"${partial_fails}\" != \"\" && echo \"opam-repo-ci detected dependencies failing: ${partial_fails}\";\
+             \n        exit 1"))
+ (env OPAMCRITERIA -removed,-count[avoid-version,changed],-count[version-lag,request],-count[version-lag,changed],-count[missing-depexts,changed],-changed)
+ (env OPAMFIXUPCRITERIA -removed,-count[avoid-version,changed],-count[version-lag,request],-count[version-lag,changed],-count[missing-depexts,changed],-changed)
+ (env OPAMUPGRADECRITERIA -removed,-count[avoid-version,changed],-count[version-lag,request],-count[version-lag,changed],-count[missing-depexts,changed],-changed)
+ (run (network host)
+      (shell "(opam reinstall --with-test cca.0.4) || true"))
+ (run (shell  "opam reinstall --with-test --verbose cca.0.4;\
+             \n        res=$?;\
+             \n        test \"$res\" != 31 && exit \"$res\";\
+             \n        export OPAMCLI=2.0;\
+             \n        build_dir=$(opam var prefix)/.opam-switch/build;\
+             \n        failed=$(ls \"$build_dir\");\
+             \n        partial_fails=\"\";\
+             \n        for pkg in $failed; do\
+             \n          if opam show -f x-ci-accept-failures: \"$pkg\" | grep -qF \"\\\"debian-12\\\"\"; then\
+             \n            echo \"A package failed and has been disabled for CI using the 'x-ci-accept-failures' field.\";\
+             \n          fi;\
+             \n          test \"$pkg\" != 'cca.0.4' && partial_fails=\"$partial_fails $pkg\";\
+             \n        done;\
+             \n        test \"${partial_fails}\" != \"\" && echo \"opam-repo-ci detected dependencies failing: ${partial_fails}\";\
+             \n        exit 1"))
+)
+
+2024-03-16 16:05.33: Connecting to build cluster…
+2024-03-16 16:05.33: Waiting for resource in pool OCluster
+2024-03-18 14:08.10: Waiting for worker…
+2024-03-18 14:10.01: Got resource from pool OCluster
+Building on asteria.caelum.ci.dev
+All commits already cached
+Updating files:  96% (32103/33336)Updating files:  97% (32336/33336)Updating files:  98% (32670/33336)Updating files:  99% (33003/33336)Updating files: 100% (33336/33336)Updating files: 100% (33336/33336), done.
+HEAD is now at ac9a846c00 Merge pull request #25506 from Leonidas-from-XIV/conf-lablgl
+Merge made by the 'ort' strategy.
+ packages/dune/dune.3.0.2/opam  | 1 +
+ packages/dune/dune.3.0.3/opam  | 1 +
+ packages/dune/dune.3.1.0/opam  | 1 +
+ packages/dune/dune.3.1.1/opam  | 1 +
+ packages/dune/dune.3.10.0/opam | 1 +
+ packages/dune/dune.3.11.0/opam | 1 +
+ packages/dune/dune.3.11.1/opam | 1 +
+ packages/dune/dune.3.12.1/opam | 1 +
+ packages/dune/dune.3.12.2/opam | 1 +
+ packages/dune/dune.3.13.0/opam | 1 +
+ packages/dune/dune.3.13.1/opam | 1 +
+ packages/dune/dune.3.14.0/opam | 1 +
+ packages/dune/dune.3.2.0/opam  | 1 +
+ packages/dune/dune.3.3.0/opam  | 1 +
+ packages/dune/dune.3.3.1/opam  | 1 +
+ packages/dune/dune.3.4.0/opam  | 2 +-
+ packages/dune/dune.3.4.1/opam  | 1 +
+ packages/dune/dune.3.5.0/opam  | 1 +
+ packages/dune/dune.3.6.0/opam  | 1 +
+ packages/dune/dune.3.6.1/opam  | 1 +
+ packages/dune/dune.3.6.2/opam  | 1 +
+ packages/dune/dune.3.7.0/opam  | 1 +
+ packages/dune/dune.3.7.1/opam  | 1 +
+ packages/dune/dune.3.8.0/opam  | 1 +
+ packages/dune/dune.3.8.1/opam  | 1 +
+ packages/dune/dune.3.8.2/opam  | 1 +
+ packages/dune/dune.3.8.3/opam  | 1 +
+ packages/dune/dune.3.9.0/opam  | 2 +-
+ packages/dune/dune.3.9.1/opam  | 1 +
+ packages/dune/dune.3.9.2/opam  | 1 +
+ packages/dune/dune.3.9.3/opam  | 1 +
+ 31 files changed, 31 insertions(+), 2 deletions(-)
+
+[01;34m(from ocaml/opam:debian-12-ocaml-4.14@sha256:c5f1e30c557c8db2af2794912a5a9bdfd5cf60ce19f6b896c3ade21e0f83c34b)[0m
+[01;2m[01;35m2024-03-18 14:11.21 ---> using "c4915beb7de81ad4c8c2e616fafd267d6c704221988c32366612a947a2dd3ff5" from cache[0m
+
+[01;34m/: (user (uid 1000) (gid 1000))[0m
+
+[01;34m/: (workdir /home/opam)[0m
+
+[01;34m/home/opam: (run (shell "sudo ln -f /usr/bin/opam-dev /usr/bin/opam"))[0m
+[01;2m[01;35m2024-03-18 14:11.21 ---> using "fe845143f44e080d8c9f2c0f88810a2dc5b65e55f8bf8f908adf06c299a74142" from cache[0m
+
+[01;34m/home/opam: (run (network host)
+                 (shell "opam init --reinit --config .opamrc-sandbox -ni"))[0m
+Configuring from /home/opam/.opamrc-sandbox, then /home/opam/.opamrc, and finally from built-in defaults.
+Checking for available remotes: rsync and local, git.
+  - you won't be able to use mercurial repositories unless you install the hg command on your system.
+  - you won't be able to use darcs repositories unless you install the darcs command on your system.
+
+This development version of opam requires an update to the layout of /home/opam/.opam from version 2.0 to version 2.2~alpha, which can't be reverted.
+You may want to back it up before going further.
+
+Continue? [y/n] y
+[NOTE] The 'jobs' option was reset, its value was 31 and its new value will vary according to the current number of cores on your machine. You can restore the fixed value using:
+           opam option jobs=31 --global
+Format upgrade done.
+
+<><> Updating repositories ><><><><><><><><><><><><><><><><><><><><><><><><><><>
+[default] synchronised from file:///home/opam/opam-repository
+[01;2m[01;35m2024-03-18 14:11.21 ---> using "5eccf5b99c0dd8de924bfc0e94ee04a40fc04c5b7b418d0bde1bc68c5aafd345" from cache[0m
+
+[01;34m/home/opam: (env OPAMDOWNLOADJOBS 1)[0m
+
+[01;34m/home/opam: (env OPAMERRLOGLEN 0)[0m
+
+[01;34m/home/opam: (env OPAMSOLVERTIMEOUT 500)[0m
+
+[01;34m/home/opam: (env OPAMPRECISETRACKING 1)[0m
+
+[01;34m/home/opam: (env CI true)[0m
+
+[01;34m/home/opam: (env OPAM_REPO_CI true)[0m
+
+[01;34m/home/opam: (run (shell "rm -rf opam-repository/"))[0m
+[01;2m[01;35m2024-03-18 14:11.21 ---> using "9f8a6be7c90f76838ee9b191c26f77a3f1e1fc7a17c8ce2a4e332aff88a7102d" from cache[0m
+
+[01;34m/home/opam: (copy (src .) (dst opam-repository/))[0m
+[01;2m[01;35m2024-03-18 14:11.22 ---> using "fed39198aca58e7d350b3d89a34e2fff779e29b033d54045de600f3f14de31b1" from cache[0m
+
+[01;34m/home/opam: (run (shell "opam repository set-url --strict default opam-repository/"))[0m
+[default] Initialised
+[01;2m[01;35m2024-03-18 14:11.22 ---> using "00eef416a30ec9f076af72462b43bf4e273158565eb875854080454efab67d44" from cache[0m
+
+[01;34m/home/opam: (run (network host)
+                 (shell "opam update --depexts || true"))[0m
++ /usr/bin/sudo "apt-get" "update"
+- Hit:1 http://deb.debian.org/debian bookworm InRelease
+- Get:2 http://deb.debian.org/debian bookworm-updates InRelease [55.4 kB]
+- Get:3 http://deb.debian.org/debian-security bookworm-security InRelease [48.0 kB]
+- Get:4 http://deb.debian.org/debian-security bookworm-security/main amd64 Packages [146 kB]
+- Fetched 250 kB in 0s (724 kB/s)
+- Reading package lists...
+[01;2m[01;35m2024-03-18 14:11.22 ---> using "8f3624445ee846c3b19e189122c6637963c9a9e72b5e57ec3ac6b2c3ff9fbdb9" from cache[0m
+
+[01;34m/home/opam: (env OPAMCRITERIA -removed,-count[avoid-version,changed],-count[version-lag,request],-count[version-lag,changed],-count[missing-depexts,changed],-changed)[0m
+
+[01;34m/home/opam: (env OPAMFIXUPCRITERIA -removed,-count[avoid-version,changed],-count[version-lag,request],-count[version-lag,changed],-count[missing-depexts,changed],-changed)[0m
+
+[01;34m/home/opam: (env OPAMUPGRADECRITERIA -removed,-count[avoid-version,changed],-count[version-lag,request],-count[version-lag,changed],-count[missing-depexts,changed],-changed)[0m
+
+[01;34m/home/opam: (run (shell "opam pin add -k version -yn dune.3.0.3 3.0.3"))[0m
+dune is now pinned to version 3.0.3
+[01;2m[01;35m2024-03-18 14:11.22 ---> using "736c3e50246625279ef7b47c50a9ff5f4ceafa8fd982f563c42d342e7985a65e" from cache[0m
+
+[01;34m/home/opam: (run (cache (opam-archives (target /home/opam/.opam/download-cache)))
+                 (network host)
+                 (shell  "opam reinstall dune.3.0.3;\
+                        \n        res=$?;\
+                        \n        test \"$res\" != 31 && exit \"$res\";\
+                        \n        export OPAMCLI=2.0;\
+                        \n        build_dir=$(opam var prefix)/.opam-switch/build;\
+                        \n        failed=$(ls \"$build_dir\");\
+                        \n        partial_fails=\"\";\
+                        \n        for pkg in $failed; do\
+                        \n          if opam show -f x-ci-accept-failures: \"$pkg\" | grep -qF \"\\\"debian-12\\\"\"; then\
+                        \n            echo \"A package failed and has been disabled for CI using the 'x-ci-accept-failures' field.\";\
+                        \n          fi;\
+                        \n          test \"$pkg\" != 'dune.3.0.3' && partial_fails=\"$partial_fails $pkg\";\
+                        \n        done;\
+                        \n        test \"${partial_fails}\" != \"\" && echo \"opam-repo-ci detected dependencies failing: ${partial_fails}\";\
+                        \n        exit 1"))[0m
+dune.3.0.3 is not installed. Install it? [y/n] y
+The following actions will be performed:
+=== install 1 package
+  - install dune 3.0.3 (pinned)
+
+<><> Processing actions <><><><><><><><><><><><><><><><><><><><><><><><><><><><>
+-> retrieved dune.3.0.3  (cached)
+-> installed dune.3.0.3
+Done.
+# Run eval $(opam env) to update the current shell environment
+[01;2m[01;35m2024-03-18 14:11.22 ---> using "129e35542ffbf739482b160933d0f9bd015eada0d079b10f55055c73bf14a9ed" from cache[0m
+
+[01;34m/home/opam: (env OPAMCRITERIA -removed,-count[avoid-version,changed],-count[version-lag,request],-count[version-lag,changed],-count[missing-depexts,changed],-changed)[0m
+
+[01;34m/home/opam: (env OPAMFIXUPCRITERIA -removed,-count[avoid-version,changed],-count[version-lag,request],-count[version-lag,changed],-count[missing-depexts,changed],-changed)[0m
+
+[01;34m/home/opam: (env OPAMUPGRADECRITERIA -removed,-count[avoid-version,changed],-count[version-lag,request],-count[version-lag,changed],-count[missing-depexts,changed],-changed)[0m
+
+[01;34m/home/opam: (run (cache (opam-archives (target /home/opam/.opam/download-cache)))
+                 (network host)
+                 (shell  "opam reinstall cca.0.4;\
+                        \n        res=$?;\
+                        \n        test \"$res\" != 31 && exit \"$res\";\
+                        \n        export OPAMCLI=2.0;\
+                        \n        build_dir=$(opam var prefix)/.opam-switch/build;\
+                        \n        failed=$(ls \"$build_dir\");\
+                        \n        partial_fails=\"\";\
+                        \n        for pkg in $failed; do\
+                        \n          if opam show -f x-ci-accept-failures: \"$pkg\" | grep -qF \"\\\"debian-12\\\"\"; then\
+                        \n            echo \"A package failed and has been disabled for CI using the 'x-ci-accept-failures' field.\";\
+                        \n          fi;\
+                        \n          test \"$pkg\" != 'cca.0.4' && partial_fails=\"$partial_fails $pkg\";\
+                        \n        done;\
+                        \n        test \"${partial_fails}\" != \"\" && echo \"opam-repo-ci detected dependencies failing: ${partial_fails}\";\
+                        \n        exit 1"))[0m
+cca.0.4 is not installed. Install it? [y/n] y
+[ERROR] Sorry, resolution of the request timed out.
+        Try to specify a more precise request, use a different solver, or increase the allowed time by setting OPAMSOLVERTIMEOUT to a bigger value (currently, it is set to 500.0 seconds).
+"/usr/bin/env" "bash" "-c" "opam reinstall cca.0.4;
+        res=$?;
+        test "$res" != 31 && exit "$res";
+        export OPAMCLI=2.0;
+        build_dir=$(opam var prefix)/.opam-switch/build;
+        failed=$(ls "$build_dir");
+        partial_fails="";
+        for pkg in $failed; do
+          if opam show -f x-ci-accept-failures: "$pkg" | grep -qF "\"debian-12\""; then
+            echo "A package failed and has been disabled for CI using the 'x-ci-accept-failures' field.";
+          fi;
+          test "$pkg" != 'cca.0.4' && partial_fails="$partial_fails $pkg";
+        done;
+        test "${partial_fails}" != "" && echo "opam-repo-ci detected dependencies failing: ${partial_fails}";
+        exit 1" failed with exit status 60
+2024-03-18 14:20.14: Job failed: Failed: Build failed
+2024-03-18 14:20.14: Log analysis:
+2024-03-18 14:20.14: >>> 
+[ERROR] Sorry, resolution of the request timed out.
+ (score = 20)
+2024-03-18 14:20.14: Sorry, resolution of the request timed out.

@@ -1,0 +1,723 @@
+2024-05-16 14:03.11: New job: test sihl-core.0.2.2, using opam dev
+                              from https://github.com/ocaml/opam-repository.git#refs/pull/25818/head (264b360db74ce2fe513bc33768845f6f76b420f5)
+                              on debian-12-ocaml-4.10/amd64
+
+To reproduce locally:
+
+cd $(mktemp -d)
+git clone --recursive "https://github.com/ocaml/opam-repository.git" && cd "opam-repository" && git fetch origin "refs/pull/25818/head" && git reset --hard 264b360d
+git fetch origin master
+git merge --no-edit 23fec2c23a10862bcdde83a7688d35608defa7a7
+cat > ../Dockerfile <<'END-OF-DOCKERFILE'
+[34mFROM ocaml/opam:debian-12-ocaml-4.10@sha256:4aab5e3f0646179eb30aed261f628703756af47ab5b220530130212f4a04e331
+USER 1000:1000
+WORKDIR /home/opam
+RUN sudo ln -f /usr/bin/opam-dev /usr/bin/opam
+RUN opam init --reinit -ni
+RUN uname -rs && opam exec -- ocaml -version && opam --version
+ENV OPAMDOWNLOADJOBS="1"
+ENV OPAMERRLOGLEN="0"
+ENV OPAMSOLVERTIMEOUT="500"
+ENV OPAMPRECISETRACKING="1"
+ENV CI="true"
+ENV OPAM_REPO_CI="true"
+RUN rm -rf opam-repository/
+COPY --chown=1000:1000 . opam-repository/
+RUN opam repository set-url --strict default opam-repository/
+RUN opam update --depexts || true
+RUN opam pin add -k version -yn sihl-core.0.2.2 0.2.2
+RUN opam reinstall sihl-core.0.2.2; \
+    res=$?; \
+    test "$res" != 31 && exit "$res"; \
+    export OPAMCLI=2.0; \
+    build_dir=$(opam var prefix)/.opam-switch/build; \
+    failed=$(ls "$build_dir"); \
+    partial_fails=""; \
+    for pkg in $failed; do \
+    if opam show -f x-ci-accept-failures: "$pkg" | grep -qF "\"debian-12\""; then \
+    echo "A package failed and has been disabled for CI using the 'x-ci-accept-failures' field."; \
+    fi; \
+    test "$pkg" != 'sihl-core.0.2.2' && partial_fails="$partial_fails $pkg"; \
+    done; \
+    test "${partial_fails}" != "" && echo "opam-repo-ci detected dependencies failing: ${partial_fails}"; \
+    exit 1
+RUN (opam reinstall --with-test sihl-core.0.2.2) || true
+RUN opam reinstall --with-test --verbose sihl-core.0.2.2; \
+    res=$?; \
+    test "$res" != 31 && exit "$res"; \
+    export OPAMCLI=2.0; \
+    build_dir=$(opam var prefix)/.opam-switch/build; \
+    failed=$(ls "$build_dir"); \
+    partial_fails=""; \
+    for pkg in $failed; do \
+    if opam show -f x-ci-accept-failures: "$pkg" | grep -qF "\"debian-12\""; then \
+    echo "A package failed and has been disabled for CI using the 'x-ci-accept-failures' field."; \
+    fi; \
+    test "$pkg" != 'sihl-core.0.2.2' && partial_fails="$partial_fails $pkg"; \
+    done; \
+    test "${partial_fails}" != "" && echo "opam-repo-ci detected dependencies failing: ${partial_fails}"; \
+    exit 1
+[0m
+END-OF-DOCKERFILE
+docker build -f ../Dockerfile .
+
+2024-05-16 14:03.11: Using cache hint "ocaml/opam:debian-12-ocaml-4.10@sha256:4aab5e3f0646179eb30aed261f628703756af47ab5b220530130212f4a04e331-sihl-core.0.2.2-264b360db74ce2fe513bc33768845f6f76b420f5"
+2024-05-16 14:03.11: Using OBuilder spec:
+((from ocaml/opam:debian-12-ocaml-4.10@sha256:4aab5e3f0646179eb30aed261f628703756af47ab5b220530130212f4a04e331)
+ (user (uid 1000) (gid 1000))
+ (workdir /home/opam)
+ (run (shell "sudo ln -f /usr/bin/opam-dev /usr/bin/opam"))
+ (run (network host)
+      (shell "opam init --reinit --config .opamrc-sandbox -ni"))
+ (run (shell "uname -rs && opam exec -- ocaml -version && opam --version"))
+ (env OPAMDOWNLOADJOBS 1)
+ (env OPAMERRLOGLEN 0)
+ (env OPAMSOLVERTIMEOUT 500)
+ (env OPAMPRECISETRACKING 1)
+ (env CI true)
+ (env OPAM_REPO_CI true)
+ (run (shell "rm -rf opam-repository/"))
+ (copy (src .) (dst opam-repository/))
+ (run (shell "opam repository set-url --strict default opam-repository/"))
+ (run (network host)
+      (shell "opam update --depexts || true"))
+ (run (shell "opam pin add -k version -yn sihl-core.0.2.2 0.2.2"))
+ (run (cache (opam-archives (target /home/opam/.opam/download-cache)))
+      (network host)
+      (shell  "opam reinstall sihl-core.0.2.2;\
+             \n        res=$?;\
+             \n        test \"$res\" != 31 && exit \"$res\";\
+             \n        export OPAMCLI=2.0;\
+             \n        build_dir=$(opam var prefix)/.opam-switch/build;\
+             \n        failed=$(ls \"$build_dir\");\
+             \n        partial_fails=\"\";\
+             \n        for pkg in $failed; do\
+             \n          if opam show -f x-ci-accept-failures: \"$pkg\" | grep -qF \"\\\"debian-12\\\"\"; then\
+             \n            echo \"A package failed and has been disabled for CI using the 'x-ci-accept-failures' field.\";\
+             \n          fi;\
+             \n          test \"$pkg\" != 'sihl-core.0.2.2' && partial_fails=\"$partial_fails $pkg\";\
+             \n        done;\
+             \n        test \"${partial_fails}\" != \"\" && echo \"opam-repo-ci detected dependencies failing: ${partial_fails}\";\
+             \n        exit 1"))
+ (run (network host)
+      (shell "(opam reinstall --with-test sihl-core.0.2.2) || true"))
+ (run (shell  "opam reinstall --with-test --verbose sihl-core.0.2.2;\
+             \n        res=$?;\
+             \n        test \"$res\" != 31 && exit \"$res\";\
+             \n        export OPAMCLI=2.0;\
+             \n        build_dir=$(opam var prefix)/.opam-switch/build;\
+             \n        failed=$(ls \"$build_dir\");\
+             \n        partial_fails=\"\";\
+             \n        for pkg in $failed; do\
+             \n          if opam show -f x-ci-accept-failures: \"$pkg\" | grep -qF \"\\\"debian-12\\\"\"; then\
+             \n            echo \"A package failed and has been disabled for CI using the 'x-ci-accept-failures' field.\";\
+             \n          fi;\
+             \n          test \"$pkg\" != 'sihl-core.0.2.2' && partial_fails=\"$partial_fails $pkg\";\
+             \n        done;\
+             \n        test \"${partial_fails}\" != \"\" && echo \"opam-repo-ci detected dependencies failing: ${partial_fails}\";\
+             \n        exit 1"))
+)
+
+2024-05-16 14:03.11: Waiting for resource in pool OCluster
+2024-05-16 14:42.02: Waiting for worker…
+2024-05-16 14:45.56: Got resource from pool OCluster
+Building on x86-bm-c3.sw.ocaml.org
+All commits already cached
+Updating files:  62% (20980/33748)Updating files:  63% (21262/33748)Updating files:  64% (21599/33748)Updating files:  65% (21937/33748)Updating files:  66% (22274/33748)Updating files:  67% (22612/33748)Updating files:  68% (22949/33748)Updating files:  69% (23287/33748)Updating files:  70% (23624/33748)Updating files:  71% (23962/33748)Updating files:  72% (24299/33748)Updating files:  73% (24637/33748)Updating files:  74% (24974/33748)Updating files:  75% (25311/33748)Updating files:  76% (25649/33748)Updating files:  77% (25986/33748)Updating files:  78% (26324/33748)Updating files:  79% (26661/33748)Updating files:  80% (26999/33748)Updating files:  81% (27336/33748)Updating files:  82% (27674/33748)Updating files:  83% (28011/33748)Updating files:  84% (28349/33748)Updating files:  85% (28686/33748)Updating files:  86% (29024/33748)Updating files:  87% (29361/33748)Updating files:  88% (29699/33748)Updating files:  89% (30036/33748)Updating files:  90% (30374/33748)Updating files:  91% (30711/33748)Updating files:  92% (31049/33748)Updating files:  93% (31386/33748)Updating files:  94% (31724/33748)Updating files:  95% (32061/33748)Updating files:  96% (32399/33748)Updating files:  97% (32736/33748)Updating files:  98% (33074/33748)Updating files:  99% (33411/33748)Updating files: 100% (33748/33748)Updating files: 100% (33748/33748), done.
+HEAD is now at 23fec2c23a Merge pull request #25873 from btjorge/opam-publish-why3find.1.0
+Merge made by the 'ort' strategy.
+ .../base_bigstring/base_bigstring.v0.17.0/opam     | 27 +++++++++++
+ .../base_quickcheck/base_quickcheck.v0.17.0/opam   | 34 ++++++++++++++
+ packages/bin_prot/bin_prot.v0.17.0/opam            | 38 ++++++++++++++++
+ packages/bio_io/bio_io.0.5.1/opam                  |  2 +-
+ packages/bio_io/bio_io.0.6.0/opam                  |  2 +-
+ packages/caisar-ir/caisar-ir.0.2/opam              |  2 +-
+ packages/caisar-nnet/caisar-nnet.0.1/opam          |  2 +-
+ packages/caisar-nnet/caisar-nnet.0.2/opam          |  2 +-
+ packages/caisar-onnx/caisar-onnx.0.1/opam          |  2 +-
+ packages/caisar-onnx/caisar-onnx.0.2/opam          |  2 +-
+ packages/caisar-ovo/caisar-ovo.0.1/opam            |  2 +-
+ packages/caisar-ovo/caisar-ovo.0.2/opam            |  2 +-
+ packages/camlimages/camlimages.5.0.5/opam          |  2 +-
+ .../capitalization/capitalization.v0.17.0/opam     | 25 ++++++++++
+ packages/core/core.v0.17.0/opam                    | 50 ++++++++++++++++++++
+ packages/dotenv/dotenv.0.0.1/opam                  |  2 +-
+ packages/dotenv/dotenv.0.0.3/opam                  |  2 +-
+ packages/feather/feather.0.2.0/opam                |  2 +-
+ packages/feather/feather.0.3.0/opam                |  2 +-
+ packages/fiber-lwt/fiber-lwt.3.7.0/opam            |  2 +-
+ packages/fiber/fiber.3.7.0/opam                    |  2 +-
+ packages/fieldslib/fieldslib.v0.17.0/opam          | 28 ++++++++++++
+ packages/gel/gel.v0.17.0/opam                      | 26 +++++++++++
+ packages/genspio/genspio.0.0.3/opam                |  2 +-
+ packages/http/http.6.0.0~alpha2/opam               |  2 +-
+ packages/http/http.6.0.0~beta2/opam                |  2 +-
+ packages/idd/idd.0.1/opam                          |  2 +-
+ packages/int_repr/int_repr.v0.17.0/opam            | 26 +++++++++++
+ .../jane-street-headers.v0.17.0/opam               | 24 ++++++++++
+ packages/jst-config/jst-config.v0.17.0/opam        | 32 +++++++++++++
+ packages/lacaml/lacaml.10.0.1/opam                 |  2 +-
+ packages/lacaml/lacaml.10.0.2/opam                 |  2 +-
+ packages/lacaml/lacaml.11.0.0/opam                 |  2 +-
+ packages/lacaml/lacaml.11.0.1/opam                 |  2 +-
+ packages/lacaml/lacaml.11.0.2/opam                 |  2 +-
+ packages/lacaml/lacaml.11.0.3/opam                 |  2 +-
+ packages/lacaml/lacaml.11.0.4/opam                 |  2 +-
+ packages/lacaml/lacaml.11.0.5/opam                 |  2 +-
+ packages/lacaml/lacaml.11.0.6/opam                 |  2 +-
+ packages/logical/logical.0.3.0/opam                |  2 +-
+ packages/matplotlib/matplotlib.0.1/opam            |  2 +-
+ packages/matplotlib/matplotlib.0.2/opam            |  2 +-
+ packages/merge-fmt/merge-fmt.0.1/opam              |  2 +-
+ packages/merge-fmt/merge-fmt.0.2/opam              |  2 +-
+ packages/merge-fmt/merge-fmt.0.3/opam              |  2 +-
+ packages/nuscr/nuscr.2.1.0/opam                    |  2 +-
+ packages/nuscr/nuscr.2.1.1/opam                    |  2 +-
+ .../ocaml-protoc-plugin.1.0.0/opam                 |  2 +-
+ .../ocaml-protoc-plugin.2.0.0/opam                 |  2 +-
+ .../ocaml-protoc-plugin.3.0.0/opam                 |  2 +-
+ .../ocaml-protoc-plugin.4.0.0/opam                 |  2 +-
+ .../ocaml-protoc-plugin.4.1.0/opam                 |  2 +-
+ .../ocaml-protoc-plugin.4.2.0/opam                 |  2 +-
+ .../ocaml-protoc-plugin.4.3.1/opam                 |  2 +-
+ .../ocaml-protoc-plugin.4.4.0/opam                 |  2 +-
+ .../ocaml-protoc-plugin.4.5.0/opam                 |  2 +-
+ packages/ocaml-r/ocaml-r.0.1.0/opam                |  2 +-
+ packages/ocaml-r/ocaml-r.0.1.1/opam                |  2 +-
+ packages/ocaml-r/ocaml-r.0.2.0/opam                |  2 +-
+ packages/ocaml-r/ocaml-r.0.3.0/opam                |  2 +-
+ packages/ocaml-r/ocaml-r.0.3.1/opam                |  2 +-
+ packages/ocaml-r/ocaml-r.0.4.0/opam                |  2 +-
+ packages/ocaml-r/ocaml-r.0.5.0/opam                |  2 +-
+ packages/ocaml-r/ocaml-r.0.6.0/opam                |  2 +-
+ packages/ocamlformat/ocamlformat.0.23.0/opam       |  2 +-
+ packages/ocamlformat/ocamlformat.0.24.1/opam       |  2 +-
+ packages/parsexp/parsexp.v0.17.0/opam              | 43 ++++++++++++++++++
+ packages/postgresql/postgresql.4.1.0/opam          |  2 +-
+ packages/postgresql/postgresql.4.2.0/opam          |  2 +-
+ packages/postgresql/postgresql.4.2.1/opam          |  2 +-
+ packages/postgresql/postgresql.4.3.0/opam          |  2 +-
+ packages/postgresql/postgresql.4.4.0/opam          |  2 +-
+ packages/postgresql/postgresql.4.4.1/opam          |  2 +-
+ packages/postgresql/postgresql.4.4.2/opam          |  2 +-
+ packages/postgresql/postgresql.4.5.0/opam          |  2 +-
+ packages/postgresql/postgresql.4.5.1/opam          |  2 +-
+ packages/postgresql/postgresql.4.5.2/opam          |  2 +-
+ packages/postgresql/postgresql.4.6.0/opam          |  2 +-
+ packages/postgresql/postgresql.4.6.1/opam          |  2 +-
+ packages/ppx_assert/ppx_assert.v0.17.0/opam        | 30 ++++++++++++
+ packages/ppx_base/ppx_base.v0.17.0/opam            | 34 ++++++++++++++
+ packages/ppx_bench/ppx_bench.v0.17.0/opam          | 26 +++++++++++
+ packages/ppx_bin_prot/ppx_bin_prot.v0.17.0/opam    | 29 ++++++++++++
+ packages/ppx_cold/ppx_cold.v0.17.0/opam            | 26 +++++++++++
+ packages/ppx_compare/ppx_compare.v0.17.0/opam      | 27 +++++++++++
+ .../ppx_custom_printf.v0.17.0/opam                 | 27 +++++++++++
+ .../ppx_deriving_cad/ppx_deriving_cad.0.1.0/opam   |  2 +-
+ .../ppx_deriving_cad/ppx_deriving_cad.0.2.0/opam   |  2 +-
+ .../ppx_deriving_scad/ppx_deriving_scad.1.0.0/opam |  2 +-
+ packages/ppx_diff/ppx_diff.v0.17.0/opam            | 31 +++++++++++++
+ .../ppx_disable_unused_warnings.v0.17.0/opam       | 26 +++++++++++
+ packages/ppx_enumerate/ppx_enumerate.v0.17.0/opam  | 27 +++++++++++
+ packages/ppx_expect/ppx_expect.v0.17.0/opam        | 29 ++++++++++++
+ .../ppx_fields_conv/ppx_fields_conv.v0.17.0/opam   | 27 +++++++++++
+ .../ppx_fixed_literal.v0.17.0/opam                 | 27 +++++++++++
+ packages/ppx_globalize/ppx_globalize.v0.17.0/opam  | 27 +++++++++++
+ packages/ppx_hash/ppx_hash.v0.17.0/opam            | 29 ++++++++++++
+ packages/ppx_here/ppx_here.v0.17.0/opam            | 26 +++++++++++
+ .../ppx_ignore_instrumentation.v0.17.0/opam        | 26 +++++++++++
+ .../ppx_inline_test/ppx_inline_test.v0.17.0/opam   | 27 +++++++++++
+ packages/ppx_jane/ppx_jane.v0.17.0/opam            | 53 ++++++++++++++++++++++
+ packages/ppx_let/ppx_let.v0.17.0/opam              | 27 +++++++++++
+ packages/ppx_log/ppx_log.v0.17.0/opam              | 39 ++++++++++++++++
+ .../ppx_module_timer/ppx_module_timer.v0.17.0/opam | 29 ++++++++++++
+ packages/ppx_optcomp/ppx_optcomp.v0.17.0/opam      | 27 +++++++++++
+ packages/ppx_optional/ppx_optional.v0.17.0/opam    | 28 ++++++++++++
+ packages/ppx_pipebang/ppx_pipebang.v0.17.0/opam    | 25 ++++++++++
+ .../ppx_protocol_conv/ppx_protocol_conv.5.1.3/opam |  2 +-
+ packages/ppx_rapper/ppx_rapper.1.0.1/opam          |  2 +-
+ packages/ppx_rapper/ppx_rapper.1.0.2/opam          |  2 +-
+ packages/ppx_rapper/ppx_rapper.1.1.0/opam          |  2 +-
+ packages/ppx_rapper/ppx_rapper.1.1.1/opam          |  2 +-
+ packages/ppx_rapper/ppx_rapper.1.2.0/opam          |  2 +-
+ packages/ppx_rapper/ppx_rapper.2.0.0/opam          |  2 +-
+ packages/ppx_rapper/ppx_rapper.3.0.0/opam          |  2 +-
+ packages/ppx_rapper/ppx_rapper.3.1.0/opam          |  2 +-
+ packages/ppx_sexp_conv/ppx_sexp_conv.v0.17.0/opam  | 28 ++++++++++++
+ .../ppx_sexp_message/ppx_sexp_message.v0.17.0/opam | 28 ++++++++++++
+ .../ppx_sexp_value/ppx_sexp_value.v0.17.0/opam     | 28 ++++++++++++
+ packages/ppx_stable/ppx_stable.v0.17.0/opam        | 27 +++++++++++
+ .../ppx_stable_witness.v0.17.0/opam                | 26 +++++++++++
+ packages/ppx_string/ppx_string.v0.17.0/opam        | 27 +++++++++++
+ .../ppx_string_conv/ppx_string_conv.v0.17.0/opam   | 29 ++++++++++++
+ packages/ppx_tydi/ppx_tydi.v0.17.0/opam            | 26 +++++++++++
+ .../ppx_typerep_conv/ppx_typerep_conv.v0.17.0/opam | 27 +++++++++++
+ .../ppx_variants_conv.v0.17.0/opam                 | 27 +++++++++++
+ packages/ppxlib_jane/ppxlib_jane.v0.17.0/opam      | 25 ++++++++++
+ packages/protocell/protocell.1.0.0/opam            |  2 +-
+ packages/pyml_bindgen/pyml_bindgen.0.3.1/opam      |  2 +-
+ packages/sanddb/sanddb.0.1/opam                    |  2 +-
+ packages/sanddb/sanddb.0.2/opam                    |  2 +-
+ packages/sanddb/sanddb.0.3.0/opam                  |  2 +-
+ packages/sarif/sarif.0.2.1/opam                    |  2 +-
+ packages/sarif/sarif.0.3.0/opam                    |  2 +-
+ packages/sarif/sarif.0.3.1/opam                    |  2 +-
+ packages/sexplib/sexplib.v0.17.0/opam              | 30 ++++++++++++
+ packages/sihl-core/sihl-core.0.2.0/opam            |  2 +-
+ packages/sihl-core/sihl-core.0.2.1/opam            |  2 +-
+ packages/sihl-core/sihl-core.0.2.2/opam            |  2 +-
+ packages/sihl-core/sihl-core.0.3.0~rc1/opam        |  2 +-
+ packages/spin/spin.0.5.0/opam                      |  2 +-
+ packages/spin/spin.0.5.1/opam                      |  2 +-
+ .../splittable_random.v0.17.0/opam                 | 36 +++++++++++++++
+ packages/sqlite3/sqlite3.4.4.1/opam                |  2 +-
+ packages/stdio/stdio.v0.17.0/opam                  | 28 ++++++++++++
+ packages/tensorboard/tensorboard.0.0.1/opam        |  2 +-
+ packages/time_now/time_now.v0.17.0/opam            | 30 ++++++++++++
+ packages/tldr/tldr.0.3.0/opam                      |  2 +-
+ packages/torch/torch.0.10/opam                     |  2 +-
+ packages/torch/torch.0.11/opam                     |  2 +-
+ packages/torch/torch.0.12/opam                     |  2 +-
+ packages/torch/torch.0.13/opam                     |  2 +-
+ packages/torch/torch.0.14/opam                     |  2 +-
+ packages/torch/torch.0.15/opam                     |  2 +-
+ packages/torch/torch.0.16/opam                     |  2 +-
+ packages/torch/torch.0.17/opam                     |  2 +-
+ packages/torch/torch.0.5/opam                      |  2 +-
+ packages/torch/torch.0.6/opam                      |  2 +-
+ packages/torch/torch.0.7/opam                      |  2 +-
+ packages/torch/torch.0.8/opam                      |  2 +-
+ packages/torch/torch.0.9/opam                      |  2 +-
+ packages/travesty/travesty.0.8.0/opam              |  2 +-
+ packages/typerep/typerep.v0.17.0/opam              | 24 ++++++++++
+ .../user-agent-parser/user-agent-parser.0.1.3/opam |  2 +-
+ .../user-agent-parser/user-agent-parser.0.2.0/opam |  2 +-
+ packages/variantslib/variantslib.v0.17.0/opam      | 27 +++++++++++
+ packages/wasmtime/wasmtime.0.0.1/opam              |  2 +-
+ packages/wasmtime/wasmtime.0.0.2/opam              |  2 +-
+ packages/wasmtime/wasmtime.0.0.3/opam              |  2 +-
+ 169 files changed, 1671 insertions(+), 116 deletions(-)
+ create mode 100644 packages/base_bigstring/base_bigstring.v0.17.0/opam
+ create mode 100644 packages/base_quickcheck/base_quickcheck.v0.17.0/opam
+ create mode 100644 packages/bin_prot/bin_prot.v0.17.0/opam
+ create mode 100644 packages/capitalization/capitalization.v0.17.0/opam
+ create mode 100644 packages/core/core.v0.17.0/opam
+ create mode 100644 packages/fieldslib/fieldslib.v0.17.0/opam
+ create mode 100644 packages/gel/gel.v0.17.0/opam
+ create mode 100644 packages/int_repr/int_repr.v0.17.0/opam
+ create mode 100644 packages/jane-street-headers/jane-street-headers.v0.17.0/opam
+ create mode 100644 packages/jst-config/jst-config.v0.17.0/opam
+ create mode 100644 packages/parsexp/parsexp.v0.17.0/opam
+ create mode 100644 packages/ppx_assert/ppx_assert.v0.17.0/opam
+ create mode 100644 packages/ppx_base/ppx_base.v0.17.0/opam
+ create mode 100644 packages/ppx_bench/ppx_bench.v0.17.0/opam
+ create mode 100644 packages/ppx_bin_prot/ppx_bin_prot.v0.17.0/opam
+ create mode 100644 packages/ppx_cold/ppx_cold.v0.17.0/opam
+ create mode 100644 packages/ppx_compare/ppx_compare.v0.17.0/opam
+ create mode 100644 packages/ppx_custom_printf/ppx_custom_printf.v0.17.0/opam
+ create mode 100644 packages/ppx_diff/ppx_diff.v0.17.0/opam
+ create mode 100644 packages/ppx_disable_unused_warnings/ppx_disable_unused_warnings.v0.17.0/opam
+ create mode 100644 packages/ppx_enumerate/ppx_enumerate.v0.17.0/opam
+ create mode 100644 packages/ppx_expect/ppx_expect.v0.17.0/opam
+ create mode 100644 packages/ppx_fields_conv/ppx_fields_conv.v0.17.0/opam
+ create mode 100644 packages/ppx_fixed_literal/ppx_fixed_literal.v0.17.0/opam
+ create mode 100644 packages/ppx_globalize/ppx_globalize.v0.17.0/opam
+ create mode 100644 packages/ppx_hash/ppx_hash.v0.17.0/opam
+ create mode 100644 packages/ppx_here/ppx_here.v0.17.0/opam
+ create mode 100644 packages/ppx_ignore_instrumentation/ppx_ignore_instrumentation.v0.17.0/opam
+ create mode 100644 packages/ppx_inline_test/ppx_inline_test.v0.17.0/opam
+ create mode 100644 packages/ppx_jane/ppx_jane.v0.17.0/opam
+ create mode 100644 packages/ppx_let/ppx_let.v0.17.0/opam
+ create mode 100644 packages/ppx_log/ppx_log.v0.17.0/opam
+ create mode 100644 packages/ppx_module_timer/ppx_module_timer.v0.17.0/opam
+ create mode 100644 packages/ppx_optcomp/ppx_optcomp.v0.17.0/opam
+ create mode 100644 packages/ppx_optional/ppx_optional.v0.17.0/opam
+ create mode 100644 packages/ppx_pipebang/ppx_pipebang.v0.17.0/opam
+ create mode 100644 packages/ppx_sexp_conv/ppx_sexp_conv.v0.17.0/opam
+ create mode 100644 packages/ppx_sexp_message/ppx_sexp_message.v0.17.0/opam
+ create mode 100644 packages/ppx_sexp_value/ppx_sexp_value.v0.17.0/opam
+ create mode 100644 packages/ppx_stable/ppx_stable.v0.17.0/opam
+ create mode 100644 packages/ppx_stable_witness/ppx_stable_witness.v0.17.0/opam
+ create mode 100644 packages/ppx_string/ppx_string.v0.17.0/opam
+ create mode 100644 packages/ppx_string_conv/ppx_string_conv.v0.17.0/opam
+ create mode 100644 packages/ppx_tydi/ppx_tydi.v0.17.0/opam
+ create mode 100644 packages/ppx_typerep_conv/ppx_typerep_conv.v0.17.0/opam
+ create mode 100644 packages/ppx_variants_conv/ppx_variants_conv.v0.17.0/opam
+ create mode 100644 packages/ppxlib_jane/ppxlib_jane.v0.17.0/opam
+ create mode 100644 packages/sexplib/sexplib.v0.17.0/opam
+ create mode 100644 packages/splittable_random/splittable_random.v0.17.0/opam
+ create mode 100644 packages/stdio/stdio.v0.17.0/opam
+ create mode 100644 packages/time_now/time_now.v0.17.0/opam
+ create mode 100644 packages/typerep/typerep.v0.17.0/opam
+ create mode 100644 packages/variantslib/variantslib.v0.17.0/opam
+
+[01;34m(from ocaml/opam:debian-12-ocaml-4.10@sha256:4aab5e3f0646179eb30aed261f628703756af47ab5b220530130212f4a04e331)[0m
+[01;2m[01;35m2024-05-16 14:45.59 ---> using "7fd888c4bc23fd86571d40c2077c203c047e319ccce6ee93ee98e3ec072a5184" from cache[0m
+
+[01;34m/: (user (uid 1000) (gid 1000))[0m
+
+[01;34m/: (workdir /home/opam)[0m
+
+[01;34m/home/opam: (run (shell "sudo ln -f /usr/bin/opam-dev /usr/bin/opam"))[0m
+[01;2m[01;35m2024-05-16 14:45.59 ---> using "9066cb0662805af5ae001743acc14a53b4a81389effbe090fddb2889d3a8e96e" from cache[0m
+
+[01;34m/home/opam: (run (network host)
+                 (shell "opam init --reinit --config .opamrc-sandbox -ni"))[0m
+Configuring from /home/opam/.opamrc-sandbox, then /home/opam/.opamrc, and finally from built-in defaults.
+Checking for available remotes: rsync and local, git.
+  - you won't be able to use mercurial repositories unless you install the hg command on your system.
+  - you won't be able to use darcs repositories unless you install the darcs command on your system.
+
+This development version of opam requires an update to the layout of /home/opam/.opam from version 2.0 to version 2.2~beta, which can't be reverted.
+You may want to back it up before going further.
+
+Continue? [y/n] y
+[NOTE] The 'jobs' option was reset, its value was 31 and its new value will vary according to the current number of cores on your machine. You can restore the fixed value using:
+           opam option jobs=31 --global
+Format upgrade done.
+
+<><> Updating repositories ><><><><><><><><><><><><><><><><><><><><><><><><><><>
+[default] synchronised from file:///home/opam/opam-repository
+[01;2m[01;35m2024-05-16 14:45.59 ---> using "7b74212caaa8186fca483d179d8f0f90f4c4ccd755b28e81bd4d2fcf50d13084" from cache[0m
+
+[01;34m/home/opam: (run (shell "uname -rs && opam exec -- ocaml -version && opam --version"))[0m
+Linux 5.15.0-101-generic
+The OCaml toplevel, version 4.10.2
+2.2.0~beta3~dev
+[01;2m[01;35m2024-05-16 14:45.59 ---> using "b0d29e70fb503cd975674bcb074b16b374c7e39df690f319a919df6f91fe2dea" from cache[0m
+
+[01;34m/home/opam: (env OPAMDOWNLOADJOBS 1)[0m
+
+[01;34m/home/opam: (env OPAMERRLOGLEN 0)[0m
+
+[01;34m/home/opam: (env OPAMSOLVERTIMEOUT 500)[0m
+
+[01;34m/home/opam: (env OPAMPRECISETRACKING 1)[0m
+
+[01;34m/home/opam: (env CI true)[0m
+
+[01;34m/home/opam: (env OPAM_REPO_CI true)[0m
+
+[01;34m/home/opam: (run (shell "rm -rf opam-repository/"))[0m
+[01;2m[01;35m2024-05-16 14:45.59 ---> using "814320e0c53f972e8b65301c02c23808093b944f479ea6d75bd53bd5c64e38b8" from cache[0m
+
+[01;34m/home/opam: (copy (src .) (dst opam-repository/))[0m
+[01;2m[01;35m2024-05-16 14:46.01 ---> using "4c935d935fac5a3c8b739ff9d17065454f27ee97a1e18aa3d5e70eb37a3f06a1" from cache[0m
+
+[01;34m/home/opam: (run (shell "opam repository set-url --strict default opam-repository/"))[0m
+[default] Initialised
+[01;2m[01;35m2024-05-16 14:46.01 ---> using "72ac3c71d146ac1cba7a7f4927674bcfa330fc398618e9a7507d3148b6ee2df1" from cache[0m
+
+[01;34m/home/opam: (run (network host)
+                 (shell "opam update --depexts || true"))[0m
++ /usr/bin/sudo "apt-get" "update"
+- Hit:1 http://deb.debian.org/debian bookworm InRelease
+- Get:2 http://deb.debian.org/debian bookworm-updates InRelease [55.4 kB]
+- Get:3 http://deb.debian.org/debian-security bookworm-security InRelease [48.0 kB]
+- Get:4 http://deb.debian.org/debian-security bookworm-security/main amd64 Packages [156 kB]
+- Fetched 259 kB in 0s (1057 kB/s)
+- Reading package lists...
+- 
+[01;2m[01;35m2024-05-16 14:46.01 ---> using "67351119c621254289611fdc9fd9463f68c07893f9ff9610d43adfa1a269111e" from cache[0m
+
+[01;34m/home/opam: (run (shell "opam pin add -k version -yn sihl-core.0.2.2 0.2.2"))[0m
+sihl-core is now pinned to version 0.2.2
+[01;2m[01;35m2024-05-16 14:46.01 ---> using "ea6e8b73712ce5417c8417386a4c44c3353e171cecd220881b18d2f931fed9b3" from cache[0m
+
+[01;34m/home/opam: (run (cache (opam-archives (target /home/opam/.opam/download-cache)))
+                 (network host)
+                 (shell  "opam reinstall sihl-core.0.2.2;\
+                        \n        res=$?;\
+                        \n        test \"$res\" != 31 && exit \"$res\";\
+                        \n        export OPAMCLI=2.0;\
+                        \n        build_dir=$(opam var prefix)/.opam-switch/build;\
+                        \n        failed=$(ls \"$build_dir\");\
+                        \n        partial_fails=\"\";\
+                        \n        for pkg in $failed; do\
+                        \n          if opam show -f x-ci-accept-failures: \"$pkg\" | grep -qF \"\\\"debian-12\\\"\"; then\
+                        \n            echo \"A package failed and has been disabled for CI using the 'x-ci-accept-failures' field.\";\
+                        \n          fi;\
+                        \n          test \"$pkg\" != 'sihl-core.0.2.2' && partial_fails=\"$partial_fails $pkg\";\
+                        \n        done;\
+                        \n        test \"${partial_fails}\" != \"\" && echo \"opam-repo-ci detected dependencies failing: ${partial_fails}\";\
+                        \n        exit 1"))[0m
+sihl-core.0.2.2 is not installed. Install it? [y/n] y
+The following actions will be performed:
+=== install 70 packages
+  - install angstrom            0.16.0         [required by caqti]
+  - install asn1-combinators    0.2.6          [required by x509]
+  - install base                v0.15.1        [required by ppx_fields_conv, ppx_sexp_conv]
+  - install base-bytes          base           [required by ocplib-endian]
+  - install base64              3.5.1          [required by jwto]
+  - install bigstringaf         0.9.1          [required by caqti]
+  - install caqti               1.9.0          [required by sihl-core]
+  - install conf-gmp            4              [required by conf-gmp-powm-sec, zarith]
+  - install conf-gmp-powm-sec   3              [required by mirage-crypto-pk]
+  - install conf-libssl         4              [required by ssl]
+  - install conf-pkg-config     3              [required by conf-libssl]
+  - install conformist          0.2.1          [required by sihl-core]
+  - install containers          3.13.1         [required by tsort]
+  - install cppo                1.6.9          [required by caqti]
+  - install csexp               1.5.2          [required by dune-configurator]
+  - install cstruct             6.2.0          [required by tls]
+  - install digestif            1.2.0          [required by jwto]
+  - install domain-name         0.4.0          [required by tls]
+  - install dune                3.15.2         [required by sihl-core]
+  - install dune-configurator   3.15.2         [required by mirage-crypto-ec, ssl, base, containers]
+  - install duration            0.2.1          [required by mirage-crypto-rng]
+  - install either              1.0.0          [required by containers]
+  - install eqaf                0.9            [required by mirage-crypto-ec, digestif, mirage-crypto-pk]
+  - install fieldslib           v0.15.0        [required by ppx_fields_conv]
+  - install fmt                 0.9.0          [required by sihl-core]
+  - install gmap                0.3.0          [required by x509]
+  - install hkdf                1.0.4          [required by tls]
+  - install ipaddr              5.5.0          [required by tls]
+  - install jwto                0.4.0          [required by sihl-core]
+  - install logs                0.7.0          [required by sihl-core]
+  - install lwt                 5.7.0          [required by lwt_ssl]
+  - install lwt_ssl             1.2.0          [required by sihl-core]
+  - install macaddr             5.5.0          [required by ipaddr]
+  - install mirage-crypto       0.11.3         [required by tls]
+  - install mirage-crypto-ec    0.11.3         [required by tls]
+  - install mirage-crypto-pk    0.11.3         [required by tls]
+  - install mirage-crypto-rng   0.11.3         [required by tls]
+  - install num                 1.5            [required by sexplib]
+  - install ocaml-compiler-libs v0.12.4        [required by ppxlib]
+  - install ocaml-syntax-shims  1.0.0          [required by angstrom]
+  - install ocamlbuild          0.14.3         [required by uuidm]
+  - install ocamlfind           1.9.6          [required by uuidm]
+  - install ocplib-endian       1.2            [required by lwt]
+  - install parsexp             v0.15.0        [required by sexplib]
+  - install pbkdf               1.2.0          [required by x509]
+  - install ppx_derivers        1.2.1          [required by ppx_deriving]
+  - install ppx_deriving        5.2.1          [required by jwto, ppx_deriving_yojson]
+  - install ppx_deriving_yojson 3.7.0          [required by sihl-core]
+  - install ppx_fields_conv     v0.15.0        [required by sihl-core]
+  - install ppx_sexp_conv       v0.15.1        [required by sihl-core]
+  - install ppxlib              0.32.1         [required by ppx_fields_conv, ppx_deriving_yojson, ppx_sexp_conv]
+  - install ptime               1.1.0          [required by caqti]
+  - install re                  1.11.0         [required by jwto]
+  - install result              1.5            [required by ppx_deriving_yojson]
+  - install safepass            3.1            [required by sihl-core]
+  - install seq                 base           [required by re, yojson]
+  - install sexplib             v0.15.1        [required by sihl-core]
+  - install sexplib0            v0.15.1        [required by ppx_sexp_conv, sexplib]
+  - install sihl-core           0.2.2 (pinned)
+  - install ssl                 0.7.0          [required by sihl-core]
+  - install stdlib-shims        0.3.0          [required by ppxlib]
+  - install stringext           1.6.0          [required by uri]
+  - install tls                 0.17.5         [required by sihl-core]
+  - install topkg               1.0.7          [required by uuidm]
+  - install tsort               2.0.0          [required by sihl-core]
+  - install uri                 4.4.0          [required by caqti]
+  - install uuidm               0.9.8          [required by sihl-core]
+  - install x509                0.16.5         [required by tls]
+  - install yojson              2.1.2          [required by sihl-core]
+  - install zarith              1.13           [required by mirage-crypto-pk]
+
+The following system packages will first need to be installed:
+    libgmp-dev libssl-dev pkg-config
+
+<><> Handling external dependencies <><><><><><><><><><><><><><><><><><><><><><>
+
+opam believes some required external dependencies are missing. opam can:
+> 1. Run apt-get to install them (may need root/sudo access)
+  2. Display the recommended apt-get command and wait while you run it manually (e.g. in another terminal)
+  3. Continue anyway, and, upon success, permanently register that this external dependency is present, but not detectable
+  4. Abort the installation
+
+[1/2/3/4] 1
+
++ /usr/bin/sudo "apt-get" "install" "-qq" "-yy" "libgmp-dev" "libssl-dev" "pkg-config"
+- debconf: delaying package configuration, since apt-utils is not installed
+- Selecting previously unselected package libgmpxx4ldbl:amd64.
+- (Reading database ... (Reading database ... 5%(Reading database ... 10%(Reading database ... 15%(Reading database ... 20%(Reading database ... 25%(Reading database ... 30%(Reading database ... 35%(Reading database ... 40%(Reading database ... 45%(Reading database ... 50%(Reading database ... 55%(Reading database ... 60%(Reading database ... 65%(Reading database ... 70%(Reading database ... 75%(Reading database ... 80%(Reading database ... 85%(Reading database ... 90%(Reading database ... 95%(Reading database ... 100%(Reading database ... 18735 files and directories currently installed.)
+- Preparing to unpack .../0-libgmpxx4ldbl_2%3a6.2.1+dfsg1-1.1_amd64.deb ...
+- Unpacking libgmpxx4ldbl:amd64 (2:6.2.1+dfsg1-1.1) ...
+- Selecting previously unselected package libgmp-dev:amd64.
+- Preparing to unpack .../1-libgmp-dev_2%3a6.2.1+dfsg1-1.1_amd64.deb ...
+- Unpacking libgmp-dev:amd64 (2:6.2.1+dfsg1-1.1) ...
+- Selecting previously unselected package libpkgconf3:amd64.
+- Preparing to unpack .../2-libpkgconf3_1.8.1-1_amd64.deb ...
+- Unpacking libpkgconf3:amd64 (1.8.1-1) ...
+- Selecting previously unselected package libssl-dev:amd64.
+- Preparing to unpack .../3-libssl-dev_3.0.11-1~deb12u2_amd64.deb ...
+- Unpacking libssl-dev:amd64 (3.0.11-1~deb12u2) ...
+- Selecting previously unselected package pkgconf-bin.
+- Preparing to unpack .../4-pkgconf-bin_1.8.1-1_amd64.deb ...
+- Unpacking pkgconf-bin (1.8.1-1) ...
+- Selecting previously unselected package pkgconf:amd64.
+- Preparing to unpack .../5-pkgconf_1.8.1-1_amd64.deb ...
+- Unpacking pkgconf:amd64 (1.8.1-1) ...
+- Selecting previously unselected package pkg-config:amd64.
+- Preparing to unpack .../6-pkg-config_1.8.1-1_amd64.deb ...
+- Unpacking pkg-config:amd64 (1.8.1-1) ...
+- Setting up libpkgconf3:amd64 (1.8.1-1) ...
+- Setting up libgmpxx4ldbl:amd64 (2:6.2.1+dfsg1-1.1) ...
+- Setting up libssl-dev:amd64 (3.0.11-1~deb12u2) ...
+- Setting up pkgconf-bin (1.8.1-1) ...
+- Setting up libgmp-dev:amd64 (2:6.2.1+dfsg1-1.1) ...
+- Setting up pkgconf:amd64 (1.8.1-1) ...
+- Setting up pkg-config:amd64 (1.8.1-1) ...
+- Processing triggers for libc-bin (2.36-9+deb12u7) ...
+
+<><> Processing actions <><><><><><><><><><><><><><><><><><><><><><><><><><><><>
+-> retrieved angstrom.0.16.0  (cached)
+-> retrieved asn1-combinators.0.2.6  (cached)
+-> retrieved base.v0.15.1  (cached)
+-> retrieved base64.3.5.1  (cached)
+-> retrieved bigstringaf.0.9.1  (cached)
+-> retrieved caqti.1.9.0  (cached)
+-> retrieved conformist.0.2.1  (cached)
+-> installed conf-pkg-config.3
+-> installed conf-libssl.4
+-> installed conf-gmp.4
+-> retrieved containers.3.13.1  (cached)
+-> installed conf-gmp-powm-sec.3
+-> retrieved cppo.1.6.9  (cached)
+-> retrieved csexp.1.5.2  (cached)
+-> retrieved cstruct.6.2.0  (cached)
+-> retrieved digestif.1.2.0  (cached)
+-> retrieved domain-name.0.4.0  (cached)
+-> retrieved dune.3.15.2, dune-configurator.3.15.2  (cached)
+-> retrieved duration.0.2.1  (cached)
+-> retrieved either.1.0.0  (cached)
+-> retrieved eqaf.0.9  (cached)
+-> retrieved fieldslib.v0.15.0  (cached)
+-> retrieved fmt.0.9.0  (cached)
+-> retrieved gmap.0.3.0  (cached)
+-> retrieved hkdf.1.0.4  (cached)
+-> retrieved ipaddr.5.5.0, macaddr.5.5.0  (cached)
+-> retrieved jwto.0.4.0  (cached)
+-> retrieved logs.0.7.0  (cached)
+-> retrieved lwt.5.7.0  (cached)
+-> retrieved lwt_ssl.1.2.0  (cached)
+-> retrieved mirage-crypto.0.11.3, mirage-crypto-ec.0.11.3, mirage-crypto-pk.0.11.3, mirage-crypto-rng.0.11.3  (cached)
+-> retrieved num.1.5  (cached)
+-> retrieved ocaml-compiler-libs.v0.12.4  (cached)
+-> retrieved ocaml-syntax-shims.1.0.0  (cached)
+-> retrieved ocamlbuild.0.14.3  (cached)
+-> retrieved ocamlfind.1.9.6  (cached)
+-> retrieved ocplib-endian.1.2  (cached)
+-> retrieved parsexp.v0.15.0  (cached)
+-> retrieved pbkdf.1.2.0  (cached)
+-> retrieved ppx_derivers.1.2.1  (cached)
+-> retrieved ppx_deriving.5.2.1  (cached)
+-> retrieved ppx_deriving_yojson.3.7.0  (cached)
+-> retrieved ppx_fields_conv.v0.15.0  (cached)
+-> retrieved ppx_sexp_conv.v0.15.1  (cached)
+-> retrieved ppxlib.0.32.1  (cached)
+-> retrieved ptime.1.1.0  (cached)
+-> retrieved re.1.11.0  (cached)
+-> retrieved result.1.5  (cached)
+-> retrieved safepass.3.1  (cached)
+-> installed seq.base
+-> retrieved sexplib.v0.15.1  (cached)
+-> retrieved sexplib0.v0.15.1  (cached)
+-> retrieved sihl-core.0.2.2  (cached)
+-> retrieved ssl.0.7.0  (cached)
+-> retrieved stdlib-shims.0.3.0  (cached)
+-> retrieved stringext.1.6.0  (cached)
+-> retrieved tls.0.17.5  (cached)
+-> retrieved topkg.1.0.7  (cached)
+-> retrieved tsort.2.0.0  (cached)
+-> retrieved uri.4.4.0  (cached)
+-> retrieved uuidm.0.9.8  (cached)
+-> retrieved x509.0.16.5  (cached)
+-> retrieved yojson.2.1.2  (cached)
+-> retrieved zarith.1.13  (cached)
+-> installed num.1.5
+-> installed ocamlfind.1.9.6
+-> installed base-bytes.base
+-> installed ocamlbuild.0.14.3
+-> installed zarith.1.13
+-> installed topkg.1.0.7
+-> installed uuidm.0.9.8
+-> installed fmt.0.9.0
+-> installed ptime.1.1.0
+-> installed dune.3.15.2
+-> installed gmap.0.3.0
+-> installed duration.0.2.1
+-> installed conformist.0.2.1
+-> installed csexp.1.5.2
+-> installed base64.3.5.1
+-> installed cppo.1.6.9
+-> installed cstruct.6.2.0
+-> installed domain-name.0.4.0
+-> installed either.1.0.0
+-> installed macaddr.5.5.0
+-> installed ocaml-compiler-libs.v0.12.4
+-> installed ocaml-syntax-shims.1.0.0
+-> installed ppx_derivers.1.2.1
+-> installed re.1.11.0
+-> installed result.1.5
+-> installed safepass.3.1
+-> installed sexplib0.v0.15.1
+-> installed stdlib-shims.0.3.0
+-> installed stringext.1.6.0
+-> installed ocplib-endian.1.2
+-> installed eqaf.0.9
+-> installed ipaddr.5.5.0
+-> installed asn1-combinators.0.2.6
+-> installed yojson.2.1.2
+-> installed digestif.1.2.0
+-> installed dune-configurator.3.15.2
+-> installed bigstringaf.0.9.1
+-> installed angstrom.0.16.0
+-> installed ssl.0.7.0
+-> installed mirage-crypto.0.11.3
+-> installed containers.3.13.1
+-> installed pbkdf.1.2.0
+-> installed hkdf.1.0.4
+-> installed tsort.2.0.0
+-> installed uri.4.4.0
+-> installed lwt.5.7.0
+-> installed lwt_ssl.1.2.0
+-> installed logs.0.7.0
+-> installed mirage-crypto-rng.0.11.3
+-> installed caqti.1.9.0
+-> installed mirage-crypto-pk.0.11.3
+-> installed base.v0.15.1
+-> installed fieldslib.v0.15.0
+-> installed parsexp.v0.15.0
+-> installed sexplib.v0.15.1
+-> installed mirage-crypto-ec.0.11.3
+-> installed x509.0.16.5
+-> installed ppxlib.0.32.1
+-> installed tls.0.17.5
+-> installed ppx_fields_conv.v0.15.0
+-> installed ppx_sexp_conv.v0.15.1
+-> installed ppx_deriving.5.2.1
+-> installed jwto.0.4.0
+-> installed ppx_deriving_yojson.3.7.0
+-> installed sihl-core.0.2.2
+Done.
+# Run eval $(opam env) to update the current shell environment
+[01;2m[01;35m2024-05-16 14:46.14 ---> saved as "f5838a4f6c22ec8a3f4afa3acd516af7cf6e6906ba3ac359f1c993f904bd8ec2"[0m
+
+[01;34m/home/opam: (run (network host)
+                 (shell "(opam reinstall --with-test sihl-core.0.2.2) || true"))[0m
+[ERROR] Sorry, resolution of the request timed out.
+        Try to specify a more precise request, use a different solver, or increase the allowed time by setting OPAMSOLVERTIMEOUT to a bigger value (currently, it is set to 500.0 seconds).
+[01;2m[01;35m2024-05-16 14:54.47 ---> saved as "ef66334c76080acf29efeb786abd260be2fc8fe9599915c4081c02e370c48fb4"[0m
+
+[01;34m/home/opam: (run (shell  "opam reinstall --with-test --verbose sihl-core.0.2.2;\
+                        \n        res=$?;\
+                        \n        test \"$res\" != 31 && exit \"$res\";\
+                        \n        export OPAMCLI=2.0;\
+                        \n        build_dir=$(opam var prefix)/.opam-switch/build;\
+                        \n        failed=$(ls \"$build_dir\");\
+                        \n        partial_fails=\"\";\
+                        \n        for pkg in $failed; do\
+                        \n          if opam show -f x-ci-accept-failures: \"$pkg\" | grep -qF \"\\\"debian-12\\\"\"; then\
+                        \n            echo \"A package failed and has been disabled for CI using the 'x-ci-accept-failures' field.\";\
+                        \n          fi;\
+                        \n          test \"$pkg\" != 'sihl-core.0.2.2' && partial_fails=\"$partial_fails $pkg\";\
+                        \n        done;\
+                        \n        test \"${partial_fails}\" != \"\" && echo \"opam-repo-ci detected dependencies failing: ${partial_fails}\";\
+                        \n        exit 1"))[0m
+2024-05-16 14:55.56: Job failed: Disconnected: Switch turned off
+2024-05-16 14:55.56: Log analysis:
+2024-05-16 14:55.56: >>> 
+[ERROR] Sorry, resolution of the request timed out.
+ (score = 20)
+2024-05-16 14:55.56: Sorry, resolution of the request timed out.

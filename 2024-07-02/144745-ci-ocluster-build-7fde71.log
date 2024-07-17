@@ -1,0 +1,239 @@
+2024-07-02 14:47.45: New job: build opam-publish.2.3.1, using opam dev
+                              from https://github.com/ocaml/opam-repository.git#refs/pull/26171/head (cfc0a2aecfe6cb8816521041e516ae12ee443727)
+                              on debian-12-ocaml-4.10/amd64
+
+To reproduce locally:
+
+cd $(mktemp -d)
+git clone --recursive "https://github.com/ocaml/opam-repository.git" && cd "opam-repository" && git fetch origin "refs/pull/26171/head" && git reset --hard cfc0a2ae
+git fetch origin master
+git merge --no-edit 175a8ca8b27d9a46ed86ec5d7b1130c98a153055
+cat > ../Dockerfile <<'END-OF-DOCKERFILE'
+[34mFROM ocaml/opam:debian-12-ocaml-4.10@sha256:825d34a87024566eb954c93704a6df8683f399268ddc157d35f5da9929f60f52
+USER 1000:1000
+WORKDIR /home/opam
+RUN sudo ln -f /usr/bin/opam-dev /usr/bin/opam
+RUN opam init --reinit -ni
+RUN uname -rs && opam exec -- ocaml -version && opam --version
+ENV OPAMDOWNLOADJOBS="1"
+ENV OPAMERRLOGLEN="0"
+ENV OPAMSOLVERTIMEOUT="500"
+ENV OPAMPRECISETRACKING="1"
+ENV CI="true"
+ENV OPAM_REPO_CI="true"
+RUN rm -rf opam-repository/
+COPY --chown=1000:1000 . opam-repository/
+RUN opam repository set-url --strict default opam-repository/
+RUN opam update --depexts || true
+RUN opam pin add -k version -yn opam-publish.2.3.1 2.3.1
+RUN opam reinstall opam-publish.2.3.1; \
+    res=$?; \
+    test "$res" != 31 && exit "$res"; \
+    export OPAMCLI=2.0; \
+    build_dir=$(opam var prefix)/.opam-switch/build; \
+    failed=$(ls "$build_dir"); \
+    partial_fails=""; \
+    for pkg in $failed; do \
+    if opam show -f x-ci-accept-failures: "$pkg" | grep -qF "\"debian-12\""; then \
+    echo "A package failed and has been disabled for CI using the 'x-ci-accept-failures' field."; \
+    fi; \
+    test "$pkg" != 'opam-publish.2.3.1' && partial_fails="$partial_fails $pkg"; \
+    done; \
+    test "${partial_fails}" != "" && echo "opam-repo-ci detected dependencies failing: ${partial_fails}"; \
+    exit 1
+[0m
+END-OF-DOCKERFILE
+docker build -f ../Dockerfile .
+
+2024-07-02 14:47.45: Using cache hint "ocaml/opam:debian-12-ocaml-4.10@sha256:825d34a87024566eb954c93704a6df8683f399268ddc157d35f5da9929f60f52-opam-publish.2.3.1-cfc0a2aecfe6cb8816521041e516ae12ee443727"
+2024-07-02 14:47.45: Using OBuilder spec:
+((from ocaml/opam:debian-12-ocaml-4.10@sha256:825d34a87024566eb954c93704a6df8683f399268ddc157d35f5da9929f60f52)
+ (user (uid 1000) (gid 1000))
+ (workdir /home/opam)
+ (run (shell "sudo ln -f /usr/bin/opam-dev /usr/bin/opam"))
+ (run (network host)
+      (shell "opam init --reinit --config .opamrc-sandbox -ni"))
+ (run (shell "uname -rs && opam exec -- ocaml -version && opam --version"))
+ (env OPAMDOWNLOADJOBS 1)
+ (env OPAMERRLOGLEN 0)
+ (env OPAMSOLVERTIMEOUT 500)
+ (env OPAMPRECISETRACKING 1)
+ (env CI true)
+ (env OPAM_REPO_CI true)
+ (run (shell "rm -rf opam-repository/"))
+ (copy (src .) (dst opam-repository/))
+ (run (shell "opam repository set-url --strict default opam-repository/"))
+ (run (network host)
+      (shell "opam update --depexts || true"))
+ (run (shell "opam pin add -k version -yn opam-publish.2.3.1 2.3.1"))
+ (run (cache (opam-archives (target /home/opam/.opam/download-cache)))
+      (network host)
+      (shell  "opam reinstall opam-publish.2.3.1;\
+             \n        res=$?;\
+             \n        test \"$res\" != 31 && exit \"$res\";\
+             \n        export OPAMCLI=2.0;\
+             \n        build_dir=$(opam var prefix)/.opam-switch/build;\
+             \n        failed=$(ls \"$build_dir\");\
+             \n        partial_fails=\"\";\
+             \n        for pkg in $failed; do\
+             \n          if opam show -f x-ci-accept-failures: \"$pkg\" | grep -qF \"\\\"debian-12\\\"\"; then\
+             \n            echo \"A package failed and has been disabled for CI using the 'x-ci-accept-failures' field.\";\
+             \n          fi;\
+             \n          test \"$pkg\" != 'opam-publish.2.3.1' && partial_fails=\"$partial_fails $pkg\";\
+             \n        done;\
+             \n        test \"${partial_fails}\" != \"\" && echo \"opam-repo-ci detected dependencies failing: ${partial_fails}\";\
+             \n        exit 1"))
+)
+
+2024-07-02 14:47.45: Waiting for resource in pool OCluster
+2024-07-02 15:19.12: Waiting for worker…
+2024-07-02 15:20.51: Got resource from pool OCluster
+Building on x86-bm-c4.sw.ocaml.org
+All commits already cached
+Updating files:  66% (21004/31664)Updating files:  67% (21215/31664)Updating files:  68% (21532/31664)Updating files:  69% (21849/31664)Updating files:  70% (22165/31664)Updating files:  71% (22482/31664)Updating files:  72% (22799/31664)Updating files:  73% (23115/31664)Updating files:  74% (23432/31664)Updating files:  75% (23748/31664)Updating files:  76% (24065/31664)Updating files:  77% (24382/31664)Updating files:  78% (24698/31664)Updating files:  79% (25015/31664)Updating files:  80% (25332/31664)Updating files:  81% (25648/31664)Updating files:  82% (25965/31664)Updating files:  83% (26282/31664)Updating files:  84% (26598/31664)Updating files:  85% (26915/31664)Updating files:  86% (27232/31664)Updating files:  87% (27548/31664)Updating files:  88% (27865/31664)Updating files:  89% (28181/31664)Updating files:  90% (28498/31664)Updating files:  91% (28815/31664)Updating files:  92% (29131/31664)Updating files:  93% (29448/31664)Updating files:  94% (29765/31664)Updating files:  95% (30081/31664)Updating files:  96% (30398/31664)Updating files:  97% (30715/31664)Updating files:  98% (31031/31664)Updating files:  99% (31348/31664)Updating files: 100% (31664/31664)Updating files: 100% (31664/31664), done.
+HEAD is now at 175a8ca8b2 Merge pull request #26169 from mseri/fix-base-revdeps
+Updating 175a8ca8b2..cfc0a2aecf
+Fast-forward
+ packages/opam-client/opam-client.2.2.0/opam        | 48 +++++++++++++++++++
+ packages/opam-core/opam-core.2.2.0/opam            | 54 ++++++++++++++++++++++
+ packages/opam-devel/opam-devel.2.2.0/opam          | 50 ++++++++++++++++++++
+ packages/opam-format/opam-format.2.2.0/opam        | 40 ++++++++++++++++
+ packages/opam-installer/opam-installer.2.2.0/opam  | 42 +++++++++++++++++
+ packages/opam-publish/opam-publish.2.3.1/opam      | 39 ++++++++++++++++
+ .../opam-repository/opam-repository.2.2.0/opam     | 39 ++++++++++++++++
+ packages/opam-solver/opam-solver.2.2.0/opam        | 48 +++++++++++++++++++
+ packages/opam-state/opam-state.2.2.0/opam          | 41 ++++++++++++++++
+ 9 files changed, 401 insertions(+)
+ create mode 100644 packages/opam-client/opam-client.2.2.0/opam
+ create mode 100644 packages/opam-core/opam-core.2.2.0/opam
+ create mode 100644 packages/opam-devel/opam-devel.2.2.0/opam
+ create mode 100644 packages/opam-format/opam-format.2.2.0/opam
+ create mode 100644 packages/opam-installer/opam-installer.2.2.0/opam
+ create mode 100644 packages/opam-publish/opam-publish.2.3.1/opam
+ create mode 100644 packages/opam-repository/opam-repository.2.2.0/opam
+ create mode 100644 packages/opam-solver/opam-solver.2.2.0/opam
+ create mode 100644 packages/opam-state/opam-state.2.2.0/opam
+
+[01;34m(from ocaml/opam:debian-12-ocaml-4.10@sha256:825d34a87024566eb954c93704a6df8683f399268ddc157d35f5da9929f60f52)[0m
+Unable to find image 'ocaml/opam:debian-12-ocaml-4.10@sha256:825d34a87024566eb954c93704a6df8683f399268ddc157d35f5da9929f60f52' locally
+docker.io/ocaml/opam@sha256:825d34a87024566eb954c93704a6df8683f399268ddc157d35f5da9929f60f52: Pulling from ocaml/opam
+3a79dbe31f58: Pulling fs layer
+3a79dbe31f58: Verifying Checksum
+3a79dbe31f58: Download complete
+3a79dbe31f58: Pull complete
+Digest: sha256:825d34a87024566eb954c93704a6df8683f399268ddc157d35f5da9929f60f52
+Status: Downloaded newer image for ocaml/opam@sha256:825d34a87024566eb954c93704a6df8683f399268ddc157d35f5da9929f60f52
+[01;2m[01;35m2024-07-02 15:22.52 ---> saved as "9d9398a1321975b131a3abb0da37c64b918c316a6d39cabb9663e9a2828c94ac"[0m
+
+[01;34m/: (user (uid 1000) (gid 1000))[0m
+
+[01;34m/: (workdir /home/opam)[0m
+
+[01;34m/home/opam: (run (shell "sudo ln -f /usr/bin/opam-dev /usr/bin/opam"))[0m
+[01;2m[01;35m2024-07-02 15:22.52 ---> saved as "13b2a15386917ca205fc47f50fa877a7c776028ad2953abc302b3543455e128b"[0m
+
+[01;34m/home/opam: (run (network host)
+                 (shell "opam init --reinit --config .opamrc-sandbox -ni"))[0m
+Configuring from /home/opam/.opamrc-sandbox, then /home/opam/.opamrc, and finally from built-in defaults.
+Checking for available remotes: rsync and local, git.
+  - you won't be able to use mercurial repositories unless you install the hg command on your system.
+  - you won't be able to use darcs repositories unless you install the darcs command on your system.
+
+This development version of opam requires an update to the layout of /home/opam/.opam from version 2.0 to version 2.2~beta, which can't be reverted.
+You may want to back it up before going further.
+
+Continue? [y/n] y
+[NOTE] The 'jobs' option was reset, its value was 39 and its new value will vary according to the current number of cores on your machine. You can restore the fixed value using:
+           opam option jobs=39 --global
+Format upgrade done.
+
+<><> Updating repositories ><><><><><><><><><><><><><><><><><><><><><><><><><><>
+[default] synchronised from file:///home/opam/opam-repository
+[01;2m[01;35m2024-07-02 15:24.03 ---> saved as "2eb604d24e529d85a7ce6236ec91ef15b32f5f991401267ec8c79f43074f400e"[0m
+
+[01;34m/home/opam: (run (shell "uname -rs && opam exec -- ocaml -version && opam --version"))[0m
+Linux 5.15.0-113-generic
+The OCaml toplevel, version 4.10.2
+2.2.0~rc1~dev
+[01;2m[01;35m2024-07-02 15:24.03 ---> saved as "5ddd4aae4596558048d1c9b9a1170b4534fc5fc625e071d8788bfd4186f19c89"[0m
+
+[01;34m/home/opam: (env OPAMDOWNLOADJOBS 1)[0m
+
+[01;34m/home/opam: (env OPAMERRLOGLEN 0)[0m
+
+[01;34m/home/opam: (env OPAMSOLVERTIMEOUT 500)[0m
+
+[01;34m/home/opam: (env OPAMPRECISETRACKING 1)[0m
+
+[01;34m/home/opam: (env CI true)[0m
+
+[01;34m/home/opam: (env OPAM_REPO_CI true)[0m
+
+[01;34m/home/opam: (run (shell "rm -rf opam-repository/"))[0m
+[01;2m[01;35m2024-07-02 15:24.13 ---> saved as "29fa100e36417344338a12bb56ed01374831eafe185eb3d6440eaa03a99514e3"[0m
+
+[01;34m/home/opam: (copy (src .) (dst opam-repository/))[0m
+[01;2m[01;35m2024-07-02 15:24.32 ---> saved as "2a93c84fe0bfbbd035827c491ca91ffb8d04ddcd22a5294bbb2bdb41b24a2451"[0m
+
+[01;34m/home/opam: (run (shell "opam repository set-url --strict default opam-repository/"))[0m
+[default] Initialised
+[01;2m[01;35m2024-07-02 15:25.20 ---> saved as "a8d6b4a6a814097f2fa3553b5eed50d28e6cb30307269ee45fa0974b088b8dfe"[0m
+
+[01;34m/home/opam: (run (network host)
+                 (shell "opam update --depexts || true"))[0m
++ /usr/bin/sudo "apt-get" "update"
+- Get:1 http://deb.debian.org/debian bookworm InRelease [151 kB]
+- Get:2 http://deb.debian.org/debian bookworm-updates InRelease [55.4 kB]
+- Get:3 http://deb.debian.org/debian-security bookworm-security InRelease [48.0 kB]
+- Get:4 http://deb.debian.org/debian bookworm/main amd64 Packages [8788 kB]
+- Get:5 http://deb.debian.org/debian-security bookworm-security/main amd64 Packages [164 kB]
+- Fetched 9206 kB in 2s (4893 kB/s)
+- Reading package lists...
+- 
+[01;2m[01;35m2024-07-02 15:25.23 ---> saved as "12e70f2179f43a126e62900730aed6f333c948303572ec255965c26e2489b233"[0m
+
+[01;34m/home/opam: (run (shell "opam pin add -k version -yn opam-publish.2.3.1 2.3.1"))[0m
+opam-publish is now pinned to version 2.3.1
+[01;2m[01;35m2024-07-02 15:25.24 ---> saved as "0958ca9a548c200da226727ec42b4dd6a05af01671f1279480585e3c667604d8"[0m
+
+[01;34m/home/opam: (run (cache (opam-archives (target /home/opam/.opam/download-cache)))
+                 (network host)
+                 (shell  "opam reinstall opam-publish.2.3.1;\
+                        \n        res=$?;\
+                        \n        test \"$res\" != 31 && exit \"$res\";\
+                        \n        export OPAMCLI=2.0;\
+                        \n        build_dir=$(opam var prefix)/.opam-switch/build;\
+                        \n        failed=$(ls \"$build_dir\");\
+                        \n        partial_fails=\"\";\
+                        \n        for pkg in $failed; do\
+                        \n          if opam show -f x-ci-accept-failures: \"$pkg\" | grep -qF \"\\\"debian-12\\\"\"; then\
+                        \n            echo \"A package failed and has been disabled for CI using the 'x-ci-accept-failures' field.\";\
+                        \n          fi;\
+                        \n          test \"$pkg\" != 'opam-publish.2.3.1' && partial_fails=\"$partial_fails $pkg\";\
+                        \n        done;\
+                        \n        test \"${partial_fails}\" != \"\" && echo \"opam-repo-ci detected dependencies failing: ${partial_fails}\";\
+                        \n        exit 1"))[0m
+opam-publish.2.3.1 is not installed. Install it? [y/n] y
+[ERROR] Sorry, resolution of the request timed out.
+        Try to specify a more precise request, use a different solver, or increase the allowed time by setting OPAMSOLVERTIMEOUT to a bigger value (currently, it is set to 500.0 seconds).
+"/usr/bin/env" "bash" "-c" "opam reinstall opam-publish.2.3.1;
+        res=$?;
+        test "$res" != 31 && exit "$res";
+        export OPAMCLI=2.0;
+        build_dir=$(opam var prefix)/.opam-switch/build;
+        failed=$(ls "$build_dir");
+        partial_fails="";
+        for pkg in $failed; do
+          if opam show -f x-ci-accept-failures: "$pkg" | grep -qF "\"debian-12\""; then
+            echo "A package failed and has been disabled for CI using the 'x-ci-accept-failures' field.";
+          fi;
+          test "$pkg" != 'opam-publish.2.3.1' && partial_fails="$partial_fails $pkg";
+        done;
+        test "${partial_fails}" != "" && echo "opam-repo-ci detected dependencies failing: ${partial_fails}";
+        exit 1" failed with exit status 60
+2024-07-02 15:34.04: Job failed: Failed: Build failed
+2024-07-02 15:34.04: Log analysis:
+2024-07-02 15:34.04: >>> 
+[ERROR] Sorry, resolution of the request timed out.
+ (score = 20)
+2024-07-02 15:34.04: Sorry, resolution of the request timed out.

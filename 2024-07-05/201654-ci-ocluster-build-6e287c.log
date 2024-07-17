@@ -1,0 +1,768 @@
+2024-07-05 20:16.54: New job: test current.0.5 with num.1.5, using opam dev
+                              from https://github.com/ocaml/opam-repository.git#refs/pull/26178/head (8772323cec4adfba5937acaefaf41cd2c3247cb5)
+                              on debian-12-ocaml-5.2/amd64
+
+To reproduce locally:
+
+cd $(mktemp -d)
+git clone --recursive "https://github.com/ocaml/opam-repository.git" && cd "opam-repository" && git fetch origin "refs/pull/26178/head" && git reset --hard 8772323c
+git fetch origin master
+git merge --no-edit ca7f74d624024c73a7297ea2b022ef88d65b1121
+cat > ../Dockerfile <<'END-OF-DOCKERFILE'
+[34mFROM ocaml/opam:debian-12-ocaml-5.2@sha256:583bd84391ee71ae55caa44262c64c2260af63906c7c0231d7561504ac61b650
+USER 1000:1000
+WORKDIR /home/opam
+RUN sudo ln -f /usr/bin/opam-dev /usr/bin/opam
+RUN opam init --reinit -ni
+RUN uname -rs && opam exec -- ocaml -version && opam --version
+ENV OPAMDOWNLOADJOBS="1"
+ENV OPAMERRLOGLEN="0"
+ENV OPAMSOLVERTIMEOUT="500"
+ENV OPAMPRECISETRACKING="1"
+ENV CI="true"
+ENV OPAM_REPO_CI="true"
+RUN rm -rf opam-repository/
+COPY --chown=1000:1000 . opam-repository/
+RUN opam repository set-url --strict default opam-repository/
+RUN opam update --depexts || true
+RUN opam pin add -k version -yn num.1.5 1.5
+RUN opam reinstall num.1.5; \
+    res=$?; \
+    test "$res" != 31 && exit "$res"; \
+    export OPAMCLI=2.0; \
+    build_dir=$(opam var prefix)/.opam-switch/build; \
+    failed=$(ls "$build_dir"); \
+    partial_fails=""; \
+    for pkg in $failed; do \
+    if opam show -f x-ci-accept-failures: "$pkg" | grep -qF "\"debian-12\""; then \
+    echo "A package failed and has been disabled for CI using the 'x-ci-accept-failures' field."; \
+    fi; \
+    test "$pkg" != 'num.1.5' && partial_fails="$partial_fails $pkg"; \
+    done; \
+    test "${partial_fails}" != "" && echo "opam-repo-ci detected dependencies failing: ${partial_fails}"; \
+    exit 1
+RUN opam reinstall current.0.5; \
+    res=$?; \
+    test "$res" != 31 && exit "$res"; \
+    export OPAMCLI=2.0; \
+    build_dir=$(opam var prefix)/.opam-switch/build; \
+    failed=$(ls "$build_dir"); \
+    partial_fails=""; \
+    for pkg in $failed; do \
+    if opam show -f x-ci-accept-failures: "$pkg" | grep -qF "\"debian-12\""; then \
+    echo "A package failed and has been disabled for CI using the 'x-ci-accept-failures' field."; \
+    fi; \
+    test "$pkg" != 'current.0.5' && partial_fails="$partial_fails $pkg"; \
+    done; \
+    test "${partial_fails}" != "" && echo "opam-repo-ci detected dependencies failing: ${partial_fails}"; \
+    exit 1
+RUN (opam reinstall --with-test current.0.5) || true
+RUN opam reinstall --with-test --verbose current.0.5; \
+    res=$?; \
+    test "$res" != 31 && exit "$res"; \
+    export OPAMCLI=2.0; \
+    build_dir=$(opam var prefix)/.opam-switch/build; \
+    failed=$(ls "$build_dir"); \
+    partial_fails=""; \
+    for pkg in $failed; do \
+    if opam show -f x-ci-accept-failures: "$pkg" | grep -qF "\"debian-12\""; then \
+    echo "A package failed and has been disabled for CI using the 'x-ci-accept-failures' field."; \
+    fi; \
+    test "$pkg" != 'current.0.5' && partial_fails="$partial_fails $pkg"; \
+    done; \
+    test "${partial_fails}" != "" && echo "opam-repo-ci detected dependencies failing: ${partial_fails}"; \
+    exit 1
+[0m
+END-OF-DOCKERFILE
+docker build -f ../Dockerfile .
+
+2024-07-05 20:16.54: Using cache hint "ocaml/opam:debian-12-ocaml-5.2@sha256:583bd84391ee71ae55caa44262c64c2260af63906c7c0231d7561504ac61b650-num.1.5-current.0.5-8772323cec4adfba5937acaefaf41cd2c3247cb5"
+2024-07-05 20:16.54: Using OBuilder spec:
+((from ocaml/opam:debian-12-ocaml-5.2@sha256:583bd84391ee71ae55caa44262c64c2260af63906c7c0231d7561504ac61b650)
+ (user (uid 1000) (gid 1000))
+ (workdir /home/opam)
+ (run (shell "sudo ln -f /usr/bin/opam-dev /usr/bin/opam"))
+ (run (network host)
+      (shell "opam init --reinit --config .opamrc-sandbox -ni"))
+ (run (shell "uname -rs && opam exec -- ocaml -version && opam --version"))
+ (env OPAMDOWNLOADJOBS 1)
+ (env OPAMERRLOGLEN 0)
+ (env OPAMSOLVERTIMEOUT 500)
+ (env OPAMPRECISETRACKING 1)
+ (env CI true)
+ (env OPAM_REPO_CI true)
+ (run (shell "rm -rf opam-repository/"))
+ (copy (src .) (dst opam-repository/))
+ (run (shell "opam repository set-url --strict default opam-repository/"))
+ (run (network host)
+      (shell "opam update --depexts || true"))
+ (run (shell "opam pin add -k version -yn num.1.5 1.5"))
+ (run (cache (opam-archives (target /home/opam/.opam/download-cache)))
+      (network host)
+      (shell  "opam reinstall num.1.5;\
+             \n        res=$?;\
+             \n        test \"$res\" != 31 && exit \"$res\";\
+             \n        export OPAMCLI=2.0;\
+             \n        build_dir=$(opam var prefix)/.opam-switch/build;\
+             \n        failed=$(ls \"$build_dir\");\
+             \n        partial_fails=\"\";\
+             \n        for pkg in $failed; do\
+             \n          if opam show -f x-ci-accept-failures: \"$pkg\" | grep -qF \"\\\"debian-12\\\"\"; then\
+             \n            echo \"A package failed and has been disabled for CI using the 'x-ci-accept-failures' field.\";\
+             \n          fi;\
+             \n          test \"$pkg\" != 'num.1.5' && partial_fails=\"$partial_fails $pkg\";\
+             \n        done;\
+             \n        test \"${partial_fails}\" != \"\" && echo \"opam-repo-ci detected dependencies failing: ${partial_fails}\";\
+             \n        exit 1"))
+ (run (cache (opam-archives (target /home/opam/.opam/download-cache)))
+      (network host)
+      (shell  "opam reinstall current.0.5;\
+             \n        res=$?;\
+             \n        test \"$res\" != 31 && exit \"$res\";\
+             \n        export OPAMCLI=2.0;\
+             \n        build_dir=$(opam var prefix)/.opam-switch/build;\
+             \n        failed=$(ls \"$build_dir\");\
+             \n        partial_fails=\"\";\
+             \n        for pkg in $failed; do\
+             \n          if opam show -f x-ci-accept-failures: \"$pkg\" | grep -qF \"\\\"debian-12\\\"\"; then\
+             \n            echo \"A package failed and has been disabled for CI using the 'x-ci-accept-failures' field.\";\
+             \n          fi;\
+             \n          test \"$pkg\" != 'current.0.5' && partial_fails=\"$partial_fails $pkg\";\
+             \n        done;\
+             \n        test \"${partial_fails}\" != \"\" && echo \"opam-repo-ci detected dependencies failing: ${partial_fails}\";\
+             \n        exit 1"))
+ (run (network host)
+      (shell "(opam reinstall --with-test current.0.5) || true"))
+ (run (shell  "opam reinstall --with-test --verbose current.0.5;\
+             \n        res=$?;\
+             \n        test \"$res\" != 31 && exit \"$res\";\
+             \n        export OPAMCLI=2.0;\
+             \n        build_dir=$(opam var prefix)/.opam-switch/build;\
+             \n        failed=$(ls \"$build_dir\");\
+             \n        partial_fails=\"\";\
+             \n        for pkg in $failed; do\
+             \n          if opam show -f x-ci-accept-failures: \"$pkg\" | grep -qF \"\\\"debian-12\\\"\"; then\
+             \n            echo \"A package failed and has been disabled for CI using the 'x-ci-accept-failures' field.\";\
+             \n          fi;\
+             \n          test \"$pkg\" != 'current.0.5' && partial_fails=\"$partial_fails $pkg\";\
+             \n        done;\
+             \n        test \"${partial_fails}\" != \"\" && echo \"opam-repo-ci detected dependencies failing: ${partial_fails}\";\
+             \n        exit 1"))
+)
+
+2024-07-05 20:16.54: Waiting for resource in pool OCluster
+2024-07-06 00:48.40: Waiting for worker…
+2024-07-06 00:52.11: Got resource from pool OCluster
+Building on x86-bm-c6.sw.ocaml.org
+All commits already cached
+Updating files:  42% (13471/31777)Updating files:  43% (13665/31777)Updating files:  44% (13982/31777)Updating files:  45% (14300/31777)Updating files:  46% (14618/31777)Updating files:  47% (14936/31777)Updating files:  48% (15253/31777)Updating files:  49% (15571/31777)Updating files:  50% (15889/31777)Updating files:  51% (16207/31777)Updating files:  52% (16525/31777)Updating files:  53% (16842/31777)Updating files:  54% (17160/31777)Updating files:  55% (17478/31777)Updating files:  56% (17796/31777)Updating files:  57% (18113/31777)Updating files:  58% (18431/31777)Updating files:  59% (18749/31777)Updating files:  60% (19067/31777)Updating files:  61% (19384/31777)Updating files:  62% (19702/31777)Updating files:  63% (20020/31777)Updating files:  64% (20338/31777)Updating files:  65% (20656/31777)Updating files:  66% (20973/31777)Updating files:  67% (21291/31777)Updating files:  68% (21609/31777)Updating files:  69% (21927/31777)Updating files:  70% (22244/31777)Updating files:  71% (22562/31777)Updating files:  72% (22880/31777)Updating files:  73% (23198/31777)Updating files:  74% (23515/31777)Updating files:  75% (23833/31777)Updating files:  76% (24151/31777)Updating files:  77% (24469/31777)Updating files:  78% (24787/31777)Updating files:  79% (25104/31777)Updating files:  80% (25422/31777)Updating files:  81% (25740/31777)Updating files:  82% (26058/31777)Updating files:  83% (26375/31777)Updating files:  84% (26693/31777)Updating files:  84% (26735/31777)Updating files:  85% (27011/31777)Updating files:  86% (27329/31777)Updating files:  87% (27646/31777)Updating files:  88% (27964/31777)Updating files:  89% (28282/31777)Updating files:  90% (28600/31777)Updating files:  91% (28918/31777)Updating files:  92% (29235/31777)Updating files:  93% (29553/31777)Updating files:  94% (29871/31777)Updating files:  95% (30189/31777)Updating files:  96% (30506/31777)Updating files:  97% (30824/31777)Updating files:  98% (31142/31777)Updating files:  99% (31460/31777)Updating files: 100% (31777/31777)Updating files: 100% (31777/31777), done.
+HEAD is now at ca7f74d624 Merge pull request #26199 from mseri/fix-apron-ub
+Merge made by the 'ort' strategy.
+ packages/num/num.1.5/opam | 5 +++++
+ 1 file changed, 5 insertions(+)
+
+[01;34m(from ocaml/opam:debian-12-ocaml-5.2@sha256:583bd84391ee71ae55caa44262c64c2260af63906c7c0231d7561504ac61b650)[0m
+Unable to find image 'ocaml/opam:debian-12-ocaml-5.2@sha256:583bd84391ee71ae55caa44262c64c2260af63906c7c0231d7561504ac61b650' locally
+docker.io/ocaml/opam@sha256:583bd84391ee71ae55caa44262c64c2260af63906c7c0231d7561504ac61b650: Pulling from ocaml/opam
+061b185b0386: Pulling fs layer
+061b185b0386: Verifying Checksum
+061b185b0386: Download complete
+061b185b0386: Pull complete
+Digest: sha256:583bd84391ee71ae55caa44262c64c2260af63906c7c0231d7561504ac61b650
+Status: Downloaded newer image for ocaml/opam@sha256:583bd84391ee71ae55caa44262c64c2260af63906c7c0231d7561504ac61b650
+[01;2m[01;35m2024-07-06 00:52.17 ---> using "9db33b4bb054733b7edf7c000bfa2223fb2a5578295224f53737a047b78cd615" from cache[0m
+
+[01;34m/: (user (uid 1000) (gid 1000))[0m
+
+[01;34m/: (workdir /home/opam)[0m
+
+[01;34m/home/opam: (run (shell "sudo ln -f /usr/bin/opam-dev /usr/bin/opam"))[0m
+[01;2m[01;35m2024-07-06 00:52.17 ---> using "8252a6b7cac13d21fd440da8f14de1380f71877f7f352e35c4869ec0d15987e6" from cache[0m
+
+[01;34m/home/opam: (run (network host)
+                 (shell "opam init --reinit --config .opamrc-sandbox -ni"))[0m
+Configuring from /home/opam/.opamrc-sandbox, then /home/opam/.opamrc, and finally from built-in defaults.
+Checking for available remotes: rsync and local, git.
+  - you won't be able to use mercurial repositories unless you install the hg command on your system.
+  - you won't be able to use darcs repositories unless you install the darcs command on your system.
+
+This development version of opam requires an update to the layout of /home/opam/.opam from version 2.0 to version 2.2~beta, which can't be reverted.
+You may want to back it up before going further.
+
+Continue? [y/n] y
+[NOTE] The 'jobs' option was reset, its value was 39 and its new value will vary according to the current number of cores on your machine. You can restore the fixed value using:
+           opam option jobs=39 --global
+Format upgrade done.
+
+<><> Updating repositories ><><><><><><><><><><><><><><><><><><><><><><><><><><>
+[default] synchronised from file:///home/opam/opam-repository
+[01;2m[01;35m2024-07-06 00:52.17 ---> using "7307acb780431de9b8a2cf61fce2e31cac34d318fb8259ace1403298a7145fc3" from cache[0m
+
+[01;34m/home/opam: (run (shell "uname -rs && opam exec -- ocaml -version && opam --version"))[0m
+Linux 5.15.0-113-generic
+The OCaml toplevel, version 5.2.0
+2.2.0~rc1
+[01;2m[01;35m2024-07-06 00:52.17 ---> using "c064eef16a2a2d098179728c78fa9e0229e4b9b32fbc4db544ae1017758abe31" from cache[0m
+
+[01;34m/home/opam: (env OPAMDOWNLOADJOBS 1)[0m
+
+[01;34m/home/opam: (env OPAMERRLOGLEN 0)[0m
+
+[01;34m/home/opam: (env OPAMSOLVERTIMEOUT 500)[0m
+
+[01;34m/home/opam: (env OPAMPRECISETRACKING 1)[0m
+
+[01;34m/home/opam: (env CI true)[0m
+
+[01;34m/home/opam: (env OPAM_REPO_CI true)[0m
+
+[01;34m/home/opam: (run (shell "rm -rf opam-repository/"))[0m
+[01;2m[01;35m2024-07-06 00:52.17 ---> using "3fcc22a591adc4fba1849f596cb02b575bc7932f25a239a6a1e48cbfa6f6eb8d" from cache[0m
+
+[01;34m/home/opam: (copy (src .) (dst opam-repository/))[0m
+[01;2m[01;35m2024-07-06 00:52.20 ---> using "bf29e39924a384ccb9ec176abe7fcff1d209401d201d6a0a1bc7b8d18e1248af" from cache[0m
+
+[01;34m/home/opam: (run (shell "opam repository set-url --strict default opam-repository/"))[0m
+[default] Initialised
+[01;2m[01;35m2024-07-06 00:52.20 ---> using "4f5b6e316fe1ad7c2af02e2b004f06cabda4217e9b4bf1ee52a75d60e3dd4426" from cache[0m
+
+[01;34m/home/opam: (run (network host)
+                 (shell "opam update --depexts || true"))[0m
++ /usr/bin/sudo "apt-get" "update"
+- Get:1 http://deb.debian.org/debian bookworm InRelease [151 kB]
+- Get:2 http://deb.debian.org/debian bookworm-updates InRelease [55.4 kB]
+- Get:3 http://deb.debian.org/debian-security bookworm-security InRelease [48.0 kB]
+- Get:4 http://deb.debian.org/debian bookworm/main amd64 Packages [8788 kB]
+- Get:5 http://deb.debian.org/debian-security bookworm-security/main amd64 Packages [168 kB]
+- Fetched 9210 kB in 2s (4976 kB/s)
+- Reading package lists...
+- 
+[01;2m[01;35m2024-07-06 00:52.20 ---> using "d9f4dd4aaf8b9386611649d2a9152ea9df1b66467633bdbb95d4b12d6fd35706" from cache[0m
+
+[01;34m/home/opam: (run (shell "opam pin add -k version -yn num.1.5 1.5"))[0m
+num is now pinned to version 1.5
+[01;2m[01;35m2024-07-06 00:52.20 ---> using "8f5ca85348de33cc99a67bdaeb98013dae612613741313ee0fab10cc46e5600f" from cache[0m
+
+[01;34m/home/opam: (run (cache (opam-archives (target /home/opam/.opam/download-cache)))
+                 (network host)
+                 (shell  "opam reinstall num.1.5;\
+                        \n        res=$?;\
+                        \n        test \"$res\" != 31 && exit \"$res\";\
+                        \n        export OPAMCLI=2.0;\
+                        \n        build_dir=$(opam var prefix)/.opam-switch/build;\
+                        \n        failed=$(ls \"$build_dir\");\
+                        \n        partial_fails=\"\";\
+                        \n        for pkg in $failed; do\
+                        \n          if opam show -f x-ci-accept-failures: \"$pkg\" | grep -qF \"\\\"debian-12\\\"\"; then\
+                        \n            echo \"A package failed and has been disabled for CI using the 'x-ci-accept-failures' field.\";\
+                        \n          fi;\
+                        \n          test \"$pkg\" != 'num.1.5' && partial_fails=\"$partial_fails $pkg\";\
+                        \n        done;\
+                        \n        test \"${partial_fails}\" != \"\" && echo \"opam-repo-ci detected dependencies failing: ${partial_fails}\";\
+                        \n        exit 1"))[0m
+num.1.5 is not installed. Install it? [y/n] y
+The following actions will be performed:
+=== install 1 package
+  - install num 1.5 (pinned)
+
+<><> Processing actions <><><><><><><><><><><><><><><><><><><><><><><><><><><><>
+-> retrieved num.1.5  (cached)
+-> installed num.1.5
+Done.
+# Run eval $(opam env) to update the current shell environment
+[01;2m[01;35m2024-07-06 00:52.20 ---> using "4b0cc7c205366b08e8d7e4c5a4991b8ecb0d897b0e06044770ee103030822cc7" from cache[0m
+
+[01;34m/home/opam: (run (cache (opam-archives (target /home/opam/.opam/download-cache)))
+                 (network host)
+                 (shell  "opam reinstall current.0.5;\
+                        \n        res=$?;\
+                        \n        test \"$res\" != 31 && exit \"$res\";\
+                        \n        export OPAMCLI=2.0;\
+                        \n        build_dir=$(opam var prefix)/.opam-switch/build;\
+                        \n        failed=$(ls \"$build_dir\");\
+                        \n        partial_fails=\"\";\
+                        \n        for pkg in $failed; do\
+                        \n          if opam show -f x-ci-accept-failures: \"$pkg\" | grep -qF \"\\\"debian-12\\\"\"; then\
+                        \n            echo \"A package failed and has been disabled for CI using the 'x-ci-accept-failures' field.\";\
+                        \n          fi;\
+                        \n          test \"$pkg\" != 'current.0.5' && partial_fails=\"$partial_fails $pkg\";\
+                        \n        done;\
+                        \n        test \"${partial_fails}\" != \"\" && echo \"opam-repo-ci detected dependencies failing: ${partial_fails}\";\
+                        \n        exit 1"))[0m
+current.0.5 is not installed. Install it? [y/n] y
+The following actions will be performed:
+=== install 35 packages
+  - install asetmap             0.8.1   [required by prometheus]
+  - install astring             0.8.5   [required by current]
+  - install base-bytes          base    [required by ocplib-endian]
+  - install bos                 0.2.1   [required by current]
+  - install cmdliner            1.3.0   [required by current]
+  - install conf-pkg-config     3       [required by conf-sqlite3]
+  - install conf-sqlite3        1       [required by sqlite3]
+  - install cppo                1.6.9   [required by ppx_deriving]
+  - install csexp               1.5.2   [required by dune-configurator]
+  - install current             0.5
+  - install current_incr        0.5     [required by current]
+  - install dune                3.16.0  [required by current]
+  - install dune-configurator   3.16.0  [required by sqlite3]
+  - install duration            0.2.1   [required by current]
+  - install fmt                 0.9.0   [required by current]
+  - install fpath               0.7.3   [required by current]
+  - install logs                0.7.0   [required by current]
+  - install lwt                 5.7.0   [required by current]
+  - install lwt-dllist          1.0.1   [required by current]
+  - install ocaml-compiler-libs v0.17.0 [required by ppxlib]
+  - install ocamlbuild          0.14.3  [required by astring, bos]
+  - install ocamlfind           1.9.6   [required by bos, astring, ppx_deriving]
+  - install ocplib-endian       1.2     [required by lwt]
+  - install ppx_derivers        1.2.1   [required by ppx_deriving]
+  - install ppx_deriving        6.0.2   [required by current]
+  - install ppxlib              0.32.1  [required by ppx_deriving]
+  - install prometheus          1.2     [required by current]
+  - install re                  1.11.0  [required by current]
+  - install result              1.5     [required by current]
+  - install rresult             0.7.0   [required by bos]
+  - install seq                 base    [required by re]
+  - install sexplib0            v0.17.0 [required by ppxlib]
+  - install sqlite3             5.1.0   [required by current]
+  - install stdlib-shims        0.3.0   [required by ppxlib]
+  - install topkg               1.0.7   [required by astring, bos]
+
+The following system packages will first need to be installed:
+    libsqlite3-dev pkg-config
+
+<><> Handling external dependencies <><><><><><><><><><><><><><><><><><><><><><>
+
+opam believes some required external dependencies are missing. opam can:
+> 1. Run apt-get to install them (may need root/sudo access)
+  2. Display the recommended apt-get command and wait while you run it manually (e.g. in another terminal)
+  3. Continue anyway, and, upon success, permanently register that this external dependency is present, but not detectable
+  4. Abort the installation
+
+[1/2/3/4] 1
+
++ /usr/bin/sudo "apt-get" "install" "-qq" "-yy" "libsqlite3-dev" "pkg-config"
+- debconf: delaying package configuration, since apt-utils is not installed
+- Selecting previously unselected package libpkgconf3:amd64.
+- (Reading database ... (Reading database ... 5%(Reading database ... 10%(Reading database ... 15%(Reading database ... 20%(Reading database ... 25%(Reading database ... 30%(Reading database ... 35%(Reading database ... 40%(Reading database ... 45%(Reading database ... 50%(Reading database ... 55%(Reading database ... 60%(Reading database ... 65%(Reading database ... 70%(Reading database ... 75%(Reading database ... 80%(Reading database ... 85%(Reading database ... 90%(Reading database ... 95%(Reading database ... 100%(Reading database ... 18766 files and directories currently installed.)
+- Preparing to unpack .../libpkgconf3_1.8.1-1_amd64.deb ...
+- Unpacking libpkgconf3:amd64 (1.8.1-1) ...
+- Selecting previously unselected package libsqlite3-dev:amd64.
+- Preparing to unpack .../libsqlite3-dev_3.40.1-2_amd64.deb ...
+- Unpacking libsqlite3-dev:amd64 (3.40.1-2) ...
+- Selecting previously unselected package pkgconf-bin.
+- Preparing to unpack .../pkgconf-bin_1.8.1-1_amd64.deb ...
+- Unpacking pkgconf-bin (1.8.1-1) ...
+- Selecting previously unselected package pkgconf:amd64.
+- Preparing to unpack .../pkgconf_1.8.1-1_amd64.deb ...
+- Unpacking pkgconf:amd64 (1.8.1-1) ...
+- Selecting previously unselected package pkg-config:amd64.
+- Preparing to unpack .../pkg-config_1.8.1-1_amd64.deb ...
+- Unpacking pkg-config:amd64 (1.8.1-1) ...
+- Setting up libpkgconf3:amd64 (1.8.1-1) ...
+- Setting up libsqlite3-dev:amd64 (3.40.1-2) ...
+- Setting up pkgconf-bin (1.8.1-1) ...
+- Setting up pkgconf:amd64 (1.8.1-1) ...
+- Setting up pkg-config:amd64 (1.8.1-1) ...
+- Processing triggers for libc-bin (2.36-9+deb12u7) ...
+
+<><> Processing actions <><><><><><><><><><><><><><><><><><><><><><><><><><><><>
+-> retrieved asetmap.0.8.1  (cached)
+-> retrieved astring.0.8.5  (cached)
+-> retrieved bos.0.2.1  (cached)
+-> retrieved cmdliner.1.3.0  (cached)
+-> retrieved cppo.1.6.9  (cached)
+-> retrieved csexp.1.5.2  (cached)
+-> installed conf-pkg-config.3
+-> retrieved current.0.5, current_incr.0.5  (cached)
+-> installed conf-sqlite3.1
+-> retrieved dune.3.16.0, dune-configurator.3.16.0  (cached)
+-> retrieved duration.0.2.1  (cached)
+-> retrieved fmt.0.9.0  (cached)
+-> retrieved fpath.0.7.3  (cached)
+-> retrieved logs.0.7.0  (cached)
+-> retrieved lwt.5.7.0  (cached)
+-> retrieved lwt-dllist.1.0.1  (cached)
+-> installed cmdliner.1.3.0
+-> retrieved ocaml-compiler-libs.v0.17.0  (cached)
+-> retrieved ocamlbuild.0.14.3  (cached)
+-> retrieved ocamlfind.1.9.6  (cached)
+-> retrieved ocplib-endian.1.2  (cached)
+-> retrieved ppx_derivers.1.2.1  (cached)
+-> retrieved ppx_deriving.6.0.2  (cached)
+-> retrieved ppxlib.0.32.1  (cached)
+-> retrieved prometheus.1.2  (cached)
+-> retrieved re.1.11.0  (cached)
+-> retrieved result.1.5  (cached)
+-> retrieved rresult.0.7.0  (cached)
+-> retrieved seq.base  (cached)
+-> installed seq.base
+-> retrieved sexplib0.v0.17.0  (cached)
+-> retrieved sqlite3.5.1.0  (cached)
+-> retrieved stdlib-shims.0.3.0  (cached)
+-> retrieved topkg.1.0.7  (cached)
+-> installed ocamlfind.1.9.6
+-> installed base-bytes.base
+-> installed ocamlbuild.0.14.3
+-> installed topkg.1.0.7
+-> installed asetmap.0.8.1
+-> installed rresult.0.7.0
+-> installed fmt.0.9.0
+-> installed astring.0.8.5
+-> installed fpath.0.7.3
+-> installed dune.3.16.0
+-> installed ppx_derivers.1.2.1
+-> installed duration.0.2.1
+-> installed lwt-dllist.1.0.1
+-> installed result.1.5
+-> installed stdlib-shims.0.3.0
+-> installed csexp.1.5.2
+-> installed cppo.1.6.9
+-> installed current_incr.0.5
+-> installed sexplib0.v0.17.0
+-> installed ocaml-compiler-libs.v0.17.0
+-> installed re.1.11.0
+-> installed ocplib-endian.1.2
+-> installed dune-configurator.3.16.0
+-> installed sqlite3.5.1.0
+-> installed lwt.5.7.0
+-> installed prometheus.1.2
+-> installed logs.0.7.0
+-> installed bos.0.2.1
+-> installed ppxlib.0.32.1
+-> installed ppx_deriving.6.0.2
+-> installed current.0.5
+Done.
+# Run eval $(opam env) to update the current shell environment
+[01;2m[01;35m2024-07-06 00:54.27 ---> saved as "a4f3577e1a11b7c59ded5e6494cedf50e0d151670b809b695457917745bfa389"[0m
+
+[01;34m/home/opam: (run (network host)
+                 (shell "(opam reinstall --with-test current.0.5) || true"))[0m
+[ERROR] Sorry, resolution of the request timed out.
+        Try to specify a more precise request, use a different solver, or increase the allowed time by setting OPAMSOLVERTIMEOUT to a bigger value (currently, it is set to 500.0 seconds).
+[01;2m[01;35m2024-07-06 01:03.06 ---> saved as "70462ca4587bf9eef8cb7f56c1295e0d55f218a031b956561de0bca7bca07a38"[0m
+
+[01;34m/home/opam: (run (shell  "opam reinstall --with-test --verbose current.0.5;\
+                        \n        res=$?;\
+                        \n        test \"$res\" != 31 && exit \"$res\";\
+                        \n        export OPAMCLI=2.0;\
+                        \n        build_dir=$(opam var prefix)/.opam-switch/build;\
+                        \n        failed=$(ls \"$build_dir\");\
+                        \n        partial_fails=\"\";\
+                        \n        for pkg in $failed; do\
+                        \n          if opam show -f x-ci-accept-failures: \"$pkg\" | grep -qF \"\\\"debian-12\\\"\"; then\
+                        \n            echo \"A package failed and has been disabled for CI using the 'x-ci-accept-failures' field.\";\
+                        \n          fi;\
+                        \n          test \"$pkg\" != 'current.0.5' && partial_fails=\"$partial_fails $pkg\";\
+                        \n        done;\
+                        \n        test \"${partial_fails}\" != \"\" && echo \"opam-repo-ci detected dependencies failing: ${partial_fails}\";\
+                        \n        exit 1"))[0m
+The following actions will be performed:
+=== downgrade 2 packages
+  - downgrade prometheus         1.2 to 1.1         [required by current]
+  - downgrade sexplib0           v0.17.0 to v0.15.1 [required by cohttp, cohttp-lwt]
+=== recompile 3 packages
+  - recompile current            0.5
+  - recompile ppx_deriving       6.0.2              [uses ppxlib]
+  - recompile ppxlib             0.32.1             [uses sexplib0]
+=== install 27 packages
+  - install   alcotest           1.7.0              [required by current]
+  - install   alcotest-lwt       1.7.0              [required by current]
+  - install   angstrom           0.16.0             [required by uri]
+  - install   base               v0.15.1            [required by ppx_sexp_conv]
+  - install   base64             3.5.1              [required by cohttp]
+  - install   bigstringaf        0.9.1              [required by angstrom]
+  - install   cohttp             4.0.0              [required by prometheus-app]
+  - install   cohttp-lwt         4.0.0              [required by prometheus-app]
+  - install   cohttp-lwt-unix    4.0.0              [required by prometheus-app]
+  - install   conduit            2.1.0              [required by conduit-lwt]
+  - install   conduit-lwt        2.1.0              [required by cohttp-lwt-unix]
+  - install   conduit-lwt-unix   2.2.2              [required by cohttp-lwt-unix]
+  - install   domain-name        0.4.0              [required by ipaddr]
+  - install   ipaddr             5.6.0              [required by conduit-lwt-unix]
+  - install   ipaddr-sexp        5.6.0              [required by conduit-lwt-unix]
+  - install   jsonm              1.0.2              [required by cohttp]
+  - install   macaddr            5.6.0              [required by ipaddr]
+  - install   magic-mime         1.3.1              [required by cohttp-lwt-unix]
+  - install   ocaml-syntax-shims 1.0.0              [required by alcotest]
+  - install   parsexp            v0.15.0            [required by sexplib]
+  - install   ppx_sexp_conv      v0.15.1            [required by cohttp-lwt, cohttp, cohttp-lwt-unix]
+  - install   prometheus-app     1.1                [required by current]
+  - install   sexplib            v0.15.1            [required by conduit-lwt]
+  - install   stringext          1.6.0              [required by cohttp]
+  - install   uri                4.4.0              [required by cohttp, cohttp-lwt]
+  - install   uri-sexp           4.4.0              [required by cohttp]
+  - install   uutf               1.0.3              [required by alcotest]
+
+<><> Processing actions <><><><><><><><><><><><><><><><><><><><><><><><><><><><>
+Processing  1/93: [alcotest.1.7.0, alcotest-lwt.1.7.0: http]
+[ERROR] Failed to get sources of alcotest.1.7.0, alcotest-lwt.1.7.0 (https://github.com/mirage/alcotest/releases/download/1.7.0/alcotest-1.7.0.tbz): Curl failed
+Processing  2/93: [angstrom.0.16.0: http]
+[ERROR] Failed to get sources of angstrom.0.16.0: Curl failed
+Processing  3/93: [base.v0.15.1: http]
+[ERROR] Failed to get sources of base.v0.15.1: Curl failed
+Processing  4/93: [base64.3.5.1: http]
+[ERROR] Failed to get sources of base64.3.5.1: Curl failed
+Processing  5/93: [bigstringaf.0.9.1: http]
+Processing  6/93: [bigstringaf.0.9.1: http]
+Processing  7/93: [bigstringaf.0.9.1: http]
+[ERROR] Failed to get sources of bigstringaf.0.9.1: Curl failed
+Processing  8/93: [cohttp.4.0.0, cohttp-lwt.4.0.0, cohttp-lwt-unix.4.0.0: http]
+Processing  9/93: [cohttp.4.0.0, cohttp-lwt.4.0.0, cohttp-lwt-unix.4.0.0: http]
+Processing 10/93: [cohttp.4.0.0, cohttp-lwt.4.0.0, cohttp-lwt-unix.4.0.0: http]
+[ERROR] Failed to get sources of cohttp.4.0.0, cohttp-lwt.4.0.0, cohttp-lwt-unix.4.0.0 (https://github.com/mirage/ocaml-cohttp/releases/download/v4.0.0/cohttp-v4.0.0.tbz): Curl failed
+Processing 11/93: [conduit.2.1.0, conduit-lwt.2.1.0: http]
+[ERROR] Failed to get sources of conduit.2.1.0, conduit-lwt.2.1.0 (https://github.com/mirage/ocaml-conduit/releases/download/v2.1.0/conduit-v2.1.0.tbz): Curl failed
+Processing 12/93: [conduit-lwt-unix.2.2.2: http]
+[ERROR] Failed to get sources of conduit-lwt-unix.2.2.2: Curl failed
+Processing 13/93: [current.0.5: http]
+[ERROR] Failed to get sources of current.0.5: Curl failed
+Processing 14/93: [domain-name.0.4.0: http]
+[ERROR] Failed to get sources of domain-name.0.4.0: Curl failed
+Processing 15/93: [ipaddr.5.6.0, ipaddr-sexp.5.6.0, macaddr.5.6.0: http]
+Processing 16/93: [ipaddr.5.6.0, ipaddr-sexp.5.6.0, macaddr.5.6.0: http]
+Processing 17/93: [ipaddr.5.6.0, ipaddr-sexp.5.6.0, macaddr.5.6.0: http]
+[ERROR] Failed to get sources of ipaddr.5.6.0, ipaddr-sexp.5.6.0, macaddr.5.6.0 (https://github.com/mirage/ocaml-ipaddr/releases/download/v5.6.0/ipaddr-5.6.0.tbz): Curl failed
+Processing 18/93: [jsonm.1.0.2: http]
+Processing 19/93: [jsonm.1.0.2: http]
+Processing 20/93: [jsonm.1.0.2: http]
+Processing 21/93: [jsonm.1.0.2: http]
+Processing 22/93: [jsonm.1.0.2: http]
+[ERROR] Failed to get sources of jsonm.1.0.2: Curl failed
+Processing 23/93: [magic-mime.1.3.1: http]
+[ERROR] Failed to get sources of magic-mime.1.3.1: Curl failed
+Processing 24/93: [ocaml-syntax-shims.1.0.0: http]
+Processing 25/93: [ocaml-syntax-shims.1.0.0: http]
+Processing 26/93: [ocaml-syntax-shims.1.0.0: http]
+[ERROR] Failed to get sources of ocaml-syntax-shims.1.0.0: Curl failed
+Processing 27/93: [parsexp.v0.15.0: http]
+Processing 28/93: [parsexp.v0.15.0: http]
+Processing 29/93: [parsexp.v0.15.0: http]
+Processing 30/93: [parsexp.v0.15.0: http]
+Processing 31/93: [parsexp.v0.15.0: http]
+[ERROR] Failed to get sources of parsexp.v0.15.0: Curl failed
+Processing 32/93: [ppx_deriving.6.0.2: http]
+[ERROR] Failed to get sources of ppx_deriving.6.0.2: Curl failed
+Processing 33/93: [ppx_sexp_conv.v0.15.1: http]
+[ERROR] Failed to get sources of ppx_sexp_conv.v0.15.1: Curl failed
+Processing 34/93: [ppxlib.0.32.1: http]
+[ERROR] Failed to get sources of ppxlib.0.32.1: Curl failed
+Processing 35/93: [prometheus.1.1, prometheus-app.1.1: http]
+[ERROR] Failed to get sources of prometheus.1.1, prometheus-app.1.1 (https://github.com/mirage/prometheus/releases/download/v1.1/prometheus-v1.1.tbz): Curl failed
+Processing 36/93: [sexplib.v0.15.1: http]
+Processing 37/93: [sexplib.v0.15.1: http]
+[ERROR] Failed to get sources of sexplib.v0.15.1: Curl failed
+Processing 38/93: [sexplib0.v0.15.1: http]
+[ERROR] Failed to get sources of sexplib0.v0.15.1: Curl failed
+Processing 39/93: [stringext.1.6.0: http]
+Processing 40/93: [stringext.1.6.0: http]
+[ERROR] Failed to get sources of stringext.1.6.0: Curl failed
+Processing 41/93: [uri.4.4.0, uri-sexp.4.4.0: http]
+Processing 42/93: [uri.4.4.0, uri-sexp.4.4.0: http]
+Processing 43/93: [uri.4.4.0, uri-sexp.4.4.0: http]
+[ERROR] Failed to get sources of uri.4.4.0, uri-sexp.4.4.0 (https://github.com/mirage/ocaml-uri/releases/download/v4.4.0/uri-4.4.0.tbz): Curl failed
+Processing 44/93: [uutf.1.0.3: http]
+Processing 45/93: [uutf.1.0.3: http]
+Processing 46/93: [uutf.1.0.3: http]
+[ERROR] Failed to get sources of uutf.1.0.3: Curl failed
+
+#=== ERROR while fetching sources for uutf.1.0.3 ==============================#
+OpamSolution.Fetch_fail("https://erratique.ch/software/uutf/releases/uutf-1.0.3.tbz (Curl failed: \"/usr/bin/curl --write-out %{http_code}\\\\n --retry 3 --retry-delay 2 --user-agent opam/2.2.0~rc1 -L -o /home/opam/.opam/5.2/.opam-switch/sources/uutf.1.0.3/uutf-1.0.3.tbz.part -- https://erratique.ch/software/uutf/releases/uutf-1.0.3.tbz\" exited with code 6)")
+
+#=== ERROR while fetching sources for uri.4.4.0 and uri-sexp.4.4.0 ============#
+OpamSolution.Fetch_fail("https://github.com/mirage/ocaml-uri/releases/download/v4.4.0/uri-4.4.0.tbz (Curl failed: \"/usr/bin/curl --write-out %{http_code}\\\\n --retry 3 --retry-delay 2 --user-agent opam/2.2.0~rc1 -L -o /tmp/opam-7-a74982/uri-4.4.0.tbz.part -- https://github.com/mirage/ocaml-uri/releases/download/v4.4.0/uri-4.4.0.tbz\" exited with code 6)")
+
+#=== ERROR while fetching sources for stringext.1.6.0 =========================#
+OpamSolution.Fetch_fail("https://github.com/rgrinberg/stringext/releases/download/1.6.0/stringext-1.6.0.tbz (Curl failed: \"/usr/bin/curl --write-out %{http_code}\\\\n --retry 3 --retry-delay 2 --user-agent opam/2.2.0~rc1 -L -o /home/opam/.opam/5.2/.opam-switch/sources/stringext.1.6.0/stringext-1.6.0.tbz.part -- https://github.com/rgrinberg/stringext/releases/download/1.6.0/stringext-1.6.0.tbz\" exited with code 6)")
+
+#=== ERROR while fetching sources for sexplib0.v0.15.1 ========================#
+OpamSolution.Fetch_fail("https://github.com/janestreet/sexplib0/archive/refs/tags/v0.15.1.tar.gz (Curl failed: \"/usr/bin/curl --write-out %{http_code}\\\\n --retry 3 --retry-delay 2 --user-agent opam/2.2.0~rc1 -L -o /home/opam/.opam/5.2/.opam-switch/sources/sexplib0.v0.15.1/v0.15.1.tar.gz.part -- https://github.com/janestreet/sexplib0/archive/refs/tags/v0.15.1.tar.gz\" exited with code 6)")
+
+#=== ERROR while fetching sources for sexplib.v0.15.1 =========================#
+OpamSolution.Fetch_fail("https://github.com/janestreet/sexplib/archive/refs/tags/v0.15.1.tar.gz (Curl failed: \"/usr/bin/curl --write-out %{http_code}\\\\n --retry 3 --retry-delay 2 --user-agent opam/2.2.0~rc1 -L -o /home/opam/.opam/5.2/.opam-switch/sources/sexplib.v0.15.1/v0.15.1.tar.gz.part -- https://github.com/janestreet/sexplib/archive/refs/tags/v0.15.1.tar.gz\" exited with code 6)")
+
+#=== ERROR while fetching sources for prometheus.1.1 and prometheus-app.1.1 ===#
+OpamSolution.Fetch_fail("https://github.com/mirage/prometheus/releases/download/v1.1/prometheus-v1.1.tbz (Curl failed: \"/usr/bin/curl --write-out %{http_code}\\\\n --retry 3 --retry-delay 2 --user-agent opam/2.2.0~rc1 -L -o /tmp/opam-7-1d992a/prometheus-v1.1.tbz.part -- https://github.com/mirage/prometheus/releases/download/v1.1/prometheus-v1.1.tbz\" exited with code 6)")
+
+#=== ERROR while fetching sources for ppxlib.0.32.1 ===========================#
+OpamSolution.Fetch_fail("https://github.com/ocaml-ppx/ppxlib/releases/download/0.32.1/ppxlib-0.32.1.tbz (Curl failed: \"/usr/bin/curl --write-out %{http_code}\\\\n --retry 3 --retry-delay 2 --user-agent opam/2.2.0~rc1 -L -o /home/opam/.opam/5.2/.opam-switch/sources/ppxlib.0.32.1/ppxlib-0.32.1.tbz.part -- https://github.com/ocaml-ppx/ppxlib/releases/download/0.32.1/ppxlib-0.32.1.tbz\" exited with code 6)")
+
+#=== ERROR while fetching sources for ppx_sexp_conv.v0.15.1 ===================#
+OpamSolution.Fetch_fail("https://github.com/janestreet/ppx_sexp_conv/archive/refs/tags/v0.15.1.tar.gz (Curl failed: \"/usr/bin/curl --write-out %{http_code}\\\\n --retry 3 --retry-delay 2 --user-agent opam/2.2.0~rc1 -L -o /home/opam/.opam/5.2/.opam-switch/sources/ppx_sexp_conv.v0.15.1/v0.15.1.tar.gz.part -- https://github.com/janestreet/ppx_sexp_conv/archive/refs/tags/v0.15.1.tar.gz\" exited with code 6)")
+
+#=== ERROR while fetching sources for ppx_deriving.6.0.2 ======================#
+OpamSolution.Fetch_fail("https://github.com/ocaml-ppx/ppx_deriving/releases/download/v6.0.2/ppx_deriving-6.0.2.tbz (Curl failed: \"/usr/bin/curl --write-out %{http_code}\\\\n --retry 3 --retry-delay 2 --user-agent opam/2.2.0~rc1 -L -o /home/opam/.opam/5.2/.opam-switch/sources/ppx_deriving.6.0.2/ppx_deriving-6.0.2.tbz.part -- https://github.com/ocaml-ppx/ppx_deriving/releases/download/v6.0.2/ppx_deriving-6.0.2.tbz\" exited with code 6)")
+
+#=== ERROR while fetching sources for parsexp.v0.15.0 =========================#
+OpamSolution.Fetch_fail("https://ocaml.janestreet.com/ocaml-core/v0.15/files/parsexp-v0.15.0.tar.gz (Curl failed: \"/usr/bin/curl --write-out %{http_code}\\\\n --retry 3 --retry-delay 2 --user-agent opam/2.2.0~rc1 -L -o /home/opam/.opam/5.2/.opam-switch/sources/parsexp.v0.15.0/parsexp-v0.15.0.tar.gz.part -- https://ocaml.janestreet.com/ocaml-core/v0.15/files/parsexp-v0.15.0.tar.gz\" exited with code 6)")
+
+#=== ERROR while fetching sources for ocaml-syntax-shims.1.0.0 ================#
+OpamSolution.Fetch_fail("https://github.com/ocaml-ppx/ocaml-syntax-shims/releases/download/1.0.0/ocaml-syntax-shims-1.0.0.tbz (Curl failed: \"/usr/bin/curl --write-out %{http_code}\\\\n --retry 3 --retry-delay 2 --user-agent opam/2.2.0~rc1 -L -o /home/opam/.opam/5.2/.opam-switch/sources/ocaml-syntax-shims.1.0.0/ocaml-syntax-shims-1.0.0.tbz.part -- https://github.com/ocaml-ppx/ocaml-syntax-shims/releases/download/1.0.0/ocaml-syntax-shims-1.0.0.tbz\" exited with code 6)")
+
+#=== ERROR while fetching sources for magic-mime.1.3.1 ========================#
+OpamSolution.Fetch_fail("https://github.com/mirage/ocaml-magic-mime/releases/download/v1.3.1/magic-mime-1.3.1.tbz (Curl failed: \"/usr/bin/curl --write-out %{http_code}\\\\n --retry 3 --retry-delay 2 --user-agent opam/2.2.0~rc1 -L -o /home/opam/.opam/5.2/.opam-switch/sources/magic-mime.1.3.1/magic-mime-1.3.1.tbz.part -- https://github.com/mirage/ocaml-magic-mime/releases/download/v1.3.1/magic-mime-1.3.1.tbz\" exited with code 6)")
+
+#=== ERROR while fetching sources for jsonm.1.0.2 =============================#
+OpamSolution.Fetch_fail("https://erratique.ch/software/jsonm/releases/jsonm-1.0.2.tbz (Curl failed: \"/usr/bin/curl --write-out %{http_code}\\\\n --retry 3 --retry-delay 2 --user-agent opam/2.2.0~rc1 -L -o /home/opam/.opam/5.2/.opam-switch/sources/jsonm.1.0.2/jsonm-1.0.2.tbz.part -- https://erratique.ch/software/jsonm/releases/jsonm-1.0.2.tbz\" exited with code 6)")
+
+#=== ERROR while fetching sources for ipaddr.5.6.0, ipaddr-sexp.5.6.0 and macaddr.5.6.0 
+OpamSolution.Fetch_fail("https://github.com/mirage/ocaml-ipaddr/releases/download/v5.6.0/ipaddr-5.6.0.tbz (Curl failed: \"/usr/bin/curl --write-out %{http_code}\\\\n --retry 3 --retry-delay 2 --user-agent opam/2.2.0~rc1 -L -o /tmp/opam-7-bc9dd0/ipaddr-5.6.0.tbz.part -- https://github.com/mirage/ocaml-ipaddr/releases/download/v5.6.0/ipaddr-5.6.0.tbz\" exited with code 6)")
+
+#=== ERROR while fetching sources for domain-name.0.4.0 =======================#
+OpamSolution.Fetch_fail("https://github.com/hannesm/domain-name/releases/download/v0.4.0/domain-name-0.4.0.tbz (Curl failed: \"/usr/bin/curl --write-out %{http_code}\\\\n --retry 3 --retry-delay 2 --user-agent opam/2.2.0~rc1 -L -o /home/opam/.opam/5.2/.opam-switch/sources/domain-name.0.4.0/domain-name-0.4.0.tbz.part -- https://github.com/hannesm/domain-name/releases/download/v0.4.0/domain-name-0.4.0.tbz\" exited with code 6)")
+
+#=== ERROR while fetching sources for current.0.5 =============================#
+OpamSolution.Fetch_fail("https://github.com/ocurrent/ocurrent/releases/download/v0.5/current-v0.5.tbz (Curl failed: \"/usr/bin/curl --write-out %{http_code}\\\\n --retry 3 --retry-delay 2 --user-agent opam/2.2.0~rc1 -L -o /home/opam/.opam/5.2/.opam-switch/sources/current.0.5/current-v0.5.tbz.part -- https://github.com/ocurrent/ocurrent/releases/download/v0.5/current-v0.5.tbz\" exited with code 6)")
+
+#=== ERROR while fetching sources for conduit-lwt-unix.2.2.2 ==================#
+OpamSolution.Fetch_fail("https://github.com/mirage/ocaml-conduit/releases/download/v2.2.2/conduit-v2.2.2.tbz (Curl failed: \"/usr/bin/curl --write-out %{http_code}\\\\n --retry 3 --retry-delay 2 --user-agent opam/2.2.0~rc1 -L -o /home/opam/.opam/5.2/.opam-switch/sources/conduit-lwt-unix.2.2.2/conduit-v2.2.2.tbz.part -- https://github.com/mirage/ocaml-conduit/releases/download/v2.2.2/conduit-v2.2.2.tbz\" exited with code 6)")
+
+#=== ERROR while fetching sources for conduit.2.1.0 and conduit-lwt.2.1.0 =====#
+OpamSolution.Fetch_fail("https://github.com/mirage/ocaml-conduit/releases/download/v2.1.0/conduit-v2.1.0.tbz (Curl failed: \"/usr/bin/curl --write-out %{http_code}\\\\n --retry 3 --retry-delay 2 --user-agent opam/2.2.0~rc1 -L -o /tmp/opam-7-05be17/conduit-v2.1.0.tbz.part -- https://github.com/mirage/ocaml-conduit/releases/download/v2.1.0/conduit-v2.1.0.tbz\" exited with code 6)")
+
+#=== ERROR while fetching sources for cohttp.4.0.0, cohttp-lwt.4.0.0 and cohttp-lwt-unix.4.0.0 
+OpamSolution.Fetch_fail("https://github.com/mirage/ocaml-cohttp/releases/download/v4.0.0/cohttp-v4.0.0.tbz (Curl failed: \"/usr/bin/curl --write-out %{http_code}\\\\n --retry 3 --retry-delay 2 --user-agent opam/2.2.0~rc1 -L -o /tmp/opam-7-0bef36/cohttp-v4.0.0.tbz.part -- https://github.com/mirage/ocaml-cohttp/releases/download/v4.0.0/cohttp-v4.0.0.tbz\" exited with code 6)")
+
+#=== ERROR while fetching sources for bigstringaf.0.9.1 =======================#
+OpamSolution.Fetch_fail("https://github.com/inhabitedtype/bigstringaf/archive/0.9.1.tar.gz (Curl failed: \"/usr/bin/curl --write-out %{http_code}\\\\n --retry 3 --retry-delay 2 --user-agent opam/2.2.0~rc1 -L -o /home/opam/.opam/5.2/.opam-switch/sources/bigstringaf.0.9.1/0.9.1.tar.gz.part -- https://github.com/inhabitedtype/bigstringaf/archive/0.9.1.tar.gz\" exited with code 6)")
+
+#=== ERROR while fetching sources for base64.3.5.1 ============================#
+OpamSolution.Fetch_fail("https://github.com/mirage/ocaml-base64/releases/download/v3.5.1/base64-3.5.1.tbz (Curl failed: \"/usr/bin/curl --write-out %{http_code}\\\\n --retry 3 --retry-delay 2 --user-agent opam/2.2.0~rc1 -L -o /home/opam/.opam/5.2/.opam-switch/sources/base64.3.5.1/base64-3.5.1.tbz.part -- https://github.com/mirage/ocaml-base64/releases/download/v3.5.1/base64-3.5.1.tbz\" exited with code 6)")
+
+#=== ERROR while fetching sources for base.v0.15.1 ============================#
+OpamSolution.Fetch_fail("https://github.com/janestreet/base/archive/refs/tags/v0.15.1.tar.gz (Curl failed: \"/usr/bin/curl --write-out %{http_code}\\\\n --retry 3 --retry-delay 2 --user-agent opam/2.2.0~rc1 -L -o /home/opam/.opam/5.2/.opam-switch/sources/base.v0.15.1/v0.15.1.tar.gz.part -- https://github.com/janestreet/base/archive/refs/tags/v0.15.1.tar.gz\" exited with code 6)")
+
+#=== ERROR while fetching sources for angstrom.0.16.0 =========================#
+OpamSolution.Fetch_fail("https://github.com/inhabitedtype/angstrom/archive/0.16.0.tar.gz (Curl failed: \"/usr/bin/curl --write-out %{http_code}\\\\n --retry 3 --retry-delay 2 --user-agent opam/2.2.0~rc1 -L -o /home/opam/.opam/5.2/.opam-switch/sources/angstrom.0.16.0/0.16.0.tar.gz.part -- https://github.com/inhabitedtype/angstrom/archive/0.16.0.tar.gz\" exited with code 6)")
+
+#=== ERROR while fetching sources for alcotest.1.7.0 and alcotest-lwt.1.7.0 ===#
+OpamSolution.Fetch_fail("https://github.com/mirage/alcotest/releases/download/1.7.0/alcotest-1.7.0.tbz (Curl failed: \"/usr/bin/curl --write-out %{http_code}\\\\n --retry 3 --retry-delay 2 --user-agent opam/2.2.0~rc1 -L -o /tmp/opam-7-a1f382/alcotest-1.7.0.tbz.part -- https://github.com/mirage/alcotest/releases/download/1.7.0/alcotest-1.7.0.tbz\" exited with code 6)")
+
+
+<><> Error report <><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><>
++- The following actions were aborted
+| - remove prometheus 1.2
+| - remove sexplib0   v0.17.0
++- 
++- The following actions failed
+| - fetch alcotest.1.7.0, alcotest-lwt.1.7.0                    
+| - fetch angstrom                                              0.16.0
+| - fetch base                                                  v0.15.1
+| - fetch base64                                                3.5.1
+| - fetch bigstringaf                                           0.9.1
+| - fetch cohttp.4.0.0, cohttp-lwt.4.0.0, cohttp-lwt-unix.4.0.0 
+| - fetch conduit.2.1.0, conduit-lwt.2.1.0                      
+| - fetch conduit-lwt-unix                                      2.2.2
+| - fetch current                                               0.5
+| - fetch domain-name                                           0.4.0
+| - fetch ipaddr.5.6.0, ipaddr-sexp.5.6.0, macaddr.5.6.0        
+| - fetch jsonm                                                 1.0.2
+| - fetch magic-mime                                            1.3.1
+| - fetch ocaml-syntax-shims                                    1.0.0
+| - fetch parsexp                                               v0.15.0
+| - fetch ppx_deriving                                          6.0.2
+| - fetch ppx_sexp_conv                                         v0.15.1
+| - fetch ppxlib                                                0.32.1
+| - fetch prometheus.1.1, prometheus-app.1.1                    
+| - fetch sexplib                                               v0.15.1
+| - fetch sexplib0                                              v0.15.1
+| - fetch stringext                                             1.6.0
+| - fetch uri.4.4.0, uri-sexp.4.4.0                             
+| - fetch uutf                                                  1.0.3
++- 
+- No changes have been performed
+# Run eval $(opam env) to update the current shell environment
+'opam reinstall --with-test --verbose current.0.5' failed.
+"/usr/bin/env" "bash" "-c" "opam reinstall --with-test --verbose current.0.5;
+        res=$?;
+        test "$res" != 31 && exit "$res";
+        export OPAMCLI=2.0;
+        build_dir=$(opam var prefix)/.opam-switch/build;
+        failed=$(ls "$build_dir");
+        partial_fails="";
+        for pkg in $failed; do
+          if opam show -f x-ci-accept-failures: "$pkg" | grep -qF "\"debian-12\""; then
+            echo "A package failed and has been disabled for CI using the 'x-ci-accept-failures' field.";
+          fi;
+          test "$pkg" != 'current.0.5' && partial_fails="$partial_fails $pkg";
+        done;
+        test "${partial_fails}" != "" && echo "opam-repo-ci detected dependencies failing: ${partial_fails}";
+        exit 1" failed with exit status 40
+2024-07-06 01:13.55: Job failed: Failed: Build failed
+2024-07-06 01:13.55: Log analysis:
+2024-07-06 01:13.55: >>> 
+[ERROR] Sorry, resolution of the request timed out.
+ (score = 20)
+2024-07-06 01:13.55: >>> 
+[ERROR] Failed to get sources of alcotest.1.7.0, alcotest-lwt.1.7.0 (https://github.com/mirage/alcotest/releases/download/1.7.0/alcotest-1.7.0.tbz): Curl failed
+ (score = 25)
+2024-07-06 01:13.55: >>> 
+[ERROR] Failed to get sources of angstrom.0.16.0: Curl failed
+ (score = 25)
+2024-07-06 01:13.55: >>> 
+[ERROR] Failed to get sources of base.v0.15.1: Curl failed
+ (score = 25)
+2024-07-06 01:13.55: >>> 
+[ERROR] Failed to get sources of base64.3.5.1: Curl failed
+ (score = 25)
+2024-07-06 01:13.55: >>> 
+[ERROR] Failed to get sources of bigstringaf.0.9.1: Curl failed
+ (score = 25)
+2024-07-06 01:13.55: >>> 
+[ERROR] Failed to get sources of cohttp.4.0.0, cohttp-lwt.4.0.0, cohttp-lwt-unix.4.0.0 (https://github.com/mirage/ocaml-cohttp/releases/download/v4.0.0/cohttp-v4.0.0.tbz): Curl failed
+ (score = 25)
+2024-07-06 01:13.55: >>> 
+[ERROR] Failed to get sources of conduit.2.1.0, conduit-lwt.2.1.0 (https://github.com/mirage/ocaml-conduit/releases/download/v2.1.0/conduit-v2.1.0.tbz): Curl failed
+ (score = 25)
+2024-07-06 01:13.55: >>> 
+[ERROR] Failed to get sources of conduit-lwt-unix.2.2.2: Curl failed
+ (score = 25)
+2024-07-06 01:13.55: >>> 
+[ERROR] Failed to get sources of current.0.5: Curl failed
+ (score = 25)
+2024-07-06 01:13.55: >>> 
+[ERROR] Failed to get sources of domain-name.0.4.0: Curl failed
+ (score = 25)
+2024-07-06 01:13.55: >>> 
+[ERROR] Failed to get sources of ipaddr.5.6.0, ipaddr-sexp.5.6.0, macaddr.5.6.0 (https://github.com/mirage/ocaml-ipaddr/releases/download/v5.6.0/ipaddr-5.6.0.tbz): Curl failed
+ (score = 25)
+2024-07-06 01:13.55: >>> 
+[ERROR] Failed to get sources of jsonm.1.0.2: Curl failed
+ (score = 25)
+2024-07-06 01:13.55: >>> 
+[ERROR] Failed to get sources of magic-mime.1.3.1: Curl failed
+ (score = 25)
+2024-07-06 01:13.55: >>> 
+[ERROR] Failed to get sources of ocaml-syntax-shims.1.0.0: Curl failed
+ (score = 25)
+2024-07-06 01:13.55: >>> 
+[ERROR] Failed to get sources of parsexp.v0.15.0: Curl failed
+ (score = 25)
+2024-07-06 01:13.55: >>> 
+[ERROR] Failed to get sources of ppx_deriving.6.0.2: Curl failed
+ (score = 25)
+2024-07-06 01:13.55: >>> 
+[ERROR] Failed to get sources of ppx_sexp_conv.v0.15.1: Curl failed
+ (score = 25)
+2024-07-06 01:13.55: >>> 
+[ERROR] Failed to get sources of ppxlib.0.32.1: Curl failed
+ (score = 25)
+2024-07-06 01:13.55: >>> 
+[ERROR] Failed to get sources of prometheus.1.1, prometheus-app.1.1 (https://github.com/mirage/prometheus/releases/download/v1.1/prometheus-v1.1.tbz): Curl failed
+ (score = 25)
+2024-07-06 01:13.55: >>> 
+[ERROR] Failed to get sources of sexplib.v0.15.1: Curl failed
+ (score = 25)
+2024-07-06 01:13.55: >>> 
+[ERROR] Failed to get sources of sexplib0.v0.15.1: Curl failed
+ (score = 25)
+2024-07-06 01:13.55: >>> 
+[ERROR] Failed to get sources of stringext.1.6.0: Curl failed
+ (score = 25)
+2024-07-06 01:13.55: >>> 
+[ERROR] Failed to get sources of uri.4.4.0, uri-sexp.4.4.0 (https://github.com/mirage/ocaml-uri/releases/download/v4.4.0/uri-4.4.0.tbz): Curl failed
+ (score = 25)
+2024-07-06 01:13.55: >>> 
+[ERROR] Failed to get sources of uutf.1.0.3: Curl failed
+ (score = 25)
+2024-07-06 01:13.55: Failed to get sources of alcotest.1.7.0, alcotest-lwt.1.7.0 (https://github.com/mirage/alcotest/releases/download/1.7.0/alcotest-1.7.0.tbz): Curl failed

@@ -1,0 +1,585 @@
+2024-02-11 20:23.05: New job: test irmin-git.2.7.2 with conf-pkg-config.3, using opam dev
+                              from https://github.com/ocaml/opam-repository.git#refs/pull/25235/head (8c7391d6ec81e93f24de221eb32a886b72d1ede6)
+                              on debian-12-ocaml-4.14/amd64
+
+To reproduce locally:
+
+cd $(mktemp -d)
+git clone --recursive "https://github.com/ocaml/opam-repository.git" && cd "opam-repository" && git fetch origin "refs/pull/25235/head" && git reset --hard 8c7391d6
+git fetch origin master
+git merge --no-edit 8477e9a74beb40d85534ab7653b65d45607a147f
+cat > ../Dockerfile <<'END-OF-DOCKERFILE'
+[34mFROM ocaml/opam:debian-12-ocaml-4.14@sha256:4021ca3252741ce621e03f973d64272c2ac47b3b1e7c780e5a51dcc96f76a20c
+USER 1000:1000
+WORKDIR /home/opam
+RUN sudo ln -f /usr/bin/opam-dev /usr/bin/opam
+RUN opam init --reinit -ni
+ENV OPAMDOWNLOADJOBS="1"
+ENV OPAMERRLOGLEN="0"
+ENV OPAMSOLVERTIMEOUT="500"
+ENV OPAMPRECISETRACKING="1"
+ENV CI="true"
+ENV OPAM_REPO_CI="true"
+RUN rm -rf opam-repository/
+COPY --chown=1000:1000 . opam-repository/
+RUN opam repository set-url --strict default opam-repository/
+RUN opam update --depexts || true
+ENV OPAMCRITERIA="-removed,-count[avoid-version,changed],-count[version-lag,request],-count[version-lag,changed],-count[missing-depexts,changed],-changed"
+ENV OPAMFIXUPCRITERIA="-removed,-count[avoid-version,changed],-count[version-lag,request],-count[version-lag,changed],-count[missing-depexts,changed],-changed"
+ENV OPAMUPGRADECRITERIA="-removed,-count[avoid-version,changed],-count[version-lag,request],-count[version-lag,changed],-count[missing-depexts,changed],-changed"
+RUN opam pin add -k version -yn conf-pkg-config.3 3
+RUN opam reinstall conf-pkg-config.3; \
+    res=$?; \
+    test "$res" != 31 && exit "$res"; \
+    export OPAMCLI=2.0; \
+    build_dir=$(opam var prefix)/.opam-switch/build; \
+    failed=$(ls "$build_dir"); \
+    partial_fails=""; \
+    for pkg in $failed; do \
+    if opam show -f x-ci-accept-failures: "$pkg" | grep -qF "\"debian-12\""; then \
+    echo "A package failed and has been disabled for CI using the 'x-ci-accept-failures' field."; \
+    fi; \
+    test "$pkg" != 'conf-pkg-config.3' && partial_fails="$partial_fails $pkg"; \
+    done; \
+    test "${partial_fails}" != "" && echo "opam-repo-ci detected dependencies failing: ${partial_fails}"; \
+    exit 1
+ENV OPAMCRITERIA="-removed,-count[avoid-version,changed],-count[version-lag,request],-count[version-lag,changed],-count[missing-depexts,changed],-changed"
+ENV OPAMFIXUPCRITERIA="-removed,-count[avoid-version,changed],-count[version-lag,request],-count[version-lag,changed],-count[missing-depexts,changed],-changed"
+ENV OPAMUPGRADECRITERIA="-removed,-count[avoid-version,changed],-count[version-lag,request],-count[version-lag,changed],-count[missing-depexts,changed],-changed"
+RUN opam reinstall irmin-git.2.7.2; \
+    res=$?; \
+    test "$res" != 31 && exit "$res"; \
+    export OPAMCLI=2.0; \
+    build_dir=$(opam var prefix)/.opam-switch/build; \
+    failed=$(ls "$build_dir"); \
+    partial_fails=""; \
+    for pkg in $failed; do \
+    if opam show -f x-ci-accept-failures: "$pkg" | grep -qF "\"debian-12\""; then \
+    echo "A package failed and has been disabled for CI using the 'x-ci-accept-failures' field."; \
+    fi; \
+    test "$pkg" != 'irmin-git.2.7.2' && partial_fails="$partial_fails $pkg"; \
+    done; \
+    test "${partial_fails}" != "" && echo "opam-repo-ci detected dependencies failing: ${partial_fails}"; \
+    exit 1
+ENV OPAMCRITERIA="-removed,-count[avoid-version,changed],-count[version-lag,request],-count[version-lag,changed],-count[missing-depexts,changed],-changed"
+ENV OPAMFIXUPCRITERIA="-removed,-count[avoid-version,changed],-count[version-lag,request],-count[version-lag,changed],-count[missing-depexts,changed],-changed"
+ENV OPAMUPGRADECRITERIA="-removed,-count[avoid-version,changed],-count[version-lag,request],-count[version-lag,changed],-count[missing-depexts,changed],-changed"
+RUN (opam reinstall --with-test irmin-git.2.7.2) || true
+RUN opam reinstall --with-test --verbose irmin-git.2.7.2; \
+    res=$?; \
+    test "$res" != 31 && exit "$res"; \
+    export OPAMCLI=2.0; \
+    build_dir=$(opam var prefix)/.opam-switch/build; \
+    failed=$(ls "$build_dir"); \
+    partial_fails=""; \
+    for pkg in $failed; do \
+    if opam show -f x-ci-accept-failures: "$pkg" | grep -qF "\"debian-12\""; then \
+    echo "A package failed and has been disabled for CI using the 'x-ci-accept-failures' field."; \
+    fi; \
+    test "$pkg" != 'irmin-git.2.7.2' && partial_fails="$partial_fails $pkg"; \
+    done; \
+    test "${partial_fails}" != "" && echo "opam-repo-ci detected dependencies failing: ${partial_fails}"; \
+    exit 1
+[0m
+END-OF-DOCKERFILE
+docker build -f ../Dockerfile .
+
+2024-02-11 20:23.05: Using cache hint "ocaml/opam:debian-12-ocaml-4.14@sha256:4021ca3252741ce621e03f973d64272c2ac47b3b1e7c780e5a51dcc96f76a20c-conf-pkg-config.3-irmin-git.2.7.2-8c7391d6ec81e93f24de221eb32a886b72d1ede6"
+2024-02-11 20:23.05: Using OBuilder spec:
+((from ocaml/opam:debian-12-ocaml-4.14@sha256:4021ca3252741ce621e03f973d64272c2ac47b3b1e7c780e5a51dcc96f76a20c)
+ (user (uid 1000) (gid 1000))
+ (workdir /home/opam)
+ (run (shell "sudo ln -f /usr/bin/opam-dev /usr/bin/opam"))
+ (run (network host)
+      (shell "opam init --reinit --config .opamrc-sandbox -ni"))
+ (env OPAMDOWNLOADJOBS 1)
+ (env OPAMERRLOGLEN 0)
+ (env OPAMSOLVERTIMEOUT 500)
+ (env OPAMPRECISETRACKING 1)
+ (env CI true)
+ (env OPAM_REPO_CI true)
+ (run (shell "rm -rf opam-repository/"))
+ (copy (src .) (dst opam-repository/))
+ (run (shell "opam repository set-url --strict default opam-repository/"))
+ (run (network host)
+      (shell "opam update --depexts || true"))
+ (env OPAMCRITERIA -removed,-count[avoid-version,changed],-count[version-lag,request],-count[version-lag,changed],-count[missing-depexts,changed],-changed)
+ (env OPAMFIXUPCRITERIA -removed,-count[avoid-version,changed],-count[version-lag,request],-count[version-lag,changed],-count[missing-depexts,changed],-changed)
+ (env OPAMUPGRADECRITERIA -removed,-count[avoid-version,changed],-count[version-lag,request],-count[version-lag,changed],-count[missing-depexts,changed],-changed)
+ (run (shell "opam pin add -k version -yn conf-pkg-config.3 3"))
+ (run (cache (opam-archives (target /home/opam/.opam/download-cache)))
+      (network host)
+      (shell  "opam reinstall conf-pkg-config.3;\
+             \n        res=$?;\
+             \n        test \"$res\" != 31 && exit \"$res\";\
+             \n        export OPAMCLI=2.0;\
+             \n        build_dir=$(opam var prefix)/.opam-switch/build;\
+             \n        failed=$(ls \"$build_dir\");\
+             \n        partial_fails=\"\";\
+             \n        for pkg in $failed; do\
+             \n          if opam show -f x-ci-accept-failures: \"$pkg\" | grep -qF \"\\\"debian-12\\\"\"; then\
+             \n            echo \"A package failed and has been disabled for CI using the 'x-ci-accept-failures' field.\";\
+             \n          fi;\
+             \n          test \"$pkg\" != 'conf-pkg-config.3' && partial_fails=\"$partial_fails $pkg\";\
+             \n        done;\
+             \n        test \"${partial_fails}\" != \"\" && echo \"opam-repo-ci detected dependencies failing: ${partial_fails}\";\
+             \n        exit 1"))
+ (env OPAMCRITERIA -removed,-count[avoid-version,changed],-count[version-lag,request],-count[version-lag,changed],-count[missing-depexts,changed],-changed)
+ (env OPAMFIXUPCRITERIA -removed,-count[avoid-version,changed],-count[version-lag,request],-count[version-lag,changed],-count[missing-depexts,changed],-changed)
+ (env OPAMUPGRADECRITERIA -removed,-count[avoid-version,changed],-count[version-lag,request],-count[version-lag,changed],-count[missing-depexts,changed],-changed)
+ (run (cache (opam-archives (target /home/opam/.opam/download-cache)))
+      (network host)
+      (shell  "opam reinstall irmin-git.2.7.2;\
+             \n        res=$?;\
+             \n        test \"$res\" != 31 && exit \"$res\";\
+             \n        export OPAMCLI=2.0;\
+             \n        build_dir=$(opam var prefix)/.opam-switch/build;\
+             \n        failed=$(ls \"$build_dir\");\
+             \n        partial_fails=\"\";\
+             \n        for pkg in $failed; do\
+             \n          if opam show -f x-ci-accept-failures: \"$pkg\" | grep -qF \"\\\"debian-12\\\"\"; then\
+             \n            echo \"A package failed and has been disabled for CI using the 'x-ci-accept-failures' field.\";\
+             \n          fi;\
+             \n          test \"$pkg\" != 'irmin-git.2.7.2' && partial_fails=\"$partial_fails $pkg\";\
+             \n        done;\
+             \n        test \"${partial_fails}\" != \"\" && echo \"opam-repo-ci detected dependencies failing: ${partial_fails}\";\
+             \n        exit 1"))
+ (env OPAMCRITERIA -removed,-count[avoid-version,changed],-count[version-lag,request],-count[version-lag,changed],-count[missing-depexts,changed],-changed)
+ (env OPAMFIXUPCRITERIA -removed,-count[avoid-version,changed],-count[version-lag,request],-count[version-lag,changed],-count[missing-depexts,changed],-changed)
+ (env OPAMUPGRADECRITERIA -removed,-count[avoid-version,changed],-count[version-lag,request],-count[version-lag,changed],-count[missing-depexts,changed],-changed)
+ (run (network host)
+      (shell "(opam reinstall --with-test irmin-git.2.7.2) || true"))
+ (run (shell  "opam reinstall --with-test --verbose irmin-git.2.7.2;\
+             \n        res=$?;\
+             \n        test \"$res\" != 31 && exit \"$res\";\
+             \n        export OPAMCLI=2.0;\
+             \n        build_dir=$(opam var prefix)/.opam-switch/build;\
+             \n        failed=$(ls \"$build_dir\");\
+             \n        partial_fails=\"\";\
+             \n        for pkg in $failed; do\
+             \n          if opam show -f x-ci-accept-failures: \"$pkg\" | grep -qF \"\\\"debian-12\\\"\"; then\
+             \n            echo \"A package failed and has been disabled for CI using the 'x-ci-accept-failures' field.\";\
+             \n          fi;\
+             \n          test \"$pkg\" != 'irmin-git.2.7.2' && partial_fails=\"$partial_fails $pkg\";\
+             \n        done;\
+             \n        test \"${partial_fails}\" != \"\" && echo \"opam-repo-ci detected dependencies failing: ${partial_fails}\";\
+             \n        exit 1"))
+)
+
+2024-02-11 20:23.05: Waiting for resource in pool OCluster
+2024-02-12 06:22.36: Waiting for worker…
+2024-02-12 06:23.54: Got resource from pool OCluster
+Building on laodoke.caelum.ci.dev
+All commits already cached
+Updating files:  69% (22863/32918)Updating files:  70% (23043/32918)Updating files:  71% (23372/32918)Updating files:  72% (23701/32918)Updating files:  73% (24031/32918)Updating files:  74% (24360/32918)Updating files:  75% (24689/32918)Updating files:  76% (25018/32918)Updating files:  77% (25347/32918)Updating files:  78% (25677/32918)Updating files:  79% (26006/32918)Updating files:  80% (26335/32918)Updating files:  81% (26664/32918)Updating files:  82% (26993/32918)Updating files:  83% (27322/32918)Updating files:  84% (27652/32918)Updating files:  85% (27981/32918)Updating files:  86% (28310/32918)Updating files:  87% (28639/32918)Updating files:  88% (28968/32918)Updating files:  89% (29298/32918)Updating files:  90% (29627/32918)Updating files:  91% (29956/32918)Updating files:  92% (30285/32918)Updating files:  93% (30614/32918)Updating files:  94% (30943/32918)Updating files:  95% (31273/32918)Updating files:  96% (31602/32918)Updating files:  97% (31931/32918)Updating files:  98% (32260/32918)Updating files:  99% (32589/32918)Updating files: 100% (32918/32918)Updating files: 100% (32918/32918), done.
+HEAD is now at 8477e9a74b Merge pull request #25221 from nberth/mlgmpidl-1.3.0
+Updating 8477e9a74b..8c7391d6ec
+Fast-forward
+ packages/conf-pkg-config/conf-pkg-config.1.0/opam | 2 +-
+ packages/conf-pkg-config/conf-pkg-config.1.1/opam | 1 +
+ packages/conf-pkg-config/conf-pkg-config.1.2/opam | 1 +
+ packages/conf-pkg-config/conf-pkg-config.1.3/opam | 1 +
+ packages/conf-pkg-config/conf-pkg-config.2/opam   | 1 +
+ packages/conf-pkg-config/conf-pkg-config.3/opam   | 4 +++-
+ 6 files changed, 8 insertions(+), 2 deletions(-)
+
+[01;34m(from ocaml/opam:debian-12-ocaml-4.14@sha256:4021ca3252741ce621e03f973d64272c2ac47b3b1e7c780e5a51dcc96f76a20c)[0m
+[01;2m[01;35m2024-02-12 06:24.41 ---> using "0acf803dd11b376b386511f6c168c184aeafb2a98b15ad3a7c37861e7c214376" from cache[0m
+
+[01;34m/: (user (uid 1000) (gid 1000))[0m
+
+[01;34m/: (workdir /home/opam)[0m
+
+[01;34m/home/opam: (run (shell "sudo ln -f /usr/bin/opam-dev /usr/bin/opam"))[0m
+[01;2m[01;35m2024-02-12 06:24.41 ---> using "5f75a484ee0a4a54dce687581c08c0e0126d54be845e13f0e0f4cb297e6a2d76" from cache[0m
+
+[01;34m/home/opam: (run (network host)
+                 (shell "opam init --reinit --config .opamrc-sandbox -ni"))[0m
+Configuring from /home/opam/.opamrc-sandbox, then /home/opam/.opamrc, and finally from built-in defaults.
+Checking for available remotes: rsync and local, git.
+  - you won't be able to use mercurial repositories unless you install the hg command on your system.
+  - you won't be able to use darcs repositories unless you install the darcs command on your system.
+
+Continue? [y/n] y
+This development version of opam requires an update to the layout of /home/opam/.opam from version 2.0 to version 2.2~alpha, which can't be reverted.
+You may want to back it up before going further.
+
+Format upgrade done.
+
+<><> Updating repositories ><><><><><><><><><><><><><><><><><><><><><><><><><><>
+[default] synchronised from file:///home/opam/opam-repository
+[01;2m[01;35m2024-02-12 06:24.41 ---> using "e04cc2bb434ef69b32eefedf55fe47d43efe975bcbb2b548ccfaa5ac32346591" from cache[0m
+
+[01;34m/home/opam: (env OPAMDOWNLOADJOBS 1)[0m
+
+[01;34m/home/opam: (env OPAMERRLOGLEN 0)[0m
+
+[01;34m/home/opam: (env OPAMSOLVERTIMEOUT 500)[0m
+
+[01;34m/home/opam: (env OPAMPRECISETRACKING 1)[0m
+
+[01;34m/home/opam: (env CI true)[0m
+
+[01;34m/home/opam: (env OPAM_REPO_CI true)[0m
+
+[01;34m/home/opam: (run (shell "rm -rf opam-repository/"))[0m
+[01;2m[01;35m2024-02-12 06:24.41 ---> using "00564ecdfc417b769e9fdfcd2bb57e2f10222db9d58be942fda044ce7d492d99" from cache[0m
+
+[01;34m/home/opam: (copy (src .) (dst opam-repository/))[0m
+[01;2m[01;35m2024-02-12 06:24.44 ---> using "ea33f3359176f37447c8d8f7126321a7ae5371a4695eb4935be80fffa2b72366" from cache[0m
+
+[01;34m/home/opam: (run (shell "opam repository set-url --strict default opam-repository/"))[0m
+[default] Initialised
+[01;2m[01;35m2024-02-12 06:24.44 ---> using "53132e557c2ce4324fced9b09093c683ac85303eb8344294b5cb4218fc29f5ea" from cache[0m
+
+[01;34m/home/opam: (run (network host)
+                 (shell "opam update --depexts || true"))[0m
++ /usr/bin/sudo "apt-get" "update"
+- Get:1 http://deb.debian.org/debian bookworm InRelease [151 kB]
+- Get:2 http://deb.debian.org/debian bookworm-updates InRelease [52.1 kB]
+- Get:3 http://deb.debian.org/debian-security bookworm-security InRelease [48.0 kB]
+- Get:4 http://deb.debian.org/debian bookworm/main amd64 Packages [8786 kB]
+- Get:5 http://deb.debian.org/debian-security bookworm-security/main amd64 Packages [137 kB]
+- Fetched 9175 kB in 1s (6855 kB/s)
+- Reading package lists...
+- 
+[01;2m[01;35m2024-02-12 06:24.44 ---> using "3c39f0f3e2cba1fdbff7030f10768ebd234d80507425a02c9f6fe1c3c6b21305" from cache[0m
+
+[01;34m/home/opam: (env OPAMCRITERIA -removed,-count[avoid-version,changed],-count[version-lag,request],-count[version-lag,changed],-count[missing-depexts,changed],-changed)[0m
+
+[01;34m/home/opam: (env OPAMFIXUPCRITERIA -removed,-count[avoid-version,changed],-count[version-lag,request],-count[version-lag,changed],-count[missing-depexts,changed],-changed)[0m
+
+[01;34m/home/opam: (env OPAMUPGRADECRITERIA -removed,-count[avoid-version,changed],-count[version-lag,request],-count[version-lag,changed],-count[missing-depexts,changed],-changed)[0m
+
+[01;34m/home/opam: (run (shell "opam pin add -k version -yn conf-pkg-config.3 3"))[0m
+conf-pkg-config is now pinned to version 3
+[01;2m[01;35m2024-02-12 06:24.44 ---> using "cbccdd3f7d23b57eabf49b00bcdde200940ba31ec1d74942943e65b8ba95d521" from cache[0m
+
+[01;34m/home/opam: (run (cache (opam-archives (target /home/opam/.opam/download-cache)))
+                 (network host)
+                 (shell  "opam reinstall conf-pkg-config.3;\
+                        \n        res=$?;\
+                        \n        test \"$res\" != 31 && exit \"$res\";\
+                        \n        export OPAMCLI=2.0;\
+                        \n        build_dir=$(opam var prefix)/.opam-switch/build;\
+                        \n        failed=$(ls \"$build_dir\");\
+                        \n        partial_fails=\"\";\
+                        \n        for pkg in $failed; do\
+                        \n          if opam show -f x-ci-accept-failures: \"$pkg\" | grep -qF \"\\\"debian-12\\\"\"; then\
+                        \n            echo \"A package failed and has been disabled for CI using the 'x-ci-accept-failures' field.\";\
+                        \n          fi;\
+                        \n          test \"$pkg\" != 'conf-pkg-config.3' && partial_fails=\"$partial_fails $pkg\";\
+                        \n        done;\
+                        \n        test \"${partial_fails}\" != \"\" && echo \"opam-repo-ci detected dependencies failing: ${partial_fails}\";\
+                        \n        exit 1"))[0m
+conf-pkg-config.3 is not installed. Install it? [y/n] y
+The following actions will be performed:
+=== install 1 package
+  - install conf-pkg-config 3 (pinned)
+
+The following system packages will first need to be installed:
+    pkg-config
+
+<><> Handling external dependencies <><><><><><><><><><><><><><><><><><><><><><>
+
+opam believes some required external dependencies are missing. opam can:
+> 1. Run apt-get to install them (may need root/sudo access)
+  2. Display the recommended apt-get command and wait while you run it manually (e.g. in another terminal)
+  3. Continue anyway, and, upon success, permanently register that this external dependency is present, but not detectable
+  4. Abort the installation
+
+[1/2/3/4] 1
+
++ /usr/bin/sudo "apt-get" "install" "-qq" "-yy" "pkg-config"
+- debconf: delaying package configuration, since apt-utils is not installed
+- Selecting previously unselected package libpkgconf3:amd64.
+- (Reading database ... (Reading database ... 5%(Reading database ... 10%(Reading database ... 15%(Reading database ... 20%(Reading database ... 25%(Reading database ... 30%(Reading database ... 35%(Reading database ... 40%(Reading database ... 45%(Reading database ... 50%(Reading database ... 55%(Reading database ... 60%(Reading database ... 65%(Reading database ... 70%(Reading database ... 75%(Reading database ... 80%(Reading database ... 85%(Reading database ... 90%(Reading database ... 95%(Reading database ... 100%(Reading database ... 18743 files and directories currently installed.)
+- Preparing to unpack .../libpkgconf3_1.8.1-1_amd64.deb ...
+- Unpacking libpkgconf3:amd64 (1.8.1-1) ...
+- Selecting previously unselected package pkgconf-bin.
+- Preparing to unpack .../pkgconf-bin_1.8.1-1_amd64.deb ...
+- Unpacking pkgconf-bin (1.8.1-1) ...
+- Selecting previously unselected package pkgconf:amd64.
+- Preparing to unpack .../pkgconf_1.8.1-1_amd64.deb ...
+- Unpacking pkgconf:amd64 (1.8.1-1) ...
+- Selecting previously unselected package pkg-config:amd64.
+- Preparing to unpack .../pkg-config_1.8.1-1_amd64.deb ...
+- Unpacking pkg-config:amd64 (1.8.1-1) ...
+- Setting up libpkgconf3:amd64 (1.8.1-1) ...
+- Setting up pkgconf-bin (1.8.1-1) ...
+- Setting up pkgconf:amd64 (1.8.1-1) ...
+- Setting up pkg-config:amd64 (1.8.1-1) ...
+- Processing triggers for libc-bin (2.36-9+deb12u4) ...
+
+<><> Processing actions <><><><><><><><><><><><><><><><><><><><><><><><><><><><>
+-> installed conf-pkg-config.3
+Done.
+# Run eval $(opam env) to update the current shell environment
+[01;2m[01;35m2024-02-12 06:24.44 ---> using "7fe2750abe09f6fd347f8f52afab0be24d60e1d6a1d322d60c28b119447e591d" from cache[0m
+
+[01;34m/home/opam: (env OPAMCRITERIA -removed,-count[avoid-version,changed],-count[version-lag,request],-count[version-lag,changed],-count[missing-depexts,changed],-changed)[0m
+
+[01;34m/home/opam: (env OPAMFIXUPCRITERIA -removed,-count[avoid-version,changed],-count[version-lag,request],-count[version-lag,changed],-count[missing-depexts,changed],-changed)[0m
+
+[01;34m/home/opam: (env OPAMUPGRADECRITERIA -removed,-count[avoid-version,changed],-count[version-lag,request],-count[version-lag,changed],-count[missing-depexts,changed],-changed)[0m
+
+[01;34m/home/opam: (run (cache (opam-archives (target /home/opam/.opam/download-cache)))
+                 (network host)
+                 (shell  "opam reinstall irmin-git.2.7.2;\
+                        \n        res=$?;\
+                        \n        test \"$res\" != 31 && exit \"$res\";\
+                        \n        export OPAMCLI=2.0;\
+                        \n        build_dir=$(opam var prefix)/.opam-switch/build;\
+                        \n        failed=$(ls \"$build_dir\");\
+                        \n        partial_fails=\"\";\
+                        \n        for pkg in $failed; do\
+                        \n          if opam show -f x-ci-accept-failures: \"$pkg\" | grep -qF \"\\\"debian-12\\\"\"; then\
+                        \n            echo \"A package failed and has been disabled for CI using the 'x-ci-accept-failures' field.\";\
+                        \n          fi;\
+                        \n          test \"$pkg\" != 'irmin-git.2.7.2' && partial_fails=\"$partial_fails $pkg\";\
+                        \n        done;\
+                        \n        test \"${partial_fails}\" != \"\" && echo \"opam-repo-ci detected dependencies failing: ${partial_fails}\";\
+                        \n        exit 1"))[0m
+irmin-git.2.7.2 is not installed. Install it? [y/n] y
+The following actions will be performed:
+=== install 63 packages
+  - install angstrom            0.16.0  [required by git]
+  - install astring             0.8.5   [required by irmin-git]
+  - install base-bytes          base    [required by ocplib-endian]
+  - install base64              3.5.1   [required by git]
+  - install bheap               2.0.0   [required by irmin]
+  - install bigstringaf         0.9.1   [required by git]
+  - install bos                 0.2.1   [required by carton]
+  - install carton              0.7.0   [required by git]
+  - install carton-git          0.7.0   [required by git]
+  - install carton-lwt          0.7.0   [required by git]
+  - install checkseum           0.5.2   [required by git]
+  - install cmdliner            1.2.0   [required by carton, fmt, emile]
+  - install cppo                1.6.9   [required by ppx_deriving]
+  - install csexp               1.5.2   [required by dune-configurator]
+  - install cstruct             6.2.0   [required by irmin-git]
+  - install decompress          1.5.3   [required by git]
+  - install digestif            1.1.4   [required by irmin-git]
+  - install domain-name         0.4.0   [required by git]
+  - install duff                0.5     [required by carton]
+  - install dune                3.13.1  [required by irmin-git]
+  - install dune-configurator   3.13.1  [required by checkseum, bigstringaf, hxd]
+  - install either              1.0.0   [required by repr]
+  - install emile               1.1     [required by git]
+  - install encore              0.8     [required by git]
+  - install eqaf                0.9     [required by digestif]
+  - install fmt                 0.9.0   [required by irmin-git]
+  - install fpath               0.7.3   [required by irmin-git]
+  - install git                 3.14.0  [required by irmin-git]
+  - install hxd                 0.3.2   [required by git]
+  - install ipaddr              5.5.0   [required by git]
+  - install irmin               2.7.2   [required by irmin-git]
+  - install irmin-git           2.7.2
+  - install jsonm               1.0.2   [required by irmin]
+  - install ke                  0.6     [required by git]
+  - install logs                0.7.0   [required by irmin-git]
+  - install lwt                 5.7.0   [required by irmin-git]
+  - install macaddr             5.5.0   [required by ipaddr]
+  - install mimic               0.0.6   [required by git]
+  - install mirage-flow         3.0.0   [required by git]
+  - install ocaml-compiler-libs v0.12.4 [required by ppxlib]
+  - install ocaml-syntax-shims  1.0.0   [required by angstrom]
+  - install ocamlbuild          0.14.3  [required by astring, fpath]
+  - install ocamlfind           1.9.6   [required by astring, fpath]
+  - install ocamlgraph          2.1.0   [required by git, irmin]
+  - install ocplib-endian       1.2     [required by lwt]
+  - install optint              0.3.0   [required by git]
+  - install pecu                0.6     [required by emile]
+  - install ppx_derivers        1.2.1   [required by ppx_deriving]
+  - install ppx_deriving        5.2.1   [required by ppx_repr]
+  - install ppx_irmin           2.7.2   [required by irmin-git]
+  - install ppx_repr            0.4.0   [required by ppx_irmin]
+  - install ppxlib              0.32.0  [required by ppx_repr]
+  - install psq                 0.2.1   [required by git]
+  - install repr                0.4.0   [required by irmin]
+  - install result              1.5     [required by git]
+  - install rresult             0.7.0   [required by git]
+  - install seq                 base    [required by psq]
+  - install sexplib0            v0.16.0 [required by ppxlib]
+  - install stdlib-shims        0.3.0   [required by ocamlgraph]
+  - install stringext           1.6.0   [required by uri]
+  - install topkg               1.0.7   [required by astring, fpath]
+  - install uri                 4.4.0   [required by irmin-git]
+  - install uutf                1.0.3   [required by irmin]
+
+<><> Processing actions <><><><><><><><><><><><><><><><><><><><><><><><><><><><>
+-> retrieved angstrom.0.16.0  (cached)
+-> retrieved astring.0.8.5  (cached)
+-> retrieved base64.3.5.1  (cached)
+-> retrieved bheap.2.0.0  (cached)
+-> retrieved bigstringaf.0.9.1  (cached)
+-> retrieved bos.0.2.1  (cached)
+-> retrieved carton.0.7.0, carton-git.0.7.0, carton-lwt.0.7.0  (cached)
+-> retrieved checkseum.0.5.2  (cached)
+-> retrieved cmdliner.1.2.0  (cached)
+-> retrieved cppo.1.6.9  (cached)
+-> retrieved csexp.1.5.2  (cached)
+-> retrieved cstruct.6.2.0  (cached)
+-> retrieved decompress.1.5.3  (cached)
+-> retrieved digestif.1.1.4  (cached)
+-> retrieved domain-name.0.4.0  (cached)
+-> retrieved duff.0.5  (cached)
+-> retrieved dune.3.13.1, dune-configurator.3.13.1  (cached)
+-> retrieved either.1.0.0  (cached)
+-> retrieved emile.1.1  (cached)
+-> retrieved encore.0.8  (cached)
+-> retrieved eqaf.0.9  (cached)
+-> retrieved fmt.0.9.0  (cached)
+-> retrieved fpath.0.7.3  (cached)
+-> installed cmdliner.1.2.0
+-> retrieved git.3.14.0  (cached)
+-> retrieved hxd.0.3.2  (cached)
+-> retrieved ipaddr.5.5.0, macaddr.5.5.0  (cached)
+-> retrieved irmin.2.7.2, irmin-git.2.7.2, ppx_irmin.2.7.2  (cached)
+-> retrieved jsonm.1.0.2  (cached)
+-> retrieved ke.0.6  (cached)
+-> retrieved logs.0.7.0  (cached)
+-> retrieved lwt.5.7.0  (cached)
+-> retrieved mimic.0.0.6  (cached)
+-> retrieved mirage-flow.3.0.0  (cached)
+-> retrieved ocaml-compiler-libs.v0.12.4  (cached)
+-> retrieved ocaml-syntax-shims.1.0.0  (cached)
+-> retrieved ocamlbuild.0.14.3  (cached)
+-> retrieved ocamlfind.1.9.6  (cached)
+-> retrieved ocamlgraph.2.1.0  (cached)
+-> retrieved ocplib-endian.1.2  (cached)
+-> retrieved optint.0.3.0  (cached)
+-> retrieved pecu.0.6  (cached)
+-> retrieved ppx_derivers.1.2.1  (cached)
+-> retrieved ppx_deriving.5.2.1  (cached)
+-> retrieved ppx_repr.0.4.0, repr.0.4.0  (cached)
+-> retrieved ppxlib.0.32.0  (cached)
+-> retrieved psq.0.2.1  (cached)
+-> retrieved result.1.5  (cached)
+-> retrieved rresult.0.7.0  (cached)
+-> installed seq.base
+-> retrieved sexplib0.v0.16.0  (cached)
+-> retrieved stdlib-shims.0.3.0  (cached)
+-> retrieved stringext.1.6.0  (cached)
+-> retrieved topkg.1.0.7  (cached)
+-> retrieved uri.4.4.0  (cached)
+-> retrieved uutf.1.0.3  (cached)
+-> installed ocamlfind.1.9.6
+-> installed base-bytes.base
+-> installed ocamlbuild.0.14.3
+-> installed topkg.1.0.7
+-> installed rresult.0.7.0
+-> installed uutf.1.0.3
+-> installed fmt.0.9.0
+-> installed astring.0.8.5
+-> installed jsonm.1.0.2
+-> installed fpath.0.7.3
+-> installed dune.3.13.1
+-> installed bheap.2.0.0
+-> installed ppx_derivers.1.2.1
+-> installed csexp.1.5.2
+-> installed base64.3.5.1
+-> installed cstruct.6.2.0
+-> installed domain-name.0.4.0
+-> installed duff.0.5
+-> installed either.1.0.0
+-> installed cppo.1.6.9
+-> installed ke.0.6
+-> installed macaddr.5.5.0
+-> installed ocaml-compiler-libs.v0.12.4
+-> installed ocaml-syntax-shims.1.0.0
+-> installed optint.0.3.0
+-> installed pecu.0.6
+-> installed psq.0.2.1
+-> installed result.1.5
+-> installed sexplib0.v0.16.0
+-> installed stdlib-shims.0.3.0
+-> installed stringext.1.6.0
+-> installed ocplib-endian.1.2
+-> installed eqaf.0.9
+-> installed ipaddr.5.5.0
+-> installed repr.0.4.0
+-> installed digestif.1.1.4
+-> installed dune-configurator.3.13.1
+-> installed bigstringaf.0.9.1
+-> installed ocamlgraph.2.1.0
+-> installed checkseum.0.5.2
+-> installed angstrom.0.16.0
+-> installed encore.0.8
+-> installed emile.1.1
+-> installed decompress.1.5.3
+-> installed uri.4.4.0
+-> installed lwt.5.7.0
+-> installed mirage-flow.3.0.0
+-> installed hxd.0.3.2
+-> installed logs.0.7.0
+-> installed mimic.0.0.6
+-> installed bos.0.2.1
+-> installed carton.0.7.0
+-> installed carton-lwt.0.7.0
+-> installed carton-git.0.7.0
+-> installed git.3.14.0
+-> installed ppxlib.0.32.0
+-> installed ppx_deriving.5.2.1
+-> installed ppx_repr.0.4.0
+-> installed ppx_irmin.2.7.2
+-> installed irmin.2.7.2
+-> installed irmin-git.2.7.2
+Done.
+# Run eval $(opam env) to update the current shell environment
+[01;2m[01;35m2024-02-12 06:26.53 ---> saved as "f3512d64593ed4e9f6d5adc58e12890609a135eafa42b92ec4fab1ccdf645392"[0m
+
+[01;34m/home/opam: (env OPAMCRITERIA -removed,-count[avoid-version,changed],-count[version-lag,request],-count[version-lag,changed],-count[missing-depexts,changed],-changed)[0m
+
+[01;34m/home/opam: (env OPAMFIXUPCRITERIA -removed,-count[avoid-version,changed],-count[version-lag,request],-count[version-lag,changed],-count[missing-depexts,changed],-changed)[0m
+
+[01;34m/home/opam: (env OPAMUPGRADECRITERIA -removed,-count[avoid-version,changed],-count[version-lag,request],-count[version-lag,changed],-count[missing-depexts,changed],-changed)[0m
+
+[01;34m/home/opam: (run (network host)
+                 (shell "(opam reinstall --with-test irmin-git.2.7.2) || true"))[0m
+[ERROR] Sorry, resolution of the request timed out.
+        Try to specify a more precise request, use a different solver, or increase the allowed time by setting OPAMSOLVERTIMEOUT to a bigger value (currently, it is set to 500.0 seconds).
+[01;2m[01;35m2024-02-12 06:35.37 ---> saved as "661450f87518e738968a337fccee015cfaf1b16ab96074b5584421e31b909473"[0m
+
+[01;34m/home/opam: (run (shell  "opam reinstall --with-test --verbose irmin-git.2.7.2;\
+                        \n        res=$?;\
+                        \n        test \"$res\" != 31 && exit \"$res\";\
+                        \n        export OPAMCLI=2.0;\
+                        \n        build_dir=$(opam var prefix)/.opam-switch/build;\
+                        \n        failed=$(ls \"$build_dir\");\
+                        \n        partial_fails=\"\";\
+                        \n        for pkg in $failed; do\
+                        \n          if opam show -f x-ci-accept-failures: \"$pkg\" | grep -qF \"\\\"debian-12\\\"\"; then\
+                        \n            echo \"A package failed and has been disabled for CI using the 'x-ci-accept-failures' field.\";\
+                        \n          fi;\
+                        \n          test \"$pkg\" != 'irmin-git.2.7.2' && partial_fails=\"$partial_fails $pkg\";\
+                        \n        done;\
+                        \n        test \"${partial_fails}\" != \"\" && echo \"opam-repo-ci detected dependencies failing: ${partial_fails}\";\
+                        \n        exit 1"))[0m
+[ERROR] Sorry, resolution of the request timed out.
+        Try to specify a more precise request, use a different solver, or increase the allowed time by setting OPAMSOLVERTIMEOUT to a bigger value (currently, it is set to 500.0 seconds).
+'opam reinstall --with-test --verbose irmin-git.2.7.2' failed.
+"/usr/bin/env" "bash" "-c" "opam reinstall --with-test --verbose irmin-git.2.7.2;
+        res=$?;
+        test "$res" != 31 && exit "$res";
+        export OPAMCLI=2.0;
+        build_dir=$(opam var prefix)/.opam-switch/build;
+        failed=$(ls "$build_dir");
+        partial_fails="";
+        for pkg in $failed; do
+          if opam show -f x-ci-accept-failures: "$pkg" | grep -qF "\"debian-12\""; then
+            echo "A package failed and has been disabled for CI using the 'x-ci-accept-failures' field.";
+          fi;
+          test "$pkg" != 'irmin-git.2.7.2' && partial_fails="$partial_fails $pkg";
+        done;
+        test "${partial_fails}" != "" && echo "opam-repo-ci detected dependencies failing: ${partial_fails}";
+        exit 1" failed with exit status 60
+2024-02-12 06:44.53: Job failed: Failed: Build failed
+2024-02-12 06:44.53: Log analysis:
+2024-02-12 06:44.53: >>> 
+[ERROR] Sorry, resolution of the request timed out.
+ (score = 20)
+2024-02-12 06:44.53: >>> 
+[ERROR] Sorry, resolution of the request timed out.
+ (score = 20)
+2024-02-12 06:44.53: Sorry, resolution of the request timed out.

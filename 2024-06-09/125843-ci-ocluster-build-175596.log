@@ -1,0 +1,742 @@
+2024-06-09 12:58.43: New job: build dns-client.6.1.4, using opam 2.0
+                              from https://github.com/ocaml/opam-repository.git#refs/pull/26045/head (d062d369c7ba4b522a99aefe63cc969dfa6c3798)
+                              on debian-12-ocaml-4.14/amd64
+
+To reproduce locally:
+
+cd $(mktemp -d)
+git clone --recursive "https://github.com/ocaml/opam-repository.git" && cd "opam-repository" && git fetch origin "refs/pull/26045/head" && git reset --hard d062d369
+git fetch origin master
+git merge --no-edit 25082ca0186918fbe727df99f2e51ca8b60896c1
+cat > ../Dockerfile <<'END-OF-DOCKERFILE'
+[34mFROM ocaml/opam:debian-12-ocaml-4.14@sha256:68ecefb12259af7ac8f85f40002bb77c47ee641474979fd6a320ed7bf1222c7c
+USER 1000:1000
+WORKDIR /home/opam
+RUN sudo ln -f /usr/bin/opam-2.0 /usr/bin/opam
+RUN opam init --reinit -ni
+RUN uname -rs && opam exec -- ocaml -version && opam --version
+ENV OPAMDOWNLOADJOBS="1"
+ENV OPAMERRLOGLEN="0"
+ENV OPAMSOLVERTIMEOUT="500"
+ENV OPAMPRECISETRACKING="1"
+ENV CI="true"
+ENV OPAM_REPO_CI="true"
+RUN rm -rf opam-repository/
+COPY --chown=1000:1000 . opam-repository/
+RUN opam repository set-url --strict default opam-repository/
+RUN opam depext -u || true
+RUN opam pin add -k version -yn dns-client.6.1.4 6.1.4
+RUN opam depext dns-client.6.1.4 && opam reinstall dns-client.6.1.4; \
+    res=$?; \
+    test "$res" != 31 && exit "$res"; \
+    export OPAMCLI=2.0; \
+    build_dir=$(opam var prefix)/.opam-switch/build; \
+    failed=$(ls "$build_dir"); \
+    partial_fails=""; \
+    for pkg in $failed; do \
+    if opam show -f x-ci-accept-failures: "$pkg" | grep -qF "\"debian-12\""; then \
+    echo "A package failed and has been disabled for CI using the 'x-ci-accept-failures' field."; \
+    fi; \
+    test "$pkg" != 'dns-client.6.1.4' && partial_fails="$partial_fails $pkg"; \
+    done; \
+    test "${partial_fails}" != "" && echo "opam-repo-ci detected dependencies failing: ${partial_fails}"; \
+    exit 1
+[0m
+END-OF-DOCKERFILE
+docker build -f ../Dockerfile .
+
+2024-06-09 12:58.43: Using cache hint "ocaml/opam:debian-12-ocaml-4.14@sha256:68ecefb12259af7ac8f85f40002bb77c47ee641474979fd6a320ed7bf1222c7c-dns-client.6.1.4-d062d369c7ba4b522a99aefe63cc969dfa6c3798"
+2024-06-09 12:58.43: Using OBuilder spec:
+((from ocaml/opam:debian-12-ocaml-4.14@sha256:68ecefb12259af7ac8f85f40002bb77c47ee641474979fd6a320ed7bf1222c7c)
+ (user (uid 1000) (gid 1000))
+ (workdir /home/opam)
+ (run (shell "sudo ln -f /usr/bin/opam-2.0 /usr/bin/opam"))
+ (run (network host)
+      (shell "opam init --reinit --config .opamrc-sandbox -ni"))
+ (run (shell "uname -rs && opam exec -- ocaml -version && opam --version"))
+ (env OPAMDOWNLOADJOBS 1)
+ (env OPAMERRLOGLEN 0)
+ (env OPAMSOLVERTIMEOUT 500)
+ (env OPAMPRECISETRACKING 1)
+ (env CI true)
+ (env OPAM_REPO_CI true)
+ (run (shell "rm -rf opam-repository/"))
+ (copy (src .) (dst opam-repository/))
+ (run (shell "opam repository set-url --strict default opam-repository/"))
+ (run (network host)
+      (shell "opam depext -u || true"))
+ (run (shell "opam pin add -k version -yn dns-client.6.1.4 6.1.4"))
+ (run (cache (opam-archives (target /home/opam/.opam/download-cache)))
+      (network host)
+      (shell  "opam depext dns-client.6.1.4 && opam reinstall dns-client.6.1.4;\
+             \n        res=$?;\
+             \n        test \"$res\" != 31 && exit \"$res\";\
+             \n        export OPAMCLI=2.0;\
+             \n        build_dir=$(opam var prefix)/.opam-switch/build;\
+             \n        failed=$(ls \"$build_dir\");\
+             \n        partial_fails=\"\";\
+             \n        for pkg in $failed; do\
+             \n          if opam show -f x-ci-accept-failures: \"$pkg\" | grep -qF \"\\\"debian-12\\\"\"; then\
+             \n            echo \"A package failed and has been disabled for CI using the 'x-ci-accept-failures' field.\";\
+             \n          fi;\
+             \n          test \"$pkg\" != 'dns-client.6.1.4' && partial_fails=\"$partial_fails $pkg\";\
+             \n        done;\
+             \n        test \"${partial_fails}\" != \"\" && echo \"opam-repo-ci detected dependencies failing: ${partial_fails}\";\
+             \n        exit 1"))
+)
+
+2024-06-09 12:58.43: Waiting for resource in pool OCluster
+2024-06-10 05:04.36: Waiting for worker…
+2024-06-10 05:10.07: Got resource from pool OCluster
+Building on doris.caelum.ci.dev
+All commits already cached
+Updating files:  98% (30876/31477)Updating files:  99% (31163/31477)Updating files: 100% (31477/31477)Updating files: 100% (31477/31477), done.
+HEAD is now at 25082ca018 Merge pull request #26040 from anmonteiro/patch-6
+Updating 25082ca018..d062d369c7
+Fast-forward
+ packages/albatross/albatross.1.0.1/opam                        |  4 ++--
+ packages/albatross/albatross.1.1.0/opam                        |  6 +++---
+ packages/albatross/albatross.1.1.1/opam                        |  6 +++---
+ packages/albatross/albatross.1.2.0/opam                        |  6 +++---
+ packages/albatross/albatross.1.3.0/opam                        |  4 ++--
+ packages/albatross/albatross.1.3.1/opam                        |  4 ++--
+ packages/albatross/albatross.1.4.0/opam                        |  4 ++--
+ packages/albatross/albatross.1.4.1/opam                        |  4 ++--
+ packages/albatross/albatross.1.4.2/opam                        |  4 ++--
+ packages/albatross/albatross.1.4.3/opam                        |  4 ++--
+ packages/albatross/albatross.1.5.0/opam                        |  4 ++--
+ packages/albatross/albatross.1.5.1/opam                        |  4 ++--
+ packages/albatross/albatross.1.5.2/opam                        |  4 ++--
+ packages/albatross/albatross.1.5.3/opam                        |  4 ++--
+ packages/albatross/albatross.1.5.4/opam                        |  4 ++--
+ packages/albatross/albatross.1.5.5/opam                        |  4 ++--
+ packages/albatross/albatross.1.5.6/opam                        |  4 ++--
+ packages/albatross/albatross.2.0.0/opam                        |  4 ++--
+ packages/awa-lwt/awa-lwt.0.0.1/opam                            |  2 +-
+ packages/awa-lwt/awa-lwt.0.0.2/opam                            |  2 +-
+ packages/awa-lwt/awa-lwt.0.0.3/opam                            |  2 +-
+ packages/awa-lwt/awa-lwt.0.0.4/opam                            |  2 +-
+ packages/awa-lwt/awa-lwt.0.0.5/opam                            |  2 +-
+ packages/awa-lwt/awa-lwt.0.1.0/opam                            |  2 +-
+ packages/awa-lwt/awa-lwt.0.1.1/opam                            |  2 +-
+ packages/awa-lwt/awa-lwt.0.1.2/opam                            |  2 +-
+ packages/awa-lwt/awa-lwt.0.2.0/opam                            |  2 +-
+ packages/awa/awa.0.0.1/opam                                    |  4 ++--
+ packages/awa/awa.0.0.2/opam                                    |  4 ++--
+ packages/awa/awa.0.0.3/opam                                    |  6 +++---
+ packages/awa/awa.0.0.4/opam                                    |  6 +++---
+ packages/awa/awa.0.0.5/opam                                    |  6 +++---
+ packages/awa/awa.0.1.0/opam                                    |  6 +++---
+ packages/awa/awa.0.1.1/opam                                    |  6 +++---
+ packages/awa/awa.0.1.2/opam                                    |  8 ++++----
+ packages/awa/awa.0.2.0/opam                                    |  8 ++++----
+ packages/awa/awa.0.3.0/opam                                    |  8 ++++----
+ packages/awa/awa.0.3.1/opam                                    |  8 ++++----
+ packages/builder-web/builder-web.0.1.0/opam                    |  4 ++--
+ packages/ca-certs-nss/ca-certs-nss.3.57/opam                   |  2 +-
+ packages/ca-certs-nss/ca-certs-nss.3.59/opam                   |  2 +-
+ packages/ca-certs-nss/ca-certs-nss.3.60/opam                   |  2 +-
+ packages/ca-certs-nss/ca-certs-nss.3.63.1/opam                 |  2 +-
+ packages/ca-certs-nss/ca-certs-nss.3.63/opam                   |  2 +-
+ packages/ca-certs-nss/ca-certs-nss.3.64.0.1/opam               |  2 +-
+ packages/ca-certs-nss/ca-certs-nss.3.64/opam                   |  2 +-
+ packages/ca-certs-nss/ca-certs-nss.3.66/opam                   |  2 +-
+ packages/ca-certs-nss/ca-certs-nss.3.71.0.1/opam               |  2 +-
+ packages/ca-certs-nss/ca-certs-nss.3.71/opam                   |  2 +-
+ packages/ca-certs-nss/ca-certs-nss.3.74/opam                   |  2 +-
+ packages/ca-certs-nss/ca-certs-nss.3.77/opam                   |  2 +-
+ packages/ca-certs-nss/ca-certs-nss.3.80/opam                   |  2 +-
+ packages/ca-certs-nss/ca-certs-nss.3.83/opam                   |  2 +-
+ packages/ca-certs-nss/ca-certs-nss.3.86/opam                   |  2 +-
+ packages/ca-certs-nss/ca-certs-nss.3.89.1/opam                 |  2 +-
+ packages/ca-certs-nss/ca-certs-nss.3.92/opam                   |  2 +-
+ packages/ca-certs-nss/ca-certs-nss.3.95/opam                   |  2 +-
+ packages/ca-certs-nss/ca-certs-nss.3.98/opam                   |  2 +-
+ packages/ca-certs/ca-certs.0.1.2/opam                          |  2 +-
+ packages/ca-certs/ca-certs.0.1.3/opam                          |  2 +-
+ packages/ca-certs/ca-certs.0.2.0/opam                          |  2 +-
+ packages/ca-certs/ca-certs.0.2.1/opam                          |  2 +-
+ packages/ca-certs/ca-certs.0.2.2/opam                          |  2 +-
+ packages/ca-certs/ca-certs.0.2.3/opam                          |  2 +-
+ packages/caldav/caldav.0.1.0/opam                              |  4 ++--
+ packages/caldav/caldav.0.1.1/opam                              |  4 ++--
+ packages/caldav/caldav.0.2.0/opam                              |  4 ++--
+ packages/caldav/caldav.0.2.1/opam                              |  4 ++--
+ packages/caldav/caldav.0.2.2/opam                              |  6 +++---
+ packages/capnp-rpc-mirage/capnp-rpc-mirage.0.9.0/opam          |  2 +-
+ packages/capnp-rpc-mirage/capnp-rpc-mirage.1.0/opam            |  2 +-
+ packages/capnp-rpc-mirage/capnp-rpc-mirage.1.1/opam            |  2 +-
+ packages/capnp-rpc-mirage/capnp-rpc-mirage.1.2.1/opam          |  2 +-
+ packages/capnp-rpc-mirage/capnp-rpc-mirage.1.2.2/opam          |  2 +-
+ packages/capnp-rpc-mirage/capnp-rpc-mirage.1.2.3/opam          |  2 +-
+ packages/capnp-rpc-mirage/capnp-rpc-mirage.1.2/opam            |  2 +-
+ packages/capnp-rpc-net/capnp-rpc-net.0.9.0/opam                |  4 ++--
+ packages/capnp-rpc-net/capnp-rpc-net.1.0/opam                  |  4 ++--
+ packages/capnp-rpc-net/capnp-rpc-net.1.1/opam                  |  4 ++--
+ packages/capnp-rpc-net/capnp-rpc-net.1.2.1/opam                |  4 ++--
+ packages/capnp-rpc-net/capnp-rpc-net.1.2.2/opam                |  4 ++--
+ packages/capnp-rpc-net/capnp-rpc-net.1.2.3/opam                |  4 ++--
+ packages/capnp-rpc-net/capnp-rpc-net.1.2/opam                  |  4 ++--
+ packages/capnp-rpc-unix/capnp-rpc-unix.1.2.3/opam              |  2 +-
+ packages/caqti-eio/caqti-eio.2.1.1/opam                        |  4 ++--
+ packages/carbon/carbon.0.1.0/opam                              |  2 +-
+ packages/certify/certify.0.3.3/opam                            |  2 +-
+ packages/chacha/chacha.1.0.0/opam                              |  2 +-
+ packages/chacha/chacha.1.1.0/opam                              |  2 +-
+ packages/chamelon-unix/chamelon-unix.0.0.10/opam               |  2 +-
+ packages/chamelon-unix/chamelon-unix.0.0.9.1/opam              |  2 +-
+ packages/chamelon-unix/chamelon-unix.0.1.1/opam                |  2 +-
+ packages/chamelon-unix/chamelon-unix.0.1.2/opam                |  2 +-
+ packages/chamelon/chamelon.0.0.10/opam                         |  2 +-
+ packages/chamelon/chamelon.0.0.9.1/opam                        |  2 +-
+ packages/chamelon/chamelon.0.1.1/opam                          |  2 +-
+ packages/chamelon/chamelon.0.1.2/opam                          |  2 +-
+ packages/cohttp-async/cohttp-async.3.0.0/opam                  |  2 +-
+ packages/cohttp-async/cohttp-async.4.0.0/opam                  |  2 +-
+ packages/cohttp-async/cohttp-async.4.1.1/opam                  |  2 +-
+ packages/cohttp-async/cohttp-async.4.1.2/opam                  |  2 +-
+ packages/cohttp-async/cohttp-async.5.0.0/opam                  |  2 +-
+ packages/cohttp-async/cohttp-async.5.1.0/opam                  |  2 +-
+ packages/cohttp-async/cohttp-async.5.2.0/opam                  |  2 +-
+ packages/cohttp-async/cohttp-async.5.3.0/opam                  |  2 +-
+ packages/cohttp-async/cohttp-async.6.0.0~alpha0/opam           |  2 +-
+ packages/cohttp-async/cohttp-async.6.0.0~alpha1/opam           |  2 +-
+ packages/cohttp-async/cohttp-async.6.0.0~alpha2/opam           |  2 +-
+ packages/cohttp-async/cohttp-async.6.0.0~beta2/opam            |  2 +-
+ packages/cohttp-eio/cohttp-eio.6.0.0~beta2/opam                |  2 +-
+ packages/conduit-async-tls/conduit-async-tls.3.0.0/opam        |  2 +-
+ packages/conduit-lwt-tls/conduit-lwt-tls.3.0.0/opam            |  4 ++--
+ packages/conex-mirage-crypto/conex-mirage-crypto.0.11.1/opam   |  4 ++--
+ packages/current_git/current_git.0.5/opam                      |  2 +-
+ packages/current_git/current_git.0.6.1/opam                    |  2 +-
+ packages/current_git/current_git.0.6.2/opam                    |  2 +-
+ packages/current_git/current_git.0.6.4/opam                    |  2 +-
+ packages/current_git/current_git.0.6.6/opam                    |  2 +-
+ packages/current_git/current_git.0.6/opam                      |  2 +-
+ packages/current_github/current_github.0.2/opam                |  4 ++--
+ packages/current_github/current_github.0.3/opam                |  4 ++--
+ packages/current_github/current_github.0.4/opam                |  4 ++--
+ packages/current_github/current_github.0.5/opam                |  4 ++--
+ packages/current_github/current_github.0.6.1/opam              |  4 ++--
+ packages/current_github/current_github.0.6.2/opam              |  4 ++--
+ packages/current_github/current_github.0.6.4/opam              |  4 ++--
+ packages/current_github/current_github.0.6.6/opam              |  4 ++--
+ packages/current_github/current_github.0.6/opam                |  4 ++--
+ packages/current_web/current_web.0.4/opam                      |  2 +-
+ packages/current_web/current_web.0.5/opam                      |  2 +-
+ packages/current_web/current_web.0.6.1/opam                    |  2 +-
+ packages/current_web/current_web.0.6.2/opam                    |  2 +-
+ packages/current_web/current_web.0.6.4/opam                    |  6 +++---
+ packages/current_web/current_web.0.6.6/opam                    |  6 +++---
+ packages/current_web/current_web.0.6/opam                      |  2 +-
+ .../dirsp-proscript-mirage/dirsp-proscript-mirage.0.1.0/opam   |  2 +-
+ packages/dkim-mirage/dkim-mirage.0.2.0/opam                    |  2 +-
+ packages/dkim-mirage/dkim-mirage.0.3.0/opam                    |  2 +-
+ packages/dkim-mirage/dkim-mirage.0.3.1/opam                    |  2 +-
+ packages/dkim-mirage/dkim-mirage.0.4.0/opam                    |  2 +-
+ packages/dkim-mirage/dkim-mirage.0.5.0/opam                    |  2 +-
+ packages/dkim-mirage/dkim-mirage.0.6.0/opam                    |  2 +-
+ packages/dkim/dkim.0.1.0/opam                                  |  4 ++--
+ packages/dkim/dkim.0.2.0/opam                                  |  4 ++--
+ packages/dkim/dkim.0.3.0/opam                                  |  4 ++--
+ packages/dkim/dkim.0.3.1/opam                                  |  4 ++--
+ packages/dkim/dkim.0.4.0/opam                                  |  4 ++--
+ packages/dkim/dkim.0.5.0/opam                                  |  6 +++---
+ packages/dkim/dkim.0.6.0/opam                                  |  6 +++---
+ packages/dns-certify/dns-certify.4.6.3/opam                    |  4 ++--
+ packages/dns-certify/dns-certify.5.0.0/opam                    |  4 ++--
+ packages/dns-certify/dns-certify.5.0.1/opam                    |  6 +++---
+ packages/dns-certify/dns-certify.6.0.0/opam                    |  6 +++---
+ packages/dns-certify/dns-certify.6.0.1/opam                    |  6 +++---
+ packages/dns-certify/dns-certify.6.0.2/opam                    |  6 +++---
+ packages/dns-certify/dns-certify.6.1.0/opam                    |  6 +++---
+ packages/dns-certify/dns-certify.6.1.1/opam                    |  6 +++---
+ packages/dns-certify/dns-certify.6.1.2/opam                    |  6 +++---
+ packages/dns-certify/dns-certify.6.1.3/opam                    |  6 +++---
+ packages/dns-certify/dns-certify.6.1.4/opam                    |  6 +++---
+ packages/dns-certify/dns-certify.6.2.0/opam                    |  6 +++---
+ packages/dns-certify/dns-certify.6.2.1/opam                    |  6 +++---
+ packages/dns-certify/dns-certify.6.2.2/opam                    |  6 +++---
+ packages/dns-certify/dns-certify.6.3.0/opam                    |  6 +++---
+ packages/dns-certify/dns-certify.6.4.0/opam                    |  6 +++---
+ packages/dns-certify/dns-certify.6.4.1/opam                    |  6 +++---
+ packages/dns-certify/dns-certify.7.0.0/opam                    |  6 +++---
+ packages/dns-certify/dns-certify.7.0.1/opam                    |  6 +++---
+ packages/dns-certify/dns-certify.7.0.2/opam                    |  6 +++---
+ packages/dns-certify/dns-certify.7.0.3/opam                    |  6 +++---
+ packages/dns-certify/dns-certify.8.0.0/opam                    |  6 +++---
+ packages/dns-cli/dns-cli.4.4.0/opam                            |  4 ++--
+ packages/dns-cli/dns-cli.4.4.1/opam                            |  4 ++--
+ packages/dns-cli/dns-cli.4.5.0/opam                            |  4 ++--
+ packages/dns-cli/dns-cli.4.6.0/opam                            |  2 +-
+ packages/dns-cli/dns-cli.4.6.1/opam                            |  4 ++--
+ packages/dns-cli/dns-cli.4.6.2/opam                            |  4 ++--
+ packages/dns-cli/dns-cli.4.6.3/opam                            |  6 +++---
+ packages/dns-cli/dns-cli.5.0.0/opam                            |  6 +++---
+ packages/dns-cli/dns-cli.5.0.1/opam                            |  6 +++---
+ packages/dns-cli/dns-cli.6.0.0/opam                            |  6 +++---
+ packages/dns-cli/dns-cli.6.0.1/opam                            |  6 +++---
+ packages/dns-cli/dns-cli.6.0.2/opam                            |  6 +++---
+ packages/dns-cli/dns-cli.6.1.0/opam                            |  6 +++---
+ packages/dns-cli/dns-cli.6.1.1/opam                            |  6 +++---
+ packages/dns-cli/dns-cli.6.1.2/opam                            |  6 +++---
+ packages/dns-cli/dns-cli.6.1.3/opam                            |  6 +++---
+ packages/dns-cli/dns-cli.6.1.4/opam                            |  6 +++---
+ packages/dns-cli/dns-cli.6.2.0/opam                            |  6 +++---
+ packages/dns-cli/dns-cli.6.2.1/opam                            |  6 +++---
+ packages/dns-cli/dns-cli.6.2.2/opam                            |  6 +++---
+ packages/dns-cli/dns-cli.6.3.0/opam                            |  6 +++---
+ packages/dns-cli/dns-cli.6.4.0/opam                            |  6 +++---
+ packages/dns-cli/dns-cli.6.4.1/opam                            |  6 +++---
+ packages/dns-cli/dns-cli.7.0.0/opam                            |  6 +++---
+ packages/dns-cli/dns-cli.7.0.1/opam                            |  6 +++---
+ packages/dns-cli/dns-cli.7.0.2/opam                            |  6 +++---
+ packages/dns-cli/dns-cli.7.0.3/opam                            |  6 +++---
+ packages/dns-cli/dns-cli.8.0.0/opam                            |  6 +++---
+ packages/dns-client-lwt/dns-client-lwt.7.0.0/opam              |  2 +-
+ packages/dns-client-lwt/dns-client-lwt.7.0.1/opam              |  2 +-
+ packages/dns-client-lwt/dns-client-lwt.7.0.2/opam              |  2 +-
+ packages/dns-client-lwt/dns-client-lwt.7.0.3/opam              |  2 +-
+ packages/dns-client-lwt/dns-client-lwt.8.0.0/opam              |  2 +-
+ packages/dns-client/dns-client.6.0.0/opam                      |  2 +-
+ packages/dns-client/dns-client.6.0.1/opam                      |  2 +-
+ packages/dns-client/dns-client.6.0.2/opam                      |  2 +-
+ packages/dns-client/dns-client.6.1.0/opam                      |  2 +-
+ packages/dns-client/dns-client.6.1.1/opam                      |  2 +-
+ packages/dns-client/dns-client.6.1.2/opam                      |  2 +-
+ packages/dns-client/dns-client.6.1.3/opam                      |  2 +-
+ packages/dns-client/dns-client.6.1.4/opam                      |  2 +-
+ packages/dns-client/dns-client.6.2.0/opam                      |  2 +-
+ packages/dns-client/dns-client.6.2.1/opam                      |  2 +-
+ packages/dns-client/dns-client.6.2.2/opam                      |  2 +-
+ packages/dns-client/dns-client.6.3.0/opam                      |  2 +-
+ packages/dns-client/dns-client.6.4.0/opam                      |  2 +-
+ packages/dns-client/dns-client.6.4.1/opam                      |  2 +-
+ packages/dns-client/dns-client.7.0.0/opam                      |  2 +-
+ packages/dns-client/dns-client.7.0.1/opam                      |  2 +-
+ packages/dns-client/dns-client.7.0.2/opam                      |  2 +-
+ packages/dns-client/dns-client.7.0.3/opam                      |  2 +-
+ packages/dns-client/dns-client.8.0.0/opam                      |  2 +-
+ packages/dns-server/dns-server.7.0.0/opam                      |  2 +-
+ packages/dns-server/dns-server.7.0.1/opam                      |  2 +-
+ packages/dns-server/dns-server.7.0.2/opam                      |  2 +-
+ packages/dns-server/dns-server.7.0.3/opam                      |  2 +-
+ packages/dns-server/dns-server.8.0.0/opam                      |  2 +-
+ packages/dns-tsig/dns-tsig.4.4.0/opam                          |  2 +-
+ packages/dns-tsig/dns-tsig.4.4.1/opam                          |  2 +-
+ packages/dns-tsig/dns-tsig.4.5.0/opam                          |  2 +-
+ packages/dns-tsig/dns-tsig.4.6.0/opam                          |  2 +-
+ packages/dns-tsig/dns-tsig.4.6.1/opam                          |  2 +-
+ packages/dns-tsig/dns-tsig.4.6.2/opam                          |  2 +-
+ packages/dns-tsig/dns-tsig.4.6.3/opam                          |  2 +-
+ packages/dns-tsig/dns-tsig.5.0.0/opam                          |  2 +-
+ packages/dns-tsig/dns-tsig.5.0.1/opam                          |  2 +-
+ packages/dns-tsig/dns-tsig.6.0.0/opam                          |  2 +-
+ packages/dns-tsig/dns-tsig.6.0.1/opam                          |  2 +-
+ packages/dns-tsig/dns-tsig.6.0.2/opam                          |  2 +-
+ packages/dns-tsig/dns-tsig.6.1.0/opam                          |  2 +-
+ packages/dns-tsig/dns-tsig.6.1.1/opam                          |  2 +-
+ packages/dns-tsig/dns-tsig.6.1.2/opam                          |  2 +-
+ packages/dns-tsig/dns-tsig.6.1.3/opam                          |  2 +-
+ packages/dns-tsig/dns-tsig.6.1.4/opam                          |  2 +-
+ packages/dns-tsig/dns-tsig.6.2.0/opam                          |  2 +-
+ packages/dns-tsig/dns-tsig.6.2.1/opam                          |  2 +-
+ packages/dns-tsig/dns-tsig.6.2.2/opam                          |  2 +-
+ packages/dns-tsig/dns-tsig.6.3.0/opam                          |  2 +-
+ packages/dns-tsig/dns-tsig.6.4.0/opam                          |  2 +-
+ packages/dns-tsig/dns-tsig.6.4.1/opam                          |  2 +-
+ packages/dns-tsig/dns-tsig.7.0.0/opam                          |  2 +-
+ packages/dns-tsig/dns-tsig.7.0.1/opam                          |  2 +-
+ packages/dns-tsig/dns-tsig.7.0.2/opam                          |  2 +-
+ packages/dns-tsig/dns-tsig.7.0.3/opam                          |  2 +-
+ packages/dns-tsig/dns-tsig.8.0.0/opam                          |  2 +-
+ packages/dnssec/dnssec.6.2.0/opam                              |  6 +++---
+ packages/dnssec/dnssec.6.2.1/opam                              |  6 +++---
+ packages/dnssec/dnssec.6.2.2/opam                              |  6 +++---
+ packages/dnssec/dnssec.6.3.0/opam                              |  6 +++---
+ packages/dnssec/dnssec.6.4.0/opam                              |  6 +++---
+ packages/dnssec/dnssec.6.4.1/opam                              |  6 +++---
+ packages/dnssec/dnssec.7.0.0/opam                              |  6 +++---
+ packages/dnssec/dnssec.7.0.1/opam                              |  6 +++---
+ packages/dnssec/dnssec.7.0.2/opam                              |  6 +++---
+ packages/dnssec/dnssec.7.0.3/opam                              |  6 +++---
+ packages/dnssec/dnssec.8.0.0/opam                              |  6 +++---
+ packages/dream/dream.1.0.0~alpha1/opam                         |  2 +-
+ packages/dream/dream.1.0.0~alpha2/opam                         |  2 +-
+ packages/dream/dream.1.0.0~alpha3/opam                         |  2 +-
+ packages/dream/dream.1.0.0~alpha4/opam                         |  2 +-
+ packages/dream/dream.1.0.0~alpha5/opam                         |  6 +++---
+ packages/dream/dream.1.0.0~alpha6/opam                         |  9 ++++-----
+ packages/git-mirage/git-mirage.2.1.3/opam                      |  2 +-
+ packages/git-mirage/git-mirage.3.10.0/opam                     |  2 +-
+ packages/git-mirage/git-mirage.3.10.1/opam                     |  2 +-
+ packages/git-mirage/git-mirage.3.11.0/opam                     |  2 +-
+ packages/git-mirage/git-mirage.3.12.0/opam                     |  2 +-
+ packages/git-mirage/git-mirage.3.13.0/opam                     |  2 +-
+ packages/git-mirage/git-mirage.3.14.0/opam                     |  2 +-
+ packages/git-mirage/git-mirage.3.15.0/opam                     |  2 +-
+ packages/git-mirage/git-mirage.3.16.0/opam                     |  2 +-
+ packages/git-mirage/git-mirage.3.7.0/opam                      |  2 +-
+ packages/git-mirage/git-mirage.3.7.1/opam                      |  2 +-
+ packages/git-mirage/git-mirage.3.8.0/opam                      |  2 +-
+ packages/git-mirage/git-mirage.3.8.1/opam                      |  2 +-
+ packages/git-mirage/git-mirage.3.9.0/opam                      |  2 +-
+ packages/git-mirage/git-mirage.3.9.1/opam                      |  2 +-
+ packages/git-unix/git-unix.3.0.0/opam                          |  2 +-
+ packages/git-unix/git-unix.3.1.0/opam                          |  2 +-
+ packages/git-unix/git-unix.3.1.1/opam                          |  2 +-
+ packages/git-unix/git-unix.3.10.0/opam                         |  2 +-
+ packages/git-unix/git-unix.3.10.1/opam                         |  2 +-
+ packages/git-unix/git-unix.3.11.0/opam                         |  2 +-
+ packages/git-unix/git-unix.3.12.0/opam                         |  2 +-
+ packages/git-unix/git-unix.3.13.0/opam                         |  2 +-
+ packages/git-unix/git-unix.3.14.0/opam                         |  2 +-
+ packages/git-unix/git-unix.3.15.0/opam                         |  2 +-
+ packages/git-unix/git-unix.3.16.0/opam                         |  2 +-
+ packages/git-unix/git-unix.3.2.0/opam                          |  2 +-
+ packages/git-unix/git-unix.3.3.0/opam                          |  2 +-
+ packages/git-unix/git-unix.3.3.1/opam                          |  2 +-
+ packages/git-unix/git-unix.3.3.2/opam                          |  2 +-
+ packages/git-unix/git-unix.3.3.3/opam                          |  2 +-
+ packages/git-unix/git-unix.3.4.0/opam                          |  2 +-
+ packages/git-unix/git-unix.3.5.0/opam                          |  2 +-
+ packages/git-unix/git-unix.3.6.0/opam                          |  2 +-
+ packages/git-unix/git-unix.3.7.0/opam                          |  2 +-
+ packages/git-unix/git-unix.3.7.1/opam                          |  2 +-
+ packages/git-unix/git-unix.3.8.0/opam                          |  2 +-
+ packages/git-unix/git-unix.3.8.1/opam                          |  2 +-
+ packages/git-unix/git-unix.3.9.0/opam                          |  2 +-
+ packages/git-unix/git-unix.3.9.1/opam                          |  2 +-
+ packages/git/git.3.0.0/opam                                    |  2 +-
+ packages/git/git.3.1.0/opam                                    |  2 +-
+ packages/git/git.3.1.1/opam                                    |  2 +-
+ packages/git/git.3.10.0/opam                                   |  2 +-
+ packages/git/git.3.10.1/opam                                   |  2 +-
+ packages/git/git.3.11.0/opam                                   |  2 +-
+ packages/git/git.3.12.0/opam                                   |  2 +-
+ packages/git/git.3.13.0/opam                                   |  2 +-
+ packages/git/git.3.14.0/opam                                   |  2 +-
+ packages/git/git.3.15.0/opam                                   |  2 +-
+ packages/git/git.3.16.0/opam                                   |  2 +-
+ packages/git/git.3.2.0/opam                                    |  2 +-
+ packages/git/git.3.3.0/opam                                    |  6 +++---
+ packages/git/git.3.3.1/opam                                    |  2 +-
+ packages/git/git.3.3.2/opam                                    |  2 +-
+ packages/git/git.3.3.3/opam                                    |  2 +-
+ packages/git/git.3.4.0/opam                                    |  2 +-
+ packages/git/git.3.5.0/opam                                    |  2 +-
+ packages/git/git.3.6.0/opam                                    |  2 +-
+ packages/git/git.3.7.0/opam                                    |  2 +-
+ packages/git/git.3.7.1/opam                                    |  2 +-
+ packages/git/git.3.8.0/opam                                    |  2 +-
+ packages/git/git.3.8.1/opam                                    |  2 +-
+ packages/git/git.3.9.0/opam                                    |  2 +-
+ packages/git/git.3.9.1/opam                                    |  2 +-
+ packages/hkdf/hkdf.1.0.4/opam                                  |  2 +-
+ packages/http-mirage-client/http-mirage-client.0.0.3/opam      |  2 +-
+ packages/http-mirage-client/http-mirage-client.0.0.4/opam      |  2 +-
+ packages/http-mirage-client/http-mirage-client.0.0.5/opam      |  2 +-
+ packages/hyper/hyper.1.0.0~alpha2/opam                         |  4 ++--
+ packages/jose/jose.0.5.0/opam                                  |  2 +-
+ packages/jose/jose.0.5.1/opam                                  |  2 +-
+ packages/jose/jose.0.6.0/opam                                  |  2 +-
+ packages/jose/jose.0.7.0/opam                                  |  2 +-
+ packages/jose/jose.0.8.1/opam                                  |  2 +-
+ packages/jose/jose.0.8.2/opam                                  |  2 +-
+ packages/jose/jose.0.9.0/opam                                  |  2 +-
+ packages/letsencrypt-app/letsencrypt-app.0.5.0/opam            |  2 +-
+ packages/letsencrypt-app/letsencrypt-app.0.5.1/opam            |  2 +-
+ packages/letsencrypt/letsencrypt.0.2.1/opam                    |  6 +++---
+ packages/letsencrypt/letsencrypt.0.2.2/opam                    |  6 +++---
+ packages/letsencrypt/letsencrypt.0.2.3/opam                    |  6 +++---
+ packages/letsencrypt/letsencrypt.0.2.4/opam                    |  6 +++---
+ packages/letsencrypt/letsencrypt.0.2.5/opam                    |  6 +++---
+ packages/letsencrypt/letsencrypt.0.3.0/opam                    |  6 +++---
+ packages/letsencrypt/letsencrypt.0.4.0/opam                    |  8 ++++----
+ packages/letsencrypt/letsencrypt.0.4.1/opam                    |  8 ++++----
+ packages/letsencrypt/letsencrypt.0.5.0/opam                    | 10 +++++-----
+ packages/letsencrypt/letsencrypt.0.5.1/opam                    | 10 +++++-----
+ packages/miou/miou.0.0.1~beta1/opam                            |  2 +-
+ packages/miou/miou.0.0.1~beta2/opam                            |  2 +-
+ packages/miou/miou.0.1.0/opam                                  |  2 +-
+ packages/miou/miou.0.2.0/opam                                  |  2 +-
+ packages/mirage-block-ccm/mirage-block-ccm.2.0.0/opam          |  4 ++--
+ packages/mirage-vnetif-stack/mirage-vnetif-stack.0.6.1/opam    |  2 +-
+ packages/mirage-vnetif-stack/mirage-vnetif-stack.0.6.2/opam    |  2 +-
+ packages/mrmime/mrmime.0.5.0/opam                              |  2 +-
+ packages/mrmime/mrmime.0.6.0/opam                              |  2 +-
+ packages/mrmime/mrmime.0.6.1/opam                              |  2 +-
+ packages/ocluster/ocluster.0.1/opam                            |  2 +-
+ packages/ocluster/ocluster.0.2.1/opam                          |  6 +++---
+ packages/ocluster/ocluster.0.2/opam                            |  2 +-
+ packages/ocluster/ocluster.0.3.0/opam                          |  6 +++---
+ packages/oidc/oidc.0.1.0/opam                                  |  6 +++---
+ packages/oidc/oidc.0.1.1/opam                                  |  6 +++---
+ packages/opium/opium.0.19.0/opam                               |  2 +-
+ packages/opium/opium.0.20.0/opam                               |  2 +-
+ packages/otr/otr.0.3.10/opam                                   |  4 ++--
+ packages/otr/otr.0.3.7/opam                                    |  6 +++---
+ packages/otr/otr.0.3.8/opam                                    |  4 ++--
+ packages/otr/otr.0.3.9/opam                                    |  4 ++--
+ packages/paf-cohttp/paf-cohttp.0.0.4/opam                      |  2 +-
+ packages/paf-cohttp/paf-cohttp.0.0.5/opam                      |  2 +-
+ packages/paf-cohttp/paf-cohttp.0.1.0/opam                      |  2 +-
+ packages/paf-cohttp/paf-cohttp.0.5.0/opam                      |  2 +-
+ packages/paf-cohttp/paf-cohttp.0.6.0/opam                      |  2 +-
+ packages/paf/paf.0.0.1/opam                                    |  2 +-
+ packages/paf/paf.0.0.2/opam                                    |  2 +-
+ packages/paf/paf.0.0.3/opam                                    |  2 +-
+ packages/paf/paf.0.0.4/opam                                    |  2 +-
+ packages/paf/paf.0.0.5/opam                                    |  2 +-
+ packages/paf/paf.0.5.0/opam                                    |  2 +-
+ packages/paf/paf.0.6.0/opam                                    |  2 +-
+ packages/pbkdf/pbkdf.1.1.0/opam                                |  2 +-
+ packages/pbkdf/pbkdf.1.2.0/opam                                |  2 +-
+ packages/random/random.0.0.1/opam                              |  4 ++--
+ packages/rfc6287/rfc6287.1.0.4/opam                            |  6 +++---
+ packages/riot/riot.0.0.8/opam                                  |  4 ++--
+ packages/riot/riot.0.0.9/opam                                  |  4 ++--
+ packages/salsa20/salsa20.1.1.0/opam                            |  2 +-
+ packages/salsa20/salsa20.1.2.0/opam                            |  2 +-
+ packages/scrypt-kdf/scrypt-kdf.1.1.0/opam                      |  2 +-
+ packages/scrypt-kdf/scrypt-kdf.1.2.0/opam                      |  2 +-
+ packages/session/session.0.5.0/opam                            |  4 ++--
+ packages/spoke/spoke.0.0.2/opam                                |  2 +-
+ packages/ssh-agent/ssh-agent.0.2.1/opam                        |  4 ++--
+ packages/ssh-agent/ssh-agent.0.3.0/opam                        |  4 ++--
+ packages/ssh-agent/ssh-agent.0.3.1/opam                        |  4 ++--
+ packages/ssh-agent/ssh-agent.0.4.0/opam                        |  6 +++---
+ packages/ssh-agent/ssh-agent.0.4.1/opam                        |  8 ++++----
+ packages/starred_ml/starred_ml.0.0.2/opam                      |  2 +-
+ packages/starred_ml/starred_ml.0.0.3/opam                      |  2 +-
+ packages/starred_ml/starred_ml.0.0.4/opam                      |  2 +-
+ packages/starred_ml/starred_ml.0.0.5/opam                      |  2 +-
+ packages/tcpip/tcpip.8.0.2/opam                                |  2 +-
+ packages/tcpip/tcpip.8.1.0/opam                                |  2 +-
+ packages/tls-async/tls-async.0.13.2/opam                       |  2 +-
+ packages/tls-async/tls-async.0.14.0/opam                       |  2 +-
+ packages/tls-async/tls-async.0.14.1/opam                       |  2 +-
+ packages/tls-async/tls-async.0.15.0/opam                       |  2 +-
+ packages/tls-async/tls-async.0.15.1/opam                       |  2 +-
+ packages/tls-async/tls-async.0.15.2/opam                       |  2 +-
+ packages/tls-async/tls-async.0.15.3/opam                       |  2 +-
+ packages/tls-async/tls-async.0.15.4/opam                       |  2 +-
+ packages/tls-async/tls-async.0.16.0/opam                       |  2 +-
+ packages/tls-async/tls-async.0.17.0/opam                       |  2 +-
+ packages/tls-async/tls-async.0.17.1/opam                       |  2 +-
+ packages/tls-async/tls-async.0.17.3/opam                       |  2 +-
+ packages/tls-async/tls-async.0.17.4/opam                       |  2 +-
+ packages/tls-async/tls-async.0.17.5/opam                       |  2 +-
+ packages/tls-eio/tls-eio.0.15.4/opam                           |  6 +++---
+ packages/tls-eio/tls-eio.0.15.5/opam                           |  6 +++---
+ packages/tls-eio/tls-eio.0.16.0/opam                           |  8 ++++----
+ packages/tls-eio/tls-eio.0.17.0/opam                           |  8 ++++----
+ packages/tls-eio/tls-eio.0.17.1/opam                           |  8 ++++----
+ packages/tls-eio/tls-eio.0.17.2/opam                           | 10 +++++-----
+ packages/tls-eio/tls-eio.0.17.3/opam                           | 10 +++++-----
+ packages/tls-eio/tls-eio.0.17.4/opam                           | 10 +++++-----
+ packages/tls-eio/tls-eio.0.17.5/opam                           | 10 +++++-----
+ packages/tls-lwt/tls-lwt.0.16.0/opam                           |  2 +-
+ packages/tls-lwt/tls-lwt.0.17.0/opam                           |  2 +-
+ packages/tls-lwt/tls-lwt.0.17.1/opam                           |  2 +-
+ packages/tls-lwt/tls-lwt.0.17.3/opam                           |  2 +-
+ packages/tls-lwt/tls-lwt.0.17.4/opam                           |  2 +-
+ packages/tls-lwt/tls-lwt.0.17.5/opam                           |  2 +-
+ packages/tls-mirage/tls-mirage.0.11.0/opam                     |  4 ++--
+ packages/tls-mirage/tls-mirage.0.11.1/opam                     |  4 ++--
+ packages/tls-mirage/tls-mirage.0.12.0/opam                     |  4 ++--
+ packages/tls-mirage/tls-mirage.0.12.1/opam                     |  4 ++--
+ packages/tls-mirage/tls-mirage.0.12.2/opam                     |  4 ++--
+ packages/tls-mirage/tls-mirage.0.12.3/opam                     |  4 ++--
+ packages/tls-mirage/tls-mirage.0.12.4/opam                     |  4 ++--
+ packages/tls-mirage/tls-mirage.0.12.5/opam                     |  4 ++--
+ packages/tls-mirage/tls-mirage.0.12.6/opam                     |  4 ++--
+ packages/tls-mirage/tls-mirage.0.12.7/opam                     |  4 ++--
+ packages/tls-mirage/tls-mirage.0.12.8/opam                     |  4 ++--
+ packages/tls-mirage/tls-mirage.0.13.0/opam                     |  4 ++--
+ packages/tls-mirage/tls-mirage.0.13.1/opam                     |  4 ++--
+ packages/tls-mirage/tls-mirage.0.13.2/opam                     |  4 ++--
+ packages/tls-mirage/tls-mirage.0.14.0/opam                     |  4 ++--
+ packages/tls-mirage/tls-mirage.0.14.1/opam                     |  4 ++--
+ packages/tls-mirage/tls-mirage.0.15.0/opam                     |  4 ++--
+ packages/tls-mirage/tls-mirage.0.15.1/opam                     |  4 ++--
+ packages/tls-mirage/tls-mirage.0.15.2/opam                     |  4 ++--
+ packages/tls-mirage/tls-mirage.0.15.3/opam                     |  4 ++--
+ packages/tls-mirage/tls-mirage.0.15.4/opam                     |  4 ++--
+ packages/tls-mirage/tls-mirage.0.16.0/opam                     |  4 ++--
+ packages/tls-mirage/tls-mirage.0.17.0/opam                     |  4 ++--
+ packages/tls-mirage/tls-mirage.0.17.1/opam                     |  4 ++--
+ packages/tls-mirage/tls-mirage.0.17.3/opam                     |  4 ++--
+ packages/tls-mirage/tls-mirage.0.17.4/opam                     |  4 ++--
+ packages/tls-mirage/tls-mirage.0.17.5/opam                     |  4 ++--
+ packages/tls/tls.0.11.0/opam                                   |  2 +-
+ packages/tls/tls.0.11.1/opam                                   |  2 +-
+ packages/tls/tls.0.12.0/opam                                   |  2 +-
+ packages/tls/tls.0.12.1/opam                                   |  2 +-
+ packages/tls/tls.0.12.2/opam                                   |  2 +-
+ packages/tls/tls.0.12.3/opam                                   |  4 ++--
+ packages/tls/tls.0.12.4/opam                                   |  4 ++--
+ packages/tls/tls.0.12.5/opam                                   |  4 ++--
+ packages/tls/tls.0.12.6/opam                                   |  4 ++--
+ packages/tls/tls.0.12.7/opam                                   |  4 ++--
+ packages/tls/tls.0.12.8/opam                                   |  4 ++--
+ packages/tls/tls.0.13.0/opam                                   |  4 ++--
+ packages/tls/tls.0.13.1/opam                                   |  6 +++---
+ packages/tls/tls.0.13.2/opam                                   |  6 +++---
+ packages/tls/tls.0.14.0/opam                                   |  6 +++---
+ packages/tls/tls.0.14.1/opam                                   |  6 +++---
+ packages/tls/tls.0.15.0/opam                                   |  6 +++---
+ packages/tls/tls.0.15.1/opam                                   |  6 +++---
+ packages/tls/tls.0.15.2/opam                                   |  6 +++---
+ packages/tls/tls.0.15.3/opam                                   |  6 +++---
+ packages/tls/tls.0.15.4/opam                                   |  6 +++---
+ packages/tls/tls.0.16.0/opam                                   |  8 ++++----
+ packages/tls/tls.0.17.0/opam                                   |  8 ++++----
+ packages/tls/tls.0.17.1/opam                                   |  8 ++++----
+ packages/tls/tls.0.17.3/opam                                   |  8 ++++----
+ packages/tls/tls.0.17.4/opam                                   |  8 ++++----
+ packages/tls/tls.0.17.5/opam                                   |  8 ++++----
+ packages/twostep/twostep.1.0.1/opam                            |  4 ++--
+ packages/u2f/u2f.0.1.0/opam                                    |  4 ++--
+ packages/u2f/u2f.0.1.1/opam                                    |  4 ++--
+ packages/u2f/u2f.0.1.2/opam                                    |  4 ++--
+ packages/webauthn/webauthn.0.1.0/opam                          |  4 ++--
+ packages/x509/x509.0.10.0/opam                                 |  4 ++--
+ packages/x509/x509.0.11.0/opam                                 |  4 ++--
+ packages/x509/x509.0.11.1/opam                                 |  4 ++--
+ packages/x509/x509.0.11.2/opam                                 |  4 ++--
+ packages/x509/x509.0.12.0/opam                                 | 10 +++++-----
+ packages/x509/x509.0.13.0/opam                                 |  8 ++++----
+ packages/x509/x509.0.14.0/opam                                 |  8 ++++----
+ packages/x509/x509.0.14.1/opam                                 |  8 ++++----
+ packages/x509/x509.0.15.0/opam                                 |  8 ++++----
+ packages/x509/x509.0.15.1/opam                                 |  8 ++++----
+ packages/x509/x509.0.15.2/opam                                 |  8 ++++----
+ packages/x509/x509.0.16.0/opam                                 |  8 ++++----
+ packages/x509/x509.0.16.1/opam                                 |  8 ++++----
+ packages/x509/x509.0.16.2/opam                                 |  8 ++++----
+ packages/x509/x509.0.16.3/opam                                 |  8 ++++----
+ packages/x509/x509.0.16.4/opam                                 | 10 +++++-----
+ packages/x509/x509.0.16.5/opam                                 | 10 +++++-----
+ 524 files changed, 933 insertions(+), 934 deletions(-)
+
+[01;34m(from ocaml/opam:debian-12-ocaml-4.14@sha256:68ecefb12259af7ac8f85f40002bb77c47ee641474979fd6a320ed7bf1222c7c)[0m
+[01;2m[01;35m2024-06-10 05:10.09 ---> using "be6362479294069b96a78ceb45e5e59b696aa4ead55eec8c4ca81a46ae6af254" from cache[0m
+
+[01;34m/: (user (uid 1000) (gid 1000))[0m
+
+[01;34m/: (workdir /home/opam)[0m
+
+[01;34m/home/opam: (run (shell "sudo ln -f /usr/bin/opam-2.0 /usr/bin/opam"))[0m
+[01;2m[01;35m2024-06-10 05:10.09 ---> using "8f16c3337c5fccb4d5d95e4f50d896e72553a3d23318d878624430ed118d783e" from cache[0m
+
+[01;34m/home/opam: (run (network host)
+                 (shell "opam init --reinit --config .opamrc-sandbox -ni"))[0m
+[NOTE] Will configure from /home/opam/.opamrc-sandbox, then /home/opam/.opamrc, and finally from built-in defaults.
+Checking for available remotes: rsync and local, git.
+  - you won't be able to use mercurial repositories unless you install the hg command on your system.
+  - you won't be able to use darcs repositories unless you install the darcs command on your system.
+
+[WARNING] Recommended dependencies -- most packages rely on these:
+  - m4
+
+<><> Updating repositories ><><><><><><><><><><><><><><><><><><><><><><><><><><>
+[default] synchronised from file:///home/opam/opam-repository
+default (at file:///home/opam/opam-repository): 
+    [INFO] opam 2.1 includes many performance improvements over 2.0; please consider upgrading (https://opam.ocaml.org/doc/Install.html)
+
+[01;2m[01;35m2024-06-10 05:10.09 ---> using "f975d51224c42d8857ddb239b940c24dd15846640c4e179f88cfaec9eef2cb21" from cache[0m
+
+[01;34m/home/opam: (run (shell "uname -rs && opam exec -- ocaml -version && opam --version"))[0m
+Linux 5.15.0-107-generic
+The OCaml toplevel, version 4.14.2
+2.0.10
+[01;2m[01;35m2024-06-10 05:10.09 ---> using "d68ab7ea6ffb8fcd488a6c555957580ce09a73da15abd0763d67b15b7483a100" from cache[0m
+
+[01;34m/home/opam: (env OPAMDOWNLOADJOBS 1)[0m
+
+[01;34m/home/opam: (env OPAMERRLOGLEN 0)[0m
+
+[01;34m/home/opam: (env OPAMSOLVERTIMEOUT 500)[0m
+
+[01;34m/home/opam: (env OPAMPRECISETRACKING 1)[0m
+
+[01;34m/home/opam: (env CI true)[0m
+
+[01;34m/home/opam: (env OPAM_REPO_CI true)[0m
+
+[01;34m/home/opam: (run (shell "rm -rf opam-repository/"))[0m
+[01;2m[01;35m2024-06-10 05:10.09 ---> using "f3407c47872ce27783f8ed6a6e794e49a25e43366a287e6ef08b6a7b4f48b49d" from cache[0m
+
+[01;34m/home/opam: (copy (src .) (dst opam-repository/))[0m
+[01;2m[01;35m2024-06-10 05:10.10 ---> using "338f3c661d3646b42f530a5f734ce84193e00b75fa387d930823cf75c839e0e9" from cache[0m
+
+[01;34m/home/opam: (run (shell "opam repository set-url --strict default opam-repository/"))[0m
+[default] Initialised
+default (at file:///home/opam/opam-repository): 
+    [INFO] opam 2.1 includes many performance improvements over 2.0; please consider upgrading (https://opam.ocaml.org/doc/Install.html)
+
+[01;2m[01;35m2024-06-10 05:10.10 ---> using "488e26d193448f9dc4f5a255d579a4604e474af8b5d894322637510107db750f" from cache[0m
+
+[01;34m/home/opam: (run (network host)
+                 (shell "opam depext -u || true"))[0m
+# Detecting depexts using vars: arch=x86_64, os=linux, os-distribution=debian, os-family=debian
+# No extra OS packages requirements found.
+# All required OS packages found.
+The following command needs to be run through "sudo":
+    apt-get update
+Hit:1 http://deb.debian.org/debian bookworm InRelease
+Get:2 http://deb.debian.org/debian bookworm-updates InRelease [55.4 kB]
+Get:3 http://deb.debian.org/debian-security bookworm-security InRelease [48.0 kB]
+Get:4 http://deb.debian.org/debian-security bookworm-security/main amd64 Packages [158 kB]
+Fetched 262 kB in 0s (873 kB/s)
+Reading package lists...
+# OS package update successful
+[01;2m[01;35m2024-06-10 05:10.10 ---> using "80878004085b6b72c9da8d67085fb0f70e81c6ae86409c6ef3832300f312bbb7" from cache[0m
+
+[01;34m/home/opam: (run (shell "opam pin add -k version -yn dns-client.6.1.4 6.1.4"))[0m
+dns-client is now pinned to version 6.1.4
+[01;2m[01;35m2024-06-10 05:10.11 ---> saved as "4ecd61d213db7afb06a434476333fa3402e9154df88cf1f237b1d8a9bd32c1c4"[0m
+
+[01;34m/home/opam: (run (cache (opam-archives (target /home/opam/.opam/download-cache)))
+                 (network host)
+                 (shell  "opam depext dns-client.6.1.4 && opam reinstall dns-client.6.1.4;\
+                        \n        res=$?;\
+                        \n        test \"$res\" != 31 && exit \"$res\";\
+                        \n        export OPAMCLI=2.0;\
+                        \n        build_dir=$(opam var prefix)/.opam-switch/build;\
+                        \n        failed=$(ls \"$build_dir\");\
+                        \n        partial_fails=\"\";\
+                        \n        for pkg in $failed; do\
+                        \n          if opam show -f x-ci-accept-failures: \"$pkg\" | grep -qF \"\\\"debian-12\\\"\"; then\
+                        \n            echo \"A package failed and has been disabled for CI using the 'x-ci-accept-failures' field.\";\
+                        \n          fi;\
+                        \n          test \"$pkg\" != 'dns-client.6.1.4' && partial_fails=\"$partial_fails $pkg\";\
+                        \n        done;\
+                        \n        test \"${partial_fails}\" != \"\" && echo \"opam-repo-ci detected dependencies failing: ${partial_fails}\";\
+                        \n        exit 1"))[0m
+# Detecting depexts using vars: arch=x86_64, os=linux, os-distribution=debian, os-family=debian
+[ERROR] Sorry, resolution of the request timed out.
+        Try to specify a simpler request, use a different solver, or increase the allowed time by setting OPAMSOLVERTIMEOUT to a bigger value (currently, it is set to 500.0 seconds).
+Command failed: opam list --readonly --external '--resolve=dns-client.6.1.4' returned 60
+"/usr/bin/env" "bash" "-c" "opam depext dns-client.6.1.4 && opam reinstall dns-client.6.1.4;
+        res=$?;
+        test "$res" != 31 && exit "$res";
+        export OPAMCLI=2.0;
+        build_dir=$(opam var prefix)/.opam-switch/build;
+        failed=$(ls "$build_dir");
+        partial_fails="";
+        for pkg in $failed; do
+          if opam show -f x-ci-accept-failures: "$pkg" | grep -qF "\"debian-12\""; then
+            echo "A package failed and has been disabled for CI using the 'x-ci-accept-failures' field.";
+          fi;
+          test "$pkg" != 'dns-client.6.1.4' && partial_fails="$partial_fails $pkg";
+        done;
+        test "${partial_fails}" != "" && echo "opam-repo-ci detected dependencies failing: ${partial_fails}";
+        exit 1" failed with exit status 60
+2024-06-10 05:18.44: Job failed: Failed: Build failed
+2024-06-10 05:18.44: Log analysis:
+2024-06-10 05:18.44: >>> 
+[ERROR] Sorry, resolution of the request timed out.
+ (score = 20)
+2024-06-10 05:18.44: Sorry, resolution of the request timed out.

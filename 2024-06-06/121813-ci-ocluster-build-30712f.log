@@ -1,0 +1,287 @@
+2024-06-06 12:18.13: New job: test mirage-qubes.0.10.0, using opam 2.0
+                              from https://github.com/ocaml/opam-repository.git#refs/pull/26028/head (cd2bd32cc761cd61a457c49a00e386a881dd6ec6)
+                              on debian-12-ocaml-4.14/amd64
+
+To reproduce locally:
+
+cd $(mktemp -d)
+git clone --recursive "https://github.com/ocaml/opam-repository.git" && cd "opam-repository" && git fetch origin "refs/pull/26028/head" && git reset --hard cd2bd32c
+git fetch origin master
+git merge --no-edit d36c5dffcf01b490bb4df536e374e8cf777e0af6
+cat > ../Dockerfile <<'END-OF-DOCKERFILE'
+[34mFROM ocaml/opam:debian-12-ocaml-4.14@sha256:68ecefb12259af7ac8f85f40002bb77c47ee641474979fd6a320ed7bf1222c7c
+USER 1000:1000
+WORKDIR /home/opam
+RUN sudo ln -f /usr/bin/opam-2.0 /usr/bin/opam
+RUN opam init --reinit -ni
+RUN uname -rs && opam exec -- ocaml -version && opam --version
+ENV OPAMDOWNLOADJOBS="1"
+ENV OPAMERRLOGLEN="0"
+ENV OPAMSOLVERTIMEOUT="500"
+ENV OPAMPRECISETRACKING="1"
+ENV CI="true"
+ENV OPAM_REPO_CI="true"
+RUN rm -rf opam-repository/
+COPY --chown=1000:1000 . opam-repository/
+RUN opam repository set-url --strict default opam-repository/
+RUN opam depext -u || true
+RUN opam pin add -k version -yn mirage-qubes.0.10.0 0.10.0
+RUN opam depext mirage-qubes.0.10.0 && opam reinstall mirage-qubes.0.10.0; \
+    res=$?; \
+    test "$res" != 31 && exit "$res"; \
+    export OPAMCLI=2.0; \
+    build_dir=$(opam var prefix)/.opam-switch/build; \
+    failed=$(ls "$build_dir"); \
+    partial_fails=""; \
+    for pkg in $failed; do \
+    if opam show -f x-ci-accept-failures: "$pkg" | grep -qF "\"debian-12\""; then \
+    echo "A package failed and has been disabled for CI using the 'x-ci-accept-failures' field."; \
+    fi; \
+    test "$pkg" != 'mirage-qubes.0.10.0' && partial_fails="$partial_fails $pkg"; \
+    done; \
+    test "${partial_fails}" != "" && echo "opam-repo-ci detected dependencies failing: ${partial_fails}"; \
+    exit 1
+RUN (opam depext --with-test mirage-qubes.0.10.0 && opam reinstall --with-test mirage-qubes.0.10.0) || true
+RUN opam depext --with-test mirage-qubes.0.10.0 && opam reinstall --with-test --verbose mirage-qubes.0.10.0; \
+    res=$?; \
+    test "$res" != 31 && exit "$res"; \
+    export OPAMCLI=2.0; \
+    build_dir=$(opam var prefix)/.opam-switch/build; \
+    failed=$(ls "$build_dir"); \
+    partial_fails=""; \
+    for pkg in $failed; do \
+    if opam show -f x-ci-accept-failures: "$pkg" | grep -qF "\"debian-12\""; then \
+    echo "A package failed and has been disabled for CI using the 'x-ci-accept-failures' field."; \
+    fi; \
+    test "$pkg" != 'mirage-qubes.0.10.0' && partial_fails="$partial_fails $pkg"; \
+    done; \
+    test "${partial_fails}" != "" && echo "opam-repo-ci detected dependencies failing: ${partial_fails}"; \
+    exit 1
+[0m
+END-OF-DOCKERFILE
+docker build -f ../Dockerfile .
+
+2024-06-06 12:18.13: Using cache hint "ocaml/opam:debian-12-ocaml-4.14@sha256:68ecefb12259af7ac8f85f40002bb77c47ee641474979fd6a320ed7bf1222c7c-mirage-qubes.0.10.0-cd2bd32cc761cd61a457c49a00e386a881dd6ec6"
+2024-06-06 12:18.13: Using OBuilder spec:
+((from ocaml/opam:debian-12-ocaml-4.14@sha256:68ecefb12259af7ac8f85f40002bb77c47ee641474979fd6a320ed7bf1222c7c)
+ (user (uid 1000) (gid 1000))
+ (workdir /home/opam)
+ (run (shell "sudo ln -f /usr/bin/opam-2.0 /usr/bin/opam"))
+ (run (network host)
+      (shell "opam init --reinit --config .opamrc-sandbox -ni"))
+ (run (shell "uname -rs && opam exec -- ocaml -version && opam --version"))
+ (env OPAMDOWNLOADJOBS 1)
+ (env OPAMERRLOGLEN 0)
+ (env OPAMSOLVERTIMEOUT 500)
+ (env OPAMPRECISETRACKING 1)
+ (env CI true)
+ (env OPAM_REPO_CI true)
+ (run (shell "rm -rf opam-repository/"))
+ (copy (src .) (dst opam-repository/))
+ (run (shell "opam repository set-url --strict default opam-repository/"))
+ (run (network host)
+      (shell "opam depext -u || true"))
+ (run (shell "opam pin add -k version -yn mirage-qubes.0.10.0 0.10.0"))
+ (run (cache (opam-archives (target /home/opam/.opam/download-cache)))
+      (network host)
+      (shell  "opam depext mirage-qubes.0.10.0 && opam reinstall mirage-qubes.0.10.0;\
+             \n        res=$?;\
+             \n        test \"$res\" != 31 && exit \"$res\";\
+             \n        export OPAMCLI=2.0;\
+             \n        build_dir=$(opam var prefix)/.opam-switch/build;\
+             \n        failed=$(ls \"$build_dir\");\
+             \n        partial_fails=\"\";\
+             \n        for pkg in $failed; do\
+             \n          if opam show -f x-ci-accept-failures: \"$pkg\" | grep -qF \"\\\"debian-12\\\"\"; then\
+             \n            echo \"A package failed and has been disabled for CI using the 'x-ci-accept-failures' field.\";\
+             \n          fi;\
+             \n          test \"$pkg\" != 'mirage-qubes.0.10.0' && partial_fails=\"$partial_fails $pkg\";\
+             \n        done;\
+             \n        test \"${partial_fails}\" != \"\" && echo \"opam-repo-ci detected dependencies failing: ${partial_fails}\";\
+             \n        exit 1"))
+ (run (network host)
+      (shell "(opam depext --with-test mirage-qubes.0.10.0 && opam reinstall --with-test mirage-qubes.0.10.0) || true"))
+ (run (shell  "opam depext --with-test mirage-qubes.0.10.0 && opam reinstall --with-test --verbose mirage-qubes.0.10.0;\
+             \n        res=$?;\
+             \n        test \"$res\" != 31 && exit \"$res\";\
+             \n        export OPAMCLI=2.0;\
+             \n        build_dir=$(opam var prefix)/.opam-switch/build;\
+             \n        failed=$(ls \"$build_dir\");\
+             \n        partial_fails=\"\";\
+             \n        for pkg in $failed; do\
+             \n          if opam show -f x-ci-accept-failures: \"$pkg\" | grep -qF \"\\\"debian-12\\\"\"; then\
+             \n            echo \"A package failed and has been disabled for CI using the 'x-ci-accept-failures' field.\";\
+             \n          fi;\
+             \n          test \"$pkg\" != 'mirage-qubes.0.10.0' && partial_fails=\"$partial_fails $pkg\";\
+             \n        done;\
+             \n        test \"${partial_fails}\" != \"\" && echo \"opam-repo-ci detected dependencies failing: ${partial_fails}\";\
+             \n        exit 1"))
+)
+
+2024-06-06 12:18.13: Waiting for resource in pool OCluster
+2024-06-06 12:20.45: Waiting for worker…
+2024-06-06 12:28.04: Got resource from pool OCluster
+Building on x86-bm-c13.sw.ocaml.org
+All commits already cached
+Updating files:  70% (22207/31469)Updating files:  71% (22343/31469)Updating files:  72% (22658/31469)Updating files:  73% (22973/31469)Updating files:  74% (23288/31469)Updating files:  75% (23602/31469)Updating files:  76% (23917/31469)Updating files:  77% (24232/31469)Updating files:  78% (24546/31469)Updating files:  79% (24861/31469)Updating files:  80% (25176/31469)Updating files:  81% (25490/31469)Updating files:  82% (25805/31469)Updating files:  83% (26120/31469)Updating files:  84% (26434/31469)Updating files:  85% (26749/31469)Updating files:  86% (27064/31469)Updating files:  87% (27379/31469)Updating files:  88% (27693/31469)Updating files:  89% (28008/31469)Updating files:  90% (28323/31469)Updating files:  91% (28637/31469)Updating files:  92% (28952/31469)Updating files:  93% (29267/31469)Updating files:  94% (29581/31469)Updating files:  95% (29896/31469)Updating files:  96% (30211/31469)Updating files:  97% (30525/31469)Updating files:  98% (30840/31469)Updating files:  99% (31155/31469)Updating files: 100% (31469/31469)Updating files: 100% (31469/31469), done.
+HEAD is now at d36c5dffcf Merge pull request #26024 from recoules/release-bitwuzla-cxx-0.5.0
+Updating d36c5dffcf..cd2bd32cc7
+Fast-forward
+ .../mirage-qubes-ipv4.0.10.0/opam                  | 36 +++++++++++++++++++
+ packages/mirage-qubes/mirage-qubes.0.10.0/opam     | 41 ++++++++++++++++++++++
+ 2 files changed, 77 insertions(+)
+ create mode 100644 packages/mirage-qubes-ipv4/mirage-qubes-ipv4.0.10.0/opam
+ create mode 100644 packages/mirage-qubes/mirage-qubes.0.10.0/opam
+
+[01;34m(from ocaml/opam:debian-12-ocaml-4.14@sha256:68ecefb12259af7ac8f85f40002bb77c47ee641474979fd6a320ed7bf1222c7c)[0m
+Unable to find image 'ocaml/opam:debian-12-ocaml-4.14@sha256:68ecefb12259af7ac8f85f40002bb77c47ee641474979fd6a320ed7bf1222c7c' locally
+docker.io/ocaml/opam@sha256:68ecefb12259af7ac8f85f40002bb77c47ee641474979fd6a320ed7bf1222c7c: Pulling from ocaml/opam
+af61bfd215fd: Pulling fs layer
+af61bfd215fd: Verifying Checksum
+af61bfd215fd: Download complete
+af61bfd215fd: Pull complete
+Digest: sha256:68ecefb12259af7ac8f85f40002bb77c47ee641474979fd6a320ed7bf1222c7c
+Status: Downloaded newer image for ocaml/opam@sha256:68ecefb12259af7ac8f85f40002bb77c47ee641474979fd6a320ed7bf1222c7c
+[01;2m[01;35m2024-06-06 12:28.07 ---> using "be6362479294069b96a78ceb45e5e59b696aa4ead55eec8c4ca81a46ae6af254" from cache[0m
+
+[01;34m/: (user (uid 1000) (gid 1000))[0m
+
+[01;34m/: (workdir /home/opam)[0m
+
+[01;34m/home/opam: (run (shell "sudo ln -f /usr/bin/opam-2.0 /usr/bin/opam"))[0m
+[01;2m[01;35m2024-06-06 12:28.07 ---> using "8f16c3337c5fccb4d5d95e4f50d896e72553a3d23318d878624430ed118d783e" from cache[0m
+
+[01;34m/home/opam: (run (network host)
+                 (shell "opam init --reinit --config .opamrc-sandbox -ni"))[0m
+[NOTE] Will configure from /home/opam/.opamrc-sandbox, then /home/opam/.opamrc, and finally from built-in defaults.
+Checking for available remotes: rsync and local, git.
+  - you won't be able to use mercurial repositories unless you install the hg command on your system.
+  - you won't be able to use darcs repositories unless you install the darcs command on your system.
+
+[WARNING] Recommended dependencies -- most packages rely on these:
+  - m4
+
+<><> Updating repositories ><><><><><><><><><><><><><><><><><><><><><><><><><><>
+[default] synchronised from file:///home/opam/opam-repository
+default (at file:///home/opam/opam-repository): 
+    [INFO] opam 2.1 includes many performance improvements over 2.0; please consider upgrading (https://opam.ocaml.org/doc/Install.html)
+
+[01;2m[01;35m2024-06-06 12:28.07 ---> using "f975d51224c42d8857ddb239b940c24dd15846640c4e179f88cfaec9eef2cb21" from cache[0m
+
+[01;34m/home/opam: (run (shell "uname -rs && opam exec -- ocaml -version && opam --version"))[0m
+Linux 5.15.0-107-generic
+The OCaml toplevel, version 4.14.2
+2.0.10
+[01;2m[01;35m2024-06-06 12:28.07 ---> using "d68ab7ea6ffb8fcd488a6c555957580ce09a73da15abd0763d67b15b7483a100" from cache[0m
+
+[01;34m/home/opam: (env OPAMDOWNLOADJOBS 1)[0m
+
+[01;34m/home/opam: (env OPAMERRLOGLEN 0)[0m
+
+[01;34m/home/opam: (env OPAMSOLVERTIMEOUT 500)[0m
+
+[01;34m/home/opam: (env OPAMPRECISETRACKING 1)[0m
+
+[01;34m/home/opam: (env CI true)[0m
+
+[01;34m/home/opam: (env OPAM_REPO_CI true)[0m
+
+[01;34m/home/opam: (run (shell "rm -rf opam-repository/"))[0m
+[01;2m[01;35m2024-06-06 12:28.11 ---> saved as "f3407c47872ce27783f8ed6a6e794e49a25e43366a287e6ef08b6a7b4f48b49d"[0m
+
+[01;34m/home/opam: (copy (src .) (dst opam-repository/))[0m
+[01;2m[01;35m2024-06-06 12:28.21 ---> saved as "7208754a0a7a0e6b0a15ecbeb880fc2ff4f97c4d81c32a437890b1758fff6ca0"[0m
+
+[01;34m/home/opam: (run (shell "opam repository set-url --strict default opam-repository/"))[0m
+[default] Initialised
+default (at file:///home/opam/opam-repository): 
+    [INFO] opam 2.1 includes many performance improvements over 2.0; please consider upgrading (https://opam.ocaml.org/doc/Install.html)
+
+[01;2m[01;35m2024-06-06 12:28.45 ---> saved as "d94654d57d018d890061d0182f1b0b6057d99b961631818cc520f0e1b2c0445a"[0m
+
+[01;34m/home/opam: (run (network host)
+                 (shell "opam depext -u || true"))[0m
+# Detecting depexts using vars: arch=x86_64, os=linux, os-distribution=debian, os-family=debian
+# No extra OS packages requirements found.
+# All required OS packages found.
+The following command needs to be run through "sudo":
+    apt-get update
+Hit:1 http://deb.debian.org/debian bookworm InRelease
+Get:2 http://deb.debian.org/debian bookworm-updates InRelease [55.4 kB]
+Get:3 http://deb.debian.org/debian-security bookworm-security InRelease [48.0 kB]
+Get:4 http://deb.debian.org/debian-security bookworm-security/main amd64 Packages [158 kB]
+Fetched 262 kB in 0s (737 kB/s)
+Reading package lists...
+# OS package update successful
+[01;2m[01;35m2024-06-06 12:28.48 ---> saved as "32765fda92a532188b17f0276484a952508c7a5117c7be7838754bef5429c3fd"[0m
+
+[01;34m/home/opam: (run (shell "opam pin add -k version -yn mirage-qubes.0.10.0 0.10.0"))[0m
+mirage-qubes is now pinned to version 0.10.0
+[01;2m[01;35m2024-06-06 12:28.49 ---> saved as "23156d998ffe797edd624ea72b6b43740040524badbc0c6ea1cb43f871d233df"[0m
+
+[01;34m/home/opam: (run (cache (opam-archives (target /home/opam/.opam/download-cache)))
+                 (network host)
+                 (shell  "opam depext mirage-qubes.0.10.0 && opam reinstall mirage-qubes.0.10.0;\
+                        \n        res=$?;\
+                        \n        test \"$res\" != 31 && exit \"$res\";\
+                        \n        export OPAMCLI=2.0;\
+                        \n        build_dir=$(opam var prefix)/.opam-switch/build;\
+                        \n        failed=$(ls \"$build_dir\");\
+                        \n        partial_fails=\"\";\
+                        \n        for pkg in $failed; do\
+                        \n          if opam show -f x-ci-accept-failures: \"$pkg\" | grep -qF \"\\\"debian-12\\\"\"; then\
+                        \n            echo \"A package failed and has been disabled for CI using the 'x-ci-accept-failures' field.\";\
+                        \n          fi;\
+                        \n          test \"$pkg\" != 'mirage-qubes.0.10.0' && partial_fails=\"$partial_fails $pkg\";\
+                        \n        done;\
+                        \n        test \"${partial_fails}\" != \"\" && echo \"opam-repo-ci detected dependencies failing: ${partial_fails}\";\
+                        \n        exit 1"))[0m
+# Detecting depexts using vars: arch=x86_64, os=linux, os-distribution=debian, os-family=debian
+# The following system packages are needed:
+pkg-config
+The following command needs to be run through "sudo":
+    apt-get install -qq -yy pkg-config
+debconf: delaying package configuration, since apt-utils is not installed
+Selecting previously unselected package libpkgconf3:amd64.
+(Reading database ... (Reading database ... 5%(Reading database ... 10%(Reading database ... 15%(Reading database ... 20%(Reading database ... 25%(Reading database ... 30%(Reading database ... 35%(Reading database ... 40%(Reading database ... 45%(Reading database ... 50%(Reading database ... 55%(Reading database ... 60%(Reading database ... 65%(Reading database ... 70%(Reading database ... 75%(Reading database ... 80%(Reading database ... 85%(Reading database ... 90%(Reading database ... 95%(Reading database ... 100%(Reading database ... 18735 files and directories currently installed.)
+Preparing to unpack .../libpkgconf3_1.8.1-1_amd64.deb ...
+Unpacking libpkgconf3:amd64 (1.8.1-1) ...
+Selecting previously unselected package pkgconf-bin.
+Preparing to unpack .../pkgconf-bin_1.8.1-1_amd64.deb ...
+Unpacking pkgconf-bin (1.8.1-1) ...
+Selecting previously unselected package pkgconf:amd64.
+Preparing to unpack .../pkgconf_1.8.1-1_amd64.deb ...
+Unpacking pkgconf:amd64 (1.8.1-1) ...
+Selecting previously unselected package pkg-config:amd64.
+Preparing to unpack .../pkg-config_1.8.1-1_amd64.deb ...
+Unpacking pkg-config:amd64 (1.8.1-1) ...
+Setting up libpkgconf3:amd64 (1.8.1-1) ...
+Setting up pkgconf-bin (1.8.1-1) ...
+Setting up pkgconf:amd64 (1.8.1-1) ...
+Setting up pkg-config:amd64 (1.8.1-1) ...
+Processing triggers for libc-bin (2.36-9+deb12u7) ...
+# OS packages installation successful
+mirage-qubes.0.10.0 is not installed. Install it? [Y/n] y
+[ERROR] Sorry, resolution of the request timed out.
+        Try to specify a simpler request, use a different solver, or increase the allowed time by setting OPAMSOLVERTIMEOUT to a bigger value (currently, it is set to 500.0 seconds).
+"/usr/bin/env" "bash" "-c" "opam depext mirage-qubes.0.10.0 && opam reinstall mirage-qubes.0.10.0;
+        res=$?;
+        test "$res" != 31 && exit "$res";
+        export OPAMCLI=2.0;
+        build_dir=$(opam var prefix)/.opam-switch/build;
+        failed=$(ls "$build_dir");
+        partial_fails="";
+        for pkg in $failed; do
+          if opam show -f x-ci-accept-failures: "$pkg" | grep -qF "\"debian-12\""; then
+            echo "A package failed and has been disabled for CI using the 'x-ci-accept-failures' field.";
+          fi;
+          test "$pkg" != 'mirage-qubes.0.10.0' && partial_fails="$partial_fails $pkg";
+        done;
+        test "${partial_fails}" != "" && echo "opam-repo-ci detected dependencies failing: ${partial_fails}";
+        exit 1" failed with exit status 60
+2024-06-06 12:37.32: Job failed: Failed: Build failed
+2024-06-06 12:37.32: Log analysis:
+2024-06-06 12:37.32: >>> 
+[ERROR] Sorry, resolution of the request timed out.
+ (score = 20)
+2024-06-06 12:37.32: Sorry, resolution of the request timed out.

@@ -1,0 +1,349 @@
+2024-06-05 13:53.24: New job: test dune-action-plugin.3.16.0~alpha1, using opam dev
+                              from https://github.com/ocaml/opam-repository.git#refs/pull/26022/head (0858f4711d4239a60f03cf11ed36bf7bf9c496b9)
+                              on debian-12-ocaml-4.10/amd64
+
+To reproduce locally:
+
+cd $(mktemp -d)
+git clone --recursive "https://github.com/ocaml/opam-repository.git" && cd "opam-repository" && git fetch origin "refs/pull/26022/head" && git reset --hard 0858f471
+git fetch origin master
+git merge --no-edit 95b13c919280841b8621ce1f0e005d747f664ff6
+cat > ../Dockerfile <<'END-OF-DOCKERFILE'
+[34mFROM ocaml/opam:debian-12-ocaml-4.10@sha256:d70d89fa4eaafb2407d9a5aeab7763945105eda9b94553817ac9406f75df46e2
+USER 1000:1000
+WORKDIR /home/opam
+RUN sudo ln -f /usr/bin/opam-dev /usr/bin/opam
+RUN opam init --reinit -ni
+RUN uname -rs && opam exec -- ocaml -version && opam --version
+ENV OPAMDOWNLOADJOBS="1"
+ENV OPAMERRLOGLEN="0"
+ENV OPAMSOLVERTIMEOUT="500"
+ENV OPAMPRECISETRACKING="1"
+ENV CI="true"
+ENV OPAM_REPO_CI="true"
+RUN rm -rf opam-repository/
+COPY --chown=1000:1000 . opam-repository/
+RUN opam repository set-url --strict default opam-repository/
+RUN opam update --depexts || true
+RUN opam pin add -k version -yn dune-action-plugin.3.16.0~alpha1 3.16.0~alpha1
+RUN opam reinstall dune-action-plugin.3.16.0~alpha1; \
+    res=$?; \
+    test "$res" != 31 && exit "$res"; \
+    export OPAMCLI=2.0; \
+    build_dir=$(opam var prefix)/.opam-switch/build; \
+    failed=$(ls "$build_dir"); \
+    partial_fails=""; \
+    for pkg in $failed; do \
+    if opam show -f x-ci-accept-failures: "$pkg" | grep -qF "\"debian-12\""; then \
+    echo "A package failed and has been disabled for CI using the 'x-ci-accept-failures' field."; \
+    fi; \
+    test "$pkg" != 'dune-action-plugin.3.16.0~alpha1' && partial_fails="$partial_fails $pkg"; \
+    done; \
+    test "${partial_fails}" != "" && echo "opam-repo-ci detected dependencies failing: ${partial_fails}"; \
+    exit 1
+RUN (opam reinstall --with-test dune-action-plugin.3.16.0~alpha1) || true
+RUN opam reinstall --with-test --verbose dune-action-plugin.3.16.0~alpha1; \
+    res=$?; \
+    test "$res" != 31 && exit "$res"; \
+    export OPAMCLI=2.0; \
+    build_dir=$(opam var prefix)/.opam-switch/build; \
+    failed=$(ls "$build_dir"); \
+    partial_fails=""; \
+    for pkg in $failed; do \
+    if opam show -f x-ci-accept-failures: "$pkg" | grep -qF "\"debian-12\""; then \
+    echo "A package failed and has been disabled for CI using the 'x-ci-accept-failures' field."; \
+    fi; \
+    test "$pkg" != 'dune-action-plugin.3.16.0~alpha1' && partial_fails="$partial_fails $pkg"; \
+    done; \
+    test "${partial_fails}" != "" && echo "opam-repo-ci detected dependencies failing: ${partial_fails}"; \
+    exit 1
+[0m
+END-OF-DOCKERFILE
+docker build -f ../Dockerfile .
+
+2024-06-05 13:53.24: Using cache hint "ocaml/opam:debian-12-ocaml-4.10@sha256:d70d89fa4eaafb2407d9a5aeab7763945105eda9b94553817ac9406f75df46e2-dune-action-plugin.3.16.0~alpha1-0858f4711d4239a60f03cf11ed36bf7bf9c496b9"
+2024-06-05 13:53.24: Using OBuilder spec:
+((from ocaml/opam:debian-12-ocaml-4.10@sha256:d70d89fa4eaafb2407d9a5aeab7763945105eda9b94553817ac9406f75df46e2)
+ (user (uid 1000) (gid 1000))
+ (workdir /home/opam)
+ (run (shell "sudo ln -f /usr/bin/opam-dev /usr/bin/opam"))
+ (run (network host)
+      (shell "opam init --reinit --config .opamrc-sandbox -ni"))
+ (run (shell "uname -rs && opam exec -- ocaml -version && opam --version"))
+ (env OPAMDOWNLOADJOBS 1)
+ (env OPAMERRLOGLEN 0)
+ (env OPAMSOLVERTIMEOUT 500)
+ (env OPAMPRECISETRACKING 1)
+ (env CI true)
+ (env OPAM_REPO_CI true)
+ (run (shell "rm -rf opam-repository/"))
+ (copy (src .) (dst opam-repository/))
+ (run (shell "opam repository set-url --strict default opam-repository/"))
+ (run (network host)
+      (shell "opam update --depexts || true"))
+ (run (shell "opam pin add -k version -yn dune-action-plugin.3.16.0~alpha1 3.16.0~alpha1"))
+ (run (cache (opam-archives (target /home/opam/.opam/download-cache)))
+      (network host)
+      (shell  "opam reinstall dune-action-plugin.3.16.0~alpha1;\
+             \n        res=$?;\
+             \n        test \"$res\" != 31 && exit \"$res\";\
+             \n        export OPAMCLI=2.0;\
+             \n        build_dir=$(opam var prefix)/.opam-switch/build;\
+             \n        failed=$(ls \"$build_dir\");\
+             \n        partial_fails=\"\";\
+             \n        for pkg in $failed; do\
+             \n          if opam show -f x-ci-accept-failures: \"$pkg\" | grep -qF \"\\\"debian-12\\\"\"; then\
+             \n            echo \"A package failed and has been disabled for CI using the 'x-ci-accept-failures' field.\";\
+             \n          fi;\
+             \n          test \"$pkg\" != 'dune-action-plugin.3.16.0~alpha1' && partial_fails=\"$partial_fails $pkg\";\
+             \n        done;\
+             \n        test \"${partial_fails}\" != \"\" && echo \"opam-repo-ci detected dependencies failing: ${partial_fails}\";\
+             \n        exit 1"))
+ (run (network host)
+      (shell "(opam reinstall --with-test dune-action-plugin.3.16.0~alpha1) || true"))
+ (run (shell  "opam reinstall --with-test --verbose dune-action-plugin.3.16.0~alpha1;\
+             \n        res=$?;\
+             \n        test \"$res\" != 31 && exit \"$res\";\
+             \n        export OPAMCLI=2.0;\
+             \n        build_dir=$(opam var prefix)/.opam-switch/build;\
+             \n        failed=$(ls \"$build_dir\");\
+             \n        partial_fails=\"\";\
+             \n        for pkg in $failed; do\
+             \n          if opam show -f x-ci-accept-failures: \"$pkg\" | grep -qF \"\\\"debian-12\\\"\"; then\
+             \n            echo \"A package failed and has been disabled for CI using the 'x-ci-accept-failures' field.\";\
+             \n          fi;\
+             \n          test \"$pkg\" != 'dune-action-plugin.3.16.0~alpha1' && partial_fails=\"$partial_fails $pkg\";\
+             \n        done;\
+             \n        test \"${partial_fails}\" != \"\" && echo \"opam-repo-ci detected dependencies failing: ${partial_fails}\";\
+             \n        exit 1"))
+)
+
+2024-06-05 13:53.24: Waiting for resource in pool OCluster
+2024-06-05 13:53.31: Waiting for worker…
+2024-06-05 13:57.24: Got resource from pool OCluster
+Building on x86-bm-c14.sw.ocaml.org
+All commits already cached
+Updating files:  60% (19023/31476)Updating files:  61% (19201/31476)Updating files:  62% (19516/31476)Updating files:  63% (19830/31476)Updating files:  64% (20145/31476)Updating files:  65% (20460/31476)Updating files:  66% (20775/31476)Updating files:  67% (21089/31476)Updating files:  68% (21404/31476)Updating files:  69% (21719/31476)Updating files:  70% (22034/31476)Updating files:  71% (22348/31476)Updating files:  72% (22663/31476)Updating files:  73% (22978/31476)Updating files:  74% (23293/31476)Updating files:  75% (23607/31476)Updating files:  76% (23922/31476)Updating files:  77% (24237/31476)Updating files:  78% (24552/31476)Updating files:  79% (24867/31476)Updating files:  80% (25181/31476)Updating files:  81% (25496/31476)Updating files:  82% (25811/31476)Updating files:  83% (26126/31476)Updating files:  84% (26440/31476)Updating files:  85% (26755/31476)Updating files:  86% (27070/31476)Updating files:  87% (27385/31476)Updating files:  88% (27699/31476)Updating files:  89% (28014/31476)Updating files:  90% (28329/31476)Updating files:  91% (28644/31476)Updating files:  92% (28958/31476)Updating files:  93% (29273/31476)Updating files:  94% (29588/31476)Updating files:  95% (29903/31476)Updating files:  96% (30217/31476)Updating files:  97% (30532/31476)Updating files:  98% (30847/31476)Updating files:  99% (31162/31476)Updating files: 100% (31476/31476)Updating files: 100% (31476/31476), done.
+HEAD is now at 95b13c9192 Merge pull request #26012 from anmonteiro/release-reason-react-0.14.1
+Merge made by the 'ort' strategy.
+ .../chrome-trace/chrome-trace.3.16.0~alpha1/opam   | 40 +++++++++++++++
+ .../dune-action-plugin.3.16.0~alpha1/opam          | 53 ++++++++++++++++++++
+ .../dune-build-info.3.16.0~alpha1/opam             | 46 +++++++++++++++++
+ .../dune-configurator.3.16.0~alpha1/opam           | 50 +++++++++++++++++++
+ packages/dune-glob/dune-glob.3.16.0~alpha1/opam    | 43 ++++++++++++++++
+ .../dune-private-libs.3.16.0~alpha1/opam           | 51 +++++++++++++++++++
+ .../dune-rpc-lwt/dune-rpc-lwt.3.16.0~alpha1/opam   | 42 ++++++++++++++++
+ packages/dune-rpc/dune-rpc.3.16.0~alpha1/opam      | 44 +++++++++++++++++
+ packages/dune-site/dune-site.3.16.0~alpha1/opam    | 38 +++++++++++++++
+ packages/dune/dune.3.16.0~alpha1/opam              | 57 ++++++++++++++++++++++
+ packages/dyn/dyn.3.16.0~alpha1/opam                | 41 ++++++++++++++++
+ packages/ocamlc-loc/ocamlc-loc.3.16.0~alpha1/opam  | 44 +++++++++++++++++
+ packages/ordering/ordering.3.16.0~alpha1/opam      | 39 +++++++++++++++
+ packages/stdune/stdune.3.16.0~alpha1/opam          | 45 +++++++++++++++++
+ packages/xdg/xdg.3.16.0~alpha1/opam                | 40 +++++++++++++++
+ 15 files changed, 673 insertions(+)
+ create mode 100644 packages/chrome-trace/chrome-trace.3.16.0~alpha1/opam
+ create mode 100644 packages/dune-action-plugin/dune-action-plugin.3.16.0~alpha1/opam
+ create mode 100644 packages/dune-build-info/dune-build-info.3.16.0~alpha1/opam
+ create mode 100644 packages/dune-configurator/dune-configurator.3.16.0~alpha1/opam
+ create mode 100644 packages/dune-glob/dune-glob.3.16.0~alpha1/opam
+ create mode 100644 packages/dune-private-libs/dune-private-libs.3.16.0~alpha1/opam
+ create mode 100644 packages/dune-rpc-lwt/dune-rpc-lwt.3.16.0~alpha1/opam
+ create mode 100644 packages/dune-rpc/dune-rpc.3.16.0~alpha1/opam
+ create mode 100644 packages/dune-site/dune-site.3.16.0~alpha1/opam
+ create mode 100644 packages/dune/dune.3.16.0~alpha1/opam
+ create mode 100644 packages/dyn/dyn.3.16.0~alpha1/opam
+ create mode 100644 packages/ocamlc-loc/ocamlc-loc.3.16.0~alpha1/opam
+ create mode 100644 packages/ordering/ordering.3.16.0~alpha1/opam
+ create mode 100644 packages/stdune/stdune.3.16.0~alpha1/opam
+ create mode 100644 packages/xdg/xdg.3.16.0~alpha1/opam
+
+[01;34m(from ocaml/opam:debian-12-ocaml-4.10@sha256:d70d89fa4eaafb2407d9a5aeab7763945105eda9b94553817ac9406f75df46e2)[0m
+[01;2m[01;35m2024-06-05 13:58.26 ---> saved as "920b961c09f11801f6a62b27adb1737b30804a6decea43f4a30abbaa9222612e"[0m
+
+[01;34m/: (user (uid 1000) (gid 1000))[0m
+
+[01;34m/: (workdir /home/opam)[0m
+
+[01;34m/home/opam: (run (shell "sudo ln -f /usr/bin/opam-dev /usr/bin/opam"))[0m
+[01;2m[01;35m2024-06-05 13:58.26 ---> saved as "49bef4dcaedcc72220dd43e070c9f87a568ae0ad0070853770b6adf706d5cc91"[0m
+
+[01;34m/home/opam: (run (network host)
+                 (shell "opam init --reinit --config .opamrc-sandbox -ni"))[0m
+Configuring from /home/opam/.opamrc-sandbox, then /home/opam/.opamrc, and finally from built-in defaults.
+Checking for available remotes: rsync and local, git.
+  - you won't be able to use mercurial repositories unless you install the hg command on your system.
+  - you won't be able to use darcs repositories unless you install the darcs command on your system.
+
+This development version of opam requires an update to the layout of /home/opam/.opam from version 2.0 to version 2.2~beta, which can't be reverted.
+You may want to back it up before going further.
+
+Continue? [y/n] y
+Format upgrade done.
+
+<><> Updating repositories ><><><><><><><><><><><><><><><><><><><><><><><><><><>
+[default] synchronised from file:///home/opam/opam-repository
+[01;2m[01;35m2024-06-05 13:59.53 ---> saved as "c952bb9d11309a64a753af1b244cb402b1ddc10f7b4b2945d6256674b5113366"[0m
+
+[01;34m/home/opam: (run (shell "uname -rs && opam exec -- ocaml -version && opam --version"))[0m
+Linux 5.15.0-107-generic
+The OCaml toplevel, version 4.10.2
+2.2.0~beta3~dev
+[01;2m[01;35m2024-06-05 13:59.53 ---> saved as "0a44dc9670ba0c2a48070e0d9ad4addb136b518e47f2b7e3b46f8a5461420092"[0m
+
+[01;34m/home/opam: (env OPAMDOWNLOADJOBS 1)[0m
+
+[01;34m/home/opam: (env OPAMERRLOGLEN 0)[0m
+
+[01;34m/home/opam: (env OPAMSOLVERTIMEOUT 500)[0m
+
+[01;34m/home/opam: (env OPAMPRECISETRACKING 1)[0m
+
+[01;34m/home/opam: (env CI true)[0m
+
+[01;34m/home/opam: (env OPAM_REPO_CI true)[0m
+
+[01;34m/home/opam: (run (shell "rm -rf opam-repository/"))[0m
+[01;2m[01;35m2024-06-05 14:00.04 ---> saved as "b916c8060069a446a9dc491a5d83d639b41973438105950be0edb2d45a433fda"[0m
+
+[01;34m/home/opam: (copy (src .) (dst opam-repository/))[0m
+[01;2m[01;35m2024-06-05 14:00.11 ---> saved as "4bfc543a1625e35a1ff65671d45f875f80f5602828783c5612d8fe9d10f32779"[0m
+
+[01;34m/home/opam: (run (shell "opam repository set-url --strict default opam-repository/"))[0m
+[default] Initialised
+[01;2m[01;35m2024-06-05 14:01.08 ---> saved as "3234508b0c13116a7fd61b99bfeee898014efd8dcf031e7856c779dd11c1b6fa"[0m
+
+[01;34m/home/opam: (run (network host)
+                 (shell "opam update --depexts || true"))[0m
++ /usr/bin/sudo "apt-get" "update"
+- Hit:1 http://deb.debian.org/debian bookworm InRelease
+- Get:2 http://deb.debian.org/debian bookworm-updates InRelease [55.4 kB]
+- Get:3 http://deb.debian.org/debian-security bookworm-security InRelease [48.0 kB]
+- Get:4 http://deb.debian.org/debian-security bookworm-security/main amd64 Packages [157 kB]
+- Fetched 260 kB in 0s (1056 kB/s)
+- Reading package lists...
+- 
+[01;2m[01;35m2024-06-05 14:01.09 ---> saved as "f6278363b48aec40c55842d72da5a6bdec91d7f9831b32b4882c318067b74ce8"[0m
+
+[01;34m/home/opam: (run (shell "opam pin add -k version -yn dune-action-plugin.3.16.0~alpha1 3.16.0~alpha1"))[0m
+dune-action-plugin is now pinned to version 3.16.0~alpha1
+[01;2m[01;35m2024-06-05 14:01.10 ---> saved as "52b06a975607e026d1c6d95a8cd52282b4d344e6acd49f905131f22d6bcdab0d"[0m
+
+[01;34m/home/opam: (run (cache (opam-archives (target /home/opam/.opam/download-cache)))
+                 (network host)
+                 (shell  "opam reinstall dune-action-plugin.3.16.0~alpha1;\
+                        \n        res=$?;\
+                        \n        test \"$res\" != 31 && exit \"$res\";\
+                        \n        export OPAMCLI=2.0;\
+                        \n        build_dir=$(opam var prefix)/.opam-switch/build;\
+                        \n        failed=$(ls \"$build_dir\");\
+                        \n        partial_fails=\"\";\
+                        \n        for pkg in $failed; do\
+                        \n          if opam show -f x-ci-accept-failures: \"$pkg\" | grep -qF \"\\\"debian-12\\\"\"; then\
+                        \n            echo \"A package failed and has been disabled for CI using the 'x-ci-accept-failures' field.\";\
+                        \n          fi;\
+                        \n          test \"$pkg\" != 'dune-action-plugin.3.16.0~alpha1' && partial_fails=\"$partial_fails $pkg\";\
+                        \n        done;\
+                        \n        test \"${partial_fails}\" != \"\" && echo \"opam-repo-ci detected dependencies failing: ${partial_fails}\";\
+                        \n        exit 1"))[0m
+dune-action-plugin.3.16.0~alpha1 is not installed. Install it? [y/n] y
+The following actions will be performed:
+=== recompile 4 packages
+  - recompile ocaml               4.10.2                 [uses ocaml-base-compiler, ocaml-config]
+  - recompile ocaml-base-compiler 4.10.2 (pinned)        [upstream or system changes]
+  - recompile ocaml-config        1                      [upstream or system changes]
+  - recompile opam-depext         1.2.1-1                [uses ocaml]
+=== install 11 packages
+  - install   csexp               1.5.2                  [required by dune-action-plugin]
+  - install   dune                3.16.0~alpha1          [required by dune-action-plugin]
+  - install   dune-action-plugin  3.16.0~alpha1 (pinned)
+  - install   dune-glob           3.16.0~alpha1          [required by dune-action-plugin]
+  - install   dune-private-libs   3.16.0~alpha1          [required by dune-action-plugin]
+  - install   dune-rpc            3.16.0~alpha1          [required by dune-action-plugin]
+  - install   dyn                 3.16.0~alpha1          [required by dune-glob, dune-rpc]
+  - install   ordering            3.16.0~alpha1          [required by dune-glob, dune-rpc]
+  - install   pp                  1.2.0                  [required by dune-rpc]
+  - install   stdune              3.16.0~alpha1          [required by dune-action-plugin]
+  - install   xdg                 3.16.0~alpha1          [required by dune-rpc]
+
+<><> Processing actions <><><><><><><><><><><><><><><><><><><><><><><><><><><><>
+-> retrieved csexp.1.5.2  (cached)
+-> retrieved dune.3.16.0~alpha1, dune-action-plugin.3.16.0~alpha1, dune-glob.3.16.0~alpha1, dune-private-libs.3.16.0~alpha1, dune-rpc.3.16.0~alpha1, dyn.3.16.0~alpha1, ordering.3.16.0~alpha1, stdune.3.16.0~alpha1, xdg.3.16.0~alpha1  (https://github.com/ocaml/dune/releases/download/3.16.0_alpha1/dune-3.16.0.alpha1.tbz)
+-> retrieved ocaml-base-compiler.4.10.2  (cached)
+-> retrieved ocaml-config.1  (cached)
+-> retrieved opam-depext.1.2.1-1  (cached)
+-> retrieved pp.1.2.0  (cached)
+-> removed   opam-depext.1.2.1-1
+-> removed   ocaml.4.10.2
+-> removed   ocaml-config.1
+-> removed   ocaml-base-compiler.4.10.2
+-> installed ocaml-base-compiler.4.10.2
+-> installed ocaml-config.1
+-> installed ocaml.4.10.2
+-> installed opam-depext.1.2.1-1
+-> installed dune.3.16.0~alpha1
+-> installed csexp.1.5.2
+-> installed pp.1.2.0
+-> installed ordering.3.16.0~alpha1
+-> installed xdg.3.16.0~alpha1
+-> installed dyn.3.16.0~alpha1
+-> installed stdune.3.16.0~alpha1
+-> installed dune-private-libs.3.16.0~alpha1
+-> installed dune-rpc.3.16.0~alpha1
+-> installed dune-glob.3.16.0~alpha1
+-> installed dune-action-plugin.3.16.0~alpha1
+Done.
+
+<><> opam-depext.1.2.1-1 installed successfully <><><><><><><><><><><><><><><><>
+=> opam-depext is unnecessary when used with opam >= 2.1. Please use opam install directly instead
+# Run eval $(opam env) to update the current shell environment
+[01;2m[01;35m2024-06-05 14:06.41 ---> saved as "552ec66332ca2852b4255a79c43a825b498995376f49f62e7912e71f6690e686"[0m
+
+[01;34m/home/opam: (run (network host)
+                 (shell "(opam reinstall --with-test dune-action-plugin.3.16.0~alpha1) || true"))[0m
+[ERROR] Sorry, resolution of the request timed out.
+        Try to specify a more precise request, use a different solver, or increase the allowed time by setting OPAMSOLVERTIMEOUT to a bigger value (currently, it is set to 500.0 seconds).
+[01;2m[01;35m2024-06-05 14:15.16 ---> saved as "2b4e3e2cfac1460ff290c906f129d79bdcaa0a1d18554cfc9a332eb73e6d71d6"[0m
+
+[01;34m/home/opam: (run (shell  "opam reinstall --with-test --verbose dune-action-plugin.3.16.0~alpha1;\
+                        \n        res=$?;\
+                        \n        test \"$res\" != 31 && exit \"$res\";\
+                        \n        export OPAMCLI=2.0;\
+                        \n        build_dir=$(opam var prefix)/.opam-switch/build;\
+                        \n        failed=$(ls \"$build_dir\");\
+                        \n        partial_fails=\"\";\
+                        \n        for pkg in $failed; do\
+                        \n          if opam show -f x-ci-accept-failures: \"$pkg\" | grep -qF \"\\\"debian-12\\\"\"; then\
+                        \n            echo \"A package failed and has been disabled for CI using the 'x-ci-accept-failures' field.\";\
+                        \n          fi;\
+                        \n          test \"$pkg\" != 'dune-action-plugin.3.16.0~alpha1' && partial_fails=\"$partial_fails $pkg\";\
+                        \n        done;\
+                        \n        test \"${partial_fails}\" != \"\" && echo \"opam-repo-ci detected dependencies failing: ${partial_fails}\";\
+                        \n        exit 1"))[0m
+[ERROR] Sorry, resolution of the request timed out.
+        Try to specify a more precise request, use a different solver, or increase the allowed time by setting OPAMSOLVERTIMEOUT to a bigger value (currently, it is set to 500.0 seconds).
+'opam reinstall --with-test --verbose dune-action-plugin.3.16.0~alpha1' failed.
+"/usr/bin/env" "bash" "-c" "opam reinstall --with-test --verbose dune-action-plugin.3.16.0~alpha1;
+        res=$?;
+        test "$res" != 31 && exit "$res";
+        export OPAMCLI=2.0;
+        build_dir=$(opam var prefix)/.opam-switch/build;
+        failed=$(ls "$build_dir");
+        partial_fails="";
+        for pkg in $failed; do
+          if opam show -f x-ci-accept-failures: "$pkg" | grep -qF "\"debian-12\""; then
+            echo "A package failed and has been disabled for CI using the 'x-ci-accept-failures' field.";
+          fi;
+          test "$pkg" != 'dune-action-plugin.3.16.0~alpha1' && partial_fails="$partial_fails $pkg";
+        done;
+        test "${partial_fails}" != "" && echo "opam-repo-ci detected dependencies failing: ${partial_fails}";
+        exit 1" failed with exit status 60
+2024-06-05 14:24.04: Job failed: Failed: Build failed
+2024-06-05 14:24.04: Log analysis:
+2024-06-05 14:24.04: >>> 
+[ERROR] Sorry, resolution of the request timed out.
+ (score = 20)
+2024-06-05 14:24.04: >>> 
+[ERROR] Sorry, resolution of the request timed out.
+ (score = 20)
+2024-06-05 14:24.04: Sorry, resolution of the request timed out.

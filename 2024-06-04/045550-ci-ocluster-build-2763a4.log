@@ -1,0 +1,413 @@
+2024-06-04 04:55.50: New job: test melange-fest.0.1.0 with reason-react-ppx.0.14.1, using opam dev
+                              from https://github.com/ocaml/opam-repository.git#refs/pull/26012/head (327f9499ec485ee43391769c34d2391c4ab4e2f6)
+                              on debian-12-ocaml-4.14/amd64
+
+To reproduce locally:
+
+cd $(mktemp -d)
+git clone --recursive "https://github.com/ocaml/opam-repository.git" && cd "opam-repository" && git fetch origin "refs/pull/26012/head" && git reset --hard 327f9499
+git fetch origin master
+git merge --no-edit c45f5bab71d3589f41f9603daca5acad14df0ab0
+cat > ../Dockerfile <<'END-OF-DOCKERFILE'
+[34mFROM ocaml/opam:debian-12-ocaml-4.14@sha256:2ba69112cb856b702920b505b82a8fab331d2c9d9406c7f3b9f4adb73637666c
+USER 1000:1000
+WORKDIR /home/opam
+RUN sudo ln -f /usr/bin/opam-dev /usr/bin/opam
+RUN opam init --reinit -ni
+RUN uname -rs && opam exec -- ocaml -version && opam --version
+ENV OPAMDOWNLOADJOBS="1"
+ENV OPAMERRLOGLEN="0"
+ENV OPAMSOLVERTIMEOUT="500"
+ENV OPAMPRECISETRACKING="1"
+ENV CI="true"
+ENV OPAM_REPO_CI="true"
+RUN rm -rf opam-repository/
+COPY --chown=1000:1000 . opam-repository/
+RUN opam repository set-url --strict default opam-repository/
+RUN opam update --depexts || true
+RUN opam pin add -k version -yn reason-react-ppx.0.14.1 0.14.1
+RUN opam reinstall reason-react-ppx.0.14.1; \
+    res=$?; \
+    test "$res" != 31 && exit "$res"; \
+    export OPAMCLI=2.0; \
+    build_dir=$(opam var prefix)/.opam-switch/build; \
+    failed=$(ls "$build_dir"); \
+    partial_fails=""; \
+    for pkg in $failed; do \
+    if opam show -f x-ci-accept-failures: "$pkg" | grep -qF "\"debian-12\""; then \
+    echo "A package failed and has been disabled for CI using the 'x-ci-accept-failures' field."; \
+    fi; \
+    test "$pkg" != 'reason-react-ppx.0.14.1' && partial_fails="$partial_fails $pkg"; \
+    done; \
+    test "${partial_fails}" != "" && echo "opam-repo-ci detected dependencies failing: ${partial_fails}"; \
+    exit 1
+RUN opam reinstall melange-fest.0.1.0; \
+    res=$?; \
+    test "$res" != 31 && exit "$res"; \
+    export OPAMCLI=2.0; \
+    build_dir=$(opam var prefix)/.opam-switch/build; \
+    failed=$(ls "$build_dir"); \
+    partial_fails=""; \
+    for pkg in $failed; do \
+    if opam show -f x-ci-accept-failures: "$pkg" | grep -qF "\"debian-12\""; then \
+    echo "A package failed and has been disabled for CI using the 'x-ci-accept-failures' field."; \
+    fi; \
+    test "$pkg" != 'melange-fest.0.1.0' && partial_fails="$partial_fails $pkg"; \
+    done; \
+    test "${partial_fails}" != "" && echo "opam-repo-ci detected dependencies failing: ${partial_fails}"; \
+    exit 1
+RUN (opam reinstall --with-test melange-fest.0.1.0) || true
+RUN opam reinstall --with-test --verbose melange-fest.0.1.0; \
+    res=$?; \
+    test "$res" != 31 && exit "$res"; \
+    export OPAMCLI=2.0; \
+    build_dir=$(opam var prefix)/.opam-switch/build; \
+    failed=$(ls "$build_dir"); \
+    partial_fails=""; \
+    for pkg in $failed; do \
+    if opam show -f x-ci-accept-failures: "$pkg" | grep -qF "\"debian-12\""; then \
+    echo "A package failed and has been disabled for CI using the 'x-ci-accept-failures' field."; \
+    fi; \
+    test "$pkg" != 'melange-fest.0.1.0' && partial_fails="$partial_fails $pkg"; \
+    done; \
+    test "${partial_fails}" != "" && echo "opam-repo-ci detected dependencies failing: ${partial_fails}"; \
+    exit 1
+[0m
+END-OF-DOCKERFILE
+docker build -f ../Dockerfile .
+
+2024-06-04 04:55.50: Using cache hint "ocaml/opam:debian-12-ocaml-4.14@sha256:2ba69112cb856b702920b505b82a8fab331d2c9d9406c7f3b9f4adb73637666c-reason-react-ppx.0.14.1-melange-fest.0.1.0-327f9499ec485ee43391769c34d2391c4ab4e2f6"
+2024-06-04 04:55.50: Using OBuilder spec:
+((from ocaml/opam:debian-12-ocaml-4.14@sha256:2ba69112cb856b702920b505b82a8fab331d2c9d9406c7f3b9f4adb73637666c)
+ (user (uid 1000) (gid 1000))
+ (workdir /home/opam)
+ (run (shell "sudo ln -f /usr/bin/opam-dev /usr/bin/opam"))
+ (run (network host)
+      (shell "opam init --reinit --config .opamrc-sandbox -ni"))
+ (run (shell "uname -rs && opam exec -- ocaml -version && opam --version"))
+ (env OPAMDOWNLOADJOBS 1)
+ (env OPAMERRLOGLEN 0)
+ (env OPAMSOLVERTIMEOUT 500)
+ (env OPAMPRECISETRACKING 1)
+ (env CI true)
+ (env OPAM_REPO_CI true)
+ (run (shell "rm -rf opam-repository/"))
+ (copy (src .) (dst opam-repository/))
+ (run (shell "opam repository set-url --strict default opam-repository/"))
+ (run (network host)
+      (shell "opam update --depexts || true"))
+ (run (shell "opam pin add -k version -yn reason-react-ppx.0.14.1 0.14.1"))
+ (run (cache (opam-archives (target /home/opam/.opam/download-cache)))
+      (network host)
+      (shell  "opam reinstall reason-react-ppx.0.14.1;\
+             \n        res=$?;\
+             \n        test \"$res\" != 31 && exit \"$res\";\
+             \n        export OPAMCLI=2.0;\
+             \n        build_dir=$(opam var prefix)/.opam-switch/build;\
+             \n        failed=$(ls \"$build_dir\");\
+             \n        partial_fails=\"\";\
+             \n        for pkg in $failed; do\
+             \n          if opam show -f x-ci-accept-failures: \"$pkg\" | grep -qF \"\\\"debian-12\\\"\"; then\
+             \n            echo \"A package failed and has been disabled for CI using the 'x-ci-accept-failures' field.\";\
+             \n          fi;\
+             \n          test \"$pkg\" != 'reason-react-ppx.0.14.1' && partial_fails=\"$partial_fails $pkg\";\
+             \n        done;\
+             \n        test \"${partial_fails}\" != \"\" && echo \"opam-repo-ci detected dependencies failing: ${partial_fails}\";\
+             \n        exit 1"))
+ (run (cache (opam-archives (target /home/opam/.opam/download-cache)))
+      (network host)
+      (shell  "opam reinstall melange-fest.0.1.0;\
+             \n        res=$?;\
+             \n        test \"$res\" != 31 && exit \"$res\";\
+             \n        export OPAMCLI=2.0;\
+             \n        build_dir=$(opam var prefix)/.opam-switch/build;\
+             \n        failed=$(ls \"$build_dir\");\
+             \n        partial_fails=\"\";\
+             \n        for pkg in $failed; do\
+             \n          if opam show -f x-ci-accept-failures: \"$pkg\" | grep -qF \"\\\"debian-12\\\"\"; then\
+             \n            echo \"A package failed and has been disabled for CI using the 'x-ci-accept-failures' field.\";\
+             \n          fi;\
+             \n          test \"$pkg\" != 'melange-fest.0.1.0' && partial_fails=\"$partial_fails $pkg\";\
+             \n        done;\
+             \n        test \"${partial_fails}\" != \"\" && echo \"opam-repo-ci detected dependencies failing: ${partial_fails}\";\
+             \n        exit 1"))
+ (run (network host)
+      (shell "(opam reinstall --with-test melange-fest.0.1.0) || true"))
+ (run (shell  "opam reinstall --with-test --verbose melange-fest.0.1.0;\
+             \n        res=$?;\
+             \n        test \"$res\" != 31 && exit \"$res\";\
+             \n        export OPAMCLI=2.0;\
+             \n        build_dir=$(opam var prefix)/.opam-switch/build;\
+             \n        failed=$(ls \"$build_dir\");\
+             \n        partial_fails=\"\";\
+             \n        for pkg in $failed; do\
+             \n          if opam show -f x-ci-accept-failures: \"$pkg\" | grep -qF \"\\\"debian-12\\\"\"; then\
+             \n            echo \"A package failed and has been disabled for CI using the 'x-ci-accept-failures' field.\";\
+             \n          fi;\
+             \n          test \"$pkg\" != 'melange-fest.0.1.0' && partial_fails=\"$partial_fails $pkg\";\
+             \n        done;\
+             \n        test \"${partial_fails}\" != \"\" && echo \"opam-repo-ci detected dependencies failing: ${partial_fails}\";\
+             \n        exit 1"))
+)
+
+2024-06-04 04:55.50: Waiting for resource in pool OCluster
+2024-06-04 04:55.50: Waiting for worker…
+2024-06-04 04:56.11: Got resource from pool OCluster
+Building on doris.caelum.ci.dev
+All commits already cached
+HEAD is now at c45f5bab71 Merge pull request #25994 from Leonidas-from-XIV/release-yojson-2.2.0
+Updating c45f5bab71..327f9499ec
+Fast-forward
+ .../reason-react-ppx/reason-react-ppx.0.14.1/opam  | 46 ++++++++++++++++++
+ packages/reason-react/reason-react.0.14.1/opam     | 55 ++++++++++++++++++++++
+ 2 files changed, 101 insertions(+)
+ create mode 100644 packages/reason-react-ppx/reason-react-ppx.0.14.1/opam
+ create mode 100644 packages/reason-react/reason-react.0.14.1/opam
+
+[01;34m(from ocaml/opam:debian-12-ocaml-4.14@sha256:2ba69112cb856b702920b505b82a8fab331d2c9d9406c7f3b9f4adb73637666c)[0m
+[01;2m[01;35m2024-06-04 04:56.13 ---> using "48fcd9b686ae3e44ef60a164ef8db6e11e86f168703f26fb1315f899c9c53662" from cache[0m
+
+[01;34m/: (user (uid 1000) (gid 1000))[0m
+
+[01;34m/: (workdir /home/opam)[0m
+
+[01;34m/home/opam: (run (shell "sudo ln -f /usr/bin/opam-dev /usr/bin/opam"))[0m
+[01;2m[01;35m2024-06-04 04:56.13 ---> using "182db0db166b9dc97fd6bddbdaada0d920c1a351accedca1486cd948e46ba36e" from cache[0m
+
+[01;34m/home/opam: (run (network host)
+                 (shell "opam init --reinit --config .opamrc-sandbox -ni"))[0m
+Configuring from /home/opam/.opamrc-sandbox, then /home/opam/.opamrc, and finally from built-in defaults.
+Checking for available remotes: rsync and local, git.
+  - you won't be able to use mercurial repositories unless you install the hg command on your system.
+  - you won't be able to use darcs repositories unless you install the darcs command on your system.
+
+Continue? [y/n] y
+This development version of opam requires an update to the layout of /home/opam/.opam from version 2.0 to version 2.2~beta, which can't be reverted.
+You may want to back it up before going further.
+
+[NOTE] The 'jobs' option was reset, its value was 39 and its new value will vary according to the current number of cores on your machine. You can restore the fixed value using:
+           opam option jobs=39 --global
+Format upgrade done.
+
+<><> Updating repositories ><><><><><><><><><><><><><><><><><><><><><><><><><><>
+[default] synchronised from file:///home/opam/opam-repository
+[01;2m[01;35m2024-06-04 04:56.13 ---> using "4fbb68d819e513d708f904a56dbcd9eac5442d5d3fd384b169ffc78983ed0e74" from cache[0m
+
+[01;34m/home/opam: (run (shell "uname -rs && opam exec -- ocaml -version && opam --version"))[0m
+Linux 5.15.0-107-generic
+The OCaml toplevel, version 4.14.2
+2.2.0~beta3~dev
+[01;2m[01;35m2024-06-04 04:56.13 ---> using "3c4a9f3d7a40a43473780c877ab3475ae6bd03681c2f4881fe30bb5d34e05f9b" from cache[0m
+
+[01;34m/home/opam: (env OPAMDOWNLOADJOBS 1)[0m
+
+[01;34m/home/opam: (env OPAMERRLOGLEN 0)[0m
+
+[01;34m/home/opam: (env OPAMSOLVERTIMEOUT 500)[0m
+
+[01;34m/home/opam: (env OPAMPRECISETRACKING 1)[0m
+
+[01;34m/home/opam: (env CI true)[0m
+
+[01;34m/home/opam: (env OPAM_REPO_CI true)[0m
+
+[01;34m/home/opam: (run (shell "rm -rf opam-repository/"))[0m
+[01;2m[01;35m2024-06-04 04:56.13 ---> using "0ad48452d9001012444a91ed62dee40f750c23d668e41d370665cd385b64805a" from cache[0m
+
+[01;34m/home/opam: (copy (src .) (dst opam-repository/))[0m
+[01;2m[01;35m2024-06-04 04:56.14 ---> using "1ead23cc8bc626aaa0c5e392ef6acd059d550c6f5f9238bb6a21b5295f9b7f9b" from cache[0m
+
+[01;34m/home/opam: (run (shell "opam repository set-url --strict default opam-repository/"))[0m
+[default] Initialised
+[01;2m[01;35m2024-06-04 04:56.14 ---> using "a62bf2e6de8a68490ebe85c8d19a6e3f3ad7c7bf569e457a2db5cbd992523c5e" from cache[0m
+
+[01;34m/home/opam: (run (network host)
+                 (shell "opam update --depexts || true"))[0m
++ /usr/bin/sudo "apt-get" "update"
+- Hit:1 http://deb.debian.org/debian bookworm InRelease
+- Get:2 http://deb.debian.org/debian bookworm-updates InRelease [55.4 kB]
+- Get:3 http://deb.debian.org/debian-security bookworm-security InRelease [48.0 kB]
+- Get:4 http://deb.debian.org/debian-security bookworm-security/main amd64 Packages [157 kB]
+- Fetched 260 kB in 0s (770 kB/s)
+- Reading package lists...
+[01;2m[01;35m2024-06-04 04:56.14 ---> using "96721fd8828f6cc58ff87953b50460984e381fffe6844b4f2fb7b13830b448a8" from cache[0m
+
+[01;34m/home/opam: (run (shell "opam pin add -k version -yn reason-react-ppx.0.14.1 0.14.1"))[0m
+reason-react-ppx is now pinned to version 0.14.1
+[01;2m[01;35m2024-06-04 04:56.14 ---> using "f44b1b69e641d96ea42692c7792704f151a7f726d879863b86867853f841322c" from cache[0m
+
+[01;34m/home/opam: (run (cache (opam-archives (target /home/opam/.opam/download-cache)))
+                 (network host)
+                 (shell  "opam reinstall reason-react-ppx.0.14.1;\
+                        \n        res=$?;\
+                        \n        test \"$res\" != 31 && exit \"$res\";\
+                        \n        export OPAMCLI=2.0;\
+                        \n        build_dir=$(opam var prefix)/.opam-switch/build;\
+                        \n        failed=$(ls \"$build_dir\");\
+                        \n        partial_fails=\"\";\
+                        \n        for pkg in $failed; do\
+                        \n          if opam show -f x-ci-accept-failures: \"$pkg\" | grep -qF \"\\\"debian-12\\\"\"; then\
+                        \n            echo \"A package failed and has been disabled for CI using the 'x-ci-accept-failures' field.\";\
+                        \n          fi;\
+                        \n          test \"$pkg\" != 'reason-react-ppx.0.14.1' && partial_fails=\"$partial_fails $pkg\";\
+                        \n        done;\
+                        \n        test \"${partial_fails}\" != \"\" && echo \"opam-repo-ci detected dependencies failing: ${partial_fails}\";\
+                        \n        exit 1"))[0m
+reason-react-ppx.0.14.1 is not installed. Install it? [y/n] y
+The following actions will be performed:
+=== recompile 4 packages
+  - recompile ocaml               4.14.2          [uses ocaml-base-compiler, ocaml-config]
+  - recompile ocaml-base-compiler 4.14.2 (pinned) [upstream or system changes]
+  - recompile ocaml-config        2               [upstream or system changes]
+  - recompile opam-depext         1.2.1-1         [uses ocaml]
+=== install 17 packages
+  - install   cppo                1.6.9           [required by merlin-extend]
+  - install   dune                3.15.3          [required by reason-react-ppx]
+  - install   dune-build-info     3.15.3          [required by reason]
+  - install   fix                 20230505        [required by reason]
+  - install   menhir              20231231        [required by reason]
+  - install   menhirCST           20231231        [required by menhir]
+  - install   menhirLib           20231231        [required by menhir]
+  - install   menhirSdk           20231231        [required by menhir]
+  - install   merlin-extend       0.6.1           [required by reason]
+  - install   ocaml-compiler-libs v0.12.4         [required by ppxlib]
+  - install   ocamlfind           1.9.6           [required by reason]
+  - install   ppx_derivers        1.2.1           [required by ppxlib, reason]
+  - install   ppxlib              0.32.1          [required by reason-react-ppx]
+  - install   reason              3.11.0          [required by reason-react-ppx]
+  - install   reason-react-ppx    0.14.1 (pinned)
+  - install   sexplib0            v0.17.0         [required by ppxlib]
+  - install   stdlib-shims        0.3.0           [required by ppxlib]
+
+<><> Processing actions <><><><><><><><><><><><><><><><><><><><><><><><><><><><>
+-> retrieved cppo.1.6.9  (cached)
+-> retrieved dune.3.15.3, dune-build-info.3.15.3  (cached)
+-> retrieved fix.20230505  (cached)
+-> retrieved menhir.20231231, menhirCST.20231231, menhirLib.20231231, menhirSdk.20231231  (cached)
+-> retrieved merlin-extend.0.6.1  (cached)
+-> retrieved ocaml-base-compiler.4.14.2  (cached)
+-> retrieved ocaml-compiler-libs.v0.12.4  (cached)
+-> retrieved ocaml-config.2  (cached)
+-> retrieved ocamlfind.1.9.6  (cached)
+-> retrieved opam-depext.1.2.1-1  (cached)
+-> retrieved ppx_derivers.1.2.1  (cached)
+-> retrieved ppxlib.0.32.1  (cached)
+-> retrieved reason.3.11.0  (cached)
+-> retrieved reason-react-ppx.0.14.1  (cached)
+-> retrieved sexplib0.v0.17.0  (cached)
+-> retrieved stdlib-shims.0.3.0  (cached)
+-> removed   opam-depext.1.2.1-1
+-> removed   ocaml.4.14.2
+-> removed   ocaml-config.2
+-> removed   ocaml-base-compiler.4.14.2
+-> installed ocaml-base-compiler.4.14.2
+-> installed ocaml-config.2
+-> installed ocaml.4.14.2
+-> installed opam-depext.1.2.1-1
+-> installed ocamlfind.1.9.6
+-> installed dune.3.15.3
+-> installed cppo.1.6.9
+-> installed ppx_derivers.1.2.1
+-> installed menhirCST.20231231
+-> installed stdlib-shims.0.3.0
+-> installed fix.20230505
+-> installed menhirSdk.20231231
+-> installed merlin-extend.0.6.1
+-> installed sexplib0.v0.17.0
+-> installed menhirLib.20231231
+-> installed dune-build-info.3.15.3
+-> installed ocaml-compiler-libs.v0.12.4
+-> installed menhir.20231231
+-> installed ppxlib.0.32.1
+-> installed reason.3.11.0
+-> installed reason-react-ppx.0.14.1
+Done.
+
+<><> opam-depext.1.2.1-1 installed successfully <><><><><><><><><><><><><><><><>
+=> opam-depext is unnecessary when used with opam >= 2.1. Please use opam install directly instead
+# Run eval $(opam env) to update the current shell environment
+[01;2m[01;35m2024-06-04 04:56.14 ---> using "98619d2729c0948c325d58d47c28e76c54390b4d31d8901f7c6227b08ad553d4" from cache[0m
+
+[01;34m/home/opam: (run (cache (opam-archives (target /home/opam/.opam/download-cache)))
+                 (network host)
+                 (shell  "opam reinstall melange-fest.0.1.0;\
+                        \n        res=$?;\
+                        \n        test \"$res\" != 31 && exit \"$res\";\
+                        \n        export OPAMCLI=2.0;\
+                        \n        build_dir=$(opam var prefix)/.opam-switch/build;\
+                        \n        failed=$(ls \"$build_dir\");\
+                        \n        partial_fails=\"\";\
+                        \n        for pkg in $failed; do\
+                        \n          if opam show -f x-ci-accept-failures: \"$pkg\" | grep -qF \"\\\"debian-12\\\"\"; then\
+                        \n            echo \"A package failed and has been disabled for CI using the 'x-ci-accept-failures' field.\";\
+                        \n          fi;\
+                        \n          test \"$pkg\" != 'melange-fest.0.1.0' && partial_fails=\"$partial_fails $pkg\";\
+                        \n        done;\
+                        \n        test \"${partial_fails}\" != \"\" && echo \"opam-repo-ci detected dependencies failing: ${partial_fails}\";\
+                        \n        exit 1"))[0m
+melange-fest.0.1.0 is not installed. Install it? [y/n] y
+The following actions will be performed:
+=== install 3 packages
+  - install cmdliner     1.3.0     [required by melange]
+  - install melange      4.0.0-414 [required by melange-fest]
+  - install melange-fest 0.1.0
+
+<><> Processing actions <><><><><><><><><><><><><><><><><><><><><><><><><><><><>
+-> retrieved cmdliner.1.3.0  (cached)
+-> retrieved melange.4.0.0-414  (cached)
+-> retrieved melange-fest.0.1.0  (cached)
+-> installed cmdliner.1.3.0
+-> installed melange.4.0.0-414
+-> installed melange-fest.0.1.0
+Done.
+# Run eval $(opam env) to update the current shell environment
+[01;2m[01;35m2024-06-04 04:56.42 ---> saved as "c0c527d16698ca8e674c35dd2bd050ad83bb36662b288d559442425208ef1565"[0m
+
+[01;34m/home/opam: (run (network host)
+                 (shell "(opam reinstall --with-test melange-fest.0.1.0) || true"))[0m
+[ERROR] Sorry, resolution of the request timed out.
+        Try to specify a more precise request, use a different solver, or increase the allowed time by setting OPAMSOLVERTIMEOUT to a bigger value (currently, it is set to 500.0 seconds).
+[01;2m[01;35m2024-06-04 05:05.10 ---> saved as "7cfae4c57b9d52953b09bdcb4a81d7377d206f4477507f679252ab87f6c72f45"[0m
+
+[01;34m/home/opam: (run (shell  "opam reinstall --with-test --verbose melange-fest.0.1.0;\
+                        \n        res=$?;\
+                        \n        test \"$res\" != 31 && exit \"$res\";\
+                        \n        export OPAMCLI=2.0;\
+                        \n        build_dir=$(opam var prefix)/.opam-switch/build;\
+                        \n        failed=$(ls \"$build_dir\");\
+                        \n        partial_fails=\"\";\
+                        \n        for pkg in $failed; do\
+                        \n          if opam show -f x-ci-accept-failures: \"$pkg\" | grep -qF \"\\\"debian-12\\\"\"; then\
+                        \n            echo \"A package failed and has been disabled for CI using the 'x-ci-accept-failures' field.\";\
+                        \n          fi;\
+                        \n          test \"$pkg\" != 'melange-fest.0.1.0' && partial_fails=\"$partial_fails $pkg\";\
+                        \n        done;\
+                        \n        test \"${partial_fails}\" != \"\" && echo \"opam-repo-ci detected dependencies failing: ${partial_fails}\";\
+                        \n        exit 1"))[0m
+[ERROR] Sorry, resolution of the request timed out.
+        Try to specify a more precise request, use a different solver, or increase the allowed time by setting OPAMSOLVERTIMEOUT to a bigger value (currently, it is set to 500.0 seconds).
+'opam reinstall --with-test --verbose melange-fest.0.1.0' failed.
+"/usr/bin/env" "bash" "-c" "opam reinstall --with-test --verbose melange-fest.0.1.0;
+        res=$?;
+        test "$res" != 31 && exit "$res";
+        export OPAMCLI=2.0;
+        build_dir=$(opam var prefix)/.opam-switch/build;
+        failed=$(ls "$build_dir");
+        partial_fails="";
+        for pkg in $failed; do
+          if opam show -f x-ci-accept-failures: "$pkg" | grep -qF "\"debian-12\""; then
+            echo "A package failed and has been disabled for CI using the 'x-ci-accept-failures' field.";
+          fi;
+          test "$pkg" != 'melange-fest.0.1.0' && partial_fails="$partial_fails $pkg";
+        done;
+        test "${partial_fails}" != "" && echo "opam-repo-ci detected dependencies failing: ${partial_fails}";
+        exit 1" failed with exit status 60
+2024-06-04 05:13.50: Job failed: Failed: Build failed
+2024-06-04 05:13.50: Log analysis:
+2024-06-04 05:13.50: >>> 
+[ERROR] Sorry, resolution of the request timed out.
+ (score = 20)
+2024-06-04 05:13.50: >>> 
+[ERROR] Sorry, resolution of the request timed out.
+ (score = 20)
+2024-06-04 05:13.50: Sorry, resolution of the request timed out.

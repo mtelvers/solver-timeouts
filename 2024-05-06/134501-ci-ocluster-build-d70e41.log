@@ -1,0 +1,693 @@
+2024-05-06 13:45.01: New job: test current_ocluster.0.2 with xenstore.2.3.0, using opam dev
+                              from https://github.com/ocaml/opam-repository.git#refs/pull/25801/head (b26ada44e6934872d1b956b62f3458c3a2ff62c2)
+                              on debian-12-ocaml-4.14/amd64
+
+To reproduce locally:
+
+cd $(mktemp -d)
+git clone --recursive "https://github.com/ocaml/opam-repository.git" && cd "opam-repository" && git fetch origin "refs/pull/25801/head" && git reset --hard b26ada44
+git fetch origin master
+git merge --no-edit 2b6e600e5b1d71ecc8ddcc390312fdfca6c80615
+cat > ../Dockerfile <<'END-OF-DOCKERFILE'
+[34mFROM ocaml/opam:debian-12-ocaml-4.14@sha256:35b1aa76181479f2ba40039ae0c5fa5d94e24300e1eb606117587a8e82e9d89e
+USER 1000:1000
+WORKDIR /home/opam
+RUN sudo ln -f /usr/bin/opam-dev /usr/bin/opam
+RUN opam init --reinit -ni
+RUN uname -rs && opam exec -- ocaml -version && opam --version
+ENV OPAMDOWNLOADJOBS="1"
+ENV OPAMERRLOGLEN="0"
+ENV OPAMSOLVERTIMEOUT="500"
+ENV OPAMPRECISETRACKING="1"
+ENV CI="true"
+ENV OPAM_REPO_CI="true"
+RUN rm -rf opam-repository/
+COPY --chown=1000:1000 . opam-repository/
+RUN opam repository set-url --strict default opam-repository/
+RUN opam update --depexts || true
+RUN opam pin add -k version -yn xenstore.2.3.0 2.3.0
+RUN opam reinstall xenstore.2.3.0; \
+    res=$?; \
+    test "$res" != 31 && exit "$res"; \
+    export OPAMCLI=2.0; \
+    build_dir=$(opam var prefix)/.opam-switch/build; \
+    failed=$(ls "$build_dir"); \
+    partial_fails=""; \
+    for pkg in $failed; do \
+    if opam show -f x-ci-accept-failures: "$pkg" | grep -qF "\"debian-12\""; then \
+    echo "A package failed and has been disabled for CI using the 'x-ci-accept-failures' field."; \
+    fi; \
+    test "$pkg" != 'xenstore.2.3.0' && partial_fails="$partial_fails $pkg"; \
+    done; \
+    test "${partial_fails}" != "" && echo "opam-repo-ci detected dependencies failing: ${partial_fails}"; \
+    exit 1
+RUN opam reinstall current_ocluster.0.2; \
+    res=$?; \
+    test "$res" != 31 && exit "$res"; \
+    export OPAMCLI=2.0; \
+    build_dir=$(opam var prefix)/.opam-switch/build; \
+    failed=$(ls "$build_dir"); \
+    partial_fails=""; \
+    for pkg in $failed; do \
+    if opam show -f x-ci-accept-failures: "$pkg" | grep -qF "\"debian-12\""; then \
+    echo "A package failed and has been disabled for CI using the 'x-ci-accept-failures' field."; \
+    fi; \
+    test "$pkg" != 'current_ocluster.0.2' && partial_fails="$partial_fails $pkg"; \
+    done; \
+    test "${partial_fails}" != "" && echo "opam-repo-ci detected dependencies failing: ${partial_fails}"; \
+    exit 1
+RUN (opam reinstall --with-test current_ocluster.0.2) || true
+RUN opam reinstall --with-test --verbose current_ocluster.0.2; \
+    res=$?; \
+    test "$res" != 31 && exit "$res"; \
+    export OPAMCLI=2.0; \
+    build_dir=$(opam var prefix)/.opam-switch/build; \
+    failed=$(ls "$build_dir"); \
+    partial_fails=""; \
+    for pkg in $failed; do \
+    if opam show -f x-ci-accept-failures: "$pkg" | grep -qF "\"debian-12\""; then \
+    echo "A package failed and has been disabled for CI using the 'x-ci-accept-failures' field."; \
+    fi; \
+    test "$pkg" != 'current_ocluster.0.2' && partial_fails="$partial_fails $pkg"; \
+    done; \
+    test "${partial_fails}" != "" && echo "opam-repo-ci detected dependencies failing: ${partial_fails}"; \
+    exit 1
+[0m
+END-OF-DOCKERFILE
+docker build -f ../Dockerfile .
+
+2024-05-06 13:45.01: Using cache hint "ocaml/opam:debian-12-ocaml-4.14@sha256:35b1aa76181479f2ba40039ae0c5fa5d94e24300e1eb606117587a8e82e9d89e-xenstore.2.3.0-current_ocluster.0.2-b26ada44e6934872d1b956b62f3458c3a2ff62c2"
+2024-05-06 13:45.01: Using OBuilder spec:
+((from ocaml/opam:debian-12-ocaml-4.14@sha256:35b1aa76181479f2ba40039ae0c5fa5d94e24300e1eb606117587a8e82e9d89e)
+ (user (uid 1000) (gid 1000))
+ (workdir /home/opam)
+ (run (shell "sudo ln -f /usr/bin/opam-dev /usr/bin/opam"))
+ (run (network host)
+      (shell "opam init --reinit --config .opamrc-sandbox -ni"))
+ (run (shell "uname -rs && opam exec -- ocaml -version && opam --version"))
+ (env OPAMDOWNLOADJOBS 1)
+ (env OPAMERRLOGLEN 0)
+ (env OPAMSOLVERTIMEOUT 500)
+ (env OPAMPRECISETRACKING 1)
+ (env CI true)
+ (env OPAM_REPO_CI true)
+ (run (shell "rm -rf opam-repository/"))
+ (copy (src .) (dst opam-repository/))
+ (run (shell "opam repository set-url --strict default opam-repository/"))
+ (run (network host)
+      (shell "opam update --depexts || true"))
+ (run (shell "opam pin add -k version -yn xenstore.2.3.0 2.3.0"))
+ (run (cache (opam-archives (target /home/opam/.opam/download-cache)))
+      (network host)
+      (shell  "opam reinstall xenstore.2.3.0;\
+             \n        res=$?;\
+             \n        test \"$res\" != 31 && exit \"$res\";\
+             \n        export OPAMCLI=2.0;\
+             \n        build_dir=$(opam var prefix)/.opam-switch/build;\
+             \n        failed=$(ls \"$build_dir\");\
+             \n        partial_fails=\"\";\
+             \n        for pkg in $failed; do\
+             \n          if opam show -f x-ci-accept-failures: \"$pkg\" | grep -qF \"\\\"debian-12\\\"\"; then\
+             \n            echo \"A package failed and has been disabled for CI using the 'x-ci-accept-failures' field.\";\
+             \n          fi;\
+             \n          test \"$pkg\" != 'xenstore.2.3.0' && partial_fails=\"$partial_fails $pkg\";\
+             \n        done;\
+             \n        test \"${partial_fails}\" != \"\" && echo \"opam-repo-ci detected dependencies failing: ${partial_fails}\";\
+             \n        exit 1"))
+ (run (cache (opam-archives (target /home/opam/.opam/download-cache)))
+      (network host)
+      (shell  "opam reinstall current_ocluster.0.2;\
+             \n        res=$?;\
+             \n        test \"$res\" != 31 && exit \"$res\";\
+             \n        export OPAMCLI=2.0;\
+             \n        build_dir=$(opam var prefix)/.opam-switch/build;\
+             \n        failed=$(ls \"$build_dir\");\
+             \n        partial_fails=\"\";\
+             \n        for pkg in $failed; do\
+             \n          if opam show -f x-ci-accept-failures: \"$pkg\" | grep -qF \"\\\"debian-12\\\"\"; then\
+             \n            echo \"A package failed and has been disabled for CI using the 'x-ci-accept-failures' field.\";\
+             \n          fi;\
+             \n          test \"$pkg\" != 'current_ocluster.0.2' && partial_fails=\"$partial_fails $pkg\";\
+             \n        done;\
+             \n        test \"${partial_fails}\" != \"\" && echo \"opam-repo-ci detected dependencies failing: ${partial_fails}\";\
+             \n        exit 1"))
+ (run (network host)
+      (shell "(opam reinstall --with-test current_ocluster.0.2) || true"))
+ (run (shell  "opam reinstall --with-test --verbose current_ocluster.0.2;\
+             \n        res=$?;\
+             \n        test \"$res\" != 31 && exit \"$res\";\
+             \n        export OPAMCLI=2.0;\
+             \n        build_dir=$(opam var prefix)/.opam-switch/build;\
+             \n        failed=$(ls \"$build_dir\");\
+             \n        partial_fails=\"\";\
+             \n        for pkg in $failed; do\
+             \n          if opam show -f x-ci-accept-failures: \"$pkg\" | grep -qF \"\\\"debian-12\\\"\"; then\
+             \n            echo \"A package failed and has been disabled for CI using the 'x-ci-accept-failures' field.\";\
+             \n          fi;\
+             \n          test \"$pkg\" != 'current_ocluster.0.2' && partial_fails=\"$partial_fails $pkg\";\
+             \n        done;\
+             \n        test \"${partial_fails}\" != \"\" && echo \"opam-repo-ci detected dependencies failing: ${partial_fails}\";\
+             \n        exit 1"))
+)
+
+2024-05-06 13:45.01: Waiting for resource in pool OCluster
+2024-05-06 15:29.09: Waiting for worker…
+2024-05-06 15:33.11: Got resource from pool OCluster
+Building on x86-bm-c13.sw.ocaml.org
+All commits already cached
+Updating files:  67% (22593/33635)Updating files:  68% (22872/33635)Updating files:  69% (23209/33635)Updating files:  70% (23545/33635)Updating files:  71% (23881/33635)Updating files:  72% (24218/33635)Updating files:  73% (24554/33635)Updating files:  74% (24890/33635)Updating files:  75% (25227/33635)Updating files:  76% (25563/33635)Updating files:  77% (25899/33635)Updating files:  78% (26236/33635)Updating files:  79% (26572/33635)Updating files:  80% (26908/33635)Updating files:  81% (27245/33635)Updating files:  82% (27581/33635)Updating files:  83% (27918/33635)Updating files:  84% (28254/33635)Updating files:  85% (28590/33635)Updating files:  86% (28927/33635)Updating files:  87% (29263/33635)Updating files:  88% (29599/33635)Updating files:  89% (29936/33635)Updating files:  90% (30272/33635)Updating files:  91% (30608/33635)Updating files:  92% (30945/33635)Updating files:  93% (31281/33635)Updating files:  94% (31617/33635)Updating files:  95% (31954/33635)Updating files:  96% (32290/33635)Updating files:  97% (32626/33635)Updating files:  98% (32963/33635)Updating files:  99% (33299/33635)Updating files: 100% (33635/33635)Updating files: 100% (33635/33635), done.
+HEAD is now at 2b6e600e5b Merge pull request #25724 from leostera/release-config-0.0.3
+Updating 2b6e600e5b..b26ada44e6
+Fast-forward
+ packages/xenstore/xenstore.2.3.0/opam | 44 +++++++++++++++++++++++++++++++++++
+ 1 file changed, 44 insertions(+)
+ create mode 100644 packages/xenstore/xenstore.2.3.0/opam
+
+[01;34m(from ocaml/opam:debian-12-ocaml-4.14@sha256:35b1aa76181479f2ba40039ae0c5fa5d94e24300e1eb606117587a8e82e9d89e)[0m
+[01;2m[01;35m2024-05-06 15:33.14 ---> using "6bc7e89b5725106f75c11a8b774d971b425f7dab532e626727166f8fc8501d75" from cache[0m
+
+[01;34m/: (user (uid 1000) (gid 1000))[0m
+
+[01;34m/: (workdir /home/opam)[0m
+
+[01;34m/home/opam: (run (shell "sudo ln -f /usr/bin/opam-dev /usr/bin/opam"))[0m
+[01;2m[01;35m2024-05-06 15:33.14 ---> using "6c46928c87bd33edd5e231c6d2911f55a5eec75b812a3d7fda9fca2b12f57d18" from cache[0m
+
+[01;34m/home/opam: (run (network host)
+                 (shell "opam init --reinit --config .opamrc-sandbox -ni"))[0m
+Configuring from /home/opam/.opamrc-sandbox, then /home/opam/.opamrc, and finally from built-in defaults.
+Checking for available remotes: rsync and local, git.
+  - you won't be able to use mercurial repositories unless you install the hg command on your system.
+  - you won't be able to use darcs repositories unless you install the darcs command on your system.
+
+This development version of opam requires an update to the layout of /home/opam/.opam from version 2.0 to version 2.2~alpha, which can't be reverted.
+You may want to back it up before going further.
+
+Continue? [y/n] y
+[NOTE] The 'jobs' option was reset, its value was 255 and its new value will vary according to the current number of cores on your machine. You can restore the fixed value using:
+           opam option jobs=255 --global
+Format upgrade done.
+
+<><> Updating repositories ><><><><><><><><><><><><><><><><><><><><><><><><><><>
+[default] synchronised from file:///home/opam/opam-repository
+[01;2m[01;35m2024-05-06 15:33.14 ---> using "3788b182527ec34e6f4ace4f954db383e2985afce7b5a5d65b696ddea02578e3" from cache[0m
+
+[01;34m/home/opam: (run (shell "uname -rs && opam exec -- ocaml -version && opam --version"))[0m
+Linux 5.15.0-101-generic
+The OCaml toplevel, version 4.14.2
+2.2.0~beta3~dev
+[01;2m[01;35m2024-05-06 15:33.14 ---> using "c7bf2e2bd9245a43ecc8d21b4a2e1fa9eed2aa27ec394d7eebda31d38857e6c9" from cache[0m
+
+[01;34m/home/opam: (env OPAMDOWNLOADJOBS 1)[0m
+
+[01;34m/home/opam: (env OPAMERRLOGLEN 0)[0m
+
+[01;34m/home/opam: (env OPAMSOLVERTIMEOUT 500)[0m
+
+[01;34m/home/opam: (env OPAMPRECISETRACKING 1)[0m
+
+[01;34m/home/opam: (env CI true)[0m
+
+[01;34m/home/opam: (env OPAM_REPO_CI true)[0m
+
+[01;34m/home/opam: (run (shell "rm -rf opam-repository/"))[0m
+[01;2m[01;35m2024-05-06 15:33.14 ---> using "112dde4704bddd0267c8982796c8bcbcc4f65cf21c3dfeb42addcfb7cee9ac89" from cache[0m
+
+[01;34m/home/opam: (copy (src .) (dst opam-repository/))[0m
+[01;2m[01;35m2024-05-06 15:33.16 ---> using "5427357dc23a8bcbbdaa40ab2b369e63cccb445c20e62e1ed94e34fd6b4f7a99" from cache[0m
+
+[01;34m/home/opam: (run (shell "opam repository set-url --strict default opam-repository/"))[0m
+[default] Initialised
+[01;2m[01;35m2024-05-06 15:33.16 ---> using "d535143eed0ddb06ca482b213fefce20ebab0f5bb815bdaf326199e8357dd8db" from cache[0m
+
+[01;34m/home/opam: (run (network host)
+                 (shell "opam update --depexts || true"))[0m
++ /usr/bin/sudo "apt-get" "update"
+- Hit:1 http://deb.debian.org/debian bookworm InRelease
+- Get:2 http://deb.debian.org/debian bookworm-updates InRelease [55.4 kB]
+- Get:3 http://deb.debian.org/debian-security bookworm-security InRelease [48.0 kB]
+- Get:4 http://deb.debian.org/debian bookworm-updates/main amd64 Packages.diff/Index [10.6 kB]
+- Get:5 http://deb.debian.org/debian bookworm-updates/main amd64 Packages T-2024-04-23-2036.10-F-2024-04-23-2036.10.pdiff [1595 B]
+- Get:5 http://deb.debian.org/debian bookworm-updates/main amd64 Packages T-2024-04-23-2036.10-F-2024-04-23-2036.10.pdiff [1595 B]
+- Get:6 http://deb.debian.org/debian-security bookworm-security/main amd64 Packages [156 kB]
+- Fetched 272 kB in 0s (733 kB/s)
+- Reading package lists...
+- 
+[01;2m[01;35m2024-05-06 15:33.16 ---> using "0c87ff890df51ba98d2b6f97239dfb5e5f4f3e53cc7cc2e5938c860c763107d0" from cache[0m
+
+[01;34m/home/opam: (run (shell "opam pin add -k version -yn xenstore.2.3.0 2.3.0"))[0m
+xenstore is now pinned to version 2.3.0
+[01;2m[01;35m2024-05-06 15:33.16 ---> using "f9c73ad825273bb3f345d953854a69a21d20a1964bd06f477c333701e8c1ffdf" from cache[0m
+
+[01;34m/home/opam: (run (cache (opam-archives (target /home/opam/.opam/download-cache)))
+                 (network host)
+                 (shell  "opam reinstall xenstore.2.3.0;\
+                        \n        res=$?;\
+                        \n        test \"$res\" != 31 && exit \"$res\";\
+                        \n        export OPAMCLI=2.0;\
+                        \n        build_dir=$(opam var prefix)/.opam-switch/build;\
+                        \n        failed=$(ls \"$build_dir\");\
+                        \n        partial_fails=\"\";\
+                        \n        for pkg in $failed; do\
+                        \n          if opam show -f x-ci-accept-failures: \"$pkg\" | grep -qF \"\\\"debian-12\\\"\"; then\
+                        \n            echo \"A package failed and has been disabled for CI using the 'x-ci-accept-failures' field.\";\
+                        \n          fi;\
+                        \n          test \"$pkg\" != 'xenstore.2.3.0' && partial_fails=\"$partial_fails $pkg\";\
+                        \n        done;\
+                        \n        test \"${partial_fails}\" != \"\" && echo \"opam-repo-ci detected dependencies failing: ${partial_fails}\";\
+                        \n        exit 1"))[0m
+xenstore.2.3.0 is not installed. Install it? [y/n] y
+The following actions will be performed:
+=== install 9 packages
+  - install base-bytes        base           [required by ocplib-endian]
+  - install cppo              1.6.9          [required by lwt]
+  - install csexp             1.5.2          [required by dune-configurator]
+  - install dune              3.15.2         [required by xenstore]
+  - install dune-configurator 3.15.2         [required by lwt]
+  - install lwt               5.7.0          [required by xenstore]
+  - install ocamlfind         1.9.6          [required by base-bytes]
+  - install ocplib-endian     1.2            [required by lwt]
+  - install xenstore          2.3.0 (pinned)
+
+<><> Processing actions <><><><><><><><><><><><><><><><><><><><><><><><><><><><>
+-> retrieved cppo.1.6.9  (cached)
+-> retrieved csexp.1.5.2  (cached)
+-> retrieved dune.3.15.2, dune-configurator.3.15.2  (cached)
+-> retrieved lwt.5.7.0  (cached)
+-> retrieved ocamlfind.1.9.6  (cached)
+-> retrieved ocplib-endian.1.2  (cached)
+-> retrieved xenstore.2.3.0  (cached)
+-> installed ocamlfind.1.9.6
+-> installed base-bytes.base
+-> installed dune.3.15.2
+-> installed csexp.1.5.2
+-> installed cppo.1.6.9
+-> installed ocplib-endian.1.2
+-> installed dune-configurator.3.15.2
+-> installed lwt.5.7.0
+-> installed xenstore.2.3.0
+Done.
+# Run eval $(opam env) to update the current shell environment
+[01;2m[01;35m2024-05-06 15:33.16 ---> using "46b5db39692ea9486a49b1708fae97c45a96da2a8aa671817f287a3e29a65602" from cache[0m
+
+[01;34m/home/opam: (run (cache (opam-archives (target /home/opam/.opam/download-cache)))
+                 (network host)
+                 (shell  "opam reinstall current_ocluster.0.2;\
+                        \n        res=$?;\
+                        \n        test \"$res\" != 31 && exit \"$res\";\
+                        \n        export OPAMCLI=2.0;\
+                        \n        build_dir=$(opam var prefix)/.opam-switch/build;\
+                        \n        failed=$(ls \"$build_dir\");\
+                        \n        partial_fails=\"\";\
+                        \n        for pkg in $failed; do\
+                        \n          if opam show -f x-ci-accept-failures: \"$pkg\" | grep -qF \"\\\"debian-12\\\"\"; then\
+                        \n            echo \"A package failed and has been disabled for CI using the 'x-ci-accept-failures' field.\";\
+                        \n          fi;\
+                        \n          test \"$pkg\" != 'current_ocluster.0.2' && partial_fails=\"$partial_fails $pkg\";\
+                        \n        done;\
+                        \n        test \"${partial_fails}\" != \"\" && echo \"opam-repo-ci detected dependencies failing: ${partial_fails}\";\
+                        \n        exit 1"))[0m
+current_ocluster.0.2 is not installed. Install it? [y/n] y
+The following actions will be performed:
+=== recompile 2 packages
+  - recompile lwt                   5.7.0          [uses conf-libev]
+  - recompile xenstore              2.3.0 (pinned) [uses lwt]
+=== install 90 packages
+  - install   angstrom              0.16.0         [required by uri]
+  - install   asetmap               0.8.1          [required by capnp-rpc-net]
+  - install   asn1-combinators      0.2.6          [required by capnp-rpc-net]
+  - install   astring               0.8.5          [required by current, capnp-rpc-unix, current_git]
+  - install   base                  v0.16.3        [required by capnp]
+  - install   base64                3.5.1          [required by capnp-rpc-unix]
+  - install   bigarray-compat       1.1.0          [required by ctypes]
+  - install   bigstringaf           0.9.1          [required by angstrom]
+  - install   bos                   0.2.1          [required by current, current_git]
+  - install   capnp                 3.6.0          [required by capnp-rpc-net]
+  - install   capnp-rpc             1.2.3          [required by capnp-rpc-net]
+  - install   capnp-rpc-lwt         1.2.3          [required by ocluster-api]
+  - install   capnp-rpc-net         1.2.3          [required by capnp-rpc-unix]
+  - install   capnp-rpc-unix        1.2.3          [required by current_ocluster]
+  - install   cf                    0.5.0          [required by cf-lwt]
+  - install   cf-lwt                0.5.0          [required by irmin-watcher]
+  - install   cmdliner              1.2.0          [required by capnp-rpc-unix, current]
+  - install   conf-bash             1              [required by base]
+  - install   conf-capnproto        2              [required by capnp-rpc-net]
+  - install   conf-git              1.1            [required by current_git]
+  - install   conf-gmp              4              [required by zarith]
+  - install   conf-gmp-powm-sec     3              [required by mirage-crypto-pk]
+  - install   conf-libev            4-12           [required by current]
+  - install   conf-libffi           2.0.0          [required by ctypes-foreign]
+  - install   conf-pkg-config       3              [required by conf-sqlite3]
+  - install   conf-sqlite3          1              [required by sqlite3]
+  - install   cstruct               6.2.0          [required by current_git]
+  - install   cstruct-lwt           6.2.0          [required by capnp-rpc-unix]
+  - install   ctypes                0.22.0         [required by cf, fsevents]
+  - install   ctypes-foreign        0.22.0         [required by cf]
+  - install   current               0.6.6          [required by current_ocluster]
+  - install   current_git           0.6.6          [required by current_ocluster]
+  - install   current_incr          0.6.1          [required by current]
+  - install   current_ocluster      0.2
+  - install   domain-name           0.4.0          [required by tls]
+  - install   duration              0.2.1          [required by current_ocluster]
+  - install   eqaf                  0.9            [required by mirage-crypto]
+  - install   extunix               0.4.1          [required by capnp-rpc-unix]
+  - install   fmt                   0.9.0          [required by current_ocluster]
+  - install   fpath                 0.7.3          [required by current, current_git]
+  - install   fsevents              0.3.0          [required by fsevents-lwt]
+  - install   fsevents-lwt          0.3.0          [required by irmin-watcher]
+  - install   gmap                  0.3.0          [required by x509]
+  - install   hkdf                  1.0.4          [required by tls]
+  - install   inotify               2.5            [required by irmin-watcher]
+  - install   integers              0.7.0          [required by ctypes]
+  - install   ipaddr                5.5.0          [required by tls]
+  - install   irmin-watcher         0.5.0          [required by current_git]
+  - install   logs                  0.7.0          [required by current_ocluster]
+  - install   lwt-dllist            1.0.1          [required by current]
+  - install   macaddr               5.5.0          [required by ipaddr]
+  - install   mirage-clock          4.2.0          [required by tls-mirage]
+  - install   mirage-crypto         0.11.3         [required by current_git]
+  - install   mirage-crypto-ec      0.11.3         [required by tls]
+  - install   mirage-crypto-pk      0.11.3         [required by tls, tls-mirage]
+  - install   mirage-crypto-rng     0.11.3         [required by capnp-rpc-net, mirage-crypto-rng-lwt]
+  - install   mirage-crypto-rng-lwt 0.11.3         [required by capnp-rpc-unix]
+  - install   mirage-flow           3.0.0          [required by capnp-rpc-unix]
+  - install   mirage-kv             6.1.1          [required by tls-mirage]
+  - install   mtime                 2.0.0          [required by mirage-crypto-rng-lwt]
+  - install   ocaml-compiler-libs   v0.12.4        [required by ppxlib]
+  - install   ocaml-syntax-shims    1.0.0          [required by angstrom]
+  - install   ocamlbuild            0.14.3         [required by astring, bos]
+  - install   ocluster-api          0.2            [required by current_ocluster]
+  - install   optint                0.3.0          [required by mirage-kv]
+  - install   pbkdf                 1.2.0          [required by x509]
+  - install   ppx_derivers          1.2.1          [required by ppx_deriving]
+  - install   ppx_deriving          5.2.1          [required by current_ocluster]
+  - install   ppx_deriving_yojson   3.7.0          [required by current_ocluster]
+  - install   ppxlib                0.32.1         [required by ppx_deriving, extunix, ppx_deriving_yojson]
+  - install   prometheus            1.2            [required by current_ocluster]
+  - install   ptime                 1.1.0          [required by capnp-rpc-net]
+  - install   re                    1.11.0         [required by current]
+  - install   res                   5.0.1          [required by capnp]
+  - install   result                1.5            [required by current, current_git]
+  - install   rresult               0.7.0          [required by bos]
+  - install   seq                   base           [required by yojson]
+  - install   sexplib0              v0.16.0        [required by ppxlib]
+  - install   sqlite3               5.1.0          [required by current]
+  - install   stdint                0.7.2          [required by capnp-rpc, capnp, capnp-rpc-lwt]
+  - install   stdio                 v0.16.0        [required by capnp]
+  - install   stdlib-shims          0.3.0          [required by ppxlib]
+  - install   stringext             1.6.0          [required by uri]
+  - install   tls                   0.17.3         [required by capnp-rpc-net]
+  - install   tls-mirage            0.17.3         [required by capnp-rpc-net]
+  - install   topkg                 1.0.7          [required by astring, bos]
+  - install   uri                   4.4.0          [required by capnp-rpc-net]
+  - install   x509                  0.16.5         [required by capnp-rpc-net]
+  - install   yojson                2.1.2          [required by current_git]
+  - install   zarith                1.13           [required by asn1-combinators]
+
+The following system packages will first need to be installed:
+    capnproto libcapnp-dev libev-dev libffi-dev libgmp-dev libsqlite3-dev pkg-config
+
+<><> Handling external dependencies <><><><><><><><><><><><><><><><><><><><><><>
+
+opam believes some required external dependencies are missing. opam can:
+> 1. Run apt-get to install them (may need root/sudo access)
+  2. Display the recommended apt-get command and wait while you run it manually (e.g. in another terminal)
+  3. Continue anyway, and, upon success, permanently register that this external dependency is present, but not detectable
+  4. Abort the installation
+
+[1/2/3/4] 1
+
++ /usr/bin/sudo "apt-get" "install" "-qq" "-yy" "capnproto" "libcapnp-dev" "libev-dev" "libffi-dev" "libgmp-dev" "libsqlite3-dev" "pkg-config"
+- debconf: delaying package configuration, since apt-utils is not installed
+- Selecting previously unselected package libcapnp-0.9.2:amd64.
+- (Reading database ... (Reading database ... 5%(Reading database ... 10%(Reading database ... 15%(Reading database ... 20%(Reading database ... 25%(Reading database ... 30%(Reading database ... 35%(Reading database ... 40%(Reading database ... 45%(Reading database ... 50%(Reading database ... 55%(Reading database ... 60%(Reading database ... 65%(Reading database ... 70%(Reading database ... 75%(Reading database ... 80%(Reading database ... 85%(Reading database ... 90%(Reading database ... 95%(Reading database ... 100%(Reading database ... 18735 files and directories currently installed.)
+- Preparing to unpack .../00-libcapnp-0.9.2_0.9.2-2_amd64.deb ...
+- Unpacking libcapnp-0.9.2:amd64 (0.9.2-2) ...
+- Selecting previously unselected package capnproto.
+- Preparing to unpack .../01-capnproto_0.9.2-2_amd64.deb ...
+- Unpacking capnproto (0.9.2-2) ...
+- Selecting previously unselected package libssl-dev:amd64.
+- Preparing to unpack .../02-libssl-dev_3.0.11-1~deb12u2_amd64.deb ...
+- Unpacking libssl-dev:amd64 (3.0.11-1~deb12u2) ...
+- Selecting previously unselected package libcapnp-dev:amd64.
+- Preparing to unpack .../03-libcapnp-dev_0.9.2-2_amd64.deb ...
+- Unpacking libcapnp-dev:amd64 (0.9.2-2) ...
+- Selecting previously unselected package libev4:amd64.
+- Preparing to unpack .../04-libev4_1%3a4.33-1_amd64.deb ...
+- Unpacking libev4:amd64 (1:4.33-1) ...
+- Selecting previously unselected package libev-dev:amd64.
+- Preparing to unpack .../05-libev-dev_1%3a4.33-1_amd64.deb ...
+- Unpacking libev-dev:amd64 (1:4.33-1) ...
+- Selecting previously unselected package libffi-dev:amd64.
+- Preparing to unpack .../06-libffi-dev_3.4.4-1_amd64.deb ...
+- Unpacking libffi-dev:amd64 (3.4.4-1) ...
+- Selecting previously unselected package libgmpxx4ldbl:amd64.
+- Preparing to unpack .../07-libgmpxx4ldbl_2%3a6.2.1+dfsg1-1.1_amd64.deb ...
+- Unpacking libgmpxx4ldbl:amd64 (2:6.2.1+dfsg1-1.1) ...
+- Selecting previously unselected package libgmp-dev:amd64.
+- Preparing to unpack .../08-libgmp-dev_2%3a6.2.1+dfsg1-1.1_amd64.deb ...
+- Unpacking libgmp-dev:amd64 (2:6.2.1+dfsg1-1.1) ...
+- Selecting previously unselected package libpkgconf3:amd64.
+- Preparing to unpack .../09-libpkgconf3_1.8.1-1_amd64.deb ...
+- Unpacking libpkgconf3:amd64 (1.8.1-1) ...
+- Selecting previously unselected package libsqlite3-dev:amd64.
+- Preparing to unpack .../10-libsqlite3-dev_3.40.1-2_amd64.deb ...
+- Unpacking libsqlite3-dev:amd64 (3.40.1-2) ...
+- Selecting previously unselected package pkgconf-bin.
+- Preparing to unpack .../11-pkgconf-bin_1.8.1-1_amd64.deb ...
+- Unpacking pkgconf-bin (1.8.1-1) ...
+- Selecting previously unselected package pkgconf:amd64.
+- Preparing to unpack .../12-pkgconf_1.8.1-1_amd64.deb ...
+- Unpacking pkgconf:amd64 (1.8.1-1) ...
+- Selecting previously unselected package pkg-config:amd64.
+- Preparing to unpack .../13-pkg-config_1.8.1-1_amd64.deb ...
+- Unpacking pkg-config:amd64 (1.8.1-1) ...
+- Setting up libev4:amd64 (1:4.33-1) ...
+- Setting up libffi-dev:amd64 (3.4.4-1) ...
+- Setting up libpkgconf3:amd64 (1.8.1-1) ...
+- Setting up libgmpxx4ldbl:amd64 (2:6.2.1+dfsg1-1.1) ...
+- Setting up libsqlite3-dev:amd64 (3.40.1-2) ...
+- Setting up libssl-dev:amd64 (3.0.11-1~deb12u2) ...
+- Setting up pkgconf-bin (1.8.1-1) ...
+- Setting up libcapnp-0.9.2:amd64 (0.9.2-2) ...
+- Setting up libev-dev:amd64 (1:4.33-1) ...
+- Setting up libcapnp-dev:amd64 (0.9.2-2) ...
+- Setting up libgmp-dev:amd64 (2:6.2.1+dfsg1-1.1) ...
+- Setting up pkgconf:amd64 (1.8.1-1) ...
+- Setting up capnproto (0.9.2-2) ...
+- Setting up pkg-config:amd64 (1.8.1-1) ...
+- Processing triggers for libc-bin (2.36-9+deb12u4) ...
+
+<><> Processing actions <><><><><><><><><><><><><><><><><><><><><><><><><><><><>
+-> retrieved angstrom.0.16.0  (cached)
+-> retrieved asetmap.0.8.1  (cached)
+-> retrieved asn1-combinators.0.2.6  (cached)
+-> retrieved astring.0.8.5  (cached)
+-> retrieved base.v0.16.3  (cached)
+-> retrieved base64.3.5.1  (cached)
+-> retrieved bigarray-compat.1.1.0  (cached)
+-> retrieved bigstringaf.0.9.1  (cached)
+-> retrieved bos.0.2.1  (cached)
+-> retrieved capnp.3.6.0  (cached)
+-> retrieved capnp-rpc.1.2.3, capnp-rpc-lwt.1.2.3, capnp-rpc-net.1.2.3, capnp-rpc-unix.1.2.3  (cached)
+-> retrieved cf.0.5.0, cf-lwt.0.5.0  (cached)
+-> installed bigarray-compat.1.1.0
+-> retrieved cmdliner.1.2.0  (cached)
+-> retrieved cstruct.6.2.0, cstruct-lwt.6.2.0  (cached)
+-> installed base64.3.5.1
+-> installed conf-bash.1
+-> installed conf-capnproto.2
+-> installed conf-git.1.1
+-> installed conf-gmp.4
+-> installed conf-pkg-config.3
+-> retrieved ctypes.0.22.0, ctypes-foreign.0.22.0  (cached)
+-> installed bigstringaf.0.9.1
+-> installed conf-libev.4-12
+-> installed conf-gmp-powm-sec.3
+-> installed conf-libffi.2.0.0
+-> installed conf-sqlite3.1
+-> retrieved current.0.6.6, current_git.0.6.6  (cached)
+-> retrieved current_incr.0.6.1  (cached)
+-> retrieved current_ocluster.0.2, ocluster-api.0.2  (cached)
+-> retrieved domain-name.0.4.0  (cached)
+-> retrieved duration.0.2.1  (cached)
+-> retrieved eqaf.0.9  (cached)
+-> retrieved extunix.0.4.1  (cached)
+-> retrieved fmt.0.9.0  (cached)
+-> retrieved fpath.0.7.3  (cached)
+-> retrieved fsevents.0.3.0, fsevents-lwt.0.3.0  (cached)
+-> retrieved gmap.0.3.0  (cached)
+-> retrieved hkdf.1.0.4  (cached)
+-> retrieved inotify.2.5  (cached)
+-> retrieved integers.0.7.0  (cached)
+-> retrieved ipaddr.5.5.0, macaddr.5.5.0  (cached)
+-> retrieved irmin-watcher.0.5.0  (cached)
+-> installed duration.0.2.1
+-> retrieved logs.0.7.0  (cached)
+-> installed domain-name.0.4.0
+-> installed current_incr.0.6.1
+-> retrieved lwt.5.7.0  (cached)
+-> installed gmap.0.3.0
+-> retrieved lwt-dllist.1.0.1  (cached)
+-> retrieved mirage-clock.4.2.0  (cached)
+-> installed macaddr.5.5.0
+-> installed lwt-dllist.1.0.1
+-> installed mirage-clock.4.2.0
+-> installed ipaddr.5.5.0
+-> retrieved mirage-crypto.0.11.3, mirage-crypto-ec.0.11.3, mirage-crypto-pk.0.11.3, mirage-crypto-rng.0.11.3, mirage-crypto-rng-lwt.0.11.3  (cached)
+-> retrieved mirage-flow.3.0.0  (cached)
+-> retrieved mirage-kv.6.1.1  (cached)
+-> retrieved mtime.2.0.0  (cached)
+-> retrieved ocaml-compiler-libs.v0.12.4  (cached)
+-> retrieved ocaml-syntax-shims.1.0.0  (cached)
+-> retrieved ocamlbuild.0.14.3  (cached)
+-> retrieved optint.0.3.0  (cached)
+-> retrieved pbkdf.1.2.0  (cached)
+-> retrieved ppx_derivers.1.2.1  (cached)
+-> retrieved ppx_deriving.5.2.1  (cached)
+-> retrieved ppx_deriving_yojson.3.7.0  (cached)
+-> installed ppx_derivers.1.2.1
+-> retrieved ppxlib.0.32.1  (cached)
+-> retrieved prometheus.1.2  (cached)
+-> retrieved ptime.1.1.0  (cached)
+-> retrieved re.1.11.0  (cached)
+-> installed optint.0.3.0
+-> retrieved res.5.0.1  (cached)
+-> retrieved result.1.5  (cached)
+-> retrieved rresult.0.7.0  (cached)
+-> installed seq.base
+-> retrieved sexplib0.v0.16.0  (cached)
+-> retrieved sqlite3.5.1.0  (cached)
+-> retrieved stdint.0.7.2  (cached)
+-> retrieved stdio.v0.16.0  (cached)
+-> retrieved stdlib-shims.0.3.0  (cached)
+-> retrieved stringext.1.6.0  (cached)
+-> retrieved tls.0.17.3, tls-mirage.0.17.3  (cached)
+-> installed result.1.5
+-> retrieved topkg.1.0.7  (cached)
+-> installed ocaml-syntax-shims.1.0.0
+-> retrieved uri.4.4.0  (cached)
+-> installed stdlib-shims.0.3.0
+-> retrieved x509.0.16.5  (cached)
+-> retrieved yojson.2.1.2  (cached)
+-> retrieved zarith.1.13  (cached)
+-> installed cmdliner.1.2.0
+-> removed   xenstore.2.3.0
+-> removed   lwt.5.7.0
+-> installed angstrom.0.16.0
+-> installed integers.0.7.0
+-> installed ocaml-compiler-libs.v0.12.4
+-> installed re.1.11.0
+-> installed res.5.0.1
+-> installed sexplib0.v0.16.0
+-> installed sqlite3.5.1.0
+-> installed stdint.0.7.2
+-> installed stringext.1.6.0
+-> installed lwt.5.7.0
+-> installed inotify.2.5
+-> installed yojson.2.1.2
+-> installed xenstore.2.3.0
+-> installed uri.4.4.0
+-> installed ocamlbuild.0.14.3
+-> installed zarith.1.13
+-> installed ctypes.0.22.0
+-> installed base.v0.16.3
+-> installed stdio.v0.16.0
+-> installed ctypes-foreign.0.22.0
+-> installed cf.0.5.0
+-> installed fsevents.0.3.0
+-> installed cf-lwt.0.5.0
+-> installed fsevents-lwt.0.3.0
+-> installed topkg.1.0.7
+-> installed asetmap.0.8.1
+-> installed rresult.0.7.0
+-> installed mtime.2.0.0
+-> installed fmt.0.9.0
+-> installed ptime.1.1.0
+-> installed mirage-kv.6.1.1
+-> installed astring.0.8.5
+-> installed cstruct.6.2.0
+-> installed prometheus.1.2
+-> installed mirage-flow.3.0.0
+-> installed cstruct-lwt.6.2.0
+-> installed eqaf.0.9
+-> installed fpath.0.7.3
+-> installed capnp.3.6.0
+-> installed logs.0.7.0
+-> installed asn1-combinators.0.2.6
+-> installed irmin-watcher.0.5.0
+-> installed capnp-rpc.1.2.3
+-> installed mirage-crypto.0.11.3
+-> installed hkdf.1.0.4
+-> installed pbkdf.1.2.0
+-> installed mirage-crypto-rng.0.11.3
+-> installed bos.0.2.1
+-> installed mirage-crypto-rng-lwt.0.11.3
+-> installed mirage-crypto-pk.0.11.3
+-> installed capnp-rpc-lwt.1.2.3
+-> installed ppxlib.0.32.1
+-> installed ppx_deriving.5.2.1
+-> installed mirage-crypto-ec.0.11.3
+-> installed ppx_deriving_yojson.3.7.0
+-> installed current.0.6.6
+-> installed x509.0.16.5
+-> installed current_git.0.6.6
+-> installed extunix.0.4.1
+-> installed tls.0.17.3
+-> installed tls-mirage.0.17.3
+-> installed ocluster-api.0.2
+-> installed capnp-rpc-net.1.2.3
+-> installed capnp-rpc-unix.1.2.3
+-> installed current_ocluster.0.2
+Done.
+# Run eval $(opam env) to update the current shell environment
+[01;2m[01;35m2024-05-06 15:34.25 ---> saved as "9d5638be7dd23457146a100693204dfbab3a59db4ec3aa8a676ba4655cef468d"[0m
+
+[01;34m/home/opam: (run (network host)
+                 (shell "(opam reinstall --with-test current_ocluster.0.2) || true"))[0m
+[ERROR] Sorry, resolution of the request timed out.
+        Try to specify a more precise request, use a different solver, or increase the allowed time by setting OPAMSOLVERTIMEOUT to a bigger value (currently, it is set to 500.0 seconds).
+[01;2m[01;35m2024-05-06 15:43.06 ---> saved as "d1f615fef517bd79cba2fd1aa0106be2d6f56fc04d4dcd1b6b8659fa2d06c996"[0m
+
+[01;34m/home/opam: (run (shell  "opam reinstall --with-test --verbose current_ocluster.0.2;\
+                        \n        res=$?;\
+                        \n        test \"$res\" != 31 && exit \"$res\";\
+                        \n        export OPAMCLI=2.0;\
+                        \n        build_dir=$(opam var prefix)/.opam-switch/build;\
+                        \n        failed=$(ls \"$build_dir\");\
+                        \n        partial_fails=\"\";\
+                        \n        for pkg in $failed; do\
+                        \n          if opam show -f x-ci-accept-failures: \"$pkg\" | grep -qF \"\\\"debian-12\\\"\"; then\
+                        \n            echo \"A package failed and has been disabled for CI using the 'x-ci-accept-failures' field.\";\
+                        \n          fi;\
+                        \n          test \"$pkg\" != 'current_ocluster.0.2' && partial_fails=\"$partial_fails $pkg\";\
+                        \n        done;\
+                        \n        test \"${partial_fails}\" != \"\" && echo \"opam-repo-ci detected dependencies failing: ${partial_fails}\";\
+                        \n        exit 1"))[0m
+[ERROR] Sorry, resolution of the request timed out.
+        Try to specify a more precise request, use a different solver, or increase the allowed time by setting OPAMSOLVERTIMEOUT to a bigger value (currently, it is set to 500.0 seconds).
+'opam reinstall --with-test --verbose current_ocluster.0.2' failed.
+"/usr/bin/env" "bash" "-c" "opam reinstall --with-test --verbose current_ocluster.0.2;
+        res=$?;
+        test "$res" != 31 && exit "$res";
+        export OPAMCLI=2.0;
+        build_dir=$(opam var prefix)/.opam-switch/build;
+        failed=$(ls "$build_dir");
+        partial_fails="";
+        for pkg in $failed; do
+          if opam show -f x-ci-accept-failures: "$pkg" | grep -qF "\"debian-12\""; then
+            echo "A package failed and has been disabled for CI using the 'x-ci-accept-failures' field.";
+          fi;
+          test "$pkg" != 'current_ocluster.0.2' && partial_fails="$partial_fails $pkg";
+        done;
+        test "${partial_fails}" != "" && echo "opam-repo-ci detected dependencies failing: ${partial_fails}";
+        exit 1" failed with exit status 60
+2024-05-06 15:51.49: Job failed: Failed: Build failed
+2024-05-06 15:51.49: Log analysis:
+2024-05-06 15:51.49: >>> 
+[ERROR] Sorry, resolution of the request timed out.
+ (score = 20)
+2024-05-06 15:51.49: >>> 
+[ERROR] Sorry, resolution of the request timed out.
+ (score = 20)
+2024-05-06 15:51.49: Sorry, resolution of the request timed out.

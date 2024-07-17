@@ -1,0 +1,210 @@
+2024-06-03 20:08.13: New job: build slipshow.0.0.32, using opam 2.1
+                              from https://github.com/ocaml/opam-repository.git#refs/pull/25948/head (6bb61e9e7fc02e2f1968ef4ce2830e6ce5b01076)
+                              on debian-12-ocaml-4.14/amd64
+
+To reproduce locally:
+
+cd $(mktemp -d)
+git clone --recursive "https://github.com/ocaml/opam-repository.git" && cd "opam-repository" && git fetch origin "refs/pull/25948/head" && git reset --hard 6bb61e9e
+git fetch origin master
+git merge --no-edit c45f5bab71d3589f41f9603daca5acad14df0ab0
+cat > ../Dockerfile <<'END-OF-DOCKERFILE'
+[34mFROM ocaml/opam:debian-12-ocaml-4.14@sha256:2ba69112cb856b702920b505b82a8fab331d2c9d9406c7f3b9f4adb73637666c
+USER 1000:1000
+WORKDIR /home/opam
+RUN sudo ln -f /usr/bin/opam-2.1 /usr/bin/opam
+RUN opam init --reinit -ni
+RUN uname -rs && opam exec -- ocaml -version && opam --version
+ENV OPAMDOWNLOADJOBS="1"
+ENV OPAMERRLOGLEN="0"
+ENV OPAMSOLVERTIMEOUT="500"
+ENV OPAMPRECISETRACKING="1"
+ENV CI="true"
+ENV OPAM_REPO_CI="true"
+RUN rm -rf opam-repository/
+COPY --chown=1000:1000 . opam-repository/
+RUN opam repository set-url --strict default opam-repository/
+RUN opam update --depexts || true
+RUN opam pin add -k version -yn slipshow.0.0.32 0.0.32
+RUN opam reinstall slipshow.0.0.32; \
+    res=$?; \
+    test "$res" != 31 && exit "$res"; \
+    export OPAMCLI=2.0; \
+    build_dir=$(opam var prefix)/.opam-switch/build; \
+    failed=$(ls "$build_dir"); \
+    partial_fails=""; \
+    for pkg in $failed; do \
+    if opam show -f x-ci-accept-failures: "$pkg" | grep -qF "\"debian-12\""; then \
+    echo "A package failed and has been disabled for CI using the 'x-ci-accept-failures' field."; \
+    fi; \
+    test "$pkg" != 'slipshow.0.0.32' && partial_fails="$partial_fails $pkg"; \
+    done; \
+    test "${partial_fails}" != "" && echo "opam-repo-ci detected dependencies failing: ${partial_fails}"; \
+    exit 1
+[0m
+END-OF-DOCKERFILE
+docker build -f ../Dockerfile .
+
+2024-06-03 20:08.13: Using cache hint "ocaml/opam:debian-12-ocaml-4.14@sha256:2ba69112cb856b702920b505b82a8fab331d2c9d9406c7f3b9f4adb73637666c-slipshow.0.0.32-6bb61e9e7fc02e2f1968ef4ce2830e6ce5b01076"
+2024-06-03 20:08.13: Using OBuilder spec:
+((from ocaml/opam:debian-12-ocaml-4.14@sha256:2ba69112cb856b702920b505b82a8fab331d2c9d9406c7f3b9f4adb73637666c)
+ (user (uid 1000) (gid 1000))
+ (workdir /home/opam)
+ (run (shell "sudo ln -f /usr/bin/opam-2.1 /usr/bin/opam"))
+ (run (network host)
+      (shell "opam init --reinit --config .opamrc-sandbox -ni"))
+ (run (shell "uname -rs && opam exec -- ocaml -version && opam --version"))
+ (env OPAMDOWNLOADJOBS 1)
+ (env OPAMERRLOGLEN 0)
+ (env OPAMSOLVERTIMEOUT 500)
+ (env OPAMPRECISETRACKING 1)
+ (env CI true)
+ (env OPAM_REPO_CI true)
+ (run (shell "rm -rf opam-repository/"))
+ (copy (src .) (dst opam-repository/))
+ (run (shell "opam repository set-url --strict default opam-repository/"))
+ (run (network host)
+      (shell "opam update --depexts || true"))
+ (run (shell "opam pin add -k version -yn slipshow.0.0.32 0.0.32"))
+ (run (cache (opam-archives (target /home/opam/.opam/download-cache)))
+      (network host)
+      (shell  "opam reinstall slipshow.0.0.32;\
+             \n        res=$?;\
+             \n        test \"$res\" != 31 && exit \"$res\";\
+             \n        export OPAMCLI=2.0;\
+             \n        build_dir=$(opam var prefix)/.opam-switch/build;\
+             \n        failed=$(ls \"$build_dir\");\
+             \n        partial_fails=\"\";\
+             \n        for pkg in $failed; do\
+             \n          if opam show -f x-ci-accept-failures: \"$pkg\" | grep -qF \"\\\"debian-12\\\"\"; then\
+             \n            echo \"A package failed and has been disabled for CI using the 'x-ci-accept-failures' field.\";\
+             \n          fi;\
+             \n          test \"$pkg\" != 'slipshow.0.0.32' && partial_fails=\"$partial_fails $pkg\";\
+             \n        done;\
+             \n        test \"${partial_fails}\" != \"\" && echo \"opam-repo-ci detected dependencies failing: ${partial_fails}\";\
+             \n        exit 1"))
+)
+
+2024-06-03 20:08.13: Waiting for resource in pool OCluster
+2024-06-04 03:14.20: Waiting for worker…
+2024-06-04 03:18.36: Got resource from pool OCluster
+Building on doris.caelum.ci.dev
+All commits already cached
+Updating files:  96% (30195/31423)Updating files:  97% (30481/31423)Updating files:  98% (30795/31423)Updating files:  99% (31109/31423)Updating files: 100% (31423/31423)Updating files: 100% (31423/31423), done.
+HEAD is now at c45f5bab71 Merge pull request #25994 from Leonidas-from-XIV/release-yojson-2.2.0
+Merge made by the 'ort' strategy.
+ packages/slipshow/slipshow.0.0.32/opam | 54 ++++++++++++++++++++++++++++++++++
+ 1 file changed, 54 insertions(+)
+ create mode 100644 packages/slipshow/slipshow.0.0.32/opam
+
+[01;34m(from ocaml/opam:debian-12-ocaml-4.14@sha256:2ba69112cb856b702920b505b82a8fab331d2c9d9406c7f3b9f4adb73637666c)[0m
+[01;2m[01;35m2024-06-04 03:18.44 ---> using "48fcd9b686ae3e44ef60a164ef8db6e11e86f168703f26fb1315f899c9c53662" from cache[0m
+
+[01;34m/: (user (uid 1000) (gid 1000))[0m
+
+[01;34m/: (workdir /home/opam)[0m
+
+[01;34m/home/opam: (run (shell "sudo ln -f /usr/bin/opam-2.1 /usr/bin/opam"))[0m
+[01;2m[01;35m2024-06-04 03:18.44 ---> saved as "2c3cfe222678361350f54d2fd0d3629836a1caadeb3d32232aed3d337b400c0e"[0m
+
+[01;34m/home/opam: (run (network host)
+                 (shell "opam init --reinit --config .opamrc-sandbox -ni"))[0m
+Configuring from /home/opam/.opamrc-sandbox, then /home/opam/.opamrc, and finally from built-in defaults.
+Checking for available remotes: rsync and local, git.
+  - you won't be able to use mercurial repositories unless you install the hg command on your system.
+  - you won't be able to use darcs repositories unless you install the darcs command on your system.
+
+This version of opam requires an update to the layout of /home/opam/.opam from version 2.0 to version 2.1, which can't be reverted.
+You may want to back it up before going further.
+
+Continue? [Y/n] y
+Format upgrade done.
+
+<><> Updating repositories ><><><><><><><><><><><><><><><><><><><><><><><><><><>
+[default] synchronised from file:///home/opam/opam-repository
+[01;2m[01;35m2024-06-04 03:19.40 ---> saved as "3c68e0ebee8348210d089d520024b866c58ef169efc405130a567eaba81ed4ca"[0m
+
+[01;34m/home/opam: (run (shell "uname -rs && opam exec -- ocaml -version && opam --version"))[0m
+Linux 5.15.0-107-generic
+The OCaml toplevel, version 4.14.2
+2.1.6
+[01;2m[01;35m2024-06-04 03:19.41 ---> saved as "9702442a4beab8f1ec9868ede9345690cc7e926a709756e7ab878883b40630bc"[0m
+
+[01;34m/home/opam: (env OPAMDOWNLOADJOBS 1)[0m
+
+[01;34m/home/opam: (env OPAMERRLOGLEN 0)[0m
+
+[01;34m/home/opam: (env OPAMSOLVERTIMEOUT 500)[0m
+
+[01;34m/home/opam: (env OPAMPRECISETRACKING 1)[0m
+
+[01;34m/home/opam: (env CI true)[0m
+
+[01;34m/home/opam: (env OPAM_REPO_CI true)[0m
+
+[01;34m/home/opam: (run (shell "rm -rf opam-repository/"))[0m
+[01;2m[01;35m2024-06-04 03:19.50 ---> saved as "7b48adb7bf8c739ac7a8258c54111d6a58f69ec86b859ebeca733e25c24244af"[0m
+
+[01;34m/home/opam: (copy (src .) (dst opam-repository/))[0m
+[01;2m[01;35m2024-06-04 03:20.35 ---> saved as "f5b77a43f262cfaa3c96c776475841f179ba51268a4c56ab6dcd29cdd7955803"[0m
+
+[01;34m/home/opam: (run (shell "opam repository set-url --strict default opam-repository/"))[0m
+[default] Initialised
+[01;2m[01;35m2024-06-04 03:20.51 ---> saved as "a96f4709836b2c8f6e5a589a97dae6168d1c6fff3ae6003d649d0e4d23034e07"[0m
+
+[01;34m/home/opam: (run (network host)
+                 (shell "opam update --depexts || true"))[0m
++ /usr/bin/sudo "apt-get" "update"
+- Hit:1 http://deb.debian.org/debian bookworm InRelease
+- Get:2 http://deb.debian.org/debian bookworm-updates InRelease [55.4 kB]
+- Get:3 http://deb.debian.org/debian-security bookworm-security InRelease [48.0 kB]
+- Get:4 http://deb.debian.org/debian-security bookworm-security/main amd64 Packages [157 kB]
+- Fetched 260 kB in 0s (735 kB/s)
+- Reading package lists...
+[01;2m[01;35m2024-06-04 03:20.52 ---> saved as "9ba382deadb730a851cfe75efb90333452ec9d36ecb94c2e8030885f37c275e3"[0m
+
+[01;34m/home/opam: (run (shell "opam pin add -k version -yn slipshow.0.0.32 0.0.32"))[0m
+slipshow is now pinned to version 0.0.32
+[01;2m[01;35m2024-06-04 03:20.53 ---> saved as "52c3d094aedaab036d3f33f8da0502251f445d6d7765a79e71568a3659d5a8c9"[0m
+
+[01;34m/home/opam: (run (cache (opam-archives (target /home/opam/.opam/download-cache)))
+                 (network host)
+                 (shell  "opam reinstall slipshow.0.0.32;\
+                        \n        res=$?;\
+                        \n        test \"$res\" != 31 && exit \"$res\";\
+                        \n        export OPAMCLI=2.0;\
+                        \n        build_dir=$(opam var prefix)/.opam-switch/build;\
+                        \n        failed=$(ls \"$build_dir\");\
+                        \n        partial_fails=\"\";\
+                        \n        for pkg in $failed; do\
+                        \n          if opam show -f x-ci-accept-failures: \"$pkg\" | grep -qF \"\\\"debian-12\\\"\"; then\
+                        \n            echo \"A package failed and has been disabled for CI using the 'x-ci-accept-failures' field.\";\
+                        \n          fi;\
+                        \n          test \"$pkg\" != 'slipshow.0.0.32' && partial_fails=\"$partial_fails $pkg\";\
+                        \n        done;\
+                        \n        test \"${partial_fails}\" != \"\" && echo \"opam-repo-ci detected dependencies failing: ${partial_fails}\";\
+                        \n        exit 1"))[0m
+slipshow.0.0.32 is not installed. Install it? [Y/n] y
+[ERROR] Sorry, resolution of the request timed out.
+        Try to specify a more precise request, use a different solver, or increase the allowed time by setting OPAMSOLVERTIMEOUT to a bigger value (currently, it is set to 500.0 seconds).
+"/usr/bin/env" "bash" "-c" "opam reinstall slipshow.0.0.32;
+        res=$?;
+        test "$res" != 31 && exit "$res";
+        export OPAMCLI=2.0;
+        build_dir=$(opam var prefix)/.opam-switch/build;
+        failed=$(ls "$build_dir");
+        partial_fails="";
+        for pkg in $failed; do
+          if opam show -f x-ci-accept-failures: "$pkg" | grep -qF "\"debian-12\""; then
+            echo "A package failed and has been disabled for CI using the 'x-ci-accept-failures' field.";
+          fi;
+          test "$pkg" != 'slipshow.0.0.32' && partial_fails="$partial_fails $pkg";
+        done;
+        test "${partial_fails}" != "" && echo "opam-repo-ci detected dependencies failing: ${partial_fails}";
+        exit 1" failed with exit status 60
+2024-06-04 03:29.31: Job failed: Failed: Build failed
+2024-06-04 03:29.31: Log analysis:
+2024-06-04 03:29.31: >>> 
+[ERROR] Sorry, resolution of the request timed out.
+ (score = 20)
+2024-06-04 03:29.31: Sorry, resolution of the request timed out.

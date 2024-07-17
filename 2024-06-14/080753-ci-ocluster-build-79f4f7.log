@@ -1,0 +1,695 @@
+2024-06-14 08:07.53: New job: test irmin-http.3.4.3 with conduit-lwt-unix.6.2.3, using opam dev
+                              from https://github.com/ocaml/opam-repository.git#refs/pull/26077/head (f6286b316ae0d522e2d1633c83aec30bb367cdb9)
+                              on debian-12-ocaml-5.2/amd64
+
+To reproduce locally:
+
+cd $(mktemp -d)
+git clone --recursive "https://github.com/ocaml/opam-repository.git" && cd "opam-repository" && git fetch origin "refs/pull/26077/head" && git reset --hard f6286b31
+git fetch origin master
+git merge --no-edit 56c3e1b1a26a4d141748b526598c4a7f5b27253c
+cat > ../Dockerfile <<'END-OF-DOCKERFILE'
+[34mFROM ocaml/opam:debian-12-ocaml-5.2@sha256:12df694d8961e9d2889415e9f52914c529db83d399156ead1a40943939257d06
+USER 1000:1000
+WORKDIR /home/opam
+RUN sudo ln -f /usr/bin/opam-dev /usr/bin/opam
+RUN opam init --reinit -ni
+RUN uname -rs && opam exec -- ocaml -version && opam --version
+ENV OPAMDOWNLOADJOBS="1"
+ENV OPAMERRLOGLEN="0"
+ENV OPAMSOLVERTIMEOUT="500"
+ENV OPAMPRECISETRACKING="1"
+ENV CI="true"
+ENV OPAM_REPO_CI="true"
+RUN rm -rf opam-repository/
+COPY --chown=1000:1000 . opam-repository/
+RUN opam repository set-url --strict default opam-repository/
+RUN opam update --depexts || true
+RUN opam pin add -k version -yn conduit-lwt-unix.6.2.3 6.2.3
+RUN opam reinstall conduit-lwt-unix.6.2.3; \
+    res=$?; \
+    test "$res" != 31 && exit "$res"; \
+    export OPAMCLI=2.0; \
+    build_dir=$(opam var prefix)/.opam-switch/build; \
+    failed=$(ls "$build_dir"); \
+    partial_fails=""; \
+    for pkg in $failed; do \
+    if opam show -f x-ci-accept-failures: "$pkg" | grep -qF "\"debian-12\""; then \
+    echo "A package failed and has been disabled for CI using the 'x-ci-accept-failures' field."; \
+    fi; \
+    test "$pkg" != 'conduit-lwt-unix.6.2.3' && partial_fails="$partial_fails $pkg"; \
+    done; \
+    test "${partial_fails}" != "" && echo "opam-repo-ci detected dependencies failing: ${partial_fails}"; \
+    exit 1
+RUN opam reinstall irmin-http.3.4.3; \
+    res=$?; \
+    test "$res" != 31 && exit "$res"; \
+    export OPAMCLI=2.0; \
+    build_dir=$(opam var prefix)/.opam-switch/build; \
+    failed=$(ls "$build_dir"); \
+    partial_fails=""; \
+    for pkg in $failed; do \
+    if opam show -f x-ci-accept-failures: "$pkg" | grep -qF "\"debian-12\""; then \
+    echo "A package failed and has been disabled for CI using the 'x-ci-accept-failures' field."; \
+    fi; \
+    test "$pkg" != 'irmin-http.3.4.3' && partial_fails="$partial_fails $pkg"; \
+    done; \
+    test "${partial_fails}" != "" && echo "opam-repo-ci detected dependencies failing: ${partial_fails}"; \
+    exit 1
+RUN (opam reinstall --with-test irmin-http.3.4.3) || true
+RUN opam reinstall --with-test --verbose irmin-http.3.4.3; \
+    res=$?; \
+    test "$res" != 31 && exit "$res"; \
+    export OPAMCLI=2.0; \
+    build_dir=$(opam var prefix)/.opam-switch/build; \
+    failed=$(ls "$build_dir"); \
+    partial_fails=""; \
+    for pkg in $failed; do \
+    if opam show -f x-ci-accept-failures: "$pkg" | grep -qF "\"debian-12\""; then \
+    echo "A package failed and has been disabled for CI using the 'x-ci-accept-failures' field."; \
+    fi; \
+    test "$pkg" != 'irmin-http.3.4.3' && partial_fails="$partial_fails $pkg"; \
+    done; \
+    test "${partial_fails}" != "" && echo "opam-repo-ci detected dependencies failing: ${partial_fails}"; \
+    exit 1
+[0m
+END-OF-DOCKERFILE
+docker build -f ../Dockerfile .
+
+2024-06-14 08:07.53: Using cache hint "ocaml/opam:debian-12-ocaml-5.2@sha256:12df694d8961e9d2889415e9f52914c529db83d399156ead1a40943939257d06-conduit-lwt-unix.6.2.3-irmin-http.3.4.3-f6286b316ae0d522e2d1633c83aec30bb367cdb9"
+2024-06-14 08:07.53: Using OBuilder spec:
+((from ocaml/opam:debian-12-ocaml-5.2@sha256:12df694d8961e9d2889415e9f52914c529db83d399156ead1a40943939257d06)
+ (user (uid 1000) (gid 1000))
+ (workdir /home/opam)
+ (run (shell "sudo ln -f /usr/bin/opam-dev /usr/bin/opam"))
+ (run (network host)
+      (shell "opam init --reinit --config .opamrc-sandbox -ni"))
+ (run (shell "uname -rs && opam exec -- ocaml -version && opam --version"))
+ (env OPAMDOWNLOADJOBS 1)
+ (env OPAMERRLOGLEN 0)
+ (env OPAMSOLVERTIMEOUT 500)
+ (env OPAMPRECISETRACKING 1)
+ (env CI true)
+ (env OPAM_REPO_CI true)
+ (run (shell "rm -rf opam-repository/"))
+ (copy (src .) (dst opam-repository/))
+ (run (shell "opam repository set-url --strict default opam-repository/"))
+ (run (network host)
+      (shell "opam update --depexts || true"))
+ (run (shell "opam pin add -k version -yn conduit-lwt-unix.6.2.3 6.2.3"))
+ (run (cache (opam-archives (target /home/opam/.opam/download-cache)))
+      (network host)
+      (shell  "opam reinstall conduit-lwt-unix.6.2.3;\
+             \n        res=$?;\
+             \n        test \"$res\" != 31 && exit \"$res\";\
+             \n        export OPAMCLI=2.0;\
+             \n        build_dir=$(opam var prefix)/.opam-switch/build;\
+             \n        failed=$(ls \"$build_dir\");\
+             \n        partial_fails=\"\";\
+             \n        for pkg in $failed; do\
+             \n          if opam show -f x-ci-accept-failures: \"$pkg\" | grep -qF \"\\\"debian-12\\\"\"; then\
+             \n            echo \"A package failed and has been disabled for CI using the 'x-ci-accept-failures' field.\";\
+             \n          fi;\
+             \n          test \"$pkg\" != 'conduit-lwt-unix.6.2.3' && partial_fails=\"$partial_fails $pkg\";\
+             \n        done;\
+             \n        test \"${partial_fails}\" != \"\" && echo \"opam-repo-ci detected dependencies failing: ${partial_fails}\";\
+             \n        exit 1"))
+ (run (cache (opam-archives (target /home/opam/.opam/download-cache)))
+      (network host)
+      (shell  "opam reinstall irmin-http.3.4.3;\
+             \n        res=$?;\
+             \n        test \"$res\" != 31 && exit \"$res\";\
+             \n        export OPAMCLI=2.0;\
+             \n        build_dir=$(opam var prefix)/.opam-switch/build;\
+             \n        failed=$(ls \"$build_dir\");\
+             \n        partial_fails=\"\";\
+             \n        for pkg in $failed; do\
+             \n          if opam show -f x-ci-accept-failures: \"$pkg\" | grep -qF \"\\\"debian-12\\\"\"; then\
+             \n            echo \"A package failed and has been disabled for CI using the 'x-ci-accept-failures' field.\";\
+             \n          fi;\
+             \n          test \"$pkg\" != 'irmin-http.3.4.3' && partial_fails=\"$partial_fails $pkg\";\
+             \n        done;\
+             \n        test \"${partial_fails}\" != \"\" && echo \"opam-repo-ci detected dependencies failing: ${partial_fails}\";\
+             \n        exit 1"))
+ (run (network host)
+      (shell "(opam reinstall --with-test irmin-http.3.4.3) || true"))
+ (run (shell  "opam reinstall --with-test --verbose irmin-http.3.4.3;\
+             \n        res=$?;\
+             \n        test \"$res\" != 31 && exit \"$res\";\
+             \n        export OPAMCLI=2.0;\
+             \n        build_dir=$(opam var prefix)/.opam-switch/build;\
+             \n        failed=$(ls \"$build_dir\");\
+             \n        partial_fails=\"\";\
+             \n        for pkg in $failed; do\
+             \n          if opam show -f x-ci-accept-failures: \"$pkg\" | grep -qF \"\\\"debian-12\\\"\"; then\
+             \n            echo \"A package failed and has been disabled for CI using the 'x-ci-accept-failures' field.\";\
+             \n          fi;\
+             \n          test \"$pkg\" != 'irmin-http.3.4.3' && partial_fails=\"$partial_fails $pkg\";\
+             \n        done;\
+             \n        test \"${partial_fails}\" != \"\" && echo \"opam-repo-ci detected dependencies failing: ${partial_fails}\";\
+             \n        exit 1"))
+)
+
+2024-06-14 08:07.53: Waiting for resource in pool OCluster
+2024-06-14 08:07.53: Waiting for worker…
+2024-06-14 08:07.53: Got resource from pool OCluster
+Building on x86-bm-c19.sw.ocaml.org
+All commits already cached
+Updating files:  54% (17032/31518)Updating files:  55% (17335/31518)Updating files:  56% (17651/31518)Updating files:  57% (17966/31518)Updating files:  58% (18281/31518)Updating files:  59% (18596/31518)Updating files:  60% (18911/31518)Updating files:  61% (19226/31518)Updating files:  62% (19542/31518)Updating files:  63% (19857/31518)Updating files:  64% (20172/31518)Updating files:  65% (20487/31518)Updating files:  66% (20802/31518)Updating files:  67% (21118/31518)Updating files:  68% (21433/31518)Updating files:  69% (21748/31518)Updating files:  70% (22063/31518)Updating files:  71% (22378/31518)Updating files:  72% (22693/31518)Updating files:  73% (23009/31518)Updating files:  74% (23324/31518)Updating files:  75% (23639/31518)Updating files:  76% (23954/31518)Updating files:  77% (24269/31518)Updating files:  78% (24585/31518)Updating files:  79% (24900/31518)Updating files:  80% (25215/31518)Updating files:  81% (25530/31518)Updating files:  82% (25845/31518)Updating files:  83% (26160/31518)Updating files:  84% (26476/31518)Updating files:  85% (26791/31518)Updating files:  86% (27106/31518)Updating files:  87% (27421/31518)Updating files:  88% (27736/31518)Updating files:  89% (28052/31518)Updating files:  90% (28367/31518)Updating files:  91% (28682/31518)Updating files:  92% (28997/31518)Updating files:  93% (29312/31518)Updating files:  94% (29627/31518)Updating files:  95% (29943/31518)Updating files:  96% (30258/31518)Updating files:  97% (30573/31518)Updating files:  97% (30788/31518)Updating files:  98% (30888/31518)Updating files:  99% (31203/31518)Updating files: 100% (31518/31518)Updating files: 100% (31518/31518), done.
+HEAD is now at 56c3e1b1a2 Merge pull request #26081 from dra27/ci-cache
+Merge made by the 'ort' strategy.
+ packages/conduit-async/conduit-async.6.2.3/opam    | 41 ++++++++++++++++
+ .../conduit-lwt-unix/conduit-lwt-unix.6.2.3/opam   | 45 +++++++++++++++++
+ packages/conduit-lwt/conduit-lwt.6.2.3/opam        | 33 +++++++++++++
+ packages/conduit-mirage/conduit-mirage.6.2.3/opam  | 51 +++++++++++++++++++
+ packages/conduit/conduit.6.2.3/opam                | 57 ++++++++++++++++++++++
+ 5 files changed, 227 insertions(+)
+ create mode 100644 packages/conduit-async/conduit-async.6.2.3/opam
+ create mode 100644 packages/conduit-lwt-unix/conduit-lwt-unix.6.2.3/opam
+ create mode 100644 packages/conduit-lwt/conduit-lwt.6.2.3/opam
+ create mode 100644 packages/conduit-mirage/conduit-mirage.6.2.3/opam
+ create mode 100644 packages/conduit/conduit.6.2.3/opam
+
+[01;34m(from ocaml/opam:debian-12-ocaml-5.2@sha256:12df694d8961e9d2889415e9f52914c529db83d399156ead1a40943939257d06)[0m
+[01;2m[01;35m2024-06-14 08:08.28 ---> saved as "cd5e28c7764350a015cf18513c5962c60f452082d33e091e5bfc48530437f838"[0m
+
+[01;34m/: (user (uid 1000) (gid 1000))[0m
+
+[01;34m/: (workdir /home/opam)[0m
+
+[01;34m/home/opam: (run (shell "sudo ln -f /usr/bin/opam-dev /usr/bin/opam"))[0m
+[01;2m[01;35m2024-06-14 08:08.28 ---> saved as "47c9e98159058b7ff26e06578519f2baedc4d726bec0ba50f25ca39612ec54ef"[0m
+
+[01;34m/home/opam: (run (network host)
+                 (shell "opam init --reinit --config .opamrc-sandbox -ni"))[0m
+Configuring from /home/opam/.opamrc-sandbox, then /home/opam/.opamrc, and finally from built-in defaults.
+Checking for available remotes: rsync and local, git.
+  - you won't be able to use mercurial repositories unless you install the hg command on your system.
+  - you won't be able to use darcs repositories unless you install the darcs command on your system.
+
+This development version of opam requires an update to the layout of /home/opam/.opam from version 2.0 to version 2.2~beta, which can't be reverted.
+You may want to back it up before going further.
+
+Continue? [y/n] y
+[NOTE] The 'jobs' option was reset, its value was 39 and its new value will vary according to the current number of cores on your machine. You can restore the fixed value using:
+           opam option jobs=39 --global
+Format upgrade done.
+
+<><> Updating repositories ><><><><><><><><><><><><><><><><><><><><><><><><><><>
+[default] synchronised from file:///home/opam/opam-repository
+[01;2m[01;35m2024-06-14 08:10.02 ---> saved as "ec01f7f6dc4ff17ecc7a01d6c1874f0829ee46cbdd1571dd209843e4cd365ff9"[0m
+
+[01;34m/home/opam: (run (shell "uname -rs && opam exec -- ocaml -version && opam --version"))[0m
+Linux 5.15.0-107-generic
+The OCaml toplevel, version 5.2.0
+2.2.0~beta3~dev
+[01;2m[01;35m2024-06-14 08:10.02 ---> saved as "32231f0345c7eb2667d6e320919f35cb498c4f7019083cbe672c10f8da45dfbf"[0m
+
+[01;34m/home/opam: (env OPAMDOWNLOADJOBS 1)[0m
+
+[01;34m/home/opam: (env OPAMERRLOGLEN 0)[0m
+
+[01;34m/home/opam: (env OPAMSOLVERTIMEOUT 500)[0m
+
+[01;34m/home/opam: (env OPAMPRECISETRACKING 1)[0m
+
+[01;34m/home/opam: (env CI true)[0m
+
+[01;34m/home/opam: (env OPAM_REPO_CI true)[0m
+
+[01;34m/home/opam: (run (shell "rm -rf opam-repository/"))[0m
+[01;2m[01;35m2024-06-14 08:10.12 ---> saved as "fe13381ff52ef5941d917a950fe35dd5494baf7fc6a9f98f408c47887d6dfdb2"[0m
+
+[01;34m/home/opam: (copy (src .) (dst opam-repository/))[0m
+[01;2m[01;35m2024-06-14 08:10.40 ---> saved as "757ff2ef1ec1716ab04a9fe359fb877f5214e6063444beca63a93d658b3e7efa"[0m
+
+[01;34m/home/opam: (run (shell "opam repository set-url --strict default opam-repository/"))[0m
+[default] Initialised
+[01;2m[01;35m2024-06-14 08:11.35 ---> saved as "ea229c773972b4920a69160aa17786b104dcd8a8266bbc77b2187108b888daae"[0m
+
+[01;34m/home/opam: (run (network host)
+                 (shell "opam update --depexts || true"))[0m
++ /usr/bin/sudo "apt-get" "update"
+- Hit:1 http://deb.debian.org/debian bookworm InRelease
+- Get:2 http://deb.debian.org/debian bookworm-updates InRelease [55.4 kB]
+- Get:3 http://deb.debian.org/debian-security bookworm-security InRelease [48.0 kB]
+- Get:4 http://deb.debian.org/debian-security bookworm-security/main amd64 Packages [160 kB]
+- Fetched 263 kB in 0s (1027 kB/s)
+- Reading package lists...
+[01;2m[01;35m2024-06-14 08:11.36 ---> saved as "b8fb1e978fa6e1ba0e55cb09ef8bdba35dd61f52fb6298530cebf29edc0f40b7"[0m
+
+[01;34m/home/opam: (run (shell "opam pin add -k version -yn conduit-lwt-unix.6.2.3 6.2.3"))[0m
+conduit-lwt-unix is now pinned to version 6.2.3
+[01;2m[01;35m2024-06-14 08:11.37 ---> saved as "e37f00f3d7d38fb3443d119cf55036db23062db5313f278f669f279e8a86e15e"[0m
+
+[01;34m/home/opam: (run (cache (opam-archives (target /home/opam/.opam/download-cache)))
+                 (network host)
+                 (shell  "opam reinstall conduit-lwt-unix.6.2.3;\
+                        \n        res=$?;\
+                        \n        test \"$res\" != 31 && exit \"$res\";\
+                        \n        export OPAMCLI=2.0;\
+                        \n        build_dir=$(opam var prefix)/.opam-switch/build;\
+                        \n        failed=$(ls \"$build_dir\");\
+                        \n        partial_fails=\"\";\
+                        \n        for pkg in $failed; do\
+                        \n          if opam show -f x-ci-accept-failures: \"$pkg\" | grep -qF \"\\\"debian-12\\\"\"; then\
+                        \n            echo \"A package failed and has been disabled for CI using the 'x-ci-accept-failures' field.\";\
+                        \n          fi;\
+                        \n          test \"$pkg\" != 'conduit-lwt-unix.6.2.3' && partial_fails=\"$partial_fails $pkg\";\
+                        \n        done;\
+                        \n        test \"${partial_fails}\" != \"\" && echo \"opam-repo-ci detected dependencies failing: ${partial_fails}\";\
+                        \n        exit 1"))[0m
+conduit-lwt-unix.6.2.3 is not installed. Install it? [y/n] y
+The following actions will be performed:
+=== recompile 6 packages
+  - recompile base-domains            base           [uses ocaml]
+  - recompile base-nnp                base           [uses base-domains]
+  - recompile ocaml                   5.2.0          [upstream or system changes]
+  - recompile ocaml-base-compiler     5.2.0 (pinned) [upstream or system changes]
+  - recompile ocaml-config            3              [uses ocaml-base-compiler]
+  - recompile opam-depext             1.2.1-1        [uses ocaml]
+=== install 59 packages
+  - install   angstrom                0.16.0         [required by uri]
+  - install   asn1-combinators        0.2.6          [required by x509]
+  - install   astring                 0.8.5          [required by ca-certs]
+  - install   base                    v0.17.0        [required by ppx_sexp_conv]
+  - install   base-bytes              base           [required by ocplib-endian]
+  - install   base64                  3.5.1          [required by x509]
+  - install   bigstringaf             0.9.1          [required by angstrom]
+  - install   bos                     0.2.1          [required by ca-certs]
+  - install   ca-certs                0.2.3          [required by conduit-lwt-unix]
+  - install   conduit                 6.2.3          [required by conduit-lwt]
+  - install   conduit-lwt             6.2.3          [required by conduit-lwt-unix]
+  - install   conduit-lwt-unix        6.2.3 (pinned)
+  - install   conf-gmp                4              [required by zarith, conf-gmp-powm-sec]
+  - install   conf-gmp-powm-sec       3              [required by mirage-crypto-pk]
+  - install   cppo                    1.6.9          [required by lwt]
+  - install   csexp                   1.5.2          [required by dune-configurator]
+  - install   cstruct                 6.2.0          [required by mirage-crypto, x509]
+  - install   domain-name             0.4.0          [required by x509]
+  - install   dune                    3.15.3         [required by conduit-lwt-unix]
+  - install   dune-configurator       3.15.3         [required by mirage-crypto]
+  - install   duration                0.2.1          [required by mirage-crypto-rng]
+  - install   eqaf                    0.9            [required by mirage-crypto]
+  - install   fmt                     0.9.0          [required by bos, x509]
+  - install   fpath                   0.7.3          [required by ca-certs]
+  - install   gmap                    0.3.0          [required by x509]
+  - install   host-arch-x86_64        1
+  - install   host-system-other       1
+  - install   ipaddr                  5.6.0          [required by conduit-lwt-unix]
+  - install   ipaddr-sexp             5.6.0          [required by conduit-lwt-unix]
+  - install   logs                    0.7.0          [required by conduit-lwt-unix]
+  - install   lwt                     5.7.0          [required by conduit-lwt-unix]
+  - install   macaddr                 5.6.0          [required by ipaddr]
+  - install   mirage-crypto           0.11.3         [required by ca-certs]
+  - install   mirage-crypto-ec        0.11.3         [required by x509]
+  - install   mirage-crypto-pk        0.11.3         [required by x509]
+  - install   mirage-crypto-rng       0.11.3         [required by x509]
+  - install   num                     1.5            [required by sexplib]
+  - install   ocaml-compiler-libs     v0.17.0        [required by ppxlib]
+  - install   ocaml-syntax-shims      1.0.0          [required by angstrom]
+  - install   ocaml_intrinsics_kernel v0.17.0        [required by base]
+  - install   ocamlbuild              0.14.3         [required by bos, astring, ptime]
+  - install   ocamlfind               1.9.6          [required by bos, astring, ptime]
+  - install   ocplib-endian           1.2            [required by lwt]
+  - install   parsexp                 v0.17.0        [required by sexplib]
+  - install   pbkdf                   1.2.0          [required by x509]
+  - install   ppx_derivers            1.2.1          [required by ppxlib]
+  - install   ppx_sexp_conv           v0.17.0        [required by conduit-lwt-unix]
+  - install   ppxlib                  0.32.1         [required by ppx_sexp_conv]
+  - install   ppxlib_jane             v0.17.0        [required by ppx_sexp_conv]
+  - install   ptime                   1.1.0          [required by ca-certs]
+  - install   rresult                 0.7.0          [required by bos]
+  - install   sexplib                 v0.17.0        [required by conduit-lwt]
+  - install   sexplib0                v0.17.0        [required by ipaddr-sexp, mirage-crypto-pk, sexplib]
+  - install   stdlib-shims            0.3.0          [required by ppxlib]
+  - install   stringext               1.6.0          [required by uri]
+  - install   topkg                   1.0.7          [required by bos, astring, ptime]
+  - install   uri                     4.4.0          [required by conduit-lwt-unix]
+  - install   x509                    0.16.5         [required by ca-certs]
+  - install   zarith                  1.13           [required by asn1-combinators, mirage-crypto-pk]
+
+The following system packages will first need to be installed:
+    libgmp-dev
+
+<><> Handling external dependencies <><><><><><><><><><><><><><><><><><><><><><>
+
+opam believes some required external dependencies are missing. opam can:
+> 1. Run apt-get to install them (may need root/sudo access)
+  2. Display the recommended apt-get command and wait while you run it manually (e.g. in another terminal)
+  3. Continue anyway, and, upon success, permanently register that this external dependency is present, but not detectable
+  4. Abort the installation
+
+[1/2/3/4] 1
+
++ /usr/bin/sudo "apt-get" "install" "-qq" "-yy" "libgmp-dev"
+- debconf: delaying package configuration, since apt-utils is not installed
+- Selecting previously unselected package libgmpxx4ldbl:amd64.
+- (Reading database ... (Reading database ... 5%(Reading database ... 10%(Reading database ... 15%(Reading database ... 20%(Reading database ... 25%(Reading database ... 30%(Reading database ... 35%(Reading database ... 40%(Reading database ... 45%(Reading database ... 50%(Reading database ... 55%(Reading database ... 60%(Reading database ... 65%(Reading database ... 70%(Reading database ... 75%(Reading database ... 80%(Reading database ... 85%(Reading database ... 90%(Reading database ... 95%(Reading database ... 100%(Reading database ... 18766 files and directories currently installed.)
+- Preparing to unpack .../libgmpxx4ldbl_2%3a6.2.1+dfsg1-1.1_amd64.deb ...
+- Unpacking libgmpxx4ldbl:amd64 (2:6.2.1+dfsg1-1.1) ...
+- Selecting previously unselected package libgmp-dev:amd64.
+- Preparing to unpack .../libgmp-dev_2%3a6.2.1+dfsg1-1.1_amd64.deb ...
+- Unpacking libgmp-dev:amd64 (2:6.2.1+dfsg1-1.1) ...
+- Setting up libgmpxx4ldbl:amd64 (2:6.2.1+dfsg1-1.1) ...
+- Setting up libgmp-dev:amd64 (2:6.2.1+dfsg1-1.1) ...
+- Processing triggers for libc-bin (2.36-9+deb12u7) ...
+
+<><> Processing actions <><><><><><><><><><><><><><><><><><><><><><><><><><><><>
+-> retrieved angstrom.0.16.0  (cached)
+-> retrieved asn1-combinators.0.2.6  (cached)
+-> retrieved astring.0.8.5  (cached)
+-> retrieved base.v0.17.0  (cached)
+-> retrieved base64.3.5.1  (cached)
+-> retrieved bigstringaf.0.9.1  (cached)
+-> retrieved bos.0.2.1  (cached)
+-> retrieved ca-certs.0.2.3  (cached)
+-> retrieved conduit.6.2.3, conduit-lwt.6.2.3, conduit-lwt-unix.6.2.3  (cached)
+-> retrieved conf-gmp.4  (cached)
+-> retrieved conf-gmp-powm-sec.3  (cached)
+-> retrieved cppo.1.6.9  (cached)
+-> retrieved csexp.1.5.2  (cached)
+-> installed conf-gmp.4
+-> retrieved cstruct.6.2.0  (cached)
+-> retrieved domain-name.0.4.0  (cached)
+-> installed conf-gmp-powm-sec.3
+-> retrieved dune.3.15.3, dune-configurator.3.15.3  (cached)
+-> retrieved duration.0.2.1  (cached)
+-> retrieved eqaf.0.9  (cached)
+-> retrieved fmt.0.9.0  (cached)
+-> retrieved fpath.0.7.3  (cached)
+-> retrieved gmap.0.3.0  (cached)
+-> installed host-arch-x86_64.1
+-> installed host-system-other.1
+-> retrieved ipaddr.5.6.0, ipaddr-sexp.5.6.0, macaddr.5.6.0  (cached)
+-> retrieved logs.0.7.0  (cached)
+-> retrieved lwt.5.7.0  (cached)
+-> retrieved mirage-crypto.0.11.3, mirage-crypto-ec.0.11.3, mirage-crypto-pk.0.11.3, mirage-crypto-rng.0.11.3  (cached)
+-> retrieved num.1.5  (cached)
+-> retrieved ocaml-base-compiler.5.2.0  (cached)
+-> retrieved ocaml-compiler-libs.v0.17.0  (cached)
+-> retrieved ocaml-config.3  (cached)
+-> retrieved ocaml-syntax-shims.1.0.0  (cached)
+-> retrieved ocaml_intrinsics_kernel.v0.17.0  (cached)
+-> retrieved ocamlbuild.0.14.3  (cached)
+-> retrieved ocamlfind.1.9.6  (cached)
+-> retrieved ocplib-endian.1.2  (cached)
+-> retrieved opam-depext.1.2.1-1  (cached)
+-> retrieved parsexp.v0.17.0  (cached)
+-> retrieved pbkdf.1.2.0  (cached)
+-> retrieved ppx_derivers.1.2.1  (cached)
+-> retrieved ppx_sexp_conv.v0.17.0  (cached)
+-> retrieved ppxlib.0.32.1  (cached)
+-> retrieved ppxlib_jane.v0.17.0  (cached)
+-> retrieved ptime.1.1.0  (cached)
+-> retrieved rresult.0.7.0  (cached)
+-> retrieved sexplib.v0.17.0  (cached)
+-> retrieved sexplib0.v0.17.0  (cached)
+-> retrieved stdlib-shims.0.3.0  (cached)
+-> retrieved stringext.1.6.0  (cached)
+-> retrieved topkg.1.0.7  (cached)
+-> retrieved uri.4.4.0  (cached)
+-> retrieved x509.0.16.5  (cached)
+-> retrieved zarith.1.13  (cached)
+-> removed   base-nnp.base
+-> removed   base-domains.base
+-> removed   opam-depext.1.2.1-1
+-> removed   ocaml.5.2.0
+-> removed   ocaml-config.3
+-> removed   ocaml-base-compiler.5.2.0
+-> installed ocaml-base-compiler.5.2.0
+-> installed ocaml-config.3
+-> installed ocaml.5.2.0
+-> installed base-domains.base
+-> installed base-nnp.base
+-> installed opam-depext.1.2.1-1
+-> installed num.1.5
+-> installed ocamlfind.1.9.6
+-> installed base-bytes.base
+-> installed ocamlbuild.0.14.3
+-> installed zarith.1.13
+-> installed topkg.1.0.7
+-> installed rresult.0.7.0
+-> installed fmt.0.9.0
+-> installed ptime.1.1.0
+-> installed astring.0.8.5
+-> installed fpath.0.7.3
+-> installed dune.3.15.3
+-> installed gmap.0.3.0
+-> installed duration.0.2.1
+-> installed csexp.1.5.2
+-> installed base64.3.5.1
+-> installed cstruct.6.2.0
+-> installed domain-name.0.4.0
+-> installed cppo.1.6.9
+-> installed macaddr.5.6.0
+-> installed ocaml_intrinsics_kernel.v0.17.0
+-> installed ocaml-syntax-shims.1.0.0
+-> installed ppx_derivers.1.2.1
+-> installed sexplib0.v0.17.0
+-> installed ocaml-compiler-libs.v0.17.0
+-> installed stdlib-shims.0.3.0
+-> installed stringext.1.6.0
+-> installed ocplib-endian.1.2
+-> installed eqaf.0.9
+-> installed ipaddr.5.6.0
+-> installed asn1-combinators.0.2.6
+-> installed dune-configurator.3.15.3
+-> installed parsexp.v0.17.0
+-> installed bigstringaf.0.9.1
+-> installed sexplib.v0.17.0
+-> installed angstrom.0.16.0
+-> installed mirage-crypto.0.11.3
+-> installed pbkdf.1.2.0
+-> installed uri.4.4.0
+-> installed lwt.5.7.0
+-> installed logs.0.7.0
+-> installed mirage-crypto-rng.0.11.3
+-> installed mirage-crypto-pk.0.11.3
+-> installed base.v0.17.0
+-> installed bos.0.2.1
+-> installed mirage-crypto-ec.0.11.3
+-> installed x509.0.16.5
+-> installed ca-certs.0.2.3
+-> installed ppxlib.0.32.1
+-> installed ppxlib_jane.v0.17.0
+-> installed ppx_sexp_conv.v0.17.0
+-> installed ipaddr-sexp.5.6.0
+-> installed conduit.6.2.3
+-> installed conduit-lwt.6.2.3
+-> installed conduit-lwt-unix.6.2.3
+Done.
+
+<><> opam-depext.1.2.1-1 installed successfully <><><><><><><><><><><><><><><><>
+=> opam-depext is unnecessary when used with opam >= 2.1. Please use opam install directly instead
+# Run eval $(opam env) to update the current shell environment
+[01;2m[01;35m2024-06-14 08:18.03 ---> saved as "1d51c89130730b494ce6734041ca49f52a44336842645fb74ac2f6ea2f51a226"[0m
+
+[01;34m/home/opam: (run (cache (opam-archives (target /home/opam/.opam/download-cache)))
+                 (network host)
+                 (shell  "opam reinstall irmin-http.3.4.3;\
+                        \n        res=$?;\
+                        \n        test \"$res\" != 31 && exit \"$res\";\
+                        \n        export OPAMCLI=2.0;\
+                        \n        build_dir=$(opam var prefix)/.opam-switch/build;\
+                        \n        failed=$(ls \"$build_dir\");\
+                        \n        partial_fails=\"\";\
+                        \n        for pkg in $failed; do\
+                        \n          if opam show -f x-ci-accept-failures: \"$pkg\" | grep -qF \"\\\"debian-12\\\"\"; then\
+                        \n            echo \"A package failed and has been disabled for CI using the 'x-ci-accept-failures' field.\";\
+                        \n          fi;\
+                        \n          test \"$pkg\" != 'irmin-http.3.4.3' && partial_fails=\"$partial_fails $pkg\";\
+                        \n        done;\
+                        \n        test \"${partial_fails}\" != \"\" && echo \"opam-repo-ci detected dependencies failing: ${partial_fails}\";\
+                        \n        exit 1"))[0m
+irmin-http.3.4.3 is not installed. Install it? [y/n] y
+The following actions will be performed:
+=== recompile 16 packages
+  - recompile asn1-combinators  0.2.6          [uses cstruct]
+  - recompile bos               0.2.1          [uses fmt]
+  - recompile ca-certs          0.2.3          [uses bos, logs]
+  - recompile conduit           6.2.3          [uses logs]
+  - recompile conduit-lwt       6.2.3          [uses conduit]
+  - recompile conduit-lwt-unix  6.2.3 (pinned) [uses logs]
+  - recompile cstruct           6.2.0          [uses fmt]
+  - recompile eqaf              0.9            [uses cstruct]
+  - recompile fmt               0.9.0          [uses cmdliner]
+  - recompile logs              0.7.0          [uses cmdliner]
+  - recompile mirage-crypto     0.11.3         [uses cstruct]
+  - recompile mirage-crypto-ec  0.11.3         [uses cstruct]
+  - recompile mirage-crypto-pk  0.11.3         [uses cstruct]
+  - recompile mirage-crypto-rng 0.11.3         [uses cstruct, logs]
+  - recompile pbkdf             1.2.0          [uses cstruct]
+  - recompile x509              0.16.5         [uses fmt]
+=== install 26 packages
+  - install   bheap             2.0.0          [required by irmin]
+  - install   cmdliner          1.3.0          [required by cohttp-lwt-unix, crunch]
+  - install   cohttp            5.3.1          [required by irmin-http]
+  - install   cohttp-lwt        5.3.0          [required by irmin-http]
+  - install   cohttp-lwt-unix   5.3.0          [required by irmin-http]
+  - install   crunch            3.3.1          [required by irmin-http]
+  - install   digestif          1.2.0          [required by irmin]
+  - install   dispatch          0.5.0          [required by webmachine]
+  - install   either            1.0.0          [required by repr]
+  - install   irmin             3.4.3          [required by irmin-http]
+  - install   irmin-http        3.4.3
+  - install   jsonm             1.0.2          [required by irmin-http]
+  - install   magic-mime        1.3.1          [required by cohttp-lwt-unix]
+  - install   mtime             1.4.0          [required by irmin]
+  - install   ocamlgraph        2.1.0          [required by irmin]
+  - install   optint            0.3.0          [required by repr]
+  - install   ppx_deriving      6.0.2          [required by ppx_repr]
+  - install   ppx_irmin         3.4.3          [required by irmin-http]
+  - install   ppx_repr          0.7.0          [required by ppx_irmin]
+  - install   re                1.11.0         [required by cohttp, webmachine]
+  - install   repr              0.7.0          [required by irmin]
+  - install   result            1.5            [required by dispatch]
+  - install   seq               base           [required by re]
+  - install   uri-sexp          4.4.0          [required by cohttp]
+  - install   uutf              1.0.3          [required by irmin]
+  - install   webmachine        0.7.0          [required by irmin-http]
+
+<><> Processing actions <><><><><><><><><><><><><><><><><><><><><><><><><><><><>
+-> retrieved asn1-combinators.0.2.6  (cached)
+-> retrieved bheap.2.0.0  (cached)
+-> retrieved bos.0.2.1  (cached)
+-> retrieved ca-certs.0.2.3  (cached)
+-> retrieved cmdliner.1.3.0  (cached)
+-> retrieved cohttp.5.3.1  (cached)
+-> retrieved cohttp-lwt.5.3.0, cohttp-lwt-unix.5.3.0  (cached)
+-> retrieved conduit.6.2.3, conduit-lwt.6.2.3, conduit-lwt-unix.6.2.3  (cached)
+-> installed bheap.2.0.0
+-> retrieved crunch.3.3.1  (cached)
+-> retrieved cstruct.6.2.0  (cached)
+-> retrieved digestif.1.2.0  (cached)
+-> retrieved dispatch.0.5.0  (cached)
+-> retrieved either.1.0.0  (cached)
+-> retrieved eqaf.0.9  (cached)
+-> retrieved fmt.0.9.0  (cached)
+-> retrieved irmin.3.4.3, irmin-http.3.4.3, ppx_irmin.3.4.3  (cached)
+-> installed either.1.0.0
+-> retrieved jsonm.1.0.2  (cached)
+-> retrieved logs.0.7.0  (cached)
+-> retrieved magic-mime.1.3.1  (cached)
+-> retrieved mirage-crypto.0.11.3, mirage-crypto-ec.0.11.3, mirage-crypto-pk.0.11.3, mirage-crypto-rng.0.11.3  (cached)
+-> retrieved mtime.1.4.0  (cached)
+-> removed   conduit-lwt-unix.6.2.3
+-> removed   ca-certs.0.2.3
+-> removed   bos.0.2.1
+-> removed   conduit-lwt.6.2.3
+-> removed   conduit.6.2.3
+-> retrieved ocamlgraph.2.1.0  (cached)
+-> retrieved optint.0.3.0  (cached)
+-> retrieved pbkdf.1.2.0  (cached)
+-> retrieved ppx_deriving.6.0.2  (cached)
+-> installed cmdliner.1.3.0
+-> installed magic-mime.1.3.1
+-> installed mtime.1.4.0
+-> retrieved ppx_repr.0.7.0, repr.0.7.0  (cached)
+-> retrieved re.1.11.0  (cached)
+-> retrieved result.1.5  (cached)
+-> retrieved seq.base  (cached)
+-> installed seq.base
+-> retrieved uri-sexp.4.4.0  (cached)
+-> retrieved uutf.1.0.3  (cached)
+-> retrieved webmachine.0.7.0  (cached)
+-> installed optint.0.3.0
+-> retrieved x509.0.16.5  (cached)
+-> removed   x509.0.16.5
+-> removed   asn1-combinators.0.2.6
+-> removed   mirage-crypto-ec.0.11.3
+-> removed   mirage-crypto-pk.0.11.3
+-> removed   mirage-crypto-rng.0.11.3
+-> removed   logs.0.7.0
+-> removed   pbkdf.1.2.0
+-> removed   mirage-crypto.0.11.3
+-> removed   eqaf.0.9
+-> removed   cstruct.6.2.0
+-> removed   fmt.0.9.0
+-> installed result.1.5
+-> installed dispatch.0.5.0
+-> installed crunch.3.3.1
+-> installed re.1.11.0
+-> installed uutf.1.0.3
+-> installed fmt.0.9.0
+-> installed uri-sexp.4.4.0
+-> installed ocamlgraph.2.1.0
+-> installed cstruct.6.2.0
+-> installed jsonm.1.0.2
+-> installed eqaf.0.9
+-> installed asn1-combinators.0.2.6
+-> installed logs.0.7.0
+-> installed ppx_deriving.6.0.2
+-> installed digestif.1.2.0
+-> installed repr.0.7.0
+-> installed cohttp.5.3.1
+-> installed conduit.6.2.3
+-> installed mirage-crypto.0.11.3
+-> installed pbkdf.1.2.0
+-> installed webmachine.0.7.0
+-> installed mirage-crypto-rng.0.11.3
+-> installed ppx_repr.0.7.0
+-> installed bos.0.2.1
+-> installed conduit-lwt.6.2.3
+-> installed mirage-crypto-pk.0.11.3
+-> installed cohttp-lwt.5.3.0
+-> installed ppx_irmin.3.4.3
+-> installed mirage-crypto-ec.0.11.3
+-> installed x509.0.16.5
+-> installed ca-certs.0.2.3
+-> installed conduit-lwt-unix.6.2.3
+-> installed irmin.3.4.3
+-> installed cohttp-lwt-unix.5.3.0
+-> installed irmin-http.3.4.3
+Done.
+# Run eval $(opam env) to update the current shell environment
+[01;2m[01;35m2024-06-14 08:19.38 ---> saved as "8615370ff51edf225b4d4748e020a2f8b05882c1f82670f2424ce30444e82646"[0m
+
+[01;34m/home/opam: (run (network host)
+                 (shell "(opam reinstall --with-test irmin-http.3.4.3) || true"))[0m
+[ERROR] Sorry, resolution of the request timed out.
+        Try to specify a more precise request, use a different solver, or increase the allowed time by setting OPAMSOLVERTIMEOUT to a bigger value (currently, it is set to 500.0 seconds).
+[01;2m[01;35m2024-06-14 08:28.26 ---> saved as "29e634cd1e353ed632af71c57f830265dc10e360f8f93ce86e67f3f6bc97818d"[0m
+
+[01;34m/home/opam: (run (shell  "opam reinstall --with-test --verbose irmin-http.3.4.3;\
+                        \n        res=$?;\
+                        \n        test \"$res\" != 31 && exit \"$res\";\
+                        \n        export OPAMCLI=2.0;\
+                        \n        build_dir=$(opam var prefix)/.opam-switch/build;\
+                        \n        failed=$(ls \"$build_dir\");\
+                        \n        partial_fails=\"\";\
+                        \n        for pkg in $failed; do\
+                        \n          if opam show -f x-ci-accept-failures: \"$pkg\" | grep -qF \"\\\"debian-12\\\"\"; then\
+                        \n            echo \"A package failed and has been disabled for CI using the 'x-ci-accept-failures' field.\";\
+                        \n          fi;\
+                        \n          test \"$pkg\" != 'irmin-http.3.4.3' && partial_fails=\"$partial_fails $pkg\";\
+                        \n        done;\
+                        \n        test \"${partial_fails}\" != \"\" && echo \"opam-repo-ci detected dependencies failing: ${partial_fails}\";\
+                        \n        exit 1"))[0m
+[ERROR] Sorry, resolution of the request timed out.
+        Try to specify a more precise request, use a different solver, or increase the allowed time by setting OPAMSOLVERTIMEOUT to a bigger value (currently, it is set to 500.0 seconds).
+'opam reinstall --with-test --verbose irmin-http.3.4.3' failed.
+"/usr/bin/env" "bash" "-c" "opam reinstall --with-test --verbose irmin-http.3.4.3;
+        res=$?;
+        test "$res" != 31 && exit "$res";
+        export OPAMCLI=2.0;
+        build_dir=$(opam var prefix)/.opam-switch/build;
+        failed=$(ls "$build_dir");
+        partial_fails="";
+        for pkg in $failed; do
+          if opam show -f x-ci-accept-failures: "$pkg" | grep -qF "\"debian-12\""; then
+            echo "A package failed and has been disabled for CI using the 'x-ci-accept-failures' field.";
+          fi;
+          test "$pkg" != 'irmin-http.3.4.3' && partial_fails="$partial_fails $pkg";
+        done;
+        test "${partial_fails}" != "" && echo "opam-repo-ci detected dependencies failing: ${partial_fails}";
+        exit 1" failed with exit status 60
+2024-06-14 08:37.18: Job failed: Failed: Build failed
+2024-06-14 08:37.18: Log analysis:
+2024-06-14 08:37.18: >>> 
+[ERROR] Sorry, resolution of the request timed out.
+ (score = 20)
+2024-06-14 08:37.18: >>> 
+[ERROR] Sorry, resolution of the request timed out.
+ (score = 20)
+2024-06-14 08:37.18: Sorry, resolution of the request timed out.

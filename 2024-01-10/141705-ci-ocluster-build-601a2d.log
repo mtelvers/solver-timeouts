@@ -1,0 +1,366 @@
+2024-01-10 14:17.05: New job: test git-mirage.2.1.2 with http.6.0.0~beta2, using opam dev
+                              from https://github.com/ocaml/opam-repository.git#refs/pull/25034/head (71356b4b87cd387023e87e0eaf20b61c183c97b8)
+                              on debian-12-ocaml-4.14/amd64
+
+To reproduce locally:
+
+cd $(mktemp -d)
+git clone --recursive "https://github.com/ocaml/opam-repository.git" && cd "opam-repository" && git fetch origin "refs/pull/25034/head" && git reset --hard 71356b4b
+git fetch origin master
+git merge --no-edit 3d6f7b8fbf18af28a635cbc5c543f331dff2b900
+cat > ../Dockerfile <<'END-OF-DOCKERFILE'
+[34mFROM ocaml/opam:debian-12-ocaml-4.14@sha256:c4c938d3d297ad03994dd8def49ed6083d93a23e808296dd9b5e4d0057c69a56
+USER 1000:1000
+WORKDIR /home/opam
+RUN sudo ln -f /usr/bin/opam-dev /usr/bin/opam
+RUN opam init --reinit -ni
+ENV OPAMDOWNLOADJOBS="1"
+ENV OPAMERRLOGLEN="0"
+ENV OPAMSOLVERTIMEOUT="500"
+ENV OPAMPRECISETRACKING="1"
+ENV CI="true"
+ENV OPAM_REPO_CI="true"
+RUN rm -rf opam-repository/
+COPY --chown=1000:1000 . opam-repository/
+RUN opam repository set-url --strict default opam-repository/
+RUN opam update --depexts || true
+ENV OPAMCRITERIA="-removed,-count[avoid-version,changed],-count[version-lag,request],-count[version-lag,changed],-count[missing-depexts,changed],-changed"
+ENV OPAMFIXUPCRITERIA="-removed,-count[avoid-version,changed],-count[version-lag,request],-count[version-lag,changed],-count[missing-depexts,changed],-changed"
+ENV OPAMUPGRADECRITERIA="-removed,-count[avoid-version,changed],-count[version-lag,request],-count[version-lag,changed],-count[missing-depexts,changed],-changed"
+RUN opam pin add -k version -yn http.6.0.0~beta2 6.0.0~beta2
+RUN opam reinstall http.6.0.0~beta2; \
+    res=$?; \
+    test "$res" != 31 && exit "$res"; \
+    export OPAMCLI=2.0; \
+    build_dir=$(opam var prefix)/.opam-switch/build; \
+    failed=$(ls "$build_dir"); \
+    partial_fails=""; \
+    for pkg in $failed; do \
+    if opam show -f x-ci-accept-failures: "$pkg" | grep -qF "\"debian-12\""; then \
+    echo "A package failed and has been disabled for CI using the 'x-ci-accept-failures' field."; \
+    fi; \
+    test "$pkg" != 'http.6.0.0~beta2' && partial_fails="$partial_fails $pkg"; \
+    done; \
+    test "${partial_fails}" != "" && echo "opam-repo-ci detected dependencies failing: ${partial_fails}"; \
+    exit 1
+ENV OPAMCRITERIA="-removed,-count[avoid-version,changed],-count[version-lag,request],-count[version-lag,changed],-count[missing-depexts,changed],-changed"
+ENV OPAMFIXUPCRITERIA="-removed,-count[avoid-version,changed],-count[version-lag,request],-count[version-lag,changed],-count[missing-depexts,changed],-changed"
+ENV OPAMUPGRADECRITERIA="-removed,-count[avoid-version,changed],-count[version-lag,request],-count[version-lag,changed],-count[missing-depexts,changed],-changed"
+RUN opam reinstall git-mirage.2.1.2; \
+    res=$?; \
+    test "$res" != 31 && exit "$res"; \
+    export OPAMCLI=2.0; \
+    build_dir=$(opam var prefix)/.opam-switch/build; \
+    failed=$(ls "$build_dir"); \
+    partial_fails=""; \
+    for pkg in $failed; do \
+    if opam show -f x-ci-accept-failures: "$pkg" | grep -qF "\"debian-12\""; then \
+    echo "A package failed and has been disabled for CI using the 'x-ci-accept-failures' field."; \
+    fi; \
+    test "$pkg" != 'git-mirage.2.1.2' && partial_fails="$partial_fails $pkg"; \
+    done; \
+    test "${partial_fails}" != "" && echo "opam-repo-ci detected dependencies failing: ${partial_fails}"; \
+    exit 1
+ENV OPAMCRITERIA="-removed,-count[avoid-version,changed],-count[version-lag,request],-count[version-lag,changed],-count[missing-depexts,changed],-changed"
+ENV OPAMFIXUPCRITERIA="-removed,-count[avoid-version,changed],-count[version-lag,request],-count[version-lag,changed],-count[missing-depexts,changed],-changed"
+ENV OPAMUPGRADECRITERIA="-removed,-count[avoid-version,changed],-count[version-lag,request],-count[version-lag,changed],-count[missing-depexts,changed],-changed"
+RUN (opam reinstall --with-test git-mirage.2.1.2) || true
+RUN opam reinstall --with-test --verbose git-mirage.2.1.2; \
+    res=$?; \
+    test "$res" != 31 && exit "$res"; \
+    export OPAMCLI=2.0; \
+    build_dir=$(opam var prefix)/.opam-switch/build; \
+    failed=$(ls "$build_dir"); \
+    partial_fails=""; \
+    for pkg in $failed; do \
+    if opam show -f x-ci-accept-failures: "$pkg" | grep -qF "\"debian-12\""; then \
+    echo "A package failed and has been disabled for CI using the 'x-ci-accept-failures' field."; \
+    fi; \
+    test "$pkg" != 'git-mirage.2.1.2' && partial_fails="$partial_fails $pkg"; \
+    done; \
+    test "${partial_fails}" != "" && echo "opam-repo-ci detected dependencies failing: ${partial_fails}"; \
+    exit 1
+[0m
+END-OF-DOCKERFILE
+docker build -f ../Dockerfile .
+
+2024-01-10 14:17.05: Using cache hint "ocaml/opam:debian-12-ocaml-4.14@sha256:c4c938d3d297ad03994dd8def49ed6083d93a23e808296dd9b5e4d0057c69a56-http.6.0.0~beta2-git-mirage.2.1.2-71356b4b87cd387023e87e0eaf20b61c183c97b8"
+2024-01-10 14:17.05: Using OBuilder spec:
+((from ocaml/opam:debian-12-ocaml-4.14@sha256:c4c938d3d297ad03994dd8def49ed6083d93a23e808296dd9b5e4d0057c69a56)
+ (user (uid 1000) (gid 1000))
+ (workdir /home/opam)
+ (run (shell "sudo ln -f /usr/bin/opam-dev /usr/bin/opam"))
+ (run (network host)
+      (shell "opam init --reinit --config .opamrc-sandbox -ni"))
+ (env OPAMDOWNLOADJOBS 1)
+ (env OPAMERRLOGLEN 0)
+ (env OPAMSOLVERTIMEOUT 500)
+ (env OPAMPRECISETRACKING 1)
+ (env CI true)
+ (env OPAM_REPO_CI true)
+ (run (shell "rm -rf opam-repository/"))
+ (copy (src .) (dst opam-repository/))
+ (run (shell "opam repository set-url --strict default opam-repository/"))
+ (run (network host)
+      (shell "opam update --depexts || true"))
+ (env OPAMCRITERIA -removed,-count[avoid-version,changed],-count[version-lag,request],-count[version-lag,changed],-count[missing-depexts,changed],-changed)
+ (env OPAMFIXUPCRITERIA -removed,-count[avoid-version,changed],-count[version-lag,request],-count[version-lag,changed],-count[missing-depexts,changed],-changed)
+ (env OPAMUPGRADECRITERIA -removed,-count[avoid-version,changed],-count[version-lag,request],-count[version-lag,changed],-count[missing-depexts,changed],-changed)
+ (run (shell "opam pin add -k version -yn http.6.0.0~beta2 6.0.0~beta2"))
+ (run (cache (opam-archives (target /home/opam/.opam/download-cache)))
+      (network host)
+      (shell  "opam reinstall http.6.0.0~beta2;\
+             \n        res=$?;\
+             \n        test \"$res\" != 31 && exit \"$res\";\
+             \n        export OPAMCLI=2.0;\
+             \n        build_dir=$(opam var prefix)/.opam-switch/build;\
+             \n        failed=$(ls \"$build_dir\");\
+             \n        partial_fails=\"\";\
+             \n        for pkg in $failed; do\
+             \n          if opam show -f x-ci-accept-failures: \"$pkg\" | grep -qF \"\\\"debian-12\\\"\"; then\
+             \n            echo \"A package failed and has been disabled for CI using the 'x-ci-accept-failures' field.\";\
+             \n          fi;\
+             \n          test \"$pkg\" != 'http.6.0.0~beta2' && partial_fails=\"$partial_fails $pkg\";\
+             \n        done;\
+             \n        test \"${partial_fails}\" != \"\" && echo \"opam-repo-ci detected dependencies failing: ${partial_fails}\";\
+             \n        exit 1"))
+ (env OPAMCRITERIA -removed,-count[avoid-version,changed],-count[version-lag,request],-count[version-lag,changed],-count[missing-depexts,changed],-changed)
+ (env OPAMFIXUPCRITERIA -removed,-count[avoid-version,changed],-count[version-lag,request],-count[version-lag,changed],-count[missing-depexts,changed],-changed)
+ (env OPAMUPGRADECRITERIA -removed,-count[avoid-version,changed],-count[version-lag,request],-count[version-lag,changed],-count[missing-depexts,changed],-changed)
+ (run (cache (opam-archives (target /home/opam/.opam/download-cache)))
+      (network host)
+      (shell  "opam reinstall git-mirage.2.1.2;\
+             \n        res=$?;\
+             \n        test \"$res\" != 31 && exit \"$res\";\
+             \n        export OPAMCLI=2.0;\
+             \n        build_dir=$(opam var prefix)/.opam-switch/build;\
+             \n        failed=$(ls \"$build_dir\");\
+             \n        partial_fails=\"\";\
+             \n        for pkg in $failed; do\
+             \n          if opam show -f x-ci-accept-failures: \"$pkg\" | grep -qF \"\\\"debian-12\\\"\"; then\
+             \n            echo \"A package failed and has been disabled for CI using the 'x-ci-accept-failures' field.\";\
+             \n          fi;\
+             \n          test \"$pkg\" != 'git-mirage.2.1.2' && partial_fails=\"$partial_fails $pkg\";\
+             \n        done;\
+             \n        test \"${partial_fails}\" != \"\" && echo \"opam-repo-ci detected dependencies failing: ${partial_fails}\";\
+             \n        exit 1"))
+ (env OPAMCRITERIA -removed,-count[avoid-version,changed],-count[version-lag,request],-count[version-lag,changed],-count[missing-depexts,changed],-changed)
+ (env OPAMFIXUPCRITERIA -removed,-count[avoid-version,changed],-count[version-lag,request],-count[version-lag,changed],-count[missing-depexts,changed],-changed)
+ (env OPAMUPGRADECRITERIA -removed,-count[avoid-version,changed],-count[version-lag,request],-count[version-lag,changed],-count[missing-depexts,changed],-changed)
+ (run (network host)
+      (shell "(opam reinstall --with-test git-mirage.2.1.2) || true"))
+ (run (shell  "opam reinstall --with-test --verbose git-mirage.2.1.2;\
+             \n        res=$?;\
+             \n        test \"$res\" != 31 && exit \"$res\";\
+             \n        export OPAMCLI=2.0;\
+             \n        build_dir=$(opam var prefix)/.opam-switch/build;\
+             \n        failed=$(ls \"$build_dir\");\
+             \n        partial_fails=\"\";\
+             \n        for pkg in $failed; do\
+             \n          if opam show -f x-ci-accept-failures: \"$pkg\" | grep -qF \"\\\"debian-12\\\"\"; then\
+             \n            echo \"A package failed and has been disabled for CI using the 'x-ci-accept-failures' field.\";\
+             \n          fi;\
+             \n          test \"$pkg\" != 'git-mirage.2.1.2' && partial_fails=\"$partial_fails $pkg\";\
+             \n        done;\
+             \n        test \"${partial_fails}\" != \"\" && echo \"opam-repo-ci detected dependencies failing: ${partial_fails}\";\
+             \n        exit 1"))
+)
+
+2024-01-10 14:17.05: Waiting for resource in pool OCluster
+2024-01-10 14:17.05: Waiting for worker…
+2024-01-10 14:17.05: Got resource from pool OCluster
+Building on c2-2.equinix.ci.dev
+All commits already cached
+Updating files:  43% (14092/32591)Updating files:  44% (14341/32591)Updating files:  45% (14666/32591)Updating files:  46% (14992/32591)Updating files:  47% (15318/32591)Updating files:  48% (15644/32591)Updating files:  49% (15970/32591)Updating files:  50% (16296/32591)Updating files:  51% (16622/32591)Updating files:  52% (16948/32591)Updating files:  53% (17274/32591)Updating files:  54% (17600/32591)Updating files:  55% (17926/32591)Updating files:  56% (18251/32591)Updating files:  57% (18577/32591)Updating files:  58% (18903/32591)Updating files:  59% (19229/32591)Updating files:  60% (19555/32591)Updating files:  61% (19881/32591)Updating files:  62% (20207/32591)Updating files:  63% (20533/32591)Updating files:  64% (20859/32591)Updating files:  65% (21185/32591)Updating files:  66% (21511/32591)Updating files:  67% (21836/32591)Updating files:  68% (22162/32591)Updating files:  69% (22488/32591)Updating files:  70% (22814/32591)Updating files:  71% (23140/32591)Updating files:  72% (23466/32591)Updating files:  73% (23792/32591)Updating files:  74% (24118/32591)Updating files:  75% (24444/32591)Updating files:  76% (24770/32591)Updating files:  77% (25096/32591)Updating files:  78% (25421/32591)Updating files:  79% (25747/32591)Updating files:  80% (26073/32591)Updating files:  81% (26399/32591)Updating files:  81% (26557/32591)Updating files:  82% (26725/32591)Updating files:  83% (27051/32591)Updating files:  84% (27377/32591)Updating files:  85% (27703/32591)Updating files:  86% (28029/32591)Updating files:  87% (28355/32591)Updating files:  88% (28681/32591)Updating files:  89% (29006/32591)Updating files:  90% (29332/32591)Updating files:  91% (29658/32591)Updating files:  92% (29984/32591)Updating files:  93% (30310/32591)Updating files:  94% (30636/32591)Updating files:  95% (30962/32591)Updating files:  96% (31288/32591)Updating files:  97% (31614/32591)Updating files:  98% (31940/32591)Updating files:  99% (32266/32591)Updating files: 100% (32591/32591)Updating files: 100% (32591/32591), done.
+HEAD is now at 3d6f7b8fbf Merge pull request #25027 from balat/opam-publish-ocsigen-start.6.1.2
+Merge made by the 'ort' strategy.
+ .../cohttp-async/cohttp-async.6.0.0~beta2/opam     | 74 +++++++++++++++++++++
+ .../cohttp-curl-async.6.0.0~beta2/opam             | 63 ++++++++++++++++++
+ .../cohttp-curl-lwt.6.0.0~beta2/opam               | 63 ++++++++++++++++++
+ packages/cohttp-curl/cohttp-curl.6.0.0~beta2/opam  | 52 +++++++++++++++
+ packages/cohttp-eio/cohttp-eio.6.0.0~beta2/opam    | 62 ++++++++++++++++++
+ .../cohttp-lwt-jsoo.6.0.0~beta2/opam               | 64 ++++++++++++++++++
+ .../cohttp-lwt-unix.6.0.0~beta2/opam               | 71 ++++++++++++++++++++
+ packages/cohttp-lwt/cohttp-lwt.6.0.0~beta2/opam    | 63 ++++++++++++++++++
+ .../cohttp-mirage/cohttp-mirage.6.0.0~beta2/opam   | 71 ++++++++++++++++++++
+ .../cohttp-server-lwt-unix.6.0.0~beta2/opam        | 58 +++++++++++++++++
+ packages/cohttp-top/cohttp-top.6.0.0~beta2/opam    | 55 ++++++++++++++++
+ packages/cohttp/cohttp.6.0.0~beta2/opam            | 76 ++++++++++++++++++++++
+ packages/http/http.6.0.0~beta2/opam                | 59 +++++++++++++++++
+ 13 files changed, 831 insertions(+)
+ create mode 100644 packages/cohttp-async/cohttp-async.6.0.0~beta2/opam
+ create mode 100644 packages/cohttp-curl-async/cohttp-curl-async.6.0.0~beta2/opam
+ create mode 100644 packages/cohttp-curl-lwt/cohttp-curl-lwt.6.0.0~beta2/opam
+ create mode 100644 packages/cohttp-curl/cohttp-curl.6.0.0~beta2/opam
+ create mode 100644 packages/cohttp-eio/cohttp-eio.6.0.0~beta2/opam
+ create mode 100644 packages/cohttp-lwt-jsoo/cohttp-lwt-jsoo.6.0.0~beta2/opam
+ create mode 100644 packages/cohttp-lwt-unix/cohttp-lwt-unix.6.0.0~beta2/opam
+ create mode 100644 packages/cohttp-lwt/cohttp-lwt.6.0.0~beta2/opam
+ create mode 100644 packages/cohttp-mirage/cohttp-mirage.6.0.0~beta2/opam
+ create mode 100644 packages/cohttp-server-lwt-unix/cohttp-server-lwt-unix.6.0.0~beta2/opam
+ create mode 100644 packages/cohttp-top/cohttp-top.6.0.0~beta2/opam
+ create mode 100644 packages/cohttp/cohttp.6.0.0~beta2/opam
+ create mode 100644 packages/http/http.6.0.0~beta2/opam
+
+[01;34m(from ocaml/opam:debian-12-ocaml-4.14@sha256:c4c938d3d297ad03994dd8def49ed6083d93a23e808296dd9b5e4d0057c69a56)[0m
+Unable to find image 'ocaml/opam:debian-12-ocaml-4.14@sha256:c4c938d3d297ad03994dd8def49ed6083d93a23e808296dd9b5e4d0057c69a56' locally
+docker.io/ocaml/opam@sha256:c4c938d3d297ad03994dd8def49ed6083d93a23e808296dd9b5e4d0057c69a56: Pulling from ocaml/opam
+547f11ccc210: Pulling fs layer
+547f11ccc210: Verifying Checksum
+547f11ccc210: Download complete
+547f11ccc210: Pull complete
+Digest: sha256:c4c938d3d297ad03994dd8def49ed6083d93a23e808296dd9b5e4d0057c69a56
+Status: Downloaded newer image for ocaml/opam@sha256:c4c938d3d297ad03994dd8def49ed6083d93a23e808296dd9b5e4d0057c69a56
+[01;2m[01;35m2024-01-10 14:17.09 ---> using "2f51a1dd646443af7eab06353d871ffcd4d0d21ae5d6b33d59f1b2262d63afcd" from cache[0m
+
+[01;34m/: (user (uid 1000) (gid 1000))[0m
+
+[01;34m/: (workdir /home/opam)[0m
+
+[01;34m/home/opam: (run (shell "sudo ln -f /usr/bin/opam-dev /usr/bin/opam"))[0m
+[01;2m[01;35m2024-01-10 14:17.09 ---> using "6796c25d6117f81eadfa78ad12a66d658e3badb75dae3eb11df69f5b8c14686e" from cache[0m
+
+[01;34m/home/opam: (run (network host)
+                 (shell "opam init --reinit --config .opamrc-sandbox -ni"))[0m
+Configuring from /home/opam/.opamrc-sandbox, then /home/opam/.opamrc, and finally from built-in defaults.
+Checking for available remotes: rsync and local, git.
+  - you won't be able to use mercurial repositories unless you install the hg command on your system.
+  - you won't be able to use darcs repositories unless you install the darcs command on your system.
+
+This development version of opam requires an update to the layout of /home/opam/.opam from version 2.0 to version 2.2~alpha, which can't be reverted.
+You may want to back it up before going further.
+
+Continue? [y/n] y
+[NOTE] The 'jobs' option was reset, its value was 255 and its new value will vary according to the current number of cores on your machine. You can restore the fixed value using:
+           opam option jobs=255 --global
+Format upgrade done.
+
+<><> Updating repositories ><><><><><><><><><><><><><><><><><><><><><><><><><><>
+[default] synchronised from file:///home/opam/opam-repository
+[01;2m[01;35m2024-01-10 14:17.09 ---> using "2f744a4f4f195833b2a51cb376d55a78979db4ea3891e6a802792d5427566b54" from cache[0m
+
+[01;34m/home/opam: (env OPAMDOWNLOADJOBS 1)[0m
+
+[01;34m/home/opam: (env OPAMERRLOGLEN 0)[0m
+
+[01;34m/home/opam: (env OPAMSOLVERTIMEOUT 500)[0m
+
+[01;34m/home/opam: (env OPAMPRECISETRACKING 1)[0m
+
+[01;34m/home/opam: (env CI true)[0m
+
+[01;34m/home/opam: (env OPAM_REPO_CI true)[0m
+
+[01;34m/home/opam: (run (shell "rm -rf opam-repository/"))[0m
+[01;2m[01;35m2024-01-10 14:17.09 ---> using "11b363df181d34d7ec5685939be4bfd4242241270ab67eb830aa6c1b2a051544" from cache[0m
+
+[01;34m/home/opam: (copy (src .) (dst opam-repository/))[0m
+[01;2m[01;35m2024-01-10 14:17.26 ---> saved as "18734e10ef0d617c51449fdd838e41e5103830208b77a14c451d47e54646f254"[0m
+
+[01;34m/home/opam: (run (shell "opam repository set-url --strict default opam-repository/"))[0m
+[default] Initialised
+[01;2m[01;35m2024-01-10 14:18.36 ---> saved as "39fe584c518cb7aae48f71d3fb593447e429181867ef8e87da02136e2b67792e"[0m
+
+[01;34m/home/opam: (run (network host)
+                 (shell "opam update --depexts || true"))[0m
++ /usr/bin/sudo "apt-get" "update"
+- Hit:1 http://deb.debian.org/debian bookworm InRelease
+- Get:2 http://deb.debian.org/debian bookworm-updates InRelease [52.1 kB]
+- Get:3 http://deb.debian.org/debian-security bookworm-security InRelease [48.0 kB]
+- Get:4 http://deb.debian.org/debian bookworm-updates/main amd64 Packages.diff/Index [9483 B]
+- Get:5 http://deb.debian.org/debian bookworm-updates/main amd64 Packages T-2023-12-29-1403.39-F-2023-12-26-1404.09.pdiff [2069 B]
+- Get:5 http://deb.debian.org/debian bookworm-updates/main amd64 Packages T-2023-12-29-1403.39-F-2023-12-26-1404.09.pdiff [2069 B]
+- Get:6 http://deb.debian.org/debian-security bookworm-security/main amd64 Packages [134 kB]
+- Fetched 245 kB in 1s (449 kB/s)
+- Reading package lists...
+[01;2m[01;35m2024-01-10 14:18.40 ---> saved as "24b1bc11e0595d843e7c07a613cdd64a476ab29e4c3db5631e10fb56c2a8556b"[0m
+
+[01;34m/home/opam: (env OPAMCRITERIA -removed,-count[avoid-version,changed],-count[version-lag,request],-count[version-lag,changed],-count[missing-depexts,changed],-changed)[0m
+
+[01;34m/home/opam: (env OPAMFIXUPCRITERIA -removed,-count[avoid-version,changed],-count[version-lag,request],-count[version-lag,changed],-count[missing-depexts,changed],-changed)[0m
+
+[01;34m/home/opam: (env OPAMUPGRADECRITERIA -removed,-count[avoid-version,changed],-count[version-lag,request],-count[version-lag,changed],-count[missing-depexts,changed],-changed)[0m
+
+[01;34m/home/opam: (run (shell "opam pin add -k version -yn http.6.0.0~beta2 6.0.0~beta2"))[0m
+http is now pinned to version 6.0.0~beta2
+[01;2m[01;35m2024-01-10 14:18.42 ---> saved as "0300ea66c7f6b85d421f878ae950f387748db3988cbdf1e782a3373376e2d2a8"[0m
+
+[01;34m/home/opam: (run (cache (opam-archives (target /home/opam/.opam/download-cache)))
+                 (network host)
+                 (shell  "opam reinstall http.6.0.0~beta2;\
+                        \n        res=$?;\
+                        \n        test \"$res\" != 31 && exit \"$res\";\
+                        \n        export OPAMCLI=2.0;\
+                        \n        build_dir=$(opam var prefix)/.opam-switch/build;\
+                        \n        failed=$(ls \"$build_dir\");\
+                        \n        partial_fails=\"\";\
+                        \n        for pkg in $failed; do\
+                        \n          if opam show -f x-ci-accept-failures: \"$pkg\" | grep -qF \"\\\"debian-12\\\"\"; then\
+                        \n            echo \"A package failed and has been disabled for CI using the 'x-ci-accept-failures' field.\";\
+                        \n          fi;\
+                        \n          test \"$pkg\" != 'http.6.0.0~beta2' && partial_fails=\"$partial_fails $pkg\";\
+                        \n        done;\
+                        \n        test \"${partial_fails}\" != \"\" && echo \"opam-repo-ci detected dependencies failing: ${partial_fails}\";\
+                        \n        exit 1"))[0m
+http.6.0.0~beta2 is not installed. Install it? [y/n] y
+The following actions will be performed:
+=== install 2 packages
+  - install dune 3.12.2               [required by http]
+  - install http 6.0.0~beta2 (pinned)
+
+<><> Processing actions <><><><><><><><><><><><><><><><><><><><><><><><><><><><>
+-> retrieved dune.3.12.2  (cached)
+-> retrieved http.6.0.0~beta2  (cached)
+-> installed dune.3.12.2
+-> installed http.6.0.0~beta2
+Done.
+# Run eval $(opam env) to update the current shell environment
+[01;2m[01;35m2024-01-10 14:19.15 ---> saved as "ce93aca1eb85e5c750632b8e1aa74e0dbddb17bc578aa7cbb49968cc4ea45331"[0m
+
+[01;34m/home/opam: (env OPAMCRITERIA -removed,-count[avoid-version,changed],-count[version-lag,request],-count[version-lag,changed],-count[missing-depexts,changed],-changed)[0m
+
+[01;34m/home/opam: (env OPAMFIXUPCRITERIA -removed,-count[avoid-version,changed],-count[version-lag,request],-count[version-lag,changed],-count[missing-depexts,changed],-changed)[0m
+
+[01;34m/home/opam: (env OPAMUPGRADECRITERIA -removed,-count[avoid-version,changed],-count[version-lag,request],-count[version-lag,changed],-count[missing-depexts,changed],-changed)[0m
+
+[01;34m/home/opam: (run (cache (opam-archives (target /home/opam/.opam/download-cache)))
+                 (network host)
+                 (shell  "opam reinstall git-mirage.2.1.2;\
+                        \n        res=$?;\
+                        \n        test \"$res\" != 31 && exit \"$res\";\
+                        \n        export OPAMCLI=2.0;\
+                        \n        build_dir=$(opam var prefix)/.opam-switch/build;\
+                        \n        failed=$(ls \"$build_dir\");\
+                        \n        partial_fails=\"\";\
+                        \n        for pkg in $failed; do\
+                        \n          if opam show -f x-ci-accept-failures: \"$pkg\" | grep -qF \"\\\"debian-12\\\"\"; then\
+                        \n            echo \"A package failed and has been disabled for CI using the 'x-ci-accept-failures' field.\";\
+                        \n          fi;\
+                        \n          test \"$pkg\" != 'git-mirage.2.1.2' && partial_fails=\"$partial_fails $pkg\";\
+                        \n        done;\
+                        \n        test \"${partial_fails}\" != \"\" && echo \"opam-repo-ci detected dependencies failing: ${partial_fails}\";\
+                        \n        exit 1"))[0m
+git-mirage.2.1.2 is not installed. Install it? [y/n] y
+[ERROR] Sorry, resolution of the request timed out.
+        Try to specify a more precise request, use a different solver, or increase the allowed time by setting OPAMSOLVERTIMEOUT to a bigger value (currently, it is set to 500.0 seconds).
+"/bin/bash" "-c" "opam reinstall git-mirage.2.1.2;
+        res=$?;
+        test "$res" != 31 && exit "$res";
+        export OPAMCLI=2.0;
+        build_dir=$(opam var prefix)/.opam-switch/build;
+        failed=$(ls "$build_dir");
+        partial_fails="";
+        for pkg in $failed; do
+          if opam show -f x-ci-accept-failures: "$pkg" | grep -qF "\"debian-12\""; then
+            echo "A package failed and has been disabled for CI using the 'x-ci-accept-failures' field.";
+          fi;
+          test "$pkg" != 'git-mirage.2.1.2' && partial_fails="$partial_fails $pkg";
+        done;
+        test "${partial_fails}" != "" && echo "opam-repo-ci detected dependencies failing: ${partial_fails}";
+        exit 1" failed with exit status 60
+2024-01-10 14:31.12: Job failed: Failed: Build failed
+2024-01-10 14:31.12: Log analysis:
+2024-01-10 14:31.12: >>> 
+[ERROR] Sorry, resolution of the request timed out.
+ (score = 20)
+2024-01-10 14:31.12: Sorry, resolution of the request timed out.

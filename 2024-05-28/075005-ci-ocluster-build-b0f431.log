@@ -1,0 +1,340 @@
+2024-05-28 07:50.05: New job: test irmin-containers.2.7.0 with happy-eyeballs.1.1.0, using opam dev
+                              from https://github.com/ocaml/opam-repository.git#refs/pull/25946/head (f00a2388f68523771f90bf51785929747097955f)
+                              on debian-12-ocaml-4.14/amd64
+
+To reproduce locally:
+
+cd $(mktemp -d)
+git clone --recursive "https://github.com/ocaml/opam-repository.git" && cd "opam-repository" && git fetch origin "refs/pull/25946/head" && git reset --hard f00a2388
+git fetch origin master
+git merge --no-edit c61e9068d528d92b1d6ac84a06cf44489b10b835
+cat > ../Dockerfile <<'END-OF-DOCKERFILE'
+[34mFROM ocaml/opam:debian-12-ocaml-4.14@sha256:575952ac1a1b71568d969fe2b9788c1516c1252dda6ccffdc995036cc8cc9e3b
+USER 1000:1000
+WORKDIR /home/opam
+RUN sudo ln -f /usr/bin/opam-dev /usr/bin/opam
+RUN opam init --reinit -ni
+RUN uname -rs && opam exec -- ocaml -version && opam --version
+ENV OPAMDOWNLOADJOBS="1"
+ENV OPAMERRLOGLEN="0"
+ENV OPAMSOLVERTIMEOUT="500"
+ENV OPAMPRECISETRACKING="1"
+ENV CI="true"
+ENV OPAM_REPO_CI="true"
+RUN rm -rf opam-repository/
+COPY --chown=1000:1000 . opam-repository/
+RUN opam repository set-url --strict default opam-repository/
+RUN opam update --depexts || true
+RUN opam pin add -k version -yn happy-eyeballs.1.1.0 1.1.0
+RUN opam reinstall happy-eyeballs.1.1.0; \
+    res=$?; \
+    test "$res" != 31 && exit "$res"; \
+    export OPAMCLI=2.0; \
+    build_dir=$(opam var prefix)/.opam-switch/build; \
+    failed=$(ls "$build_dir"); \
+    partial_fails=""; \
+    for pkg in $failed; do \
+    if opam show -f x-ci-accept-failures: "$pkg" | grep -qF "\"debian-12\""; then \
+    echo "A package failed and has been disabled for CI using the 'x-ci-accept-failures' field."; \
+    fi; \
+    test "$pkg" != 'happy-eyeballs.1.1.0' && partial_fails="$partial_fails $pkg"; \
+    done; \
+    test "${partial_fails}" != "" && echo "opam-repo-ci detected dependencies failing: ${partial_fails}"; \
+    exit 1
+RUN opam reinstall irmin-containers.2.7.0; \
+    res=$?; \
+    test "$res" != 31 && exit "$res"; \
+    export OPAMCLI=2.0; \
+    build_dir=$(opam var prefix)/.opam-switch/build; \
+    failed=$(ls "$build_dir"); \
+    partial_fails=""; \
+    for pkg in $failed; do \
+    if opam show -f x-ci-accept-failures: "$pkg" | grep -qF "\"debian-12\""; then \
+    echo "A package failed and has been disabled for CI using the 'x-ci-accept-failures' field."; \
+    fi; \
+    test "$pkg" != 'irmin-containers.2.7.0' && partial_fails="$partial_fails $pkg"; \
+    done; \
+    test "${partial_fails}" != "" && echo "opam-repo-ci detected dependencies failing: ${partial_fails}"; \
+    exit 1
+RUN (opam reinstall --with-test irmin-containers.2.7.0) || true
+RUN opam reinstall --with-test --verbose irmin-containers.2.7.0; \
+    res=$?; \
+    test "$res" != 31 && exit "$res"; \
+    export OPAMCLI=2.0; \
+    build_dir=$(opam var prefix)/.opam-switch/build; \
+    failed=$(ls "$build_dir"); \
+    partial_fails=""; \
+    for pkg in $failed; do \
+    if opam show -f x-ci-accept-failures: "$pkg" | grep -qF "\"debian-12\""; then \
+    echo "A package failed and has been disabled for CI using the 'x-ci-accept-failures' field."; \
+    fi; \
+    test "$pkg" != 'irmin-containers.2.7.0' && partial_fails="$partial_fails $pkg"; \
+    done; \
+    test "${partial_fails}" != "" && echo "opam-repo-ci detected dependencies failing: ${partial_fails}"; \
+    exit 1
+[0m
+END-OF-DOCKERFILE
+docker build -f ../Dockerfile .
+
+2024-05-28 07:50.05: Using cache hint "ocaml/opam:debian-12-ocaml-4.14@sha256:575952ac1a1b71568d969fe2b9788c1516c1252dda6ccffdc995036cc8cc9e3b-happy-eyeballs.1.1.0-irmin-containers.2.7.0-f00a2388f68523771f90bf51785929747097955f"
+2024-05-28 07:50.05: Using OBuilder spec:
+((from ocaml/opam:debian-12-ocaml-4.14@sha256:575952ac1a1b71568d969fe2b9788c1516c1252dda6ccffdc995036cc8cc9e3b)
+ (user (uid 1000) (gid 1000))
+ (workdir /home/opam)
+ (run (shell "sudo ln -f /usr/bin/opam-dev /usr/bin/opam"))
+ (run (network host)
+      (shell "opam init --reinit --config .opamrc-sandbox -ni"))
+ (run (shell "uname -rs && opam exec -- ocaml -version && opam --version"))
+ (env OPAMDOWNLOADJOBS 1)
+ (env OPAMERRLOGLEN 0)
+ (env OPAMSOLVERTIMEOUT 500)
+ (env OPAMPRECISETRACKING 1)
+ (env CI true)
+ (env OPAM_REPO_CI true)
+ (run (shell "rm -rf opam-repository/"))
+ (copy (src .) (dst opam-repository/))
+ (run (shell "opam repository set-url --strict default opam-repository/"))
+ (run (network host)
+      (shell "opam update --depexts || true"))
+ (run (shell "opam pin add -k version -yn happy-eyeballs.1.1.0 1.1.0"))
+ (run (cache (opam-archives (target /home/opam/.opam/download-cache)))
+      (network host)
+      (shell  "opam reinstall happy-eyeballs.1.1.0;\
+             \n        res=$?;\
+             \n        test \"$res\" != 31 && exit \"$res\";\
+             \n        export OPAMCLI=2.0;\
+             \n        build_dir=$(opam var prefix)/.opam-switch/build;\
+             \n        failed=$(ls \"$build_dir\");\
+             \n        partial_fails=\"\";\
+             \n        for pkg in $failed; do\
+             \n          if opam show -f x-ci-accept-failures: \"$pkg\" | grep -qF \"\\\"debian-12\\\"\"; then\
+             \n            echo \"A package failed and has been disabled for CI using the 'x-ci-accept-failures' field.\";\
+             \n          fi;\
+             \n          test \"$pkg\" != 'happy-eyeballs.1.1.0' && partial_fails=\"$partial_fails $pkg\";\
+             \n        done;\
+             \n        test \"${partial_fails}\" != \"\" && echo \"opam-repo-ci detected dependencies failing: ${partial_fails}\";\
+             \n        exit 1"))
+ (run (cache (opam-archives (target /home/opam/.opam/download-cache)))
+      (network host)
+      (shell  "opam reinstall irmin-containers.2.7.0;\
+             \n        res=$?;\
+             \n        test \"$res\" != 31 && exit \"$res\";\
+             \n        export OPAMCLI=2.0;\
+             \n        build_dir=$(opam var prefix)/.opam-switch/build;\
+             \n        failed=$(ls \"$build_dir\");\
+             \n        partial_fails=\"\";\
+             \n        for pkg in $failed; do\
+             \n          if opam show -f x-ci-accept-failures: \"$pkg\" | grep -qF \"\\\"debian-12\\\"\"; then\
+             \n            echo \"A package failed and has been disabled for CI using the 'x-ci-accept-failures' field.\";\
+             \n          fi;\
+             \n          test \"$pkg\" != 'irmin-containers.2.7.0' && partial_fails=\"$partial_fails $pkg\";\
+             \n        done;\
+             \n        test \"${partial_fails}\" != \"\" && echo \"opam-repo-ci detected dependencies failing: ${partial_fails}\";\
+             \n        exit 1"))
+ (run (network host)
+      (shell "(opam reinstall --with-test irmin-containers.2.7.0) || true"))
+ (run (shell  "opam reinstall --with-test --verbose irmin-containers.2.7.0;\
+             \n        res=$?;\
+             \n        test \"$res\" != 31 && exit \"$res\";\
+             \n        export OPAMCLI=2.0;\
+             \n        build_dir=$(opam var prefix)/.opam-switch/build;\
+             \n        failed=$(ls \"$build_dir\");\
+             \n        partial_fails=\"\";\
+             \n        for pkg in $failed; do\
+             \n          if opam show -f x-ci-accept-failures: \"$pkg\" | grep -qF \"\\\"debian-12\\\"\"; then\
+             \n            echo \"A package failed and has been disabled for CI using the 'x-ci-accept-failures' field.\";\
+             \n          fi;\
+             \n          test \"$pkg\" != 'irmin-containers.2.7.0' && partial_fails=\"$partial_fails $pkg\";\
+             \n        done;\
+             \n        test \"${partial_fails}\" != \"\" && echo \"opam-repo-ci detected dependencies failing: ${partial_fails}\";\
+             \n        exit 1"))
+)
+
+2024-05-28 07:50.05: Waiting for resource in pool OCluster
+2024-05-28 07:50.06: Waiting for worker…
+2024-05-28 07:50.06: Got resource from pool OCluster
+Building on x86-bm-c18.sw.ocaml.org
+All commits already cached
+Updating files:  79% (26964/33981)Updating files:  80% (27185/33981)Updating files:  81% (27525/33981)Updating files:  82% (27865/33981)Updating files:  83% (28205/33981)Updating files:  84% (28545/33981)Updating files:  85% (28884/33981)Updating files:  86% (29224/33981)Updating files:  87% (29564/33981)Updating files:  88% (29904/33981)Updating files:  89% (30244/33981)Updating files:  90% (30583/33981)Updating files:  91% (30923/33981)Updating files:  92% (31263/33981)Updating files:  93% (31603/33981)Updating files:  94% (31943/33981)Updating files:  95% (32282/33981)Updating files:  96% (32622/33981)Updating files:  97% (32962/33981)Updating files:  98% (33302/33981)Updating files:  99% (33642/33981)Updating files: 100% (33981/33981)Updating files: 100% (33981/33981), done.
+HEAD is now at c61e9068d5 Merge pull request #25938 from ocaml/mseri-patch-5
+Updating c61e9068d5..f00a2388f6
+Fast-forward
+ .../happy-eyeballs-lwt.1.1.0/opam                  | 43 ++++++++++++++++++++++
+ .../happy-eyeballs-mirage.1.1.0/opam               | 43 ++++++++++++++++++++++
+ packages/happy-eyeballs/happy-eyeballs.1.1.0/opam  | 40 ++++++++++++++++++++
+ 3 files changed, 126 insertions(+)
+ create mode 100644 packages/happy-eyeballs-lwt/happy-eyeballs-lwt.1.1.0/opam
+ create mode 100644 packages/happy-eyeballs-mirage/happy-eyeballs-mirage.1.1.0/opam
+ create mode 100644 packages/happy-eyeballs/happy-eyeballs.1.1.0/opam
+
+[01;34m(from ocaml/opam:debian-12-ocaml-4.14@sha256:575952ac1a1b71568d969fe2b9788c1516c1252dda6ccffdc995036cc8cc9e3b)[0m
+[01;2m[01;35m2024-05-28 07:50.08 ---> using "b70a2807c2cfb3c5680f4fafeddd66a33d7dcdd9d48b1543e8642b8df113fdbf" from cache[0m
+
+[01;34m/: (user (uid 1000) (gid 1000))[0m
+
+[01;34m/: (workdir /home/opam)[0m
+
+[01;34m/home/opam: (run (shell "sudo ln -f /usr/bin/opam-dev /usr/bin/opam"))[0m
+[01;2m[01;35m2024-05-28 07:50.08 ---> using "c36f90ecff164603a21017340adb790a2f028b93271d75cce805aa2725f2c474" from cache[0m
+
+[01;34m/home/opam: (run (network host)
+                 (shell "opam init --reinit --config .opamrc-sandbox -ni"))[0m
+Configuring from /home/opam/.opamrc-sandbox, then /home/opam/.opamrc, and finally from built-in defaults.
+Checking for available remotes: rsync and local, git.
+  - you won't be able to use mercurial repositories unless you install the hg command on your system.
+  - you won't be able to use darcs repositories unless you install the darcs command on your system.
+
+This development version of opam requires an update to the layout of /home/opam/.opam from version 2.0 to version 2.2~beta, which can't be reverted.
+You may want to back it up before going further.
+
+Continue? [y/n] y
+[NOTE] The 'jobs' option was reset, its value was 39 and its new value will vary according to the current number of cores on your machine. You can restore the fixed value using:
+           opam option jobs=39 --global
+Format upgrade done.
+
+<><> Updating repositories ><><><><><><><><><><><><><><><><><><><><><><><><><><>
+[default] synchronised from file:///home/opam/opam-repository
+[01;2m[01;35m2024-05-28 07:50.08 ---> using "41ba59c52c751987091a990bfc68743f47f1d48b58a0242e92679239747c0a38" from cache[0m
+
+[01;34m/home/opam: (run (shell "uname -rs && opam exec -- ocaml -version && opam --version"))[0m
+Linux 5.15.0-107-generic
+The OCaml toplevel, version 4.14.2
+2.2.0~beta3~dev
+[01;2m[01;35m2024-05-28 07:50.08 ---> using "43177bf724d2ad14c3885c9e8604bf82de09a17c5632804082eaf00f00843b27" from cache[0m
+
+[01;34m/home/opam: (env OPAMDOWNLOADJOBS 1)[0m
+
+[01;34m/home/opam: (env OPAMERRLOGLEN 0)[0m
+
+[01;34m/home/opam: (env OPAMSOLVERTIMEOUT 500)[0m
+
+[01;34m/home/opam: (env OPAMPRECISETRACKING 1)[0m
+
+[01;34m/home/opam: (env CI true)[0m
+
+[01;34m/home/opam: (env OPAM_REPO_CI true)[0m
+
+[01;34m/home/opam: (run (shell "rm -rf opam-repository/"))[0m
+[01;2m[01;35m2024-05-28 07:50.08 ---> using "dc5d5a1631518083bf7b71a8bbeb70067bb1c0e264ce14940be3414232922413" from cache[0m
+
+[01;34m/home/opam: (copy (src .) (dst opam-repository/))[0m
+[01;2m[01;35m2024-05-28 07:50.19 ---> saved as "53721247e8c5d3efcc18ff6dc582bd941a58b123389f36be84a714be5e3b786c"[0m
+
+[01;34m/home/opam: (run (shell "opam repository set-url --strict default opam-repository/"))[0m
+[default] Initialised
+[01;2m[01;35m2024-05-28 07:51.16 ---> saved as "1d86c8dd28374f24e94d32e8f6e338d7088f29aceae8d19b8c6750ad0728d41a"[0m
+
+[01;34m/home/opam: (run (network host)
+                 (shell "opam update --depexts || true"))[0m
++ /usr/bin/sudo "apt-get" "update"
+- Hit:1 http://deb.debian.org/debian bookworm InRelease
+- Get:2 http://deb.debian.org/debian bookworm-updates InRelease [55.4 kB]
+- Get:3 http://deb.debian.org/debian-security bookworm-security InRelease [48.0 kB]
+- Get:4 http://deb.debian.org/debian-security bookworm-security/main amd64 Packages [157 kB]
+- Fetched 260 kB in 0s (1016 kB/s)
+- Reading package lists...
+[01;2m[01;35m2024-05-28 07:51.17 ---> saved as "cd64a85b9c3c9bb87b6487154f46b4ebfe77aa7b9e0e929f218e7e6d7f7ca731"[0m
+
+[01;34m/home/opam: (run (shell "opam pin add -k version -yn happy-eyeballs.1.1.0 1.1.0"))[0m
+happy-eyeballs is now pinned to version 1.1.0
+[01;2m[01;35m2024-05-28 07:51.18 ---> saved as "66943e91407e3db254e194de4d723e9d25648b6e7880e18dae740f57feb5e020"[0m
+
+[01;34m/home/opam: (run (cache (opam-archives (target /home/opam/.opam/download-cache)))
+                 (network host)
+                 (shell  "opam reinstall happy-eyeballs.1.1.0;\
+                        \n        res=$?;\
+                        \n        test \"$res\" != 31 && exit \"$res\";\
+                        \n        export OPAMCLI=2.0;\
+                        \n        build_dir=$(opam var prefix)/.opam-switch/build;\
+                        \n        failed=$(ls \"$build_dir\");\
+                        \n        partial_fails=\"\";\
+                        \n        for pkg in $failed; do\
+                        \n          if opam show -f x-ci-accept-failures: \"$pkg\" | grep -qF \"\\\"debian-12\\\"\"; then\
+                        \n            echo \"A package failed and has been disabled for CI using the 'x-ci-accept-failures' field.\";\
+                        \n          fi;\
+                        \n          test \"$pkg\" != 'happy-eyeballs.1.1.0' && partial_fails=\"$partial_fails $pkg\";\
+                        \n        done;\
+                        \n        test \"${partial_fails}\" != \"\" && echo \"opam-repo-ci detected dependencies failing: ${partial_fails}\";\
+                        \n        exit 1"))[0m
+happy-eyeballs.1.1.0 is not installed. Install it? [y/n] y
+The following actions will be performed:
+=== install 11 packages
+  - install domain-name    0.4.0          [required by happy-eyeballs]
+  - install dune           3.15.3         [required by happy-eyeballs]
+  - install duration       0.2.1          [required by happy-eyeballs]
+  - install fmt            0.9.0          [required by happy-eyeballs]
+  - install happy-eyeballs 1.1.0 (pinned)
+  - install ipaddr         5.6.0          [required by happy-eyeballs]
+  - install logs           0.7.0          [required by happy-eyeballs]
+  - install macaddr        5.6.0          [required by ipaddr]
+  - install ocamlbuild     0.14.3         [required by fmt, logs]
+  - install ocamlfind      1.9.6          [required by fmt, logs]
+  - install topkg          1.0.7          [required by fmt, logs]
+
+<><> Processing actions <><><><><><><><><><><><><><><><><><><><><><><><><><><><>
+-> retrieved domain-name.0.4.0  (cached)
+-> retrieved dune.3.15.3  (cached)
+-> retrieved duration.0.2.1  (cached)
+-> retrieved fmt.0.9.0  (cached)
+-> retrieved happy-eyeballs.1.1.0  (cached)
+-> retrieved ipaddr.5.6.0, macaddr.5.6.0  (cached)
+-> retrieved logs.0.7.0  (cached)
+-> retrieved ocamlbuild.0.14.3  (cached)
+-> retrieved ocamlfind.1.9.6  (cached)
+-> retrieved topkg.1.0.7  (cached)
+-> installed ocamlfind.1.9.6
+-> installed ocamlbuild.0.14.3
+-> installed topkg.1.0.7
+-> installed fmt.0.9.0
+-> installed logs.0.7.0
+-> installed dune.3.15.3
+-> installed duration.0.2.1
+-> installed macaddr.5.6.0
+-> installed domain-name.0.4.0
+-> installed ipaddr.5.6.0
+-> installed happy-eyeballs.1.1.0
+Done.
+# Run eval $(opam env) to update the current shell environment
+[01;2m[01;35m2024-05-28 07:51.58 ---> saved as "946d19bdb0bde60c24e14267b777781dafe255b9bc7da1b7d9122b48d21ff92a"[0m
+
+[01;34m/home/opam: (run (cache (opam-archives (target /home/opam/.opam/download-cache)))
+                 (network host)
+                 (shell  "opam reinstall irmin-containers.2.7.0;\
+                        \n        res=$?;\
+                        \n        test \"$res\" != 31 && exit \"$res\";\
+                        \n        export OPAMCLI=2.0;\
+                        \n        build_dir=$(opam var prefix)/.opam-switch/build;\
+                        \n        failed=$(ls \"$build_dir\");\
+                        \n        partial_fails=\"\";\
+                        \n        for pkg in $failed; do\
+                        \n          if opam show -f x-ci-accept-failures: \"$pkg\" | grep -qF \"\\\"debian-12\\\"\"; then\
+                        \n            echo \"A package failed and has been disabled for CI using the 'x-ci-accept-failures' field.\";\
+                        \n          fi;\
+                        \n          test \"$pkg\" != 'irmin-containers.2.7.0' && partial_fails=\"$partial_fails $pkg\";\
+                        \n        done;\
+                        \n        test \"${partial_fails}\" != \"\" && echo \"opam-repo-ci detected dependencies failing: ${partial_fails}\";\
+                        \n        exit 1"))[0m
+irmin-containers.2.7.0 is not installed. Install it? [y/n] y
+[ERROR] Sorry, resolution of the request timed out.
+        Try to specify a more precise request, use a different solver, or increase the allowed time by setting OPAMSOLVERTIMEOUT to a bigger value (currently, it is set to 500.0 seconds).
+"/usr/bin/env" "bash" "-c" "opam reinstall irmin-containers.2.7.0;
+        res=$?;
+        test "$res" != 31 && exit "$res";
+        export OPAMCLI=2.0;
+        build_dir=$(opam var prefix)/.opam-switch/build;
+        failed=$(ls "$build_dir");
+        partial_fails="";
+        for pkg in $failed; do
+          if opam show -f x-ci-accept-failures: "$pkg" | grep -qF "\"debian-12\""; then
+            echo "A package failed and has been disabled for CI using the 'x-ci-accept-failures' field.";
+          fi;
+          test "$pkg" != 'irmin-containers.2.7.0' && partial_fails="$partial_fails $pkg";
+        done;
+        test "${partial_fails}" != "" && echo "opam-repo-ci detected dependencies failing: ${partial_fails}";
+        exit 1" failed with exit status 60
+2024-05-28 08:00.50: Job failed: Failed: Build failed
+2024-05-28 08:00.50: Log analysis:
+2024-05-28 08:00.50: >>> 
+[ERROR] Sorry, resolution of the request timed out.
+ (score = 20)
+2024-05-28 08:00.50: Sorry, resolution of the request timed out.

@@ -1,0 +1,528 @@
+2024-05-22 13:45.31: New job: test irmin-git.2.10.1 with macaddr.5.6.0, using opam dev
+                              from https://github.com/ocaml/opam-repository.git#refs/pull/25919/head (fd70f08af9b154c5df912b199c88359527231daa)
+                              on debian-12-ocaml-5.2/amd64
+
+To reproduce locally:
+
+cd $(mktemp -d)
+git clone --recursive "https://github.com/ocaml/opam-repository.git" && cd "opam-repository" && git fetch origin "refs/pull/25919/head" && git reset --hard fd70f08a
+git fetch origin master
+git merge --no-edit 51268be01852dbdbed8a3ef6599fbe3dfc1c18f7
+cat > ../Dockerfile <<'END-OF-DOCKERFILE'
+[34mFROM ocaml/opam:debian-12-ocaml-5.2@sha256:72f1ad6870043a5ae18793a383a4ff59bb1304a5fd68e210fb2ad0f70c9ca660
+USER 1000:1000
+WORKDIR /home/opam
+RUN sudo ln -f /usr/bin/opam-dev /usr/bin/opam
+RUN opam init --reinit -ni
+RUN uname -rs && opam exec -- ocaml -version && opam --version
+ENV OPAMDOWNLOADJOBS="1"
+ENV OPAMERRLOGLEN="0"
+ENV OPAMSOLVERTIMEOUT="500"
+ENV OPAMPRECISETRACKING="1"
+ENV CI="true"
+ENV OPAM_REPO_CI="true"
+RUN rm -rf opam-repository/
+COPY --chown=1000:1000 . opam-repository/
+RUN opam repository set-url --strict default opam-repository/
+RUN opam update --depexts || true
+RUN opam pin add -k version -yn macaddr.5.6.0 5.6.0
+RUN opam reinstall macaddr.5.6.0; \
+    res=$?; \
+    test "$res" != 31 && exit "$res"; \
+    export OPAMCLI=2.0; \
+    build_dir=$(opam var prefix)/.opam-switch/build; \
+    failed=$(ls "$build_dir"); \
+    partial_fails=""; \
+    for pkg in $failed; do \
+    if opam show -f x-ci-accept-failures: "$pkg" | grep -qF "\"debian-12\""; then \
+    echo "A package failed and has been disabled for CI using the 'x-ci-accept-failures' field."; \
+    fi; \
+    test "$pkg" != 'macaddr.5.6.0' && partial_fails="$partial_fails $pkg"; \
+    done; \
+    test "${partial_fails}" != "" && echo "opam-repo-ci detected dependencies failing: ${partial_fails}"; \
+    exit 1
+RUN opam reinstall irmin-git.2.10.1; \
+    res=$?; \
+    test "$res" != 31 && exit "$res"; \
+    export OPAMCLI=2.0; \
+    build_dir=$(opam var prefix)/.opam-switch/build; \
+    failed=$(ls "$build_dir"); \
+    partial_fails=""; \
+    for pkg in $failed; do \
+    if opam show -f x-ci-accept-failures: "$pkg" | grep -qF "\"debian-12\""; then \
+    echo "A package failed and has been disabled for CI using the 'x-ci-accept-failures' field."; \
+    fi; \
+    test "$pkg" != 'irmin-git.2.10.1' && partial_fails="$partial_fails $pkg"; \
+    done; \
+    test "${partial_fails}" != "" && echo "opam-repo-ci detected dependencies failing: ${partial_fails}"; \
+    exit 1
+RUN (opam reinstall --with-test irmin-git.2.10.1) || true
+RUN opam reinstall --with-test --verbose irmin-git.2.10.1; \
+    res=$?; \
+    test "$res" != 31 && exit "$res"; \
+    export OPAMCLI=2.0; \
+    build_dir=$(opam var prefix)/.opam-switch/build; \
+    failed=$(ls "$build_dir"); \
+    partial_fails=""; \
+    for pkg in $failed; do \
+    if opam show -f x-ci-accept-failures: "$pkg" | grep -qF "\"debian-12\""; then \
+    echo "A package failed and has been disabled for CI using the 'x-ci-accept-failures' field."; \
+    fi; \
+    test "$pkg" != 'irmin-git.2.10.1' && partial_fails="$partial_fails $pkg"; \
+    done; \
+    test "${partial_fails}" != "" && echo "opam-repo-ci detected dependencies failing: ${partial_fails}"; \
+    exit 1
+[0m
+END-OF-DOCKERFILE
+docker build -f ../Dockerfile .
+
+2024-05-22 13:45.31: Using cache hint "ocaml/opam:debian-12-ocaml-5.2@sha256:72f1ad6870043a5ae18793a383a4ff59bb1304a5fd68e210fb2ad0f70c9ca660-macaddr.5.6.0-irmin-git.2.10.1-fd70f08af9b154c5df912b199c88359527231daa"
+2024-05-22 13:45.31: Using OBuilder spec:
+((from ocaml/opam:debian-12-ocaml-5.2@sha256:72f1ad6870043a5ae18793a383a4ff59bb1304a5fd68e210fb2ad0f70c9ca660)
+ (user (uid 1000) (gid 1000))
+ (workdir /home/opam)
+ (run (shell "sudo ln -f /usr/bin/opam-dev /usr/bin/opam"))
+ (run (network host)
+      (shell "opam init --reinit --config .opamrc-sandbox -ni"))
+ (run (shell "uname -rs && opam exec -- ocaml -version && opam --version"))
+ (env OPAMDOWNLOADJOBS 1)
+ (env OPAMERRLOGLEN 0)
+ (env OPAMSOLVERTIMEOUT 500)
+ (env OPAMPRECISETRACKING 1)
+ (env CI true)
+ (env OPAM_REPO_CI true)
+ (run (shell "rm -rf opam-repository/"))
+ (copy (src .) (dst opam-repository/))
+ (run (shell "opam repository set-url --strict default opam-repository/"))
+ (run (network host)
+      (shell "opam update --depexts || true"))
+ (run (shell "opam pin add -k version -yn macaddr.5.6.0 5.6.0"))
+ (run (cache (opam-archives (target /home/opam/.opam/download-cache)))
+      (network host)
+      (shell  "opam reinstall macaddr.5.6.0;\
+             \n        res=$?;\
+             \n        test \"$res\" != 31 && exit \"$res\";\
+             \n        export OPAMCLI=2.0;\
+             \n        build_dir=$(opam var prefix)/.opam-switch/build;\
+             \n        failed=$(ls \"$build_dir\");\
+             \n        partial_fails=\"\";\
+             \n        for pkg in $failed; do\
+             \n          if opam show -f x-ci-accept-failures: \"$pkg\" | grep -qF \"\\\"debian-12\\\"\"; then\
+             \n            echo \"A package failed and has been disabled for CI using the 'x-ci-accept-failures' field.\";\
+             \n          fi;\
+             \n          test \"$pkg\" != 'macaddr.5.6.0' && partial_fails=\"$partial_fails $pkg\";\
+             \n        done;\
+             \n        test \"${partial_fails}\" != \"\" && echo \"opam-repo-ci detected dependencies failing: ${partial_fails}\";\
+             \n        exit 1"))
+ (run (cache (opam-archives (target /home/opam/.opam/download-cache)))
+      (network host)
+      (shell  "opam reinstall irmin-git.2.10.1;\
+             \n        res=$?;\
+             \n        test \"$res\" != 31 && exit \"$res\";\
+             \n        export OPAMCLI=2.0;\
+             \n        build_dir=$(opam var prefix)/.opam-switch/build;\
+             \n        failed=$(ls \"$build_dir\");\
+             \n        partial_fails=\"\";\
+             \n        for pkg in $failed; do\
+             \n          if opam show -f x-ci-accept-failures: \"$pkg\" | grep -qF \"\\\"debian-12\\\"\"; then\
+             \n            echo \"A package failed and has been disabled for CI using the 'x-ci-accept-failures' field.\";\
+             \n          fi;\
+             \n          test \"$pkg\" != 'irmin-git.2.10.1' && partial_fails=\"$partial_fails $pkg\";\
+             \n        done;\
+             \n        test \"${partial_fails}\" != \"\" && echo \"opam-repo-ci detected dependencies failing: ${partial_fails}\";\
+             \n        exit 1"))
+ (run (network host)
+      (shell "(opam reinstall --with-test irmin-git.2.10.1) || true"))
+ (run (shell  "opam reinstall --with-test --verbose irmin-git.2.10.1;\
+             \n        res=$?;\
+             \n        test \"$res\" != 31 && exit \"$res\";\
+             \n        export OPAMCLI=2.0;\
+             \n        build_dir=$(opam var prefix)/.opam-switch/build;\
+             \n        failed=$(ls \"$build_dir\");\
+             \n        partial_fails=\"\";\
+             \n        for pkg in $failed; do\
+             \n          if opam show -f x-ci-accept-failures: \"$pkg\" | grep -qF \"\\\"debian-12\\\"\"; then\
+             \n            echo \"A package failed and has been disabled for CI using the 'x-ci-accept-failures' field.\";\
+             \n          fi;\
+             \n          test \"$pkg\" != 'irmin-git.2.10.1' && partial_fails=\"$partial_fails $pkg\";\
+             \n        done;\
+             \n        test \"${partial_fails}\" != \"\" && echo \"opam-repo-ci detected dependencies failing: ${partial_fails}\";\
+             \n        exit 1"))
+)
+
+2024-05-22 13:45.31: Waiting for resource in pool OCluster
+2024-05-22 16:56.19: Waiting for worker…
+2024-05-22 16:58.37: Got resource from pool OCluster
+Building on x86-bm-c3.sw.ocaml.org
+All commits already cached
+Updating files:  40% (13586/33714)Updating files:  41% (13823/33714)Updating files:  42% (14160/33714)Updating files:  43% (14498/33714)Updating files:  44% (14835/33714)Updating files:  45% (15172/33714)Updating files:  46% (15509/33714)Updating files:  47% (15846/33714)Updating files:  48% (16183/33714)Updating files:  49% (16520/33714)Updating files:  50% (16857/33714)Updating files:  51% (17195/33714)Updating files:  52% (17532/33714)Updating files:  53% (17869/33714)Updating files:  54% (18206/33714)Updating files:  55% (18543/33714)Updating files:  56% (18880/33714)Updating files:  57% (19217/33714)Updating files:  58% (19555/33714)Updating files:  59% (19892/33714)Updating files:  60% (20229/33714)Updating files:  61% (20566/33714)Updating files:  62% (20903/33714)Updating files:  63% (21240/33714)Updating files:  64% (21577/33714)Updating files:  65% (21915/33714)Updating files:  66% (22252/33714)Updating files:  67% (22589/33714)Updating files:  68% (22926/33714)Updating files:  69% (23263/33714)Updating files:  70% (23600/33714)Updating files:  71% (23937/33714)Updating files:  72% (24275/33714)Updating files:  73% (24612/33714)Updating files:  74% (24949/33714)Updating files:  75% (25286/33714)Updating files:  76% (25623/33714)Updating files:  77% (25960/33714)Updating files:  78% (26297/33714)Updating files:  78% (26416/33714)Updating files:  79% (26635/33714)Updating files:  80% (26972/33714)Updating files:  81% (27309/33714)Updating files:  82% (27646/33714)Updating files:  83% (27983/33714)Updating files:  84% (28320/33714)Updating files:  85% (28657/33714)Updating files:  86% (28995/33714)Updating files:  87% (29332/33714)Updating files:  88% (29669/33714)Updating files:  89% (30006/33714)Updating files:  90% (30343/33714)Updating files:  91% (30680/33714)Updating files:  92% (31017/33714)Updating files:  93% (31355/33714)Updating files:  94% (31692/33714)Updating files:  95% (32029/33714)Updating files:  96% (32366/33714)Updating files:  97% (32703/33714)Updating files:  98% (33040/33714)Updating files:  99% (33377/33714)Updating files: 100% (33714/33714)Updating files: 100% (33714/33714), done.
+HEAD is now at 51268be018 Merge pull request #25902 from voodoos/release-merlin-5.0-502
+Updating 51268be018..fd70f08af9
+Fast-forward
+ packages/ipaddr-cstruct/ipaddr-cstruct.5.6.0/opam  | 33 ++++++++++++++
+ packages/ipaddr-sexp/ipaddr-sexp.5.6.0/opam        | 37 ++++++++++++++++
+ packages/ipaddr/ipaddr.5.6.0/opam                  | 51 ++++++++++++++++++++++
+ .../macaddr-cstruct/macaddr-cstruct.5.6.0/opam     | 33 ++++++++++++++
+ packages/macaddr-sexp/macaddr-sexp.5.6.0/opam      | 37 ++++++++++++++++
+ packages/macaddr/macaddr.5.6.0/opam                | 41 +++++++++++++++++
+ 6 files changed, 232 insertions(+)
+ create mode 100644 packages/ipaddr-cstruct/ipaddr-cstruct.5.6.0/opam
+ create mode 100644 packages/ipaddr-sexp/ipaddr-sexp.5.6.0/opam
+ create mode 100644 packages/ipaddr/ipaddr.5.6.0/opam
+ create mode 100644 packages/macaddr-cstruct/macaddr-cstruct.5.6.0/opam
+ create mode 100644 packages/macaddr-sexp/macaddr-sexp.5.6.0/opam
+ create mode 100644 packages/macaddr/macaddr.5.6.0/opam
+
+[01;34m(from ocaml/opam:debian-12-ocaml-5.2@sha256:72f1ad6870043a5ae18793a383a4ff59bb1304a5fd68e210fb2ad0f70c9ca660)[0m
+[01;2m[01;35m2024-05-22 16:58.42 ---> using "efa95ef99b8aa7297e2241765c861437c10bd642b9ced42ffa5c9ae1ca4d3cd4" from cache[0m
+
+[01;34m/: (user (uid 1000) (gid 1000))[0m
+
+[01;34m/: (workdir /home/opam)[0m
+
+[01;34m/home/opam: (run (shell "sudo ln -f /usr/bin/opam-dev /usr/bin/opam"))[0m
+[01;2m[01;35m2024-05-22 16:58.42 ---> using "b6dbda34a7bfbcecaf53ce1b27c917a02ba1365f9ab5ff30009298f2795440d8" from cache[0m
+
+[01;34m/home/opam: (run (network host)
+                 (shell "opam init --reinit --config .opamrc-sandbox -ni"))[0m
+Configuring from /home/opam/.opamrc-sandbox, then /home/opam/.opamrc, and finally from built-in defaults.
+Checking for available remotes: rsync and local, git.
+  - you won't be able to use mercurial repositories unless you install the hg command on your system.
+  - you won't be able to use darcs repositories unless you install the darcs command on your system.
+
+This development version of opam requires an update to the layout of /home/opam/.opam from version 2.0 to version 2.2~beta, which can't be reverted.
+You may want to back it up before going further.
+
+Continue? [y/n] y
+Format upgrade done.
+
+<><> Updating repositories ><><><><><><><><><><><><><><><><><><><><><><><><><><>
+[default] synchronised from file:///home/opam/opam-repository
+[01;2m[01;35m2024-05-22 16:58.42 ---> using "1a46b5946bd34bae7665d9ed7d1d23bd8a329e773fa0be7155a01e62ab9e321a" from cache[0m
+
+[01;34m/home/opam: (run (shell "uname -rs && opam exec -- ocaml -version && opam --version"))[0m
+Linux 5.15.0-107-generic
+The OCaml toplevel, version 5.2.0
+2.2.0~beta3~dev
+[01;2m[01;35m2024-05-22 16:58.42 ---> using "76877ae6d785523c964b243ac3c5d087180476e800b019bcb4da5c9aed151e42" from cache[0m
+
+[01;34m/home/opam: (env OPAMDOWNLOADJOBS 1)[0m
+
+[01;34m/home/opam: (env OPAMERRLOGLEN 0)[0m
+
+[01;34m/home/opam: (env OPAMSOLVERTIMEOUT 500)[0m
+
+[01;34m/home/opam: (env OPAMPRECISETRACKING 1)[0m
+
+[01;34m/home/opam: (env CI true)[0m
+
+[01;34m/home/opam: (env OPAM_REPO_CI true)[0m
+
+[01;34m/home/opam: (run (shell "rm -rf opam-repository/"))[0m
+[01;2m[01;35m2024-05-22 16:58.42 ---> using "3093426f5da81095a517ddbff1096a0c19f6484b67f5dc6142e7833fde7f8417" from cache[0m
+
+[01;34m/home/opam: (copy (src .) (dst opam-repository/))[0m
+[01;2m[01;35m2024-05-22 16:58.45 ---> using "6a625b49cd0c5ad35929b1f8fcc3a720a2529c585ee30b7e386585558db7f5fb" from cache[0m
+
+[01;34m/home/opam: (run (shell "opam repository set-url --strict default opam-repository/"))[0m
+[default] Initialised
+[01;2m[01;35m2024-05-22 16:58.45 ---> using "7e2801fc17b0e762463177cd9fc2a45111a022295fdc33f50fe1da55ea0224b5" from cache[0m
+
+[01;34m/home/opam: (run (network host)
+                 (shell "opam update --depexts || true"))[0m
++ /usr/bin/sudo "apt-get" "update"
+- Hit:1 http://deb.debian.org/debian bookworm InRelease
+- Get:2 http://deb.debian.org/debian bookworm-updates InRelease [55.4 kB]
+- Get:3 http://deb.debian.org/debian-security bookworm-security InRelease [48.0 kB]
+- Get:4 http://deb.debian.org/debian-security bookworm-security/main amd64 Packages [156 kB]
+- Fetched 259 kB in 0s (981 kB/s)
+- Reading package lists...
+- 
+[01;2m[01;35m2024-05-22 16:58.45 ---> using "83b952e9ccfa03dd463c6f44e6a7b87bdde56b44fa66cc228cab0ac7074b21b9" from cache[0m
+
+[01;34m/home/opam: (run (shell "opam pin add -k version -yn macaddr.5.6.0 5.6.0"))[0m
+macaddr is now pinned to version 5.6.0
+[01;2m[01;35m2024-05-22 16:58.45 ---> using "98aaf3c2b0712d711168bcd44219219f985e7cbb04801f1dc04da00d9a8f7841" from cache[0m
+
+[01;34m/home/opam: (run (cache (opam-archives (target /home/opam/.opam/download-cache)))
+                 (network host)
+                 (shell  "opam reinstall macaddr.5.6.0;\
+                        \n        res=$?;\
+                        \n        test \"$res\" != 31 && exit \"$res\";\
+                        \n        export OPAMCLI=2.0;\
+                        \n        build_dir=$(opam var prefix)/.opam-switch/build;\
+                        \n        failed=$(ls \"$build_dir\");\
+                        \n        partial_fails=\"\";\
+                        \n        for pkg in $failed; do\
+                        \n          if opam show -f x-ci-accept-failures: \"$pkg\" | grep -qF \"\\\"debian-12\\\"\"; then\
+                        \n            echo \"A package failed and has been disabled for CI using the 'x-ci-accept-failures' field.\";\
+                        \n          fi;\
+                        \n          test \"$pkg\" != 'macaddr.5.6.0' && partial_fails=\"$partial_fails $pkg\";\
+                        \n        done;\
+                        \n        test \"${partial_fails}\" != \"\" && echo \"opam-repo-ci detected dependencies failing: ${partial_fails}\";\
+                        \n        exit 1"))[0m
+macaddr.5.6.0 is not installed. Install it? [y/n] y
+The following actions will be performed:
+=== install 2 packages
+  - install dune    3.15.2         [required by macaddr]
+  - install macaddr 5.6.0 (pinned)
+
+<><> Processing actions <><><><><><><><><><><><><><><><><><><><><><><><><><><><>
+-> retrieved dune.3.15.2  (cached)
+-> retrieved macaddr.5.6.0  (cached)
+-> installed dune.3.15.2
+-> installed macaddr.5.6.0
+Done.
+# Run eval $(opam env) to update the current shell environment
+[01;2m[01;35m2024-05-22 16:58.45 ---> using "b64a7d8c75a500f90198310f63029ea0ca9bc11edf2a3b8bdc2bee012e072190" from cache[0m
+
+[01;34m/home/opam: (run (cache (opam-archives (target /home/opam/.opam/download-cache)))
+                 (network host)
+                 (shell  "opam reinstall irmin-git.2.10.1;\
+                        \n        res=$?;\
+                        \n        test \"$res\" != 31 && exit \"$res\";\
+                        \n        export OPAMCLI=2.0;\
+                        \n        build_dir=$(opam var prefix)/.opam-switch/build;\
+                        \n        failed=$(ls \"$build_dir\");\
+                        \n        partial_fails=\"\";\
+                        \n        for pkg in $failed; do\
+                        \n          if opam show -f x-ci-accept-failures: \"$pkg\" | grep -qF \"\\\"debian-12\\\"\"; then\
+                        \n            echo \"A package failed and has been disabled for CI using the 'x-ci-accept-failures' field.\";\
+                        \n          fi;\
+                        \n          test \"$pkg\" != 'irmin-git.2.10.1' && partial_fails=\"$partial_fails $pkg\";\
+                        \n        done;\
+                        \n        test \"${partial_fails}\" != \"\" && echo \"opam-repo-ci detected dependencies failing: ${partial_fails}\";\
+                        \n        exit 1"))[0m
+irmin-git.2.10.1 is not installed. Install it? [y/n] y
+The following actions will be performed:
+=== install 61 packages
+  - install angstrom            0.16.0  [required by git]
+  - install astring             0.8.5   [required by irmin-git]
+  - install base-bytes          base    [required by ocplib-endian]
+  - install base64              3.5.1   [required by git]
+  - install bheap               2.0.0   [required by irmin]
+  - install bigstringaf         0.9.1   [required by git]
+  - install bos                 0.2.1   [required by carton]
+  - install carton              0.7.1   [required by git]
+  - install carton-git          0.7.1   [required by git]
+  - install carton-lwt          0.7.1   [required by git]
+  - install checkseum           0.5.2   [required by git]
+  - install cmdliner            1.2.0   [required by carton, fmt, emile]
+  - install cppo                1.6.9   [required by ppx_deriving]
+  - install csexp               1.5.2   [required by dune-configurator]
+  - install cstruct             6.2.0   [required by irmin-git]
+  - install decompress          1.5.3   [required by git]
+  - install digestif            1.2.0   [required by irmin-git]
+  - install domain-name         0.4.0   [required by git]
+  - install duff                0.5     [required by carton]
+  - install dune-configurator   3.15.2  [required by checkseum, bigstringaf, hxd]
+  - install either              1.0.0   [required by repr]
+  - install emile               1.1     [required by git]
+  - install encore              0.8     [required by git]
+  - install eqaf                0.9     [required by digestif]
+  - install fmt                 0.9.0   [required by irmin-git]
+  - install fpath               0.7.3   [required by irmin-git]
+  - install git                 3.15.0  [required by irmin-git]
+  - install hxd                 0.3.2   [required by git]
+  - install ipaddr              5.6.0   [required by git]
+  - install irmin               2.10.1  [required by irmin-git]
+  - install irmin-git           2.10.1
+  - install jsonm               1.0.2   [required by irmin]
+  - install ke                  0.6     [required by git]
+  - install logs                0.7.0   [required by irmin-git]
+  - install lwt                 5.7.0   [required by irmin-git]
+  - install mimic               0.0.7   [required by git]
+  - install mirage-flow         4.0.2   [required by git]
+  - install ocaml-compiler-libs v0.17.0 [required by ppxlib]
+  - install ocaml-syntax-shims  1.0.0   [required by angstrom]
+  - install ocamlbuild          0.14.3  [required by astring, fpath]
+  - install ocamlfind           1.9.6   [required by astring, fpath]
+  - install ocamlgraph          2.1.0   [required by git, irmin]
+  - install ocplib-endian       1.2     [required by lwt]
+  - install optint              0.3.0   [required by git]
+  - install pecu                0.7     [required by emile]
+  - install ppx_derivers        1.2.1   [required by ppx_deriving]
+  - install ppx_deriving        5.2.1   [required by ppx_repr]
+  - install ppx_irmin           2.10.1  [required by irmin-git]
+  - install ppx_repr            0.5.0   [required by ppx_irmin]
+  - install ppxlib              0.32.1  [required by ppx_repr]
+  - install psq                 0.2.1   [required by git]
+  - install repr                0.5.0   [required by irmin]
+  - install result              1.5     [required by git]
+  - install rresult             0.7.0   [required by git]
+  - install seq                 base    [required by psq]
+  - install sexplib0            v0.17.0 [required by ppxlib]
+  - install stdlib-shims        0.3.0   [required by ocamlgraph]
+  - install stringext           1.6.0   [required by uri]
+  - install topkg               1.0.7   [required by astring, fpath]
+  - install uri                 4.4.0   [required by irmin-git]
+  - install uutf                1.0.3   [required by irmin]
+
+<><> Processing actions <><><><><><><><><><><><><><><><><><><><><><><><><><><><>
+-> retrieved angstrom.0.16.0  (cached)
+-> retrieved astring.0.8.5  (cached)
+-> retrieved base64.3.5.1  (cached)
+-> retrieved bheap.2.0.0  (cached)
+-> retrieved bigstringaf.0.9.1  (cached)
+-> retrieved bos.0.2.1  (cached)
+-> retrieved carton.0.7.1, carton-git.0.7.1, carton-lwt.0.7.1  (cached)
+-> retrieved checkseum.0.5.2  (cached)
+-> installed bheap.2.0.0
+-> retrieved cmdliner.1.2.0  (cached)
+-> retrieved cppo.1.6.9  (cached)
+-> retrieved csexp.1.5.2  (cached)
+-> retrieved cstruct.6.2.0  (cached)
+-> installed base64.3.5.1
+-> retrieved decompress.1.5.3  (cached)
+-> installed csexp.1.5.2
+-> retrieved digestif.1.2.0  (cached)
+-> retrieved domain-name.0.4.0  (cached)
+-> retrieved duff.0.5  (cached)
+-> installed cppo.1.6.9
+-> installed domain-name.0.4.0
+-> retrieved dune-configurator.3.15.2  (cached)
+-> retrieved either.1.0.0  (cached)
+-> retrieved emile.1.1  (cached)
+-> retrieved encore.0.8  (cached)
+-> retrieved eqaf.0.9  (cached)
+-> retrieved fmt.0.9.0  (cached)
+-> retrieved fpath.0.7.3  (cached)
+-> retrieved git.3.15.0  (cached)
+-> installed cmdliner.1.2.0
+-> retrieved hxd.0.3.2  (cached)
+-> retrieved ipaddr.5.6.0  (cached)
+-> installed either.1.0.0
+-> retrieved irmin.2.10.1, irmin-git.2.10.1, ppx_irmin.2.10.1  (cached)
+-> retrieved jsonm.1.0.2  (cached)
+-> retrieved ke.0.6  (cached)
+-> retrieved logs.0.7.0  (cached)
+-> retrieved lwt.5.7.0  (cached)
+-> retrieved mimic.0.0.7  (cached)
+-> retrieved mirage-flow.4.0.2  (cached)
+-> retrieved ocaml-compiler-libs.v0.17.0  (cached)
+-> retrieved ocaml-syntax-shims.1.0.0  (cached)
+-> retrieved ocamlbuild.0.14.3  (cached)
+-> retrieved ocamlfind.1.9.6  (cached)
+-> retrieved ocamlgraph.2.1.0  (cached)
+-> installed ipaddr.5.6.0
+-> retrieved ocplib-endian.1.2  (cached)
+-> retrieved optint.0.3.0  (cached)
+-> retrieved pecu.0.7  (cached)
+-> retrieved ppx_derivers.1.2.1  (cached)
+-> retrieved ppx_deriving.5.2.1  (cached)
+-> retrieved ppx_repr.0.5.0, repr.0.5.0  (cached)
+-> installed ppx_derivers.1.2.1
+-> retrieved ppxlib.0.32.1  (cached)
+-> installed pecu.0.7
+-> retrieved psq.0.2.1  (cached)
+-> retrieved result.1.5  (cached)
+-> retrieved rresult.0.7.0  (cached)
+-> installed seq.base
+-> retrieved sexplib0.v0.17.0  (cached)
+-> retrieved stdlib-shims.0.3.0  (cached)
+-> retrieved stringext.1.6.0  (cached)
+-> installed optint.0.3.0
+-> retrieved topkg.1.0.7  (cached)
+-> retrieved uri.4.4.0  (cached)
+-> retrieved uutf.1.0.3  (cached)
+-> installed dune-configurator.3.15.2
+-> installed result.1.5
+-> installed stringext.1.6.0
+-> installed stdlib-shims.0.3.0
+-> installed psq.0.2.1
+-> installed ocaml-compiler-libs.v0.17.0
+-> installed ocaml-syntax-shims.1.0.0
+-> installed sexplib0.v0.17.0
+-> installed bigstringaf.0.9.1
+-> installed checkseum.0.5.2
+-> installed angstrom.0.16.0
+-> installed decompress.1.5.3
+-> installed ocamlgraph.2.1.0
+-> installed ocamlfind.1.9.6
+-> installed base-bytes.base
+-> installed uri.4.4.0
+-> installed ocplib-endian.1.2
+-> installed ocamlbuild.0.14.3
+-> installed lwt.5.7.0
+-> installed hxd.0.3.2
+-> installed topkg.1.0.7
+-> installed rresult.0.7.0
+-> installed uutf.1.0.3
+-> installed fmt.0.9.0
+-> installed duff.0.5
+-> installed astring.0.8.5
+-> installed encore.0.8
+-> installed emile.1.1
+-> installed ke.0.6
+-> installed cstruct.6.2.0
+-> installed mirage-flow.4.0.2
+-> installed jsonm.1.0.2
+-> installed eqaf.0.9
+-> installed fpath.0.7.3
+-> installed logs.0.7.0
+-> installed mimic.0.0.7
+-> installed digestif.1.2.0
+-> installed repr.0.5.0
+-> installed ppxlib.0.32.1
+-> installed bos.0.2.1
+-> installed carton.0.7.1
+-> installed carton-lwt.0.7.1
+-> installed carton-git.0.7.1
+-> installed ppx_deriving.5.2.1
+-> installed git.3.15.0
+-> installed ppx_repr.0.5.0
+-> installed ppx_irmin.2.10.1
+-> installed irmin.2.10.1
+-> installed irmin-git.2.10.1
+Done.
+# Run eval $(opam env) to update the current shell environment
+[01;2m[01;35m2024-05-22 17:00.27 ---> saved as "0a08d3a8c601f30f6cd929eb2f2f66195594a03c32ffe6dc38c969264ee30120"[0m
+
+[01;34m/home/opam: (run (network host)
+                 (shell "(opam reinstall --with-test irmin-git.2.10.1) || true"))[0m
+[ERROR] Sorry, resolution of the request timed out.
+        Try to specify a more precise request, use a different solver, or increase the allowed time by setting OPAMSOLVERTIMEOUT to a bigger value (currently, it is set to 500.0 seconds).
+[01;2m[01;35m2024-05-22 17:09.04 ---> saved as "b90c1d2ec1e0594e7244ff144e357515f554f330476e2d6bde3992828b99df67"[0m
+
+[01;34m/home/opam: (run (shell  "opam reinstall --with-test --verbose irmin-git.2.10.1;\
+                        \n        res=$?;\
+                        \n        test \"$res\" != 31 && exit \"$res\";\
+                        \n        export OPAMCLI=2.0;\
+                        \n        build_dir=$(opam var prefix)/.opam-switch/build;\
+                        \n        failed=$(ls \"$build_dir\");\
+                        \n        partial_fails=\"\";\
+                        \n        for pkg in $failed; do\
+                        \n          if opam show -f x-ci-accept-failures: \"$pkg\" | grep -qF \"\\\"debian-12\\\"\"; then\
+                        \n            echo \"A package failed and has been disabled for CI using the 'x-ci-accept-failures' field.\";\
+                        \n          fi;\
+                        \n          test \"$pkg\" != 'irmin-git.2.10.1' && partial_fails=\"$partial_fails $pkg\";\
+                        \n        done;\
+                        \n        test \"${partial_fails}\" != \"\" && echo \"opam-repo-ci detected dependencies failing: ${partial_fails}\";\
+                        \n        exit 1"))[0m
+[ERROR] Sorry, resolution of the request timed out.
+        Try to specify a more precise request, use a different solver, or increase the allowed time by setting OPAMSOLVERTIMEOUT to a bigger value (currently, it is set to 500.0 seconds).
+'opam reinstall --with-test --verbose irmin-git.2.10.1' failed.
+"/usr/bin/env" "bash" "-c" "opam reinstall --with-test --verbose irmin-git.2.10.1;
+        res=$?;
+        test "$res" != 31 && exit "$res";
+        export OPAMCLI=2.0;
+        build_dir=$(opam var prefix)/.opam-switch/build;
+        failed=$(ls "$build_dir");
+        partial_fails="";
+        for pkg in $failed; do
+          if opam show -f x-ci-accept-failures: "$pkg" | grep -qF "\"debian-12\""; then
+            echo "A package failed and has been disabled for CI using the 'x-ci-accept-failures' field.";
+          fi;
+          test "$pkg" != 'irmin-git.2.10.1' && partial_fails="$partial_fails $pkg";
+        done;
+        test "${partial_fails}" != "" && echo "opam-repo-ci detected dependencies failing: ${partial_fails}";
+        exit 1" failed with exit status 60
+2024-05-22 17:18.01: Job failed: Failed: Build failed
+2024-05-22 17:18.01: Log analysis:
+2024-05-22 17:18.01: >>> 
+[ERROR] Sorry, resolution of the request timed out.
+ (score = 20)
+2024-05-22 17:18.01: >>> 
+[ERROR] Sorry, resolution of the request timed out.
+ (score = 20)
+2024-05-22 17:18.01: Sorry, resolution of the request timed out.

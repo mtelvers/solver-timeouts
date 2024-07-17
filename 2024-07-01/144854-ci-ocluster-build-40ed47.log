@@ -1,0 +1,318 @@
+2024-07-01 14:48.54: New job: test http.6.0.0~alpha1, using opam dev
+                              from https://github.com/ocaml/opam-repository.git#refs/pull/26169/head (2818ca4784e742dda71b490fc25eea919cbbbd23)
+                              on debian-12-ocaml-4.11/amd64
+
+To reproduce locally:
+
+cd $(mktemp -d)
+git clone --recursive "https://github.com/ocaml/opam-repository.git" && cd "opam-repository" && git fetch origin "refs/pull/26169/head" && git reset --hard 2818ca47
+git fetch origin master
+git merge --no-edit 01e40b8e399ee05919702bc532082a8c9ba79626
+cat > ../Dockerfile <<'END-OF-DOCKERFILE'
+[34mFROM ocaml/opam:debian-12-ocaml-4.11@sha256:3494e995816613c76be20fd55b4aaf5b83b607fd95c10d74c73ea57315118558
+USER 1000:1000
+WORKDIR /home/opam
+RUN sudo ln -f /usr/bin/opam-dev /usr/bin/opam
+RUN opam init --reinit -ni
+RUN uname -rs && opam exec -- ocaml -version && opam --version
+ENV OPAMDOWNLOADJOBS="1"
+ENV OPAMERRLOGLEN="0"
+ENV OPAMSOLVERTIMEOUT="500"
+ENV OPAMPRECISETRACKING="1"
+ENV CI="true"
+ENV OPAM_REPO_CI="true"
+RUN rm -rf opam-repository/
+COPY --chown=1000:1000 . opam-repository/
+RUN opam repository set-url --strict default opam-repository/
+RUN opam update --depexts || true
+RUN opam pin add -k version -yn http.6.0.0~alpha1 6.0.0~alpha1
+RUN opam reinstall http.6.0.0~alpha1; \
+    res=$?; \
+    test "$res" != 31 && exit "$res"; \
+    export OPAMCLI=2.0; \
+    build_dir=$(opam var prefix)/.opam-switch/build; \
+    failed=$(ls "$build_dir"); \
+    partial_fails=""; \
+    for pkg in $failed; do \
+    if opam show -f x-ci-accept-failures: "$pkg" | grep -qF "\"debian-12\""; then \
+    echo "A package failed and has been disabled for CI using the 'x-ci-accept-failures' field."; \
+    fi; \
+    test "$pkg" != 'http.6.0.0~alpha1' && partial_fails="$partial_fails $pkg"; \
+    done; \
+    test "${partial_fails}" != "" && echo "opam-repo-ci detected dependencies failing: ${partial_fails}"; \
+    exit 1
+RUN (opam reinstall --with-test http.6.0.0~alpha1) || true
+RUN opam reinstall --with-test --verbose http.6.0.0~alpha1; \
+    res=$?; \
+    test "$res" != 31 && exit "$res"; \
+    export OPAMCLI=2.0; \
+    build_dir=$(opam var prefix)/.opam-switch/build; \
+    failed=$(ls "$build_dir"); \
+    partial_fails=""; \
+    for pkg in $failed; do \
+    if opam show -f x-ci-accept-failures: "$pkg" | grep -qF "\"debian-12\""; then \
+    echo "A package failed and has been disabled for CI using the 'x-ci-accept-failures' field."; \
+    fi; \
+    test "$pkg" != 'http.6.0.0~alpha1' && partial_fails="$partial_fails $pkg"; \
+    done; \
+    test "${partial_fails}" != "" && echo "opam-repo-ci detected dependencies failing: ${partial_fails}"; \
+    exit 1
+[0m
+END-OF-DOCKERFILE
+docker build -f ../Dockerfile .
+
+2024-07-01 14:48.54: Using cache hint "ocaml/opam:debian-12-ocaml-4.11@sha256:3494e995816613c76be20fd55b4aaf5b83b607fd95c10d74c73ea57315118558-http.6.0.0~alpha1-2818ca4784e742dda71b490fc25eea919cbbbd23"
+2024-07-01 14:48.54: Using OBuilder spec:
+((from ocaml/opam:debian-12-ocaml-4.11@sha256:3494e995816613c76be20fd55b4aaf5b83b607fd95c10d74c73ea57315118558)
+ (user (uid 1000) (gid 1000))
+ (workdir /home/opam)
+ (run (shell "sudo ln -f /usr/bin/opam-dev /usr/bin/opam"))
+ (run (network host)
+      (shell "opam init --reinit --config .opamrc-sandbox -ni"))
+ (run (shell "uname -rs && opam exec -- ocaml -version && opam --version"))
+ (env OPAMDOWNLOADJOBS 1)
+ (env OPAMERRLOGLEN 0)
+ (env OPAMSOLVERTIMEOUT 500)
+ (env OPAMPRECISETRACKING 1)
+ (env CI true)
+ (env OPAM_REPO_CI true)
+ (run (shell "rm -rf opam-repository/"))
+ (copy (src .) (dst opam-repository/))
+ (run (shell "opam repository set-url --strict default opam-repository/"))
+ (run (network host)
+      (shell "opam update --depexts || true"))
+ (run (shell "opam pin add -k version -yn http.6.0.0~alpha1 6.0.0~alpha1"))
+ (run (cache (opam-archives (target /home/opam/.opam/download-cache)))
+      (network host)
+      (shell  "opam reinstall http.6.0.0~alpha1;\
+             \n        res=$?;\
+             \n        test \"$res\" != 31 && exit \"$res\";\
+             \n        export OPAMCLI=2.0;\
+             \n        build_dir=$(opam var prefix)/.opam-switch/build;\
+             \n        failed=$(ls \"$build_dir\");\
+             \n        partial_fails=\"\";\
+             \n        for pkg in $failed; do\
+             \n          if opam show -f x-ci-accept-failures: \"$pkg\" | grep -qF \"\\\"debian-12\\\"\"; then\
+             \n            echo \"A package failed and has been disabled for CI using the 'x-ci-accept-failures' field.\";\
+             \n          fi;\
+             \n          test \"$pkg\" != 'http.6.0.0~alpha1' && partial_fails=\"$partial_fails $pkg\";\
+             \n        done;\
+             \n        test \"${partial_fails}\" != \"\" && echo \"opam-repo-ci detected dependencies failing: ${partial_fails}\";\
+             \n        exit 1"))
+ (run (network host)
+      (shell "(opam reinstall --with-test http.6.0.0~alpha1) || true"))
+ (run (shell  "opam reinstall --with-test --verbose http.6.0.0~alpha1;\
+             \n        res=$?;\
+             \n        test \"$res\" != 31 && exit \"$res\";\
+             \n        export OPAMCLI=2.0;\
+             \n        build_dir=$(opam var prefix)/.opam-switch/build;\
+             \n        failed=$(ls \"$build_dir\");\
+             \n        partial_fails=\"\";\
+             \n        for pkg in $failed; do\
+             \n          if opam show -f x-ci-accept-failures: \"$pkg\" | grep -qF \"\\\"debian-12\\\"\"; then\
+             \n            echo \"A package failed and has been disabled for CI using the 'x-ci-accept-failures' field.\";\
+             \n          fi;\
+             \n          test \"$pkg\" != 'http.6.0.0~alpha1' && partial_fails=\"$partial_fails $pkg\";\
+             \n        done;\
+             \n        test \"${partial_fails}\" != \"\" && echo \"opam-repo-ci detected dependencies failing: ${partial_fails}\";\
+             \n        exit 1"))
+)
+
+2024-07-01 14:48.54: Waiting for resource in pool OCluster
+2024-07-01 15:05.47: Waiting for worker…
+2024-07-01 15:10.38: Got resource from pool OCluster
+Building on x86-bm-c2.sw.ocaml.org
+All commits already cached
+Updating files:  93% (29555/31655)Updating files:  94% (29756/31655)Updating files:  95% (30073/31655)Updating files:  96% (30389/31655)Updating files:  97% (30706/31655)Updating files:  98% (31022/31655)Updating files:  99% (31339/31655)Updating files: 100% (31655/31655)Updating files: 100% (31655/31655), done.
+HEAD is now at 01e40b8e39 Merge pull request #26166 from pveber/release-biotk-v0.3
+Merge made by the 'ort' strategy.
+ packages/ambient-context-lwt/ambient-context-lwt.0.1.0/opam | 2 +-
+ packages/dbf/dbf.0.1.1/opam                                 | 2 +-
+ packages/distributed/distributed.0.2.0/opam                 | 2 +-
+ packages/distributed/distributed.0.3.0/opam                 | 2 +-
+ packages/distributed/distributed.0.4.0/opam                 | 2 +-
+ packages/distributed/distributed.0.5.0/opam                 | 2 +-
+ packages/distributed/distributed.0.6.0/opam                 | 2 +-
+ packages/http/http.6.0.0~alpha0/opam                        | 2 +-
+ packages/http/http.6.0.0~alpha1/opam                        | 2 +-
+ packages/phylogenetics/phylogenetics.0.2.0/opam             | 2 +-
+ packages/ppx_parser/ppx_parser.0.1.1/opam                   | 2 +-
+ packages/pyml_bindgen/pyml_bindgen.0.1.1/opam               | 2 +-
+ packages/pyml_bindgen/pyml_bindgen.0.1.2/opam               | 2 +-
+ packages/pyml_bindgen/pyml_bindgen.0.2.0/opam               | 2 +-
+ packages/pyml_bindgen/pyml_bindgen.0.3.0/opam               | 2 +-
+ packages/qcheck-core/qcheck-core.0.18.1/opam                | 2 +-
+ packages/qcheck-core/qcheck-core.0.18/opam                  | 2 +-
+ packages/qcheck-core/qcheck-core.0.19.1/opam                | 2 +-
+ packages/qcheck-core/qcheck-core.0.19/opam                  | 2 +-
+ packages/qcheck-core/qcheck-core.0.20/opam                  | 2 +-
+ packages/qcheck-core/qcheck-core.0.21.1/opam                | 2 +-
+ packages/qcheck-core/qcheck-core.0.21.2/opam                | 2 +-
+ packages/qcheck-core/qcheck-core.0.21.3/opam                | 2 +-
+ packages/qcheck-core/qcheck-core.0.21/opam                  | 2 +-
+ packages/shuttle/shuttle.0.4.0/opam                         | 2 +-
+ packages/shuttle/shuttle.0.5.0/opam                         | 2 +-
+ packages/shuttle/shuttle.0.6.0/opam                         | 2 +-
+ packages/shuttle/shuttle.0.7.0/opam                         | 2 +-
+ packages/shuttle/shuttle.0.8.1/opam                         | 2 +-
+ packages/shuttle/shuttle.0.9.0/opam                         | 2 +-
+ packages/shuttle/shuttle.0.9.1/opam                         | 2 +-
+ packages/shuttle/shuttle.0.9.2/opam                         | 2 +-
+ packages/shuttle/shuttle.0.9.4/opam                         | 2 +-
+ packages/shuttle_http/shuttle_http.0.10.0/opam              | 2 +-
+ packages/shuttle_http/shuttle_http.0.10.1/opam              | 2 +-
+ packages/shuttle_http/shuttle_http.0.11.0/opam              | 2 +-
+ 36 files changed, 36 insertions(+), 36 deletions(-)
+
+[01;34m(from ocaml/opam:debian-12-ocaml-4.11@sha256:3494e995816613c76be20fd55b4aaf5b83b607fd95c10d74c73ea57315118558)[0m
+[01;2m[01;35m2024-07-01 15:11.30 ---> saved as "6c2d859ac289ced14f9e270d0cdd726d911985fd2f0ea45cf8a8abec86f74e8c"[0m
+
+[01;34m/: (user (uid 1000) (gid 1000))[0m
+
+[01;34m/: (workdir /home/opam)[0m
+
+[01;34m/home/opam: (run (shell "sudo ln -f /usr/bin/opam-dev /usr/bin/opam"))[0m
+[01;2m[01;35m2024-07-01 15:11.30 ---> saved as "d298cf3fcfdf48114990c10c16f5b4e0d70dcadd55a44fd2a026659a8eaf0d56"[0m
+
+[01;34m/home/opam: (run (network host)
+                 (shell "opam init --reinit --config .opamrc-sandbox -ni"))[0m
+Configuring from /home/opam/.opamrc-sandbox, then /home/opam/.opamrc, and finally from built-in defaults.
+Checking for available remotes: rsync and local, git.
+  - you won't be able to use mercurial repositories unless you install the hg command on your system.
+  - you won't be able to use darcs repositories unless you install the darcs command on your system.
+
+Continue? [y/n] y
+This development version of opam requires an update to the layout of /home/opam/.opam from version 2.0 to version 2.2~beta, which can't be reverted.
+You may want to back it up before going further.
+
+Format upgrade done.
+
+<><> Updating repositories ><><><><><><><><><><><><><><><><><><><><><><><><><><>
+[default] synchronised from file:///home/opam/opam-repository
+[01;2m[01;35m2024-07-01 15:12.55 ---> saved as "39f3d2484a1e132f87ff0b9ac6d8e7a4b707f8a9e4d88175e28502767f32a548"[0m
+
+[01;34m/home/opam: (run (shell "uname -rs && opam exec -- ocaml -version && opam --version"))[0m
+Linux 5.15.0-112-generic
+The OCaml toplevel, version 4.11.2
+2.2.0~rc1~dev
+[01;2m[01;35m2024-07-01 15:12.55 ---> saved as "b6ec971e54cf3d4c268f059a387a2c258756b85fb86b2af0e94274761d1a558b"[0m
+
+[01;34m/home/opam: (env OPAMDOWNLOADJOBS 1)[0m
+
+[01;34m/home/opam: (env OPAMERRLOGLEN 0)[0m
+
+[01;34m/home/opam: (env OPAMSOLVERTIMEOUT 500)[0m
+
+[01;34m/home/opam: (env OPAMPRECISETRACKING 1)[0m
+
+[01;34m/home/opam: (env CI true)[0m
+
+[01;34m/home/opam: (env OPAM_REPO_CI true)[0m
+
+[01;34m/home/opam: (run (shell "rm -rf opam-repository/"))[0m
+[01;2m[01;35m2024-07-01 15:13.19 ---> saved as "1ec64e72d11e8cd3ee3a38fef9cd3da3c0b573fbf12f513f99b01111c00483d3"[0m
+
+[01;34m/home/opam: (copy (src .) (dst opam-repository/))[0m
+[01;2m[01;35m2024-07-01 15:13.41 ---> saved as "0963a826f906227eeaefdf597a92dc1e63acf6e6f2d556b7dea5b526f556a5e0"[0m
+
+[01;34m/home/opam: (run (shell "opam repository set-url --strict default opam-repository/"))[0m
+[default] Initialised
+[01;2m[01;35m2024-07-01 15:14.38 ---> saved as "fd68423430b06cfe85bb906dc9759e8a4ac7ddd0a8ec1a804d5ae79fecdcc16b"[0m
+
+[01;34m/home/opam: (run (network host)
+                 (shell "opam update --depexts || true"))[0m
++ /usr/bin/sudo "apt-get" "update"
+- Get:1 http://deb.debian.org/debian bookworm InRelease [151 kB]
+- Get:2 http://deb.debian.org/debian bookworm-updates InRelease [55.4 kB]
+- Get:3 http://deb.debian.org/debian-security bookworm-security InRelease [48.0 kB]
+- Get:4 http://deb.debian.org/debian bookworm/main amd64 Packages [8788 kB]
+- Get:5 http://deb.debian.org/debian-security bookworm-security/main amd64 Packages [164 kB]
+- Fetched 9206 kB in 2s (5022 kB/s)
+- Reading package lists...
+- 
+[01;2m[01;35m2024-07-01 15:14.41 ---> saved as "ec93ec9a5a2e854695f44673a1853ec14b801be935302deae235ae07b6c1dd29"[0m
+
+[01;34m/home/opam: (run (shell "opam pin add -k version -yn http.6.0.0~alpha1 6.0.0~alpha1"))[0m
+http is now pinned to version 6.0.0~alpha1
+[01;2m[01;35m2024-07-01 15:14.42 ---> saved as "890b9f0924e80373ada1057e8fb85ba57b9a8c734601728c68b9dafa1ae1192a"[0m
+
+[01;34m/home/opam: (run (cache (opam-archives (target /home/opam/.opam/download-cache)))
+                 (network host)
+                 (shell  "opam reinstall http.6.0.0~alpha1;\
+                        \n        res=$?;\
+                        \n        test \"$res\" != 31 && exit \"$res\";\
+                        \n        export OPAMCLI=2.0;\
+                        \n        build_dir=$(opam var prefix)/.opam-switch/build;\
+                        \n        failed=$(ls \"$build_dir\");\
+                        \n        partial_fails=\"\";\
+                        \n        for pkg in $failed; do\
+                        \n          if opam show -f x-ci-accept-failures: \"$pkg\" | grep -qF \"\\\"debian-12\\\"\"; then\
+                        \n            echo \"A package failed and has been disabled for CI using the 'x-ci-accept-failures' field.\";\
+                        \n          fi;\
+                        \n          test \"$pkg\" != 'http.6.0.0~alpha1' && partial_fails=\"$partial_fails $pkg\";\
+                        \n        done;\
+                        \n        test \"${partial_fails}\" != \"\" && echo \"opam-repo-ci detected dependencies failing: ${partial_fails}\";\
+                        \n        exit 1"))[0m
+http.6.0.0~alpha1 is not installed. Install it? [y/n] y
+The following actions will be performed:
+=== install 2 packages
+  - install dune 3.16.0                [required by http]
+  - install http 6.0.0~alpha1 (pinned)
+
+<><> Processing actions <><><><><><><><><><><><><><><><><><><><><><><><><><><><>
+-> retrieved dune.3.16.0  (cached)
+-> retrieved http.6.0.0~alpha1  (cached)
+-> installed dune.3.16.0
+-> installed http.6.0.0~alpha1
+Done.
+# Run eval $(opam env) to update the current shell environment
+[01;2m[01;35m2024-07-01 15:15.27 ---> saved as "7680855fe0acb842a832b2ca0fc26672551917d377efb1d7ce9bbf56887d5503"[0m
+
+[01;34m/home/opam: (run (network host)
+                 (shell "(opam reinstall --with-test http.6.0.0~alpha1) || true"))[0m
+[ERROR] Sorry, resolution of the request timed out.
+        Try to specify a more precise request, use a different solver, or increase the allowed time by setting OPAMSOLVERTIMEOUT to a bigger value (currently, it is set to 500.0 seconds).
+[01;2m[01;35m2024-07-01 15:24.05 ---> saved as "7a4778a5386977fb829553c67fef29254e5ed7e140c8aca65b35e8fe8e07457f"[0m
+
+[01;34m/home/opam: (run (shell  "opam reinstall --with-test --verbose http.6.0.0~alpha1;\
+                        \n        res=$?;\
+                        \n        test \"$res\" != 31 && exit \"$res\";\
+                        \n        export OPAMCLI=2.0;\
+                        \n        build_dir=$(opam var prefix)/.opam-switch/build;\
+                        \n        failed=$(ls \"$build_dir\");\
+                        \n        partial_fails=\"\";\
+                        \n        for pkg in $failed; do\
+                        \n          if opam show -f x-ci-accept-failures: \"$pkg\" | grep -qF \"\\\"debian-12\\\"\"; then\
+                        \n            echo \"A package failed and has been disabled for CI using the 'x-ci-accept-failures' field.\";\
+                        \n          fi;\
+                        \n          test \"$pkg\" != 'http.6.0.0~alpha1' && partial_fails=\"$partial_fails $pkg\";\
+                        \n        done;\
+                        \n        test \"${partial_fails}\" != \"\" && echo \"opam-repo-ci detected dependencies failing: ${partial_fails}\";\
+                        \n        exit 1"))[0m
+[ERROR] Sorry, resolution of the request timed out.
+        Try to specify a more precise request, use a different solver, or increase the allowed time by setting OPAMSOLVERTIMEOUT to a bigger value (currently, it is set to 500.0 seconds).
+'opam reinstall --with-test --verbose http.6.0.0~alpha1' failed.
+"/usr/bin/env" "bash" "-c" "opam reinstall --with-test --verbose http.6.0.0~alpha1;
+        res=$?;
+        test "$res" != 31 && exit "$res";
+        export OPAMCLI=2.0;
+        build_dir=$(opam var prefix)/.opam-switch/build;
+        failed=$(ls "$build_dir");
+        partial_fails="";
+        for pkg in $failed; do
+          if opam show -f x-ci-accept-failures: "$pkg" | grep -qF "\"debian-12\""; then
+            echo "A package failed and has been disabled for CI using the 'x-ci-accept-failures' field.";
+          fi;
+          test "$pkg" != 'http.6.0.0~alpha1' && partial_fails="$partial_fails $pkg";
+        done;
+        test "${partial_fails}" != "" && echo "opam-repo-ci detected dependencies failing: ${partial_fails}";
+        exit 1" failed with exit status 60
+2024-07-01 15:32.54: Job failed: Failed: Build failed
+2024-07-01 15:32.54: Log analysis:
+2024-07-01 15:32.54: >>> 
+[ERROR] Sorry, resolution of the request timed out.
+ (score = 20)
+2024-07-01 15:32.54: >>> 
+[ERROR] Sorry, resolution of the request timed out.
+ (score = 20)
+2024-07-01 15:32.54: Sorry, resolution of the request timed out.

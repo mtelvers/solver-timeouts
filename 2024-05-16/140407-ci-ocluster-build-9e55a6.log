@@ -1,0 +1,827 @@
+2024-05-16 14:04.07: New job: test http.6.0.0~beta2, using opam dev
+                              from https://github.com/ocaml/opam-repository.git#refs/pull/25888/head (525bccfea64dad391217b34359003e0d4d19f6a4)
+                              on debian-12-ocaml-4.08/amd64
+
+To reproduce locally:
+
+cd $(mktemp -d)
+git clone --recursive "https://github.com/ocaml/opam-repository.git" && cd "opam-repository" && git fetch origin "refs/pull/25888/head" && git reset --hard 525bccfe
+git fetch origin master
+git merge --no-edit 23fec2c23a10862bcdde83a7688d35608defa7a7
+cat > ../Dockerfile <<'END-OF-DOCKERFILE'
+[34mFROM ocaml/opam:debian-12-ocaml-4.08@sha256:0c769c658e4fdccf7f6254959b7eda7a935565ff9d11f9d8ad1c8c230311c441
+USER 1000:1000
+WORKDIR /home/opam
+RUN sudo ln -f /usr/bin/opam-dev /usr/bin/opam
+RUN opam init --reinit -ni
+RUN uname -rs && opam exec -- ocaml -version && opam --version
+ENV OPAMDOWNLOADJOBS="1"
+ENV OPAMERRLOGLEN="0"
+ENV OPAMSOLVERTIMEOUT="500"
+ENV OPAMPRECISETRACKING="1"
+ENV CI="true"
+ENV OPAM_REPO_CI="true"
+RUN rm -rf opam-repository/
+COPY --chown=1000:1000 . opam-repository/
+RUN opam repository set-url --strict default opam-repository/
+RUN opam update --depexts || true
+RUN opam pin add -k version -yn http.6.0.0~beta2 6.0.0~beta2
+RUN opam reinstall http.6.0.0~beta2; \
+    res=$?; \
+    test "$res" != 31 && exit "$res"; \
+    export OPAMCLI=2.0; \
+    build_dir=$(opam var prefix)/.opam-switch/build; \
+    failed=$(ls "$build_dir"); \
+    partial_fails=""; \
+    for pkg in $failed; do \
+    if opam show -f x-ci-accept-failures: "$pkg" | grep -qF "\"debian-12\""; then \
+    echo "A package failed and has been disabled for CI using the 'x-ci-accept-failures' field."; \
+    fi; \
+    test "$pkg" != 'http.6.0.0~beta2' && partial_fails="$partial_fails $pkg"; \
+    done; \
+    test "${partial_fails}" != "" && echo "opam-repo-ci detected dependencies failing: ${partial_fails}"; \
+    exit 1
+RUN (opam reinstall --with-test http.6.0.0~beta2) || true
+RUN opam reinstall --with-test --verbose http.6.0.0~beta2; \
+    res=$?; \
+    test "$res" != 31 && exit "$res"; \
+    export OPAMCLI=2.0; \
+    build_dir=$(opam var prefix)/.opam-switch/build; \
+    failed=$(ls "$build_dir"); \
+    partial_fails=""; \
+    for pkg in $failed; do \
+    if opam show -f x-ci-accept-failures: "$pkg" | grep -qF "\"debian-12\""; then \
+    echo "A package failed and has been disabled for CI using the 'x-ci-accept-failures' field."; \
+    fi; \
+    test "$pkg" != 'http.6.0.0~beta2' && partial_fails="$partial_fails $pkg"; \
+    done; \
+    test "${partial_fails}" != "" && echo "opam-repo-ci detected dependencies failing: ${partial_fails}"; \
+    exit 1
+[0m
+END-OF-DOCKERFILE
+docker build -f ../Dockerfile .
+
+2024-05-16 14:04.07: Using cache hint "ocaml/opam:debian-12-ocaml-4.08@sha256:0c769c658e4fdccf7f6254959b7eda7a935565ff9d11f9d8ad1c8c230311c441-http.6.0.0~beta2-525bccfea64dad391217b34359003e0d4d19f6a4"
+2024-05-16 14:04.07: Using OBuilder spec:
+((from ocaml/opam:debian-12-ocaml-4.08@sha256:0c769c658e4fdccf7f6254959b7eda7a935565ff9d11f9d8ad1c8c230311c441)
+ (user (uid 1000) (gid 1000))
+ (workdir /home/opam)
+ (run (shell "sudo ln -f /usr/bin/opam-dev /usr/bin/opam"))
+ (run (network host)
+      (shell "opam init --reinit --config .opamrc-sandbox -ni"))
+ (run (shell "uname -rs && opam exec -- ocaml -version && opam --version"))
+ (env OPAMDOWNLOADJOBS 1)
+ (env OPAMERRLOGLEN 0)
+ (env OPAMSOLVERTIMEOUT 500)
+ (env OPAMPRECISETRACKING 1)
+ (env CI true)
+ (env OPAM_REPO_CI true)
+ (run (shell "rm -rf opam-repository/"))
+ (copy (src .) (dst opam-repository/))
+ (run (shell "opam repository set-url --strict default opam-repository/"))
+ (run (network host)
+      (shell "opam update --depexts || true"))
+ (run (shell "opam pin add -k version -yn http.6.0.0~beta2 6.0.0~beta2"))
+ (run (cache (opam-archives (target /home/opam/.opam/download-cache)))
+      (network host)
+      (shell  "opam reinstall http.6.0.0~beta2;\
+             \n        res=$?;\
+             \n        test \"$res\" != 31 && exit \"$res\";\
+             \n        export OPAMCLI=2.0;\
+             \n        build_dir=$(opam var prefix)/.opam-switch/build;\
+             \n        failed=$(ls \"$build_dir\");\
+             \n        partial_fails=\"\";\
+             \n        for pkg in $failed; do\
+             \n          if opam show -f x-ci-accept-failures: \"$pkg\" | grep -qF \"\\\"debian-12\\\"\"; then\
+             \n            echo \"A package failed and has been disabled for CI using the 'x-ci-accept-failures' field.\";\
+             \n          fi;\
+             \n          test \"$pkg\" != 'http.6.0.0~beta2' && partial_fails=\"$partial_fails $pkg\";\
+             \n        done;\
+             \n        test \"${partial_fails}\" != \"\" && echo \"opam-repo-ci detected dependencies failing: ${partial_fails}\";\
+             \n        exit 1"))
+ (run (network host)
+      (shell "(opam reinstall --with-test http.6.0.0~beta2) || true"))
+ (run (shell  "opam reinstall --with-test --verbose http.6.0.0~beta2;\
+             \n        res=$?;\
+             \n        test \"$res\" != 31 && exit \"$res\";\
+             \n        export OPAMCLI=2.0;\
+             \n        build_dir=$(opam var prefix)/.opam-switch/build;\
+             \n        failed=$(ls \"$build_dir\");\
+             \n        partial_fails=\"\";\
+             \n        for pkg in $failed; do\
+             \n          if opam show -f x-ci-accept-failures: \"$pkg\" | grep -qF \"\\\"debian-12\\\"\"; then\
+             \n            echo \"A package failed and has been disabled for CI using the 'x-ci-accept-failures' field.\";\
+             \n          fi;\
+             \n          test \"$pkg\" != 'http.6.0.0~beta2' && partial_fails=\"$partial_fails $pkg\";\
+             \n        done;\
+             \n        test \"${partial_fails}\" != \"\" && echo \"opam-repo-ci detected dependencies failing: ${partial_fails}\";\
+             \n        exit 1"))
+)
+
+2024-05-16 14:04.07: Waiting for resource in pool OCluster
+2024-05-16 14:56.14: Connecting to build cluster…
+2024-05-17 01:09.00: Waiting for worker…
+2024-05-17 01:12.37: Got resource from pool OCluster
+Building on x86-bm-c13.sw.ocaml.org
+All commits already cached
+Updating files:  64% (21952/33910)Updating files:  65% (22042/33910)Updating files:  66% (22381/33910)Updating files:  67% (22720/33910)Updating files:  68% (23059/33910)Updating files:  69% (23398/33910)Updating files:  70% (23737/33910)Updating files:  71% (24077/33910)Updating files:  72% (24416/33910)Updating files:  73% (24755/33910)Updating files:  74% (25094/33910)Updating files:  75% (25433/33910)Updating files:  76% (25772/33910)Updating files:  77% (26111/33910)Updating files:  78% (26450/33910)Updating files:  79% (26789/33910)Updating files:  80% (27128/33910)Updating files:  81% (27468/33910)Updating files:  82% (27807/33910)Updating files:  83% (28146/33910)Updating files:  84% (28485/33910)Updating files:  85% (28824/33910)Updating files:  86% (29163/33910)Updating files:  87% (29502/33910)Updating files:  88% (29841/33910)Updating files:  89% (30180/33910)Updating files:  90% (30519/33910)Updating files:  91% (30859/33910)Updating files:  92% (31198/33910)Updating files:  93% (31537/33910)Updating files:  94% (31876/33910)Updating files:  95% (32215/33910)Updating files:  96% (32554/33910)Updating files:  97% (32893/33910)Updating files:  98% (33232/33910)Updating files:  99% (33571/33910)Updating files: 100% (33910/33910)Updating files: 100% (33910/33910), done.
+HEAD is now at 23fec2c23a Merge pull request #25873 from btjorge/opam-publish-why3find.1.0
+Merge made by the 'ort' strategy.
+ .../abstract_algebra/abstract_algebra.v0.17.0/opam | 27 ++++++++
+ packages/accessor/accessor.v0.17.0/opam            | 32 ++++++++++
+ .../accessor_async/accessor_async.v0.17.0/opam     | 29 +++++++++
+ packages/accessor_base/accessor_base.v0.17.0/opam  | 29 +++++++++
+ packages/accessor_core/accessor_core.v0.17.0/opam  | 29 +++++++++
+ packages/async/async.v0.17.0/opam                  | 36 +++++++++++
+ packages/async_durable/async_durable.v0.17.0/opam  | 29 +++++++++
+ packages/async_extra/async_extra.v0.17.0/opam      | 31 ++++++++++
+ packages/async_find/async_find.v0.17.0/opam        | 26 ++++++++
+ packages/async_inotify/async_inotify.v0.17.0/opam  | 29 +++++++++
+ .../async_interactive.v0.17.0/opam                 | 28 +++++++++
+ packages/async_js/async_js.v0.17.0/opam            | 31 ++++++++++
+ packages/async_kernel/async_kernel.v0.17.0/opam    | 30 +++++++++
+ packages/async_log/async_log.v0.17.0/opam          | 33 ++++++++++
+ .../async_rpc_kernel/async_rpc_kernel.v0.17.0/opam | 33 ++++++++++
+ .../async_rpc_websocket.v0.17.0/opam               | 36 +++++++++++
+ .../async_sendfile/async_sendfile.v0.17.0/opam     | 27 ++++++++
+ packages/async_shell/async_shell.v0.17.0/opam      | 27 ++++++++
+ packages/async_smtp/async_smtp.v0.17.0/opam        | 39 ++++++++++++
+ packages/async_ssl/async_ssl.v0.17.0/opam          | 35 +++++++++++
+ packages/async_udp/async_udp.v0.17.0/opam          | 30 +++++++++
+ packages/async_unix/async_unix.v0.17.0/opam        | 34 ++++++++++
+ .../async_websocket/async_websocket.v0.17.0/opam   | 29 +++++++++
+ packages/babel/babel.v0.17.0/opam                  | 30 +++++++++
+ .../base_bigstring/base_bigstring.v0.17.0/opam     | 27 ++++++++
+ .../base_quickcheck/base_quickcheck.v0.17.0/opam   | 34 ++++++++++
+ packages/base_trie/base_trie.v0.17.0/opam          | 31 ++++++++++
+ .../bidirectional_map.v0.17.0/opam                 | 26 ++++++++
+ packages/bigdecimal/bigdecimal.v0.17.0/opam        | 29 +++++++++
+ packages/bignum/bignum.v0.17.0/opam                | 30 +++++++++
+ packages/bin_prot/bin_prot.v0.17.0/opam            | 38 ++++++++++++
+ packages/bonsai/bonsai.v0.17.0/opam                | 72 ++++++++++++++++++++++
+ packages/caisar-ir/caisar-ir.0.2/opam              |  2 +-
+ packages/caisar-nnet/caisar-nnet.0.1/opam          |  2 +-
+ packages/caisar-nnet/caisar-nnet.0.2/opam          |  2 +-
+ packages/caisar-onnx/caisar-onnx.0.1/opam          |  2 +-
+ packages/caisar-onnx/caisar-onnx.0.2/opam          |  2 +-
+ packages/caisar-ovo/caisar-ovo.0.1/opam            |  2 +-
+ packages/caisar-ovo/caisar-ovo.0.2/opam            |  2 +-
+ packages/camlimages/camlimages.5.0.5/opam          |  2 +-
+ .../capitalization/capitalization.v0.17.0/opam     | 25 ++++++++
+ packages/codicons/codicons.v0.17.0/opam            | 27 ++++++++
+ .../cohttp_async_websocket.v0.17.0/opam            | 41 ++++++++++++
+ .../cohttp_static_handler.v0.17.0/opam             | 28 +++++++++
+ packages/command_rpc/command_rpc.v0.17.0/opam      | 26 ++++++++
+ .../content_security_policy.v0.17.0/opam           | 28 +++++++++
+ packages/core/core.v0.17.0/opam                    | 50 +++++++++++++++
+ packages/core_bench/core_bench.v0.17.0/opam        | 36 +++++++++++
+ packages/core_extended/core_extended.v0.17.0/opam  | 32 ++++++++++
+ packages/core_kernel/core_kernel.v0.17.0/opam      | 35 +++++++++++
+ packages/core_profiler/core_profiler.v0.17.0/opam  | 33 ++++++++++
+ packages/core_unix/core_unix.v0.17.0/opam          | 37 +++++++++++
+ packages/csvfields/csvfields.v0.17.0/opam          | 27 ++++++++
+ packages/dedent/dedent.v0.17.0/opam                | 27 ++++++++
+ .../delimited_parsing.v0.17.0/opam                 | 29 +++++++++
+ packages/dotenv/dotenv.0.0.1/opam                  |  2 +-
+ packages/dotenv/dotenv.0.0.3/opam                  |  2 +-
+ packages/ecaml/ecaml.v0.17.0/opam                  | 34 ++++++++++
+ packages/email_message/email_message.v0.17.0/opam  | 33 ++++++++++
+ packages/env_config/env_config.v0.17.0/opam        | 31 ++++++++++
+ .../expect_test_helpers_async.v0.17.0/opam         | 33 ++++++++++
+ .../expect_test_helpers_core.v0.17.0/opam          | 34 ++++++++++
+ packages/feather/feather.0.2.0/opam                |  2 +-
+ packages/feather/feather.0.3.0/opam                |  2 +-
+ packages/fiber-lwt/fiber-lwt.3.7.0/opam            |  2 +-
+ packages/fiber/fiber.3.7.0/opam                    |  2 +-
+ packages/fieldslib/fieldslib.v0.17.0/opam          | 28 +++++++++
+ packages/file_path/file_path.v0.17.0/opam          | 31 ++++++++++
+ packages/fuzzy_match/fuzzy_match.v0.17.0/opam      | 26 ++++++++
+ packages/fzf/fzf.v0.17.0/opam                      | 27 ++++++++
+ packages/gel/gel.v0.17.0/opam                      | 26 ++++++++
+ packages/genspio/genspio.0.0.3/opam                |  2 +-
+ packages/hardcaml/hardcaml.v0.17.0/opam            | 36 +++++++++++
+ packages/hardcaml_axi/hardcaml_axi.v0.17.0/opam    | 30 +++++++++
+ packages/hardcaml_c/hardcaml_c.v0.17.0/opam        | 35 +++++++++++
+ .../hardcaml_circuits.v0.17.0/opam                 | 28 +++++++++
+ .../hardcaml_event_driven_sim.v0.17.0/opam         | 34 ++++++++++
+ .../hardcaml_fixed_point.v0.17.0/opam              | 28 +++++++++
+ .../hardcaml_handshake.v0.17.0/opam                | 28 +++++++++
+ .../hardcaml_of_verilog.v0.17.0/opam               | 38 ++++++++++++
+ .../hardcaml_step_testbench.v0.17.0/opam           | 32 ++++++++++
+ .../hardcaml_verify/hardcaml_verify.v0.17.0/opam   | 38 ++++++++++++
+ .../hardcaml_verilator.v0.17.0/opam                | 34 ++++++++++
+ .../hardcaml_waveterm.v0.17.0/opam                 | 40 ++++++++++++
+ .../hardcaml_xilinx/hardcaml_xilinx.v0.17.0/opam   | 33 ++++++++++
+ .../hardcaml_xilinx_components.v0.17.0/opam        | 32 ++++++++++
+ .../hardcaml_xilinx_reports.v0.17.0/opam           | 40 ++++++++++++
+ packages/hex_encode/hex_encode.v0.17.0/opam        | 26 ++++++++
+ packages/hg_lib/hg_lib.v0.17.0/opam                | 29 +++++++++
+ packages/higher_kinded/higher_kinded.v0.17.0/opam  | 29 +++++++++
+ packages/http/http.6.0.0~alpha2/opam               |  2 +-
+ packages/http/http.6.0.0~beta2/opam                |  2 +-
+ packages/idd/idd.0.1/opam                          |  2 +-
+ packages/incr_dom/incr_dom.v0.17.0/opam            | 53 ++++++++++++++++
+ .../incr_dom_interactive.v0.17.0/opam              | 35 +++++++++++
+ .../incr_dom_partial_render.v0.17.0/opam           | 31 ++++++++++
+ .../incr_dom_sexp_form.v0.17.0/opam                | 34 ++++++++++
+ packages/incr_map/incr_map.v0.17.0/opam            | 36 +++++++++++
+ packages/incr_select/incr_select.v0.17.0/opam      | 32 ++++++++++
+ packages/incremental/incremental.v0.17.0/opam      | 33 ++++++++++
+ .../indentation_buffer.v0.17.0/opam                | 26 ++++++++
+ packages/int_repr/int_repr.v0.17.0/opam            | 26 ++++++++
+ .../jane-street-headers.v0.17.0/opam               | 24 ++++++++
+ packages/jane_rope/jane_rope.v0.17.0/opam          | 25 ++++++++
+ .../janestreet_cpuid/janestreet_cpuid.v0.17.0/opam | 28 +++++++++
+ .../janestreet_csv/janestreet_csv.v0.17.0/opam     | 39 ++++++++++++
+ .../janestreet_lru_cache.v0.17.0/opam              | 26 ++++++++
+ .../js_of_ocaml_patches.v0.17.0/opam               | 26 ++++++++
+ packages/jsonaf/jsonaf.v0.17.0/opam                | 28 +++++++++
+ packages/jst-config/jst-config.v0.17.0/opam        | 32 ++++++++++
+ packages/lacaml/lacaml.10.0.1/opam                 |  2 +-
+ packages/lacaml/lacaml.10.0.2/opam                 |  2 +-
+ packages/lacaml/lacaml.11.0.0/opam                 |  2 +-
+ packages/lacaml/lacaml.11.0.1/opam                 |  2 +-
+ packages/lacaml/lacaml.11.0.2/opam                 |  2 +-
+ packages/lacaml/lacaml.11.0.3/opam                 |  2 +-
+ packages/lacaml/lacaml.11.0.4/opam                 |  2 +-
+ packages/lacaml/lacaml.11.0.5/opam                 |  2 +-
+ packages/lacaml/lacaml.11.0.6/opam                 |  2 +-
+ .../legacy_diffable/legacy_diffable.v0.17.0/opam   | 28 +++++++++
+ packages/line-up-words/line-up-words.v0.17.0/opam  | 33 ++++++++++
+ packages/logical/logical.0.3.0/opam                |  2 +-
+ .../man_in_the_middle_debugger.v0.17.0/opam        | 30 +++++++++
+ packages/matplotlib/matplotlib.0.1/opam            |  2 +-
+ packages/matplotlib/matplotlib.0.2/opam            |  2 +-
+ .../memtrace_viewer/memtrace_viewer.v0.17.0/opam   | 37 +++++++++++
+ packages/merge-fmt/merge-fmt.0.1/opam              |  2 +-
+ packages/merge-fmt/merge-fmt.0.2/opam              |  2 +-
+ packages/merge-fmt/merge-fmt.0.3/opam              |  2 +-
+ packages/mlt_parser/mlt_parser.v0.17.0/opam        | 30 +++++++++
+ packages/n_ary/n_ary.v0.17.0/opam                  | 36 +++++++++++
+ packages/netsnmp/netsnmp.v0.17.0/opam              | 33 ++++++++++
+ packages/notty_async/notty_async.v0.17.0/opam      | 29 +++++++++
+ .../numeric_string/numeric_string.v0.17.0/opam     | 39 ++++++++++++
+ packages/nuscr/nuscr.2.1.0/opam                    |  2 +-
+ packages/nuscr/nuscr.2.1.1/opam                    |  2 +-
+ .../ocaml-embed-file/ocaml-embed-file.v0.17.0/opam | 29 +++++++++
+ packages/ocaml-probes/ocaml-probes.v0.17.0/opam    | 27 ++++++++
+ .../ocaml-protoc-plugin.1.0.0/opam                 |  2 +-
+ .../ocaml-protoc-plugin.2.0.0/opam                 |  2 +-
+ .../ocaml-protoc-plugin.3.0.0/opam                 |  2 +-
+ .../ocaml-protoc-plugin.4.0.0/opam                 |  2 +-
+ .../ocaml-protoc-plugin.4.1.0/opam                 |  2 +-
+ .../ocaml-protoc-plugin.4.2.0/opam                 |  2 +-
+ .../ocaml-protoc-plugin.4.3.1/opam                 |  2 +-
+ .../ocaml-protoc-plugin.4.4.0/opam                 |  2 +-
+ .../ocaml-protoc-plugin.4.5.0/opam                 |  2 +-
+ packages/ocaml-r/ocaml-r.0.1.0/opam                |  2 +-
+ packages/ocaml-r/ocaml-r.0.1.1/opam                |  2 +-
+ packages/ocaml-r/ocaml-r.0.2.0/opam                |  2 +-
+ packages/ocaml-r/ocaml-r.0.3.0/opam                |  2 +-
+ packages/ocaml-r/ocaml-r.0.3.1/opam                |  2 +-
+ packages/ocaml-r/ocaml-r.0.4.0/opam                |  2 +-
+ packages/ocaml-r/ocaml-r.0.5.0/opam                |  2 +-
+ packages/ocaml-r/ocaml-r.0.6.0/opam                |  2 +-
+ .../ocaml_intrinsics/ocaml_intrinsics.v0.17.0/opam | 27 ++++++++
+ .../ocaml_openapi_generator.v0.17.0/opam           | 35 +++++++++++
+ packages/ocamlformat/ocamlformat.0.23.0/opam       |  2 +-
+ packages/ocamlformat/ocamlformat.0.24.1/opam       |  2 +-
+ packages/of_json/of_json.v0.17.0/opam              | 28 +++++++++
+ .../ordinal_abbreviation.v0.17.0/opam              | 26 ++++++++
+ packages/pam/pam.v0.17.0/opam                      | 32 ++++++++++
+ packages/parsexp/parsexp.v0.17.0/opam              | 43 +++++++++++++
+ packages/parsexp_io/parsexp_io.v0.17.0/opam        | 28 +++++++++
+ packages/patdiff/patdiff.v0.17.0/opam              | 30 +++++++++
+ packages/patience_diff/patience_diff.v0.17.0/opam  | 26 ++++++++
+ .../polling_state_rpc.v0.17.0/opam                 | 30 +++++++++
+ packages/posixat/posixat.v0.17.0/opam              | 32 ++++++++++
+ .../postgres_async/postgres_async.v0.17.0/opam     | 33 ++++++++++
+ packages/postgresql/postgresql.4.1.0/opam          |  2 +-
+ packages/postgresql/postgresql.4.2.0/opam          |  2 +-
+ packages/postgresql/postgresql.4.2.1/opam          |  2 +-
+ packages/postgresql/postgresql.4.3.0/opam          |  2 +-
+ packages/postgresql/postgresql.4.4.0/opam          |  2 +-
+ packages/postgresql/postgresql.4.4.1/opam          |  2 +-
+ packages/postgresql/postgresql.4.4.2/opam          |  2 +-
+ packages/postgresql/postgresql.4.5.0/opam          |  2 +-
+ packages/postgresql/postgresql.4.5.1/opam          |  2 +-
+ packages/postgresql/postgresql.4.5.2/opam          |  2 +-
+ packages/postgresql/postgresql.4.6.0/opam          |  2 +-
+ packages/postgresql/postgresql.4.6.1/opam          |  2 +-
+ packages/ppx_accessor/ppx_accessor.v0.17.0/opam    | 27 ++++++++
+ packages/ppx_assert/ppx_assert.v0.17.0/opam        | 30 +++++++++
+ packages/ppx_base/ppx_base.v0.17.0/opam            | 34 ++++++++++
+ packages/ppx_bench/ppx_bench.v0.17.0/opam          | 26 ++++++++
+ packages/ppx_bin_prot/ppx_bin_prot.v0.17.0/opam    | 29 +++++++++
+ packages/ppx_cold/ppx_cold.v0.17.0/opam            | 26 ++++++++
+ packages/ppx_compare/ppx_compare.v0.17.0/opam      | 27 ++++++++
+ packages/ppx_conv_func/ppx_conv_func.v0.17.0/opam  | 26 ++++++++
+ packages/ppx_css/ppx_css.v0.17.0/opam              | 41 ++++++++++++
+ packages/ppx_csv_conv/ppx_csv_conv.v0.17.0/opam    | 29 +++++++++
+ .../ppx_custom_printf.v0.17.0/opam                 | 27 ++++++++
+ packages/ppx_demo/ppx_demo.v0.17.0/opam            | 28 +++++++++
+ .../ppx_derive_at_runtime.v0.17.0/opam             | 31 ++++++++++
+ .../ppx_deriving_cad/ppx_deriving_cad.0.1.0/opam   |  2 +-
+ .../ppx_deriving_cad/ppx_deriving_cad.0.2.0/opam   |  2 +-
+ .../ppx_deriving_scad/ppx_deriving_scad.1.0.0/opam |  2 +-
+ packages/ppx_diff/ppx_diff.v0.17.0/opam            | 31 ++++++++++
+ .../ppx_disable_unused_warnings.v0.17.0/opam       | 26 ++++++++
+ .../ppx_embed_file/ppx_embed_file.v0.17.0/opam     | 28 +++++++++
+ packages/ppx_enumerate/ppx_enumerate.v0.17.0/opam  | 27 ++++++++
+ packages/ppx_expect/ppx_expect.v0.17.0/opam        | 29 +++++++++
+ .../ppx_fields_conv/ppx_fields_conv.v0.17.0/opam   | 27 ++++++++
+ .../ppx_fixed_literal.v0.17.0/opam                 | 27 ++++++++
+ packages/ppx_globalize/ppx_globalize.v0.17.0/opam  | 27 ++++++++
+ packages/ppx_hardcaml/ppx_hardcaml.v0.17.0/opam    | 32 ++++++++++
+ packages/ppx_hash/ppx_hash.v0.17.0/opam            | 29 +++++++++
+ packages/ppx_here/ppx_here.v0.17.0/opam            | 26 ++++++++
+ .../ppx_ignore_instrumentation.v0.17.0/opam        | 26 ++++++++
+ .../ppx_inline_test/ppx_inline_test.v0.17.0/opam   | 27 ++++++++
+ packages/ppx_jane/ppx_jane.v0.17.0/opam            | 53 ++++++++++++++++
+ packages/ppx_js_style/ppx_js_style.v0.17.0/opam    | 30 +++++++++
+ .../ppx_jsonaf_conv/ppx_jsonaf_conv.v0.17.0/opam   | 28 +++++++++
+ packages/ppx_let/ppx_let.v0.17.0/opam              | 27 ++++++++
+ packages/ppx_log/ppx_log.v0.17.0/opam              | 39 ++++++++++++
+ .../ppx_module_timer/ppx_module_timer.v0.17.0/opam | 29 +++++++++
+ packages/ppx_optcomp/ppx_optcomp.v0.17.0/opam      | 27 ++++++++
+ packages/ppx_optional/ppx_optional.v0.17.0/opam    | 28 +++++++++
+ .../ppx_pattern_bind/ppx_pattern_bind.v0.17.0/opam | 29 +++++++++
+ packages/ppx_pipebang/ppx_pipebang.v0.17.0/opam    | 25 ++++++++
+ .../ppx_protocol_conv/ppx_protocol_conv.5.1.3/opam |  2 +-
+ packages/ppx_python/ppx_python.v0.17.0/opam        | 28 +++++++++
+ .../ppx_quick_test/ppx_quick_test.v0.17.0/opam     | 37 +++++++++++
+ packages/ppx_rapper/ppx_rapper.1.0.1/opam          |  2 +-
+ packages/ppx_rapper/ppx_rapper.1.0.2/opam          |  2 +-
+ packages/ppx_rapper/ppx_rapper.1.1.0/opam          |  2 +-
+ packages/ppx_rapper/ppx_rapper.1.1.1/opam          |  2 +-
+ packages/ppx_rapper/ppx_rapper.1.2.0/opam          |  2 +-
+ packages/ppx_rapper/ppx_rapper.2.0.0/opam          |  2 +-
+ packages/ppx_rapper/ppx_rapper.3.0.0/opam          |  2 +-
+ packages/ppx_rapper/ppx_rapper.3.1.0/opam          |  2 +-
+ packages/ppx_sexp_conv/ppx_sexp_conv.v0.17.0/opam  | 28 +++++++++
+ .../ppx_sexp_message/ppx_sexp_message.v0.17.0/opam | 28 +++++++++
+ .../ppx_sexp_value/ppx_sexp_value.v0.17.0/opam     | 28 +++++++++
+ packages/ppx_stable/ppx_stable.v0.17.0/opam        | 27 ++++++++
+ .../ppx_stable_witness.v0.17.0/opam                | 26 ++++++++
+ packages/ppx_string/ppx_string.v0.17.0/opam        | 27 ++++++++
+ .../ppx_string_conv/ppx_string_conv.v0.17.0/opam   | 29 +++++++++
+ packages/ppx_tydi/ppx_tydi.v0.17.0/opam            | 26 ++++++++
+ .../ppx_typed_fields/ppx_typed_fields.v0.17.0/opam | 34 ++++++++++
+ .../ppx_typerep_conv/ppx_typerep_conv.v0.17.0/opam | 27 ++++++++
+ .../ppx_variants_conv.v0.17.0/opam                 | 27 ++++++++
+ packages/ppx_xml_conv/ppx_xml_conv.v0.17.0/opam    | 29 +++++++++
+ .../ppx_yojson_conv/ppx_yojson_conv.v0.17.0/opam   | 28 +++++++++
+ .../ppx_yojson_conv_lib.v0.17.0/opam               | 25 ++++++++
+ packages/ppxlib_jane/ppxlib_jane.v0.17.0/opam      | 25 ++++++++
+ packages/profunctor/profunctor.v0.17.0/opam        | 29 +++++++++
+ packages/protocell/protocell.1.0.0/opam            |  2 +-
+ .../protocol_version_header.v0.17.0/opam           | 29 +++++++++
+ packages/pyml_bindgen/pyml_bindgen.0.3.1/opam      |  2 +-
+ packages/re2/re2.v0.17.0/opam                      | 28 +++++++++
+ packages/re_parser/re_parser.v0.17.0/opam          | 29 +++++++++
+ .../record_builder/record_builder.v0.17.0/opam     | 30 +++++++++
+ packages/redis-async/redis-async.v0.17.0/opam      | 34 ++++++++++
+ .../regex_parser_intf.v0.17.0/opam                 | 24 ++++++++
+ .../resource_cache/resource_cache.v0.17.0/opam     | 30 +++++++++
+ packages/rpc_parallel/rpc_parallel.v0.17.0/opam    | 33 ++++++++++
+ packages/sanddb/sanddb.0.1/opam                    |  2 +-
+ packages/sanddb/sanddb.0.2/opam                    |  2 +-
+ packages/sanddb/sanddb.0.3.0/opam                  |  2 +-
+ packages/sarif/sarif.0.2.1/opam                    |  2 +-
+ packages/sarif/sarif.0.3.0/opam                    |  2 +-
+ packages/sarif/sarif.0.3.1/opam                    |  2 +-
+ .../semantic_version/semantic_version.v0.17.0/opam | 27 ++++++++
+ .../sequencer_table/sequencer_table.v0.17.0/opam   | 27 ++++++++
+ packages/sexp/sexp.v0.17.0/opam                    | 40 ++++++++++++
+ packages/sexp_diff/sexp_diff.v0.17.0/opam          | 27 ++++++++
+ packages/sexp_grammar/sexp_grammar.v0.17.0/opam    | 32 ++++++++++
+ packages/sexp_macro/sexp_macro.v0.17.0/opam        | 29 +++++++++
+ packages/sexp_pretty/sexp_pretty.v0.17.0/opam      | 29 +++++++++
+ packages/sexp_select/sexp_select.v0.17.0/opam      | 28 +++++++++
+ .../sexp_string_quickcheck.v0.17.0/opam            | 29 +++++++++
+ packages/sexplib/sexplib.v0.17.0/opam              | 30 +++++++++
+ packages/shell/shell.v0.17.0/opam                  | 31 ++++++++++
+ packages/shexp/shexp.v0.17.0/opam                  | 30 +++++++++
+ packages/sihl-core/sihl-core.0.2.0/opam            |  2 +-
+ packages/sihl-core/sihl-core.0.2.1/opam            |  2 +-
+ packages/sihl-core/sihl-core.0.2.2/opam            |  2 +-
+ packages/sihl-core/sihl-core.0.3.0~rc1/opam        |  2 +-
+ packages/spin/spin.0.5.0/opam                      |  2 +-
+ packages/spin/spin.0.5.1/opam                      |  2 +-
+ packages/splay_tree/splay_tree.v0.17.0/opam        | 36 +++++++++++
+ .../splittable_random.v0.17.0/opam                 | 36 +++++++++++
+ packages/sqlite3/sqlite3.4.4.1/opam                |  2 +-
+ packages/stdio/stdio.v0.17.0/opam                  | 28 +++++++++
+ .../stored_reversed/stored_reversed.v0.17.0/opam   | 26 ++++++++
+ packages/streamable/streamable.v0.17.0/opam        | 31 ++++++++++
+ packages/string_dict/string_dict.v0.17.0/opam      | 32 ++++++++++
+ packages/tensorboard/tensorboard.0.0.1/opam        |  2 +-
+ packages/textutils/textutils.v0.17.0/opam          | 28 +++++++++
+ .../textutils_kernel/textutils_kernel.v0.17.0/opam | 26 ++++++++
+ packages/tilde_f/tilde_f.v0.17.0/opam              | 26 ++++++++
+ packages/time_now/time_now.v0.17.0/opam            | 30 +++++++++
+ packages/timezone/timezone.v0.17.0/opam            | 27 ++++++++
+ packages/tldr/tldr.0.3.0/opam                      |  2 +-
+ .../toplevel_backend/toplevel_backend.v0.17.0/opam | 29 +++++++++
+ .../toplevel_expect_test.v0.17.0/opam              | 39 ++++++++++++
+ .../topological_sort/topological_sort.v0.17.0/opam | 28 +++++++++
+ packages/torch/torch.0.10/opam                     |  2 +-
+ packages/torch/torch.0.11/opam                     |  2 +-
+ packages/torch/torch.0.12/opam                     |  2 +-
+ packages/torch/torch.0.13/opam                     |  2 +-
+ packages/torch/torch.0.14/opam                     |  2 +-
+ packages/torch/torch.0.15/opam                     |  2 +-
+ packages/torch/torch.0.16/opam                     |  2 +-
+ packages/torch/torch.0.17/opam                     |  2 +-
+ packages/torch/torch.0.5/opam                      |  2 +-
+ packages/torch/torch.0.6/opam                      |  2 +-
+ packages/torch/torch.0.7/opam                      |  2 +-
+ packages/torch/torch.0.8/opam                      |  2 +-
+ packages/torch/torch.0.9/opam                      |  2 +-
+ packages/torch/torch.v0.17.0/opam                  | 44 +++++++++++++
+ packages/tracing/tracing.v0.17.0/opam              | 29 +++++++++
+ packages/travesty/travesty.0.8.0/opam              |  2 +-
+ packages/typerep/typerep.v0.17.0/opam              | 24 ++++++++
+ packages/uopt/uopt.v0.17.0/opam                    | 26 ++++++++
+ .../user-agent-parser/user-agent-parser.0.1.3/opam |  2 +-
+ .../user-agent-parser/user-agent-parser.0.2.0/opam |  2 +-
+ .../username_kernel/username_kernel.v0.17.0/opam   | 26 ++++++++
+ packages/variantslib/variantslib.v0.17.0/opam      | 27 ++++++++
+ packages/vcaml/vcaml.v0.17.0/opam                  | 57 +++++++++++++++++
+ .../versioned_polling_state_rpc.v0.17.0/opam       | 29 +++++++++
+ packages/virtual_dom/virtual_dom.v0.17.0/opam      | 38 ++++++++++++
+ .../virtual_dom_toplayer.v0.17.0/opam              | 32 ++++++++++
+ packages/wasmtime/wasmtime.0.0.1/opam              |  2 +-
+ packages/wasmtime/wasmtime.0.0.2/opam              |  2 +-
+ packages/wasmtime/wasmtime.0.0.3/opam              |  2 +-
+ .../zarith_stubs_js/zarith_stubs_js.v0.17.0/opam   | 25 ++++++++
+ packages/zstandard/zstandard.v0.17.0/opam          | 29 +++++++++
+ 329 files changed, 6739 insertions(+), 114 deletions(-)
+ create mode 100644 packages/abstract_algebra/abstract_algebra.v0.17.0/opam
+ create mode 100644 packages/accessor/accessor.v0.17.0/opam
+ create mode 100644 packages/accessor_async/accessor_async.v0.17.0/opam
+ create mode 100644 packages/accessor_base/accessor_base.v0.17.0/opam
+ create mode 100644 packages/accessor_core/accessor_core.v0.17.0/opam
+ create mode 100644 packages/async/async.v0.17.0/opam
+ create mode 100644 packages/async_durable/async_durable.v0.17.0/opam
+ create mode 100644 packages/async_extra/async_extra.v0.17.0/opam
+ create mode 100644 packages/async_find/async_find.v0.17.0/opam
+ create mode 100644 packages/async_inotify/async_inotify.v0.17.0/opam
+ create mode 100644 packages/async_interactive/async_interactive.v0.17.0/opam
+ create mode 100644 packages/async_js/async_js.v0.17.0/opam
+ create mode 100644 packages/async_kernel/async_kernel.v0.17.0/opam
+ create mode 100644 packages/async_log/async_log.v0.17.0/opam
+ create mode 100644 packages/async_rpc_kernel/async_rpc_kernel.v0.17.0/opam
+ create mode 100644 packages/async_rpc_websocket/async_rpc_websocket.v0.17.0/opam
+ create mode 100644 packages/async_sendfile/async_sendfile.v0.17.0/opam
+ create mode 100644 packages/async_shell/async_shell.v0.17.0/opam
+ create mode 100644 packages/async_smtp/async_smtp.v0.17.0/opam
+ create mode 100644 packages/async_ssl/async_ssl.v0.17.0/opam
+ create mode 100644 packages/async_udp/async_udp.v0.17.0/opam
+ create mode 100644 packages/async_unix/async_unix.v0.17.0/opam
+ create mode 100644 packages/async_websocket/async_websocket.v0.17.0/opam
+ create mode 100644 packages/babel/babel.v0.17.0/opam
+ create mode 100644 packages/base_bigstring/base_bigstring.v0.17.0/opam
+ create mode 100644 packages/base_quickcheck/base_quickcheck.v0.17.0/opam
+ create mode 100644 packages/base_trie/base_trie.v0.17.0/opam
+ create mode 100644 packages/bidirectional_map/bidirectional_map.v0.17.0/opam
+ create mode 100644 packages/bigdecimal/bigdecimal.v0.17.0/opam
+ create mode 100644 packages/bignum/bignum.v0.17.0/opam
+ create mode 100644 packages/bin_prot/bin_prot.v0.17.0/opam
+ create mode 100644 packages/bonsai/bonsai.v0.17.0/opam
+ create mode 100644 packages/capitalization/capitalization.v0.17.0/opam
+ create mode 100644 packages/codicons/codicons.v0.17.0/opam
+ create mode 100644 packages/cohttp_async_websocket/cohttp_async_websocket.v0.17.0/opam
+ create mode 100644 packages/cohttp_static_handler/cohttp_static_handler.v0.17.0/opam
+ create mode 100644 packages/command_rpc/command_rpc.v0.17.0/opam
+ create mode 100644 packages/content_security_policy/content_security_policy.v0.17.0/opam
+ create mode 100644 packages/core/core.v0.17.0/opam
+ create mode 100644 packages/core_bench/core_bench.v0.17.0/opam
+ create mode 100644 packages/core_extended/core_extended.v0.17.0/opam
+ create mode 100644 packages/core_kernel/core_kernel.v0.17.0/opam
+ create mode 100644 packages/core_profiler/core_profiler.v0.17.0/opam
+ create mode 100644 packages/core_unix/core_unix.v0.17.0/opam
+ create mode 100644 packages/csvfields/csvfields.v0.17.0/opam
+ create mode 100644 packages/dedent/dedent.v0.17.0/opam
+ create mode 100644 packages/delimited_parsing/delimited_parsing.v0.17.0/opam
+ create mode 100644 packages/ecaml/ecaml.v0.17.0/opam
+ create mode 100644 packages/email_message/email_message.v0.17.0/opam
+ create mode 100644 packages/env_config/env_config.v0.17.0/opam
+ create mode 100644 packages/expect_test_helpers_async/expect_test_helpers_async.v0.17.0/opam
+ create mode 100644 packages/expect_test_helpers_core/expect_test_helpers_core.v0.17.0/opam
+ create mode 100644 packages/fieldslib/fieldslib.v0.17.0/opam
+ create mode 100644 packages/file_path/file_path.v0.17.0/opam
+ create mode 100644 packages/fuzzy_match/fuzzy_match.v0.17.0/opam
+ create mode 100644 packages/fzf/fzf.v0.17.0/opam
+ create mode 100644 packages/gel/gel.v0.17.0/opam
+ create mode 100644 packages/hardcaml/hardcaml.v0.17.0/opam
+ create mode 100644 packages/hardcaml_axi/hardcaml_axi.v0.17.0/opam
+ create mode 100644 packages/hardcaml_c/hardcaml_c.v0.17.0/opam
+ create mode 100644 packages/hardcaml_circuits/hardcaml_circuits.v0.17.0/opam
+ create mode 100644 packages/hardcaml_event_driven_sim/hardcaml_event_driven_sim.v0.17.0/opam
+ create mode 100644 packages/hardcaml_fixed_point/hardcaml_fixed_point.v0.17.0/opam
+ create mode 100644 packages/hardcaml_handshake/hardcaml_handshake.v0.17.0/opam
+ create mode 100644 packages/hardcaml_of_verilog/hardcaml_of_verilog.v0.17.0/opam
+ create mode 100644 packages/hardcaml_step_testbench/hardcaml_step_testbench.v0.17.0/opam
+ create mode 100644 packages/hardcaml_verify/hardcaml_verify.v0.17.0/opam
+ create mode 100644 packages/hardcaml_verilator/hardcaml_verilator.v0.17.0/opam
+ create mode 100644 packages/hardcaml_waveterm/hardcaml_waveterm.v0.17.0/opam
+ create mode 100644 packages/hardcaml_xilinx/hardcaml_xilinx.v0.17.0/opam
+ create mode 100644 packages/hardcaml_xilinx_components/hardcaml_xilinx_components.v0.17.0/opam
+ create mode 100644 packages/hardcaml_xilinx_reports/hardcaml_xilinx_reports.v0.17.0/opam
+ create mode 100644 packages/hex_encode/hex_encode.v0.17.0/opam
+ create mode 100644 packages/hg_lib/hg_lib.v0.17.0/opam
+ create mode 100644 packages/higher_kinded/higher_kinded.v0.17.0/opam
+ create mode 100644 packages/incr_dom/incr_dom.v0.17.0/opam
+ create mode 100644 packages/incr_dom_interactive/incr_dom_interactive.v0.17.0/opam
+ create mode 100644 packages/incr_dom_partial_render/incr_dom_partial_render.v0.17.0/opam
+ create mode 100644 packages/incr_dom_sexp_form/incr_dom_sexp_form.v0.17.0/opam
+ create mode 100644 packages/incr_map/incr_map.v0.17.0/opam
+ create mode 100644 packages/incr_select/incr_select.v0.17.0/opam
+ create mode 100644 packages/incremental/incremental.v0.17.0/opam
+ create mode 100644 packages/indentation_buffer/indentation_buffer.v0.17.0/opam
+ create mode 100644 packages/int_repr/int_repr.v0.17.0/opam
+ create mode 100644 packages/jane-street-headers/jane-street-headers.v0.17.0/opam
+ create mode 100644 packages/jane_rope/jane_rope.v0.17.0/opam
+ create mode 100644 packages/janestreet_cpuid/janestreet_cpuid.v0.17.0/opam
+ create mode 100644 packages/janestreet_csv/janestreet_csv.v0.17.0/opam
+ create mode 100644 packages/janestreet_lru_cache/janestreet_lru_cache.v0.17.0/opam
+ create mode 100644 packages/js_of_ocaml_patches/js_of_ocaml_patches.v0.17.0/opam
+ create mode 100644 packages/jsonaf/jsonaf.v0.17.0/opam
+ create mode 100644 packages/jst-config/jst-config.v0.17.0/opam
+ create mode 100644 packages/legacy_diffable/legacy_diffable.v0.17.0/opam
+ create mode 100644 packages/line-up-words/line-up-words.v0.17.0/opam
+ create mode 100644 packages/man_in_the_middle_debugger/man_in_the_middle_debugger.v0.17.0/opam
+ create mode 100644 packages/memtrace_viewer/memtrace_viewer.v0.17.0/opam
+ create mode 100644 packages/mlt_parser/mlt_parser.v0.17.0/opam
+ create mode 100644 packages/n_ary/n_ary.v0.17.0/opam
+ create mode 100644 packages/netsnmp/netsnmp.v0.17.0/opam
+ create mode 100644 packages/notty_async/notty_async.v0.17.0/opam
+ create mode 100644 packages/numeric_string/numeric_string.v0.17.0/opam
+ create mode 100644 packages/ocaml-embed-file/ocaml-embed-file.v0.17.0/opam
+ create mode 100644 packages/ocaml-probes/ocaml-probes.v0.17.0/opam
+ create mode 100644 packages/ocaml_intrinsics/ocaml_intrinsics.v0.17.0/opam
+ create mode 100644 packages/ocaml_openapi_generator/ocaml_openapi_generator.v0.17.0/opam
+ create mode 100644 packages/of_json/of_json.v0.17.0/opam
+ create mode 100644 packages/ordinal_abbreviation/ordinal_abbreviation.v0.17.0/opam
+ create mode 100644 packages/pam/pam.v0.17.0/opam
+ create mode 100644 packages/parsexp/parsexp.v0.17.0/opam
+ create mode 100644 packages/parsexp_io/parsexp_io.v0.17.0/opam
+ create mode 100644 packages/patdiff/patdiff.v0.17.0/opam
+ create mode 100644 packages/patience_diff/patience_diff.v0.17.0/opam
+ create mode 100644 packages/polling_state_rpc/polling_state_rpc.v0.17.0/opam
+ create mode 100644 packages/posixat/posixat.v0.17.0/opam
+ create mode 100644 packages/postgres_async/postgres_async.v0.17.0/opam
+ create mode 100644 packages/ppx_accessor/ppx_accessor.v0.17.0/opam
+ create mode 100644 packages/ppx_assert/ppx_assert.v0.17.0/opam
+ create mode 100644 packages/ppx_base/ppx_base.v0.17.0/opam
+ create mode 100644 packages/ppx_bench/ppx_bench.v0.17.0/opam
+ create mode 100644 packages/ppx_bin_prot/ppx_bin_prot.v0.17.0/opam
+ create mode 100644 packages/ppx_cold/ppx_cold.v0.17.0/opam
+ create mode 100644 packages/ppx_compare/ppx_compare.v0.17.0/opam
+ create mode 100644 packages/ppx_conv_func/ppx_conv_func.v0.17.0/opam
+ create mode 100644 packages/ppx_css/ppx_css.v0.17.0/opam
+ create mode 100644 packages/ppx_csv_conv/ppx_csv_conv.v0.17.0/opam
+ create mode 100644 packages/ppx_custom_printf/ppx_custom_printf.v0.17.0/opam
+ create mode 100644 packages/ppx_demo/ppx_demo.v0.17.0/opam
+ create mode 100644 packages/ppx_derive_at_runtime/ppx_derive_at_runtime.v0.17.0/opam
+ create mode 100644 packages/ppx_diff/ppx_diff.v0.17.0/opam
+ create mode 100644 packages/ppx_disable_unused_warnings/ppx_disable_unused_warnings.v0.17.0/opam
+ create mode 100644 packages/ppx_embed_file/ppx_embed_file.v0.17.0/opam
+ create mode 100644 packages/ppx_enumerate/ppx_enumerate.v0.17.0/opam
+ create mode 100644 packages/ppx_expect/ppx_expect.v0.17.0/opam
+ create mode 100644 packages/ppx_fields_conv/ppx_fields_conv.v0.17.0/opam
+ create mode 100644 packages/ppx_fixed_literal/ppx_fixed_literal.v0.17.0/opam
+ create mode 100644 packages/ppx_globalize/ppx_globalize.v0.17.0/opam
+ create mode 100644 packages/ppx_hardcaml/ppx_hardcaml.v0.17.0/opam
+ create mode 100644 packages/ppx_hash/ppx_hash.v0.17.0/opam
+ create mode 100644 packages/ppx_here/ppx_here.v0.17.0/opam
+ create mode 100644 packages/ppx_ignore_instrumentation/ppx_ignore_instrumentation.v0.17.0/opam
+ create mode 100644 packages/ppx_inline_test/ppx_inline_test.v0.17.0/opam
+ create mode 100644 packages/ppx_jane/ppx_jane.v0.17.0/opam
+ create mode 100644 packages/ppx_js_style/ppx_js_style.v0.17.0/opam
+ create mode 100644 packages/ppx_jsonaf_conv/ppx_jsonaf_conv.v0.17.0/opam
+ create mode 100644 packages/ppx_let/ppx_let.v0.17.0/opam
+ create mode 100644 packages/ppx_log/ppx_log.v0.17.0/opam
+ create mode 100644 packages/ppx_module_timer/ppx_module_timer.v0.17.0/opam
+ create mode 100644 packages/ppx_optcomp/ppx_optcomp.v0.17.0/opam
+ create mode 100644 packages/ppx_optional/ppx_optional.v0.17.0/opam
+ create mode 100644 packages/ppx_pattern_bind/ppx_pattern_bind.v0.17.0/opam
+ create mode 100644 packages/ppx_pipebang/ppx_pipebang.v0.17.0/opam
+ create mode 100644 packages/ppx_python/ppx_python.v0.17.0/opam
+ create mode 100644 packages/ppx_quick_test/ppx_quick_test.v0.17.0/opam
+ create mode 100644 packages/ppx_sexp_conv/ppx_sexp_conv.v0.17.0/opam
+ create mode 100644 packages/ppx_sexp_message/ppx_sexp_message.v0.17.0/opam
+ create mode 100644 packages/ppx_sexp_value/ppx_sexp_value.v0.17.0/opam
+ create mode 100644 packages/ppx_stable/ppx_stable.v0.17.0/opam
+ create mode 100644 packages/ppx_stable_witness/ppx_stable_witness.v0.17.0/opam
+ create mode 100644 packages/ppx_string/ppx_string.v0.17.0/opam
+ create mode 100644 packages/ppx_string_conv/ppx_string_conv.v0.17.0/opam
+ create mode 100644 packages/ppx_tydi/ppx_tydi.v0.17.0/opam
+ create mode 100644 packages/ppx_typed_fields/ppx_typed_fields.v0.17.0/opam
+ create mode 100644 packages/ppx_typerep_conv/ppx_typerep_conv.v0.17.0/opam
+ create mode 100644 packages/ppx_variants_conv/ppx_variants_conv.v0.17.0/opam
+ create mode 100644 packages/ppx_xml_conv/ppx_xml_conv.v0.17.0/opam
+ create mode 100644 packages/ppx_yojson_conv/ppx_yojson_conv.v0.17.0/opam
+ create mode 100644 packages/ppx_yojson_conv_lib/ppx_yojson_conv_lib.v0.17.0/opam
+ create mode 100644 packages/ppxlib_jane/ppxlib_jane.v0.17.0/opam
+ create mode 100644 packages/profunctor/profunctor.v0.17.0/opam
+ create mode 100644 packages/protocol_version_header/protocol_version_header.v0.17.0/opam
+ create mode 100644 packages/re2/re2.v0.17.0/opam
+ create mode 100644 packages/re_parser/re_parser.v0.17.0/opam
+ create mode 100644 packages/record_builder/record_builder.v0.17.0/opam
+ create mode 100644 packages/redis-async/redis-async.v0.17.0/opam
+ create mode 100644 packages/regex_parser_intf/regex_parser_intf.v0.17.0/opam
+ create mode 100644 packages/resource_cache/resource_cache.v0.17.0/opam
+ create mode 100644 packages/rpc_parallel/rpc_parallel.v0.17.0/opam
+ create mode 100644 packages/semantic_version/semantic_version.v0.17.0/opam
+ create mode 100644 packages/sequencer_table/sequencer_table.v0.17.0/opam
+ create mode 100644 packages/sexp/sexp.v0.17.0/opam
+ create mode 100644 packages/sexp_diff/sexp_diff.v0.17.0/opam
+ create mode 100644 packages/sexp_grammar/sexp_grammar.v0.17.0/opam
+ create mode 100644 packages/sexp_macro/sexp_macro.v0.17.0/opam
+ create mode 100644 packages/sexp_pretty/sexp_pretty.v0.17.0/opam
+ create mode 100644 packages/sexp_select/sexp_select.v0.17.0/opam
+ create mode 100644 packages/sexp_string_quickcheck/sexp_string_quickcheck.v0.17.0/opam
+ create mode 100644 packages/sexplib/sexplib.v0.17.0/opam
+ create mode 100644 packages/shell/shell.v0.17.0/opam
+ create mode 100644 packages/shexp/shexp.v0.17.0/opam
+ create mode 100644 packages/splay_tree/splay_tree.v0.17.0/opam
+ create mode 100644 packages/splittable_random/splittable_random.v0.17.0/opam
+ create mode 100644 packages/stdio/stdio.v0.17.0/opam
+ create mode 100644 packages/stored_reversed/stored_reversed.v0.17.0/opam
+ create mode 100644 packages/streamable/streamable.v0.17.0/opam
+ create mode 100644 packages/string_dict/string_dict.v0.17.0/opam
+ create mode 100644 packages/textutils/textutils.v0.17.0/opam
+ create mode 100644 packages/textutils_kernel/textutils_kernel.v0.17.0/opam
+ create mode 100644 packages/tilde_f/tilde_f.v0.17.0/opam
+ create mode 100644 packages/time_now/time_now.v0.17.0/opam
+ create mode 100644 packages/timezone/timezone.v0.17.0/opam
+ create mode 100644 packages/toplevel_backend/toplevel_backend.v0.17.0/opam
+ create mode 100644 packages/toplevel_expect_test/toplevel_expect_test.v0.17.0/opam
+ create mode 100644 packages/topological_sort/topological_sort.v0.17.0/opam
+ create mode 100644 packages/torch/torch.v0.17.0/opam
+ create mode 100644 packages/tracing/tracing.v0.17.0/opam
+ create mode 100644 packages/typerep/typerep.v0.17.0/opam
+ create mode 100644 packages/uopt/uopt.v0.17.0/opam
+ create mode 100644 packages/username_kernel/username_kernel.v0.17.0/opam
+ create mode 100644 packages/variantslib/variantslib.v0.17.0/opam
+ create mode 100644 packages/vcaml/vcaml.v0.17.0/opam
+ create mode 100644 packages/versioned_polling_state_rpc/versioned_polling_state_rpc.v0.17.0/opam
+ create mode 100644 packages/virtual_dom/virtual_dom.v0.17.0/opam
+ create mode 100644 packages/virtual_dom_toplayer/virtual_dom_toplayer.v0.17.0/opam
+ create mode 100644 packages/zarith_stubs_js/zarith_stubs_js.v0.17.0/opam
+ create mode 100644 packages/zstandard/zstandard.v0.17.0/opam
+
+[01;34m(from ocaml/opam:debian-12-ocaml-4.08@sha256:0c769c658e4fdccf7f6254959b7eda7a935565ff9d11f9d8ad1c8c230311c441)[0m
+[01;2m[01;35m2024-05-17 01:12.48 ---> using "5602aa4d4f8c960acd7e81ad74a78109ea54cdbb3e7606848338ab48efd3581f" from cache[0m
+
+[01;34m/: (user (uid 1000) (gid 1000))[0m
+
+[01;34m/: (workdir /home/opam)[0m
+
+[01;34m/home/opam: (run (shell "sudo ln -f /usr/bin/opam-dev /usr/bin/opam"))[0m
+[01;2m[01;35m2024-05-17 01:12.48 ---> using "3f3f6965b18dbe231309cad110da8ecbc98b0e538cc621e48803e0e126914634" from cache[0m
+
+[01;34m/home/opam: (run (network host)
+                 (shell "opam init --reinit --config .opamrc-sandbox -ni"))[0m
+Configuring from /home/opam/.opamrc-sandbox, then /home/opam/.opamrc, and finally from built-in defaults.
+Checking for available remotes: rsync and local, git.
+  - you won't be able to use mercurial repositories unless you install the hg command on your system.
+  - you won't be able to use darcs repositories unless you install the darcs command on your system.
+
+This development version of opam requires an update to the layout of /home/opam/.opam from version 2.0 to version 2.2~beta, which can't be reverted.
+You may want to back it up before going further.
+
+Continue? [y/n] y
+[NOTE] The 'jobs' option was reset, its value was 31 and its new value will vary according to the current number of cores on your machine. You can restore the fixed value using:
+           opam option jobs=31 --global
+Format upgrade done.
+
+<><> Updating repositories ><><><><><><><><><><><><><><><><><><><><><><><><><><>
+[default] synchronised from file:///home/opam/opam-repository
+[01;2m[01;35m2024-05-17 01:12.48 ---> using "b24d311c2a2456460ad25dc0fe221b6de277a233e58739172165fcbf27af1108" from cache[0m
+
+[01;34m/home/opam: (run (shell "uname -rs && opam exec -- ocaml -version && opam --version"))[0m
+Linux 5.15.0-101-generic
+The OCaml toplevel, version 4.08.1
+2.2.0~beta3~dev
+[01;2m[01;35m2024-05-17 01:12.48 ---> using "2a5150b6cbee328277566278ab3b6f0a6da1a04b7feaf9fefa72277fbe493dd0" from cache[0m
+
+[01;34m/home/opam: (env OPAMDOWNLOADJOBS 1)[0m
+
+[01;34m/home/opam: (env OPAMERRLOGLEN 0)[0m
+
+[01;34m/home/opam: (env OPAMSOLVERTIMEOUT 500)[0m
+
+[01;34m/home/opam: (env OPAMPRECISETRACKING 1)[0m
+
+[01;34m/home/opam: (env CI true)[0m
+
+[01;34m/home/opam: (env OPAM_REPO_CI true)[0m
+
+[01;34m/home/opam: (run (shell "rm -rf opam-repository/"))[0m
+[01;2m[01;35m2024-05-17 01:12.48 ---> using "add307e86940fa560bf14025973ddb83bf5f16d04bbdf744e4c5c0ca0330f4b6" from cache[0m
+
+[01;34m/home/opam: (copy (src .) (dst opam-repository/))[0m
+[01;2m[01;35m2024-05-17 01:12.49 ---> using "f2c2d3356f3f4eadc65badd092289d4486e6cffe8a216dfa4c9d3b94a9341b68" from cache[0m
+
+[01;34m/home/opam: (run (shell "opam repository set-url --strict default opam-repository/"))[0m
+[default] Initialised
+[01;2m[01;35m2024-05-17 01:12.49 ---> using "60c2fba01ee6853ad9eac0f8ad47fde3eb04a7d6b9cbc624e424d0fff97f6aba" from cache[0m
+
+[01;34m/home/opam: (run (network host)
+                 (shell "opam update --depexts || true"))[0m
++ /usr/bin/sudo "apt-get" "update"
+- Hit:1 http://deb.debian.org/debian bookworm InRelease
+- Get:2 http://deb.debian.org/debian bookworm-updates InRelease [55.4 kB]
+- Get:3 http://deb.debian.org/debian-security bookworm-security InRelease [48.0 kB]
+- Get:4 http://deb.debian.org/debian-security bookworm-security/main amd64 Packages [156 kB]
+- Fetched 259 kB in 0s (1035 kB/s)
+- Reading package lists...
+[01;2m[01;35m2024-05-17 01:12.49 ---> using "4cab2f7f498935535a89777cf11f3e7094707b501f810dd082f9a5d1f3ef109a" from cache[0m
+
+[01;34m/home/opam: (run (shell "opam pin add -k version -yn http.6.0.0~beta2 6.0.0~beta2"))[0m
+http is now pinned to version 6.0.0~beta2
+[01;2m[01;35m2024-05-17 01:12.50 ---> saved as "f9a2e7279d146292e4f38ef46191f793664bcf985381b83eb6e470defe8efe6a"[0m
+
+[01;34m/home/opam: (run (cache (opam-archives (target /home/opam/.opam/download-cache)))
+                 (network host)
+                 (shell  "opam reinstall http.6.0.0~beta2;\
+                        \n        res=$?;\
+                        \n        test \"$res\" != 31 && exit \"$res\";\
+                        \n        export OPAMCLI=2.0;\
+                        \n        build_dir=$(opam var prefix)/.opam-switch/build;\
+                        \n        failed=$(ls \"$build_dir\");\
+                        \n        partial_fails=\"\";\
+                        \n        for pkg in $failed; do\
+                        \n          if opam show -f x-ci-accept-failures: \"$pkg\" | grep -qF \"\\\"debian-12\\\"\"; then\
+                        \n            echo \"A package failed and has been disabled for CI using the 'x-ci-accept-failures' field.\";\
+                        \n          fi;\
+                        \n          test \"$pkg\" != 'http.6.0.0~beta2' && partial_fails=\"$partial_fails $pkg\";\
+                        \n        done;\
+                        \n        test \"${partial_fails}\" != \"\" && echo \"opam-repo-ci detected dependencies failing: ${partial_fails}\";\
+                        \n        exit 1"))[0m
+http.6.0.0~beta2 is not installed. Install it? [y/n] y
+The following actions will be performed:
+=== install 2 packages
+  - install dune 3.15.2               [required by http]
+  - install http 6.0.0~beta2 (pinned)
+
+<><> Processing actions <><><><><><><><><><><><><><><><><><><><><><><><><><><><>
+-> retrieved dune.3.15.2  (cached)
+-> retrieved http.6.0.0~beta2  (cached)
+-> installed dune.3.15.2
+-> installed http.6.0.0~beta2
+Done.
+# Run eval $(opam env) to update the current shell environment
+[01;2m[01;35m2024-05-17 01:13.28 ---> saved as "c87e78b81d47aa9f4497c50a228e0e0b92230f9a594d7d4856a20005d1e27c9b"[0m
+
+[01;34m/home/opam: (run (network host)
+                 (shell "(opam reinstall --with-test http.6.0.0~beta2) || true"))[0m
+[ERROR] Sorry, resolution of the request timed out.
+        Try to specify a more precise request, use a different solver, or increase the allowed time by setting OPAMSOLVERTIMEOUT to a bigger value (currently, it is set to 500.0 seconds).
+[01;2m[01;35m2024-05-17 01:22.01 ---> saved as "51b2885ce35001bf89f6cb51b87d0800b3e68c00e8104b447654e4001597d285"[0m
+
+[01;34m/home/opam: (run (shell  "opam reinstall --with-test --verbose http.6.0.0~beta2;\
+                        \n        res=$?;\
+                        \n        test \"$res\" != 31 && exit \"$res\";\
+                        \n        export OPAMCLI=2.0;\
+                        \n        build_dir=$(opam var prefix)/.opam-switch/build;\
+                        \n        failed=$(ls \"$build_dir\");\
+                        \n        partial_fails=\"\";\
+                        \n        for pkg in $failed; do\
+                        \n          if opam show -f x-ci-accept-failures: \"$pkg\" | grep -qF \"\\\"debian-12\\\"\"; then\
+                        \n            echo \"A package failed and has been disabled for CI using the 'x-ci-accept-failures' field.\";\
+                        \n          fi;\
+                        \n          test \"$pkg\" != 'http.6.0.0~beta2' && partial_fails=\"$partial_fails $pkg\";\
+                        \n        done;\
+                        \n        test \"${partial_fails}\" != \"\" && echo \"opam-repo-ci detected dependencies failing: ${partial_fails}\";\
+                        \n        exit 1"))[0m
+[ERROR] Sorry, resolution of the request timed out.
+        Try to specify a more precise request, use a different solver, or increase the allowed time by setting OPAMSOLVERTIMEOUT to a bigger value (currently, it is set to 500.0 seconds).
+'opam reinstall --with-test --verbose http.6.0.0~beta2' failed.
+"/usr/bin/env" "bash" "-c" "opam reinstall --with-test --verbose http.6.0.0~beta2;
+        res=$?;
+        test "$res" != 31 && exit "$res";
+        export OPAMCLI=2.0;
+        build_dir=$(opam var prefix)/.opam-switch/build;
+        failed=$(ls "$build_dir");
+        partial_fails="";
+        for pkg in $failed; do
+          if opam show -f x-ci-accept-failures: "$pkg" | grep -qF "\"debian-12\""; then
+            echo "A package failed and has been disabled for CI using the 'x-ci-accept-failures' field.";
+          fi;
+          test "$pkg" != 'http.6.0.0~beta2' && partial_fails="$partial_fails $pkg";
+        done;
+        test "${partial_fails}" != "" && echo "opam-repo-ci detected dependencies failing: ${partial_fails}";
+        exit 1" failed with exit status 60
+2024-05-17 01:30.49: Job failed: Failed: Build failed
+2024-05-17 01:30.49: Log analysis:
+2024-05-17 01:30.49: >>> 
+[ERROR] Sorry, resolution of the request timed out.
+ (score = 20)
+2024-05-17 01:30.49: >>> 
+[ERROR] Sorry, resolution of the request timed out.
+ (score = 20)
+2024-05-17 01:30.49: Sorry, resolution of the request timed out.

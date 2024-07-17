@@ -1,0 +1,257 @@
+2024-05-31 10:41.43: New job: test git-mirage.3.10.0, using opam 2.1
+                              from https://github.com/ocaml/opam-repository.git#refs/pull/25989/head (d49874568ecffd4f3d80b067abee00cc7ccb9c3c)
+                              on debian-12-ocaml-4.14/amd64
+
+To reproduce locally:
+
+cd $(mktemp -d)
+git clone --recursive "https://github.com/ocaml/opam-repository.git" && cd "opam-repository" && git fetch origin "refs/pull/25989/head" && git reset --hard d4987456
+git fetch origin master
+git merge --no-edit b502ec76fdb55f39820205a616d8878dd563c110
+cat > ../Dockerfile <<'END-OF-DOCKERFILE'
+[34mFROM ocaml/opam:debian-12-ocaml-4.14@sha256:2ba69112cb856b702920b505b82a8fab331d2c9d9406c7f3b9f4adb73637666c
+USER 1000:1000
+WORKDIR /home/opam
+RUN sudo ln -f /usr/bin/opam-2.1 /usr/bin/opam
+RUN opam init --reinit -ni
+RUN uname -rs && opam exec -- ocaml -version && opam --version
+ENV OPAMDOWNLOADJOBS="1"
+ENV OPAMERRLOGLEN="0"
+ENV OPAMSOLVERTIMEOUT="500"
+ENV OPAMPRECISETRACKING="1"
+ENV CI="true"
+ENV OPAM_REPO_CI="true"
+RUN rm -rf opam-repository/
+COPY --chown=1000:1000 . opam-repository/
+RUN opam repository set-url --strict default opam-repository/
+RUN opam update --depexts || true
+RUN opam pin add -k version -yn git-mirage.3.10.0 3.10.0
+RUN opam reinstall git-mirage.3.10.0; \
+    res=$?; \
+    test "$res" != 31 && exit "$res"; \
+    export OPAMCLI=2.0; \
+    build_dir=$(opam var prefix)/.opam-switch/build; \
+    failed=$(ls "$build_dir"); \
+    partial_fails=""; \
+    for pkg in $failed; do \
+    if opam show -f x-ci-accept-failures: "$pkg" | grep -qF "\"debian-12\""; then \
+    echo "A package failed and has been disabled for CI using the 'x-ci-accept-failures' field."; \
+    fi; \
+    test "$pkg" != 'git-mirage.3.10.0' && partial_fails="$partial_fails $pkg"; \
+    done; \
+    test "${partial_fails}" != "" && echo "opam-repo-ci detected dependencies failing: ${partial_fails}"; \
+    exit 1
+RUN (opam reinstall --with-test git-mirage.3.10.0) || true
+RUN opam reinstall --with-test --verbose git-mirage.3.10.0; \
+    res=$?; \
+    test "$res" != 31 && exit "$res"; \
+    export OPAMCLI=2.0; \
+    build_dir=$(opam var prefix)/.opam-switch/build; \
+    failed=$(ls "$build_dir"); \
+    partial_fails=""; \
+    for pkg in $failed; do \
+    if opam show -f x-ci-accept-failures: "$pkg" | grep -qF "\"debian-12\""; then \
+    echo "A package failed and has been disabled for CI using the 'x-ci-accept-failures' field."; \
+    fi; \
+    test "$pkg" != 'git-mirage.3.10.0' && partial_fails="$partial_fails $pkg"; \
+    done; \
+    test "${partial_fails}" != "" && echo "opam-repo-ci detected dependencies failing: ${partial_fails}"; \
+    exit 1
+[0m
+END-OF-DOCKERFILE
+docker build -f ../Dockerfile .
+
+2024-05-31 10:41.43: Using cache hint "ocaml/opam:debian-12-ocaml-4.14@sha256:2ba69112cb856b702920b505b82a8fab331d2c9d9406c7f3b9f4adb73637666c-git-mirage.3.10.0-d49874568ecffd4f3d80b067abee00cc7ccb9c3c"
+2024-05-31 10:41.43: Using OBuilder spec:
+((from ocaml/opam:debian-12-ocaml-4.14@sha256:2ba69112cb856b702920b505b82a8fab331d2c9d9406c7f3b9f4adb73637666c)
+ (user (uid 1000) (gid 1000))
+ (workdir /home/opam)
+ (run (shell "sudo ln -f /usr/bin/opam-2.1 /usr/bin/opam"))
+ (run (network host)
+      (shell "opam init --reinit --config .opamrc-sandbox -ni"))
+ (run (shell "uname -rs && opam exec -- ocaml -version && opam --version"))
+ (env OPAMDOWNLOADJOBS 1)
+ (env OPAMERRLOGLEN 0)
+ (env OPAMSOLVERTIMEOUT 500)
+ (env OPAMPRECISETRACKING 1)
+ (env CI true)
+ (env OPAM_REPO_CI true)
+ (run (shell "rm -rf opam-repository/"))
+ (copy (src .) (dst opam-repository/))
+ (run (shell "opam repository set-url --strict default opam-repository/"))
+ (run (network host)
+      (shell "opam update --depexts || true"))
+ (run (shell "opam pin add -k version -yn git-mirage.3.10.0 3.10.0"))
+ (run (cache (opam-archives (target /home/opam/.opam/download-cache)))
+      (network host)
+      (shell  "opam reinstall git-mirage.3.10.0;\
+             \n        res=$?;\
+             \n        test \"$res\" != 31 && exit \"$res\";\
+             \n        export OPAMCLI=2.0;\
+             \n        build_dir=$(opam var prefix)/.opam-switch/build;\
+             \n        failed=$(ls \"$build_dir\");\
+             \n        partial_fails=\"\";\
+             \n        for pkg in $failed; do\
+             \n          if opam show -f x-ci-accept-failures: \"$pkg\" | grep -qF \"\\\"debian-12\\\"\"; then\
+             \n            echo \"A package failed and has been disabled for CI using the 'x-ci-accept-failures' field.\";\
+             \n          fi;\
+             \n          test \"$pkg\" != 'git-mirage.3.10.0' && partial_fails=\"$partial_fails $pkg\";\
+             \n        done;\
+             \n        test \"${partial_fails}\" != \"\" && echo \"opam-repo-ci detected dependencies failing: ${partial_fails}\";\
+             \n        exit 1"))
+ (run (network host)
+      (shell "(opam reinstall --with-test git-mirage.3.10.0) || true"))
+ (run (shell  "opam reinstall --with-test --verbose git-mirage.3.10.0;\
+             \n        res=$?;\
+             \n        test \"$res\" != 31 && exit \"$res\";\
+             \n        export OPAMCLI=2.0;\
+             \n        build_dir=$(opam var prefix)/.opam-switch/build;\
+             \n        failed=$(ls \"$build_dir\");\
+             \n        partial_fails=\"\";\
+             \n        for pkg in $failed; do\
+             \n          if opam show -f x-ci-accept-failures: \"$pkg\" | grep -qF \"\\\"debian-12\\\"\"; then\
+             \n            echo \"A package failed and has been disabled for CI using the 'x-ci-accept-failures' field.\";\
+             \n          fi;\
+             \n          test \"$pkg\" != 'git-mirage.3.10.0' && partial_fails=\"$partial_fails $pkg\";\
+             \n        done;\
+             \n        test \"${partial_fails}\" != \"\" && echo \"opam-repo-ci detected dependencies failing: ${partial_fails}\";\
+             \n        exit 1"))
+)
+
+2024-05-31 10:41.43: Waiting for resource in pool OCluster
+2024-05-31 11:33.14: Waiting for worker…
+2024-05-31 11:37.03: Got resource from pool OCluster
+Building on doris.caelum.ci.dev
+All commits already cached
+HEAD is now at b502ec76fd Merge pull request #25973 from jmid/expand-conf-neko
+Updating b502ec76fd..d49874568e
+Fast-forward
+ packages/git-mirage/git-mirage.3.10.0/opam         |  2 +-
+ packages/git-mirage/git-mirage.3.10.1/opam         |  2 +-
+ packages/git-mirage/git-mirage.3.11.0/opam         |  2 +-
+ packages/git-mirage/git-mirage.3.12.0/opam         |  2 +-
+ packages/git-mirage/git-mirage.3.13.0/opam         |  2 +-
+ packages/git-mirage/git-mirage.3.14.0/opam         |  2 +-
+ packages/git-mirage/git-mirage.3.15.0/opam         |  2 +-
+ packages/git-mirage/git-mirage.3.16.0/opam         |  2 +-
+ packages/git-mirage/git-mirage.3.7.1/opam          |  2 +-
+ packages/git-mirage/git-mirage.3.8.1/opam          |  2 +-
+ packages/git-mirage/git-mirage.3.9.0/opam          |  2 +-
+ packages/git-mirage/git-mirage.3.9.1/opam          |  2 +-
+ .../mimic-happy-eyeballs.0.0.8/opam                | 29 +++++++++++++++++
+ packages/mimic/mimic.0.0.8/opam                    | 38 ++++++++++++++++++++++
+ 14 files changed, 79 insertions(+), 12 deletions(-)
+ create mode 100644 packages/mimic-happy-eyeballs/mimic-happy-eyeballs.0.0.8/opam
+ create mode 100644 packages/mimic/mimic.0.0.8/opam
+
+[01;34m(from ocaml/opam:debian-12-ocaml-4.14@sha256:2ba69112cb856b702920b505b82a8fab331d2c9d9406c7f3b9f4adb73637666c)[0m
+[01;2m[01;35m2024-05-31 11:37.05 ---> using "48fcd9b686ae3e44ef60a164ef8db6e11e86f168703f26fb1315f899c9c53662" from cache[0m
+
+[01;34m/: (user (uid 1000) (gid 1000))[0m
+
+[01;34m/: (workdir /home/opam)[0m
+
+[01;34m/home/opam: (run (shell "sudo ln -f /usr/bin/opam-2.1 /usr/bin/opam"))[0m
+[01;2m[01;35m2024-05-31 11:37.05 ---> using "2c3cfe222678361350f54d2fd0d3629836a1caadeb3d32232aed3d337b400c0e" from cache[0m
+
+[01;34m/home/opam: (run (network host)
+                 (shell "opam init --reinit --config .opamrc-sandbox -ni"))[0m
+Configuring from /home/opam/.opamrc-sandbox, then /home/opam/.opamrc, and finally from built-in defaults.
+Checking for available remotes: rsync and local, git.
+  - you won't be able to use mercurial repositories unless you install the hg command on your system.
+  - you won't be able to use darcs repositories unless you install the darcs command on your system.
+
+This version of opam requires an update to the layout of /home/opam/.opam from version 2.0 to version 2.1, which can't be reverted.
+You may want to back it up before going further.
+
+Continue? [Y/n] y
+Format upgrade done.
+
+<><> Updating repositories ><><><><><><><><><><><><><><><><><><><><><><><><><><>
+[default] synchronised from file:///home/opam/opam-repository
+[01;2m[01;35m2024-05-31 11:37.05 ---> using "3c68e0ebee8348210d089d520024b866c58ef169efc405130a567eaba81ed4ca" from cache[0m
+
+[01;34m/home/opam: (run (shell "uname -rs && opam exec -- ocaml -version && opam --version"))[0m
+Linux 5.15.0-107-generic
+The OCaml toplevel, version 4.14.2
+2.1.6
+[01;2m[01;35m2024-05-31 11:37.05 ---> using "9702442a4beab8f1ec9868ede9345690cc7e926a709756e7ab878883b40630bc" from cache[0m
+
+[01;34m/home/opam: (env OPAMDOWNLOADJOBS 1)[0m
+
+[01;34m/home/opam: (env OPAMERRLOGLEN 0)[0m
+
+[01;34m/home/opam: (env OPAMSOLVERTIMEOUT 500)[0m
+
+[01;34m/home/opam: (env OPAMPRECISETRACKING 1)[0m
+
+[01;34m/home/opam: (env CI true)[0m
+
+[01;34m/home/opam: (env OPAM_REPO_CI true)[0m
+
+[01;34m/home/opam: (run (shell "rm -rf opam-repository/"))[0m
+[01;2m[01;35m2024-05-31 11:37.05 ---> using "7b48adb7bf8c739ac7a8258c54111d6a58f69ec86b859ebeca733e25c24244af" from cache[0m
+
+[01;34m/home/opam: (copy (src .) (dst opam-repository/))[0m
+[01;2m[01;35m2024-05-31 11:37.06 ---> using "ecf2d121ab09755b897a1779282f0a219a71a96f7bce9ba47e466e8f5c82204f" from cache[0m
+
+[01;34m/home/opam: (run (shell "opam repository set-url --strict default opam-repository/"))[0m
+[default] Initialised
+[01;2m[01;35m2024-05-31 11:37.13 ---> saved as "c06a9c357e4fc222c61e512938806ce0f31814eb473c1c84ba095a9054edcc95"[0m
+
+[01;34m/home/opam: (run (network host)
+                 (shell "opam update --depexts || true"))[0m
++ /usr/bin/sudo "apt-get" "update"
+- Hit:1 http://deb.debian.org/debian bookworm InRelease
+- Get:2 http://deb.debian.org/debian bookworm-updates InRelease [55.4 kB]
+- Get:3 http://deb.debian.org/debian-security bookworm-security InRelease [48.0 kB]
+- Get:4 http://deb.debian.org/debian-security bookworm-security/main amd64 Packages [157 kB]
+- Fetched 261 kB in 0s (996 kB/s)
+- Reading package lists...
+[01;2m[01;35m2024-05-31 11:37.14 ---> saved as "6181c113d31a57cd223ecc6eed807e173818ed169e9931c034a3dcac7326e410"[0m
+
+[01;34m/home/opam: (run (shell "opam pin add -k version -yn git-mirage.3.10.0 3.10.0"))[0m
+git-mirage is now pinned to version 3.10.0
+[01;2m[01;35m2024-05-31 11:37.15 ---> saved as "17753f4a1fe2e8b980d59046dcc0b74dd5706a41b24714e70332e2daee563b32"[0m
+
+[01;34m/home/opam: (run (cache (opam-archives (target /home/opam/.opam/download-cache)))
+                 (network host)
+                 (shell  "opam reinstall git-mirage.3.10.0;\
+                        \n        res=$?;\
+                        \n        test \"$res\" != 31 && exit \"$res\";\
+                        \n        export OPAMCLI=2.0;\
+                        \n        build_dir=$(opam var prefix)/.opam-switch/build;\
+                        \n        failed=$(ls \"$build_dir\");\
+                        \n        partial_fails=\"\";\
+                        \n        for pkg in $failed; do\
+                        \n          if opam show -f x-ci-accept-failures: \"$pkg\" | grep -qF \"\\\"debian-12\\\"\"; then\
+                        \n            echo \"A package failed and has been disabled for CI using the 'x-ci-accept-failures' field.\";\
+                        \n          fi;\
+                        \n          test \"$pkg\" != 'git-mirage.3.10.0' && partial_fails=\"$partial_fails $pkg\";\
+                        \n        done;\
+                        \n        test \"${partial_fails}\" != \"\" && echo \"opam-repo-ci detected dependencies failing: ${partial_fails}\";\
+                        \n        exit 1"))[0m
+git-mirage.3.10.0 is not installed. Install it? [Y/n] y
+[ERROR] Sorry, resolution of the request timed out.
+        Try to specify a more precise request, use a different solver, or increase the allowed time by setting OPAMSOLVERTIMEOUT to a bigger value (currently, it is set to 500.0 seconds).
+"/usr/bin/env" "bash" "-c" "opam reinstall git-mirage.3.10.0;
+        res=$?;
+        test "$res" != 31 && exit "$res";
+        export OPAMCLI=2.0;
+        build_dir=$(opam var prefix)/.opam-switch/build;
+        failed=$(ls "$build_dir");
+        partial_fails="";
+        for pkg in $failed; do
+          if opam show -f x-ci-accept-failures: "$pkg" | grep -qF "\"debian-12\""; then
+            echo "A package failed and has been disabled for CI using the 'x-ci-accept-failures' field.";
+          fi;
+          test "$pkg" != 'git-mirage.3.10.0' && partial_fails="$partial_fails $pkg";
+        done;
+        test "${partial_fails}" != "" && echo "opam-repo-ci detected dependencies failing: ${partial_fails}";
+        exit 1" failed with exit status 60
+2024-05-31 11:46.02: Job failed: Failed: Build failed
+2024-05-31 11:46.02: Log analysis:
+2024-05-31 11:46.02: >>> 
+[ERROR] Sorry, resolution of the request timed out.
+ (score = 20)
+2024-05-31 11:46.02: Sorry, resolution of the request timed out.

@@ -1,0 +1,333 @@
+2024-06-17 08:44.43: New job: test fiat-p256.0.2.1, using opam dev
+                              from https://github.com/ocaml/opam-repository.git#refs/pull/26099/head (1aa0b2e1f9e904158622b048467db280582020ba)
+                              on debian-12-ocaml-4.05/amd64
+
+To reproduce locally:
+
+cd $(mktemp -d)
+git clone --recursive "https://github.com/ocaml/opam-repository.git" && cd "opam-repository" && git fetch origin "refs/pull/26099/head" && git reset --hard 1aa0b2e1
+git fetch origin master
+git merge --no-edit b6de4bb8dee70812d424cc3121b00a1e03b2b447
+cat > ../Dockerfile <<'END-OF-DOCKERFILE'
+[34mFROM ocaml/opam:debian-12-ocaml-4.05@sha256:8292f3b7ecdf5b508fc61d8e066d547eeb578a136ec892099d38d199257bc1b1
+USER 1000:1000
+WORKDIR /home/opam
+RUN sudo ln -f /usr/bin/opam-dev /usr/bin/opam
+RUN opam init --reinit -ni
+RUN uname -rs && opam exec -- ocaml -version && opam --version
+ENV OPAMDOWNLOADJOBS="1"
+ENV OPAMERRLOGLEN="0"
+ENV OPAMSOLVERTIMEOUT="500"
+ENV OPAMPRECISETRACKING="1"
+ENV CI="true"
+ENV OPAM_REPO_CI="true"
+RUN rm -rf opam-repository/
+COPY --chown=1000:1000 . opam-repository/
+RUN opam repository set-url --strict default opam-repository/
+RUN opam update --depexts || true
+RUN opam pin add -k version -yn fiat-p256.0.2.1 0.2.1
+RUN opam reinstall fiat-p256.0.2.1; \
+    res=$?; \
+    test "$res" != 31 && exit "$res"; \
+    export OPAMCLI=2.0; \
+    build_dir=$(opam var prefix)/.opam-switch/build; \
+    failed=$(ls "$build_dir"); \
+    partial_fails=""; \
+    for pkg in $failed; do \
+    if opam show -f x-ci-accept-failures: "$pkg" | grep -qF "\"debian-12\""; then \
+    echo "A package failed and has been disabled for CI using the 'x-ci-accept-failures' field."; \
+    fi; \
+    test "$pkg" != 'fiat-p256.0.2.1' && partial_fails="$partial_fails $pkg"; \
+    done; \
+    test "${partial_fails}" != "" && echo "opam-repo-ci detected dependencies failing: ${partial_fails}"; \
+    exit 1
+RUN (opam reinstall --with-test fiat-p256.0.2.1) || true
+RUN opam reinstall --with-test --verbose fiat-p256.0.2.1; \
+    res=$?; \
+    test "$res" != 31 && exit "$res"; \
+    export OPAMCLI=2.0; \
+    build_dir=$(opam var prefix)/.opam-switch/build; \
+    failed=$(ls "$build_dir"); \
+    partial_fails=""; \
+    for pkg in $failed; do \
+    if opam show -f x-ci-accept-failures: "$pkg" | grep -qF "\"debian-12\""; then \
+    echo "A package failed and has been disabled for CI using the 'x-ci-accept-failures' field."; \
+    fi; \
+    test "$pkg" != 'fiat-p256.0.2.1' && partial_fails="$partial_fails $pkg"; \
+    done; \
+    test "${partial_fails}" != "" && echo "opam-repo-ci detected dependencies failing: ${partial_fails}"; \
+    exit 1
+[0m
+END-OF-DOCKERFILE
+docker build -f ../Dockerfile .
+
+2024-06-17 08:44.43: Using cache hint "ocaml/opam:debian-12-ocaml-4.05@sha256:8292f3b7ecdf5b508fc61d8e066d547eeb578a136ec892099d38d199257bc1b1-fiat-p256.0.2.1-1aa0b2e1f9e904158622b048467db280582020ba"
+2024-06-17 08:44.43: Using OBuilder spec:
+((from ocaml/opam:debian-12-ocaml-4.05@sha256:8292f3b7ecdf5b508fc61d8e066d547eeb578a136ec892099d38d199257bc1b1)
+ (user (uid 1000) (gid 1000))
+ (workdir /home/opam)
+ (run (shell "sudo ln -f /usr/bin/opam-dev /usr/bin/opam"))
+ (run (network host)
+      (shell "opam init --reinit --config .opamrc-sandbox -ni"))
+ (run (shell "uname -rs && opam exec -- ocaml -version && opam --version"))
+ (env OPAMDOWNLOADJOBS 1)
+ (env OPAMERRLOGLEN 0)
+ (env OPAMSOLVERTIMEOUT 500)
+ (env OPAMPRECISETRACKING 1)
+ (env CI true)
+ (env OPAM_REPO_CI true)
+ (run (shell "rm -rf opam-repository/"))
+ (copy (src .) (dst opam-repository/))
+ (run (shell "opam repository set-url --strict default opam-repository/"))
+ (run (network host)
+      (shell "opam update --depexts || true"))
+ (run (shell "opam pin add -k version -yn fiat-p256.0.2.1 0.2.1"))
+ (run (cache (opam-archives (target /home/opam/.opam/download-cache)))
+      (network host)
+      (shell  "opam reinstall fiat-p256.0.2.1;\
+             \n        res=$?;\
+             \n        test \"$res\" != 31 && exit \"$res\";\
+             \n        export OPAMCLI=2.0;\
+             \n        build_dir=$(opam var prefix)/.opam-switch/build;\
+             \n        failed=$(ls \"$build_dir\");\
+             \n        partial_fails=\"\";\
+             \n        for pkg in $failed; do\
+             \n          if opam show -f x-ci-accept-failures: \"$pkg\" | grep -qF \"\\\"debian-12\\\"\"; then\
+             \n            echo \"A package failed and has been disabled for CI using the 'x-ci-accept-failures' field.\";\
+             \n          fi;\
+             \n          test \"$pkg\" != 'fiat-p256.0.2.1' && partial_fails=\"$partial_fails $pkg\";\
+             \n        done;\
+             \n        test \"${partial_fails}\" != \"\" && echo \"opam-repo-ci detected dependencies failing: ${partial_fails}\";\
+             \n        exit 1"))
+ (run (network host)
+      (shell "(opam reinstall --with-test fiat-p256.0.2.1) || true"))
+ (run (shell  "opam reinstall --with-test --verbose fiat-p256.0.2.1;\
+             \n        res=$?;\
+             \n        test \"$res\" != 31 && exit \"$res\";\
+             \n        export OPAMCLI=2.0;\
+             \n        build_dir=$(opam var prefix)/.opam-switch/build;\
+             \n        failed=$(ls \"$build_dir\");\
+             \n        partial_fails=\"\";\
+             \n        for pkg in $failed; do\
+             \n          if opam show -f x-ci-accept-failures: \"$pkg\" | grep -qF \"\\\"debian-12\\\"\"; then\
+             \n            echo \"A package failed and has been disabled for CI using the 'x-ci-accept-failures' field.\";\
+             \n          fi;\
+             \n          test \"$pkg\" != 'fiat-p256.0.2.1' && partial_fails=\"$partial_fails $pkg\";\
+             \n        done;\
+             \n        test \"${partial_fails}\" != \"\" && echo \"opam-repo-ci detected dependencies failing: ${partial_fails}\";\
+             \n        exit 1"))
+)
+
+2024-06-17 08:44.43: Waiting for resource in pool OCluster
+2024-06-17 08:45.26: Waiting for worker…
+2024-06-17 08:49.13: Got resource from pool OCluster
+Building on doris.caelum.ci.dev
+All commits already cached
+Updating files:  72% (22989/31523)Updating files:  73% (23012/31523)Updating files:  74% (23328/31523)Updating files:  75% (23643/31523)Updating files:  76% (23958/31523)Updating files:  77% (24273/31523)Updating files:  78% (24588/31523)Updating files:  79% (24904/31523)Updating files:  80% (25219/31523)Updating files:  81% (25534/31523)Updating files:  82% (25849/31523)Updating files:  83% (26165/31523)Updating files:  84% (26480/31523)Updating files:  85% (26795/31523)Updating files:  86% (27110/31523)Updating files:  87% (27426/31523)Updating files:  88% (27741/31523)Updating files:  89% (28056/31523)Updating files:  90% (28371/31523)Updating files:  91% (28686/31523)Updating files:  92% (29002/31523)Updating files:  93% (29317/31523)Updating files:  94% (29632/31523)Updating files:  95% (29947/31523)Updating files:  96% (30263/31523)Updating files:  97% (30578/31523)Updating files:  98% (30893/31523)Updating files:  99% (31208/31523)Updating files: 100% (31523/31523)Updating files: 100% (31523/31523), done.
+HEAD is now at b6de4bb8de Merge pull request #26056 from raphael-proust/opam-publish-aches-aches-lwt-ringo.1.1.0
+Updating b6de4bb8de..1aa0b2e1f9
+Fast-forward
+ packages/fiat-p256/fiat-p256.0.2.1/opam          | 4 ++--
+ packages/fiat-p256/fiat-p256.0.2.2/opam          | 4 ++--
+ packages/fiat-p256/fiat-p256.0.2.3/opam          | 4 ++--
+ packages/mirage-crypto/mirage-crypto.0.10.0/opam | 2 +-
+ packages/mirage-crypto/mirage-crypto.0.10.1/opam | 2 +-
+ packages/mirage-crypto/mirage-crypto.0.10.2/opam | 2 +-
+ packages/mirage-crypto/mirage-crypto.0.10.3/opam | 4 ++--
+ packages/mirage-crypto/mirage-crypto.0.10.4/opam | 2 +-
+ packages/mirage-crypto/mirage-crypto.0.10.5/opam | 2 +-
+ packages/mirage-crypto/mirage-crypto.0.10.6/opam | 2 +-
+ packages/mirage-crypto/mirage-crypto.0.10.7/opam | 2 +-
+ packages/mirage-crypto/mirage-crypto.0.11.0/opam | 2 +-
+ packages/mirage-crypto/mirage-crypto.0.11.1/opam | 2 +-
+ packages/mirage-crypto/mirage-crypto.0.11.2/opam | 2 +-
+ packages/mirage-crypto/mirage-crypto.0.11.3/opam | 2 +-
+ packages/mirage-crypto/mirage-crypto.0.8.1/opam  | 2 +-
+ packages/mirage-crypto/mirage-crypto.0.8.10/opam | 2 +-
+ packages/mirage-crypto/mirage-crypto.0.8.2/opam  | 2 +-
+ packages/mirage-crypto/mirage-crypto.0.8.3/opam  | 2 +-
+ packages/mirage-crypto/mirage-crypto.0.8.4/opam  | 2 +-
+ packages/mirage-crypto/mirage-crypto.0.8.5/opam  | 2 +-
+ packages/mirage-crypto/mirage-crypto.0.8.6/opam  | 2 +-
+ packages/mirage-crypto/mirage-crypto.0.8.7/opam  | 2 +-
+ packages/mirage-crypto/mirage-crypto.0.8.8/opam  | 2 +-
+ packages/mirage-crypto/mirage-crypto.0.8.9/opam  | 2 +-
+ packages/mirage-crypto/mirage-crypto.0.9.0/opam  | 2 +-
+ packages/mirage-crypto/mirage-crypto.0.9.1/opam  | 2 +-
+ packages/mirage-crypto/mirage-crypto.0.9.2/opam  | 2 +-
+ 28 files changed, 32 insertions(+), 32 deletions(-)
+
+[01;34m(from ocaml/opam:debian-12-ocaml-4.05@sha256:8292f3b7ecdf5b508fc61d8e066d547eeb578a136ec892099d38d199257bc1b1)[0m
+[01;2m[01;35m2024-06-17 08:50.03 ---> using "8906763be5364ca1523dd923d3140faf28571395cf8c6c4174af9a7932eeed21" from cache[0m
+
+[01;34m/: (user (uid 1000) (gid 1000))[0m
+
+[01;34m/: (workdir /home/opam)[0m
+
+[01;34m/home/opam: (run (shell "sudo ln -f /usr/bin/opam-dev /usr/bin/opam"))[0m
+[01;2m[01;35m2024-06-17 08:50.03 ---> using "eb5b1c968239b3359b95353544e6853e40696cbf38f36ad0ce4c9d5e7eddaf93" from cache[0m
+
+[01;34m/home/opam: (run (network host)
+                 (shell "opam init --reinit --config .opamrc-sandbox -ni"))[0m
+Configuring from /home/opam/.opamrc-sandbox, then /home/opam/.opamrc, and finally from built-in defaults.
+Checking for available remotes: rsync and local, git.
+  - you won't be able to use mercurial repositories unless you install the hg command on your system.
+  - you won't be able to use darcs repositories unless you install the darcs command on your system.
+
+This development version of opam requires an update to the layout of /home/opam/.opam from version 2.0 to version 2.2~beta, which can't be reverted.
+You may want to back it up before going further.
+
+Continue? [y/n] y
+[NOTE] The 'jobs' option was reset, its value was 39 and its new value will vary according to the current number of cores on your machine. You can restore the fixed value using:
+           opam option jobs=39 --global
+Format upgrade done.
+
+<><> Updating repositories ><><><><><><><><><><><><><><><><><><><><><><><><><><>
+[default] synchronised from file:///home/opam/opam-repository
+[01;2m[01;35m2024-06-17 08:50.03 ---> using "31d7c88921e8cc3fa3549284e7dc32bdaa98d9303c60d3d8628c8db83097ebf6" from cache[0m
+
+[01;34m/home/opam: (run (shell "uname -rs && opam exec -- ocaml -version && opam --version"))[0m
+Linux 5.15.0-112-generic
+The OCaml toplevel, version 4.05.0
+2.2.0~beta3~dev
+[01;2m[01;35m2024-06-17 08:50.03 ---> using "6230ec516856c0d5ce42e36264e7f6e2af9825eaa2803f451572152dac91e091" from cache[0m
+
+[01;34m/home/opam: (env OPAMDOWNLOADJOBS 1)[0m
+
+[01;34m/home/opam: (env OPAMERRLOGLEN 0)[0m
+
+[01;34m/home/opam: (env OPAMSOLVERTIMEOUT 500)[0m
+
+[01;34m/home/opam: (env OPAMPRECISETRACKING 1)[0m
+
+[01;34m/home/opam: (env CI true)[0m
+
+[01;34m/home/opam: (env OPAM_REPO_CI true)[0m
+
+[01;34m/home/opam: (run (shell "rm -rf opam-repository/"))[0m
+[01;2m[01;35m2024-06-17 08:50.03 ---> using "9407b1a9c6f7c3395289ea681ce892b481b2949d61ea99e55081687fa80d5747" from cache[0m
+
+[01;34m/home/opam: (copy (src .) (dst opam-repository/))[0m
+[01;2m[01;35m2024-06-17 08:50.04 ---> using "3e57506d138948d1dd5ebe69840e9261231389f96c0e512dd671cc50e809a9d9" from cache[0m
+
+[01;34m/home/opam: (run (shell "opam repository set-url --strict default opam-repository/"))[0m
+[default] Initialised
+[01;2m[01;35m2024-06-17 08:50.06 ---> saved as "f5e640c3ef8fdbee96d9589abb4646150e27db9dd140e9c3c4b31c2ef6b6a9fd"[0m
+
+[01;34m/home/opam: (run (network host)
+                 (shell "opam update --depexts || true"))[0m
++ /usr/bin/sudo "apt-get" "update"
+- Hit:1 http://deb.debian.org/debian bookworm InRelease
+- Get:2 http://deb.debian.org/debian bookworm-updates InRelease [55.4 kB]
+- Get:3 http://deb.debian.org/debian-security bookworm-security InRelease [48.0 kB]
+- Get:4 http://deb.debian.org/debian-security bookworm-security/main amd64 Packages [160 kB]
+- Fetched 263 kB in 0s (581 kB/s)
+- Reading package lists...
+[01;2m[01;35m2024-06-17 08:50.08 ---> saved as "9c44e9e553dbacb2436ea5135867f89d50add1ec6fb17a3f6186d4503ab0baa5"[0m
+
+[01;34m/home/opam: (run (shell "opam pin add -k version -yn fiat-p256.0.2.1 0.2.1"))[0m
+fiat-p256 is now pinned to version 0.2.1
+[01;2m[01;35m2024-06-17 08:50.10 ---> saved as "c97854ae4efbef1a08a2a705877152ca3cbae29d735c870966470c02449cd1f1"[0m
+
+[01;34m/home/opam: (run (cache (opam-archives (target /home/opam/.opam/download-cache)))
+                 (network host)
+                 (shell  "opam reinstall fiat-p256.0.2.1;\
+                        \n        res=$?;\
+                        \n        test \"$res\" != 31 && exit \"$res\";\
+                        \n        export OPAMCLI=2.0;\
+                        \n        build_dir=$(opam var prefix)/.opam-switch/build;\
+                        \n        failed=$(ls \"$build_dir\");\
+                        \n        partial_fails=\"\";\
+                        \n        for pkg in $failed; do\
+                        \n          if opam show -f x-ci-accept-failures: \"$pkg\" | grep -qF \"\\\"debian-12\\\"\"; then\
+                        \n            echo \"A package failed and has been disabled for CI using the 'x-ci-accept-failures' field.\";\
+                        \n          fi;\
+                        \n          test \"$pkg\" != 'fiat-p256.0.2.1' && partial_fails=\"$partial_fails $pkg\";\
+                        \n        done;\
+                        \n        test \"${partial_fails}\" != \"\" && echo \"opam-repo-ci detected dependencies failing: ${partial_fails}\";\
+                        \n        exit 1"))[0m
+fiat-p256.0.2.1 is not installed. Install it? [y/n] y
+The following actions will be performed:
+=== install 10 packages
+  - install bigarray-compat     1.1.0          [required by fiat-p256]
+  - install csexp               1.5.2          [required by dune-configurator]
+  - install cstruct             6.0.1          [required by fiat-p256]
+  - install dune                3.15.3         [required by fiat-p256]
+  - install dune-configurator   3.15.3         [required by fiat-p256]
+  - install eqaf                0.7            [required by fiat-p256]
+  - install fiat-p256           0.2.1 (pinned)
+  - install hex                 1.4.0          [required by fiat-p256]
+  - install ocamlfind           1.9.6          [required by ocamlfind-secondary]
+  - install ocamlfind-secondary 1.9.6          [required by dune]
+
+<><> Processing actions <><><><><><><><><><><><><><><><><><><><><><><><><><><><>
+-> retrieved bigarray-compat.1.1.0  (cached)
+-> retrieved csexp.1.5.2  (cached)
+-> retrieved cstruct.6.0.1  (cached)
+-> retrieved dune.3.15.3, dune-configurator.3.15.3  (cached)
+-> retrieved eqaf.0.7  (cached)
+-> retrieved fiat-p256.0.2.1  (cached)
+-> retrieved hex.1.4.0  (cached)
+-> retrieved ocamlfind.1.9.6, ocamlfind-secondary.1.9.6  (cached)
+-> installed ocamlfind.1.9.6
+-> installed ocamlfind-secondary.1.9.6
+-> installed dune.3.15.3
+-> installed bigarray-compat.1.1.0
+-> installed csexp.1.5.2
+-> installed cstruct.6.0.1
+-> installed hex.1.4.0
+-> installed eqaf.0.7
+-> installed dune-configurator.3.15.3
+-> installed fiat-p256.0.2.1
+Done.
+# Run eval $(opam env) to update the current shell environment
+[01;2m[01;35m2024-06-17 08:50.49 ---> saved as "b76a391e477f90ceb155dd7f624704c8ffecf32e7e36d8e35df5833f5feb473b"[0m
+
+[01;34m/home/opam: (run (network host)
+                 (shell "(opam reinstall --with-test fiat-p256.0.2.1) || true"))[0m
+[ERROR] Sorry, resolution of the request timed out.
+        Try to specify a more precise request, use a different solver, or increase the allowed time by setting OPAMSOLVERTIMEOUT to a bigger value (currently, it is set to 500.0 seconds).
+[01;2m[01;35m2024-06-17 08:59.17 ---> saved as "2983fa4950914e48726bc5bf8c88002955423d3c372b931b106b0fbe5437daeb"[0m
+
+[01;34m/home/opam: (run (shell  "opam reinstall --with-test --verbose fiat-p256.0.2.1;\
+                        \n        res=$?;\
+                        \n        test \"$res\" != 31 && exit \"$res\";\
+                        \n        export OPAMCLI=2.0;\
+                        \n        build_dir=$(opam var prefix)/.opam-switch/build;\
+                        \n        failed=$(ls \"$build_dir\");\
+                        \n        partial_fails=\"\";\
+                        \n        for pkg in $failed; do\
+                        \n          if opam show -f x-ci-accept-failures: \"$pkg\" | grep -qF \"\\\"debian-12\\\"\"; then\
+                        \n            echo \"A package failed and has been disabled for CI using the 'x-ci-accept-failures' field.\";\
+                        \n          fi;\
+                        \n          test \"$pkg\" != 'fiat-p256.0.2.1' && partial_fails=\"$partial_fails $pkg\";\
+                        \n        done;\
+                        \n        test \"${partial_fails}\" != \"\" && echo \"opam-repo-ci detected dependencies failing: ${partial_fails}\";\
+                        \n        exit 1"))[0m
+[ERROR] Sorry, resolution of the request timed out.
+        Try to specify a more precise request, use a different solver, or increase the allowed time by setting OPAMSOLVERTIMEOUT to a bigger value (currently, it is set to 500.0 seconds).
+'opam reinstall --with-test --verbose fiat-p256.0.2.1' failed.
+"/usr/bin/env" "bash" "-c" "opam reinstall --with-test --verbose fiat-p256.0.2.1;
+        res=$?;
+        test "$res" != 31 && exit "$res";
+        export OPAMCLI=2.0;
+        build_dir=$(opam var prefix)/.opam-switch/build;
+        failed=$(ls "$build_dir");
+        partial_fails="";
+        for pkg in $failed; do
+          if opam show -f x-ci-accept-failures: "$pkg" | grep -qF "\"debian-12\""; then
+            echo "A package failed and has been disabled for CI using the 'x-ci-accept-failures' field.";
+          fi;
+          test "$pkg" != 'fiat-p256.0.2.1' && partial_fails="$partial_fails $pkg";
+        done;
+        test "${partial_fails}" != "" && echo "opam-repo-ci detected dependencies failing: ${partial_fails}";
+        exit 1" failed with exit status 60
+2024-06-17 09:07.58: Job failed: Failed: Build failed
+2024-06-17 09:07.58: Log analysis:
+2024-06-17 09:07.58: >>> 
+[ERROR] Sorry, resolution of the request timed out.
+ (score = 20)
+2024-06-17 09:07.58: >>> 
+[ERROR] Sorry, resolution of the request timed out.
+ (score = 20)
+2024-06-17 09:07.58: Sorry, resolution of the request timed out.

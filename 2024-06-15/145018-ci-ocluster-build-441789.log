@@ -1,0 +1,315 @@
+2024-06-15 14:50.18: New job: test ocsipersist-dbm-config.2.0.0, using opam 2.0
+                              from https://github.com/ocaml/opam-repository.git#refs/pull/26059/head (e60667a80e441b6769b37662f14dc078292c0ed0)
+                              on debian-12-ocaml-4.14/amd64
+
+To reproduce locally:
+
+cd $(mktemp -d)
+git clone --recursive "https://github.com/ocaml/opam-repository.git" && cd "opam-repository" && git fetch origin "refs/pull/26059/head" && git reset --hard e60667a8
+git fetch origin master
+git merge --no-edit b6de4bb8dee70812d424cc3121b00a1e03b2b447
+cat > ../Dockerfile <<'END-OF-DOCKERFILE'
+[34mFROM ocaml/opam:debian-12-ocaml-4.14@sha256:68ecefb12259af7ac8f85f40002bb77c47ee641474979fd6a320ed7bf1222c7c
+USER 1000:1000
+WORKDIR /home/opam
+RUN sudo ln -f /usr/bin/opam-2.0 /usr/bin/opam
+RUN opam init --reinit -ni
+RUN uname -rs && opam exec -- ocaml -version && opam --version
+ENV OPAMDOWNLOADJOBS="1"
+ENV OPAMERRLOGLEN="0"
+ENV OPAMSOLVERTIMEOUT="500"
+ENV OPAMPRECISETRACKING="1"
+ENV CI="true"
+ENV OPAM_REPO_CI="true"
+RUN rm -rf opam-repository/
+COPY --chown=1000:1000 . opam-repository/
+RUN opam repository set-url --strict default opam-repository/
+RUN opam depext -u || true
+RUN opam pin add -k version -yn ocsipersist-dbm-config.2.0.0 2.0.0
+RUN opam depext ocsipersist-dbm-config.2.0.0 && opam reinstall ocsipersist-dbm-config.2.0.0; \
+    res=$?; \
+    test "$res" != 31 && exit "$res"; \
+    export OPAMCLI=2.0; \
+    build_dir=$(opam var prefix)/.opam-switch/build; \
+    failed=$(ls "$build_dir"); \
+    partial_fails=""; \
+    for pkg in $failed; do \
+    if opam show -f x-ci-accept-failures: "$pkg" | grep -qF "\"debian-12\""; then \
+    echo "A package failed and has been disabled for CI using the 'x-ci-accept-failures' field."; \
+    fi; \
+    test "$pkg" != 'ocsipersist-dbm-config.2.0.0' && partial_fails="$partial_fails $pkg"; \
+    done; \
+    test "${partial_fails}" != "" && echo "opam-repo-ci detected dependencies failing: ${partial_fails}"; \
+    exit 1
+RUN (opam depext --with-test ocsipersist-dbm-config.2.0.0 && opam reinstall --with-test ocsipersist-dbm-config.2.0.0) || true
+RUN opam depext --with-test ocsipersist-dbm-config.2.0.0 && opam reinstall --with-test --verbose ocsipersist-dbm-config.2.0.0; \
+    res=$?; \
+    test "$res" != 31 && exit "$res"; \
+    export OPAMCLI=2.0; \
+    build_dir=$(opam var prefix)/.opam-switch/build; \
+    failed=$(ls "$build_dir"); \
+    partial_fails=""; \
+    for pkg in $failed; do \
+    if opam show -f x-ci-accept-failures: "$pkg" | grep -qF "\"debian-12\""; then \
+    echo "A package failed and has been disabled for CI using the 'x-ci-accept-failures' field."; \
+    fi; \
+    test "$pkg" != 'ocsipersist-dbm-config.2.0.0' && partial_fails="$partial_fails $pkg"; \
+    done; \
+    test "${partial_fails}" != "" && echo "opam-repo-ci detected dependencies failing: ${partial_fails}"; \
+    exit 1
+[0m
+END-OF-DOCKERFILE
+docker build -f ../Dockerfile .
+
+2024-06-15 14:50.18: Using cache hint "ocaml/opam:debian-12-ocaml-4.14@sha256:68ecefb12259af7ac8f85f40002bb77c47ee641474979fd6a320ed7bf1222c7c-ocsipersist-dbm-config.2.0.0-e60667a80e441b6769b37662f14dc078292c0ed0"
+2024-06-15 14:50.18: Using OBuilder spec:
+((from ocaml/opam:debian-12-ocaml-4.14@sha256:68ecefb12259af7ac8f85f40002bb77c47ee641474979fd6a320ed7bf1222c7c)
+ (user (uid 1000) (gid 1000))
+ (workdir /home/opam)
+ (run (shell "sudo ln -f /usr/bin/opam-2.0 /usr/bin/opam"))
+ (run (network host)
+      (shell "opam init --reinit --config .opamrc-sandbox -ni"))
+ (run (shell "uname -rs && opam exec -- ocaml -version && opam --version"))
+ (env OPAMDOWNLOADJOBS 1)
+ (env OPAMERRLOGLEN 0)
+ (env OPAMSOLVERTIMEOUT 500)
+ (env OPAMPRECISETRACKING 1)
+ (env CI true)
+ (env OPAM_REPO_CI true)
+ (run (shell "rm -rf opam-repository/"))
+ (copy (src .) (dst opam-repository/))
+ (run (shell "opam repository set-url --strict default opam-repository/"))
+ (run (network host)
+      (shell "opam depext -u || true"))
+ (run (shell "opam pin add -k version -yn ocsipersist-dbm-config.2.0.0 2.0.0"))
+ (run (cache (opam-archives (target /home/opam/.opam/download-cache)))
+      (network host)
+      (shell  "opam depext ocsipersist-dbm-config.2.0.0 && opam reinstall ocsipersist-dbm-config.2.0.0;\
+             \n        res=$?;\
+             \n        test \"$res\" != 31 && exit \"$res\";\
+             \n        export OPAMCLI=2.0;\
+             \n        build_dir=$(opam var prefix)/.opam-switch/build;\
+             \n        failed=$(ls \"$build_dir\");\
+             \n        partial_fails=\"\";\
+             \n        for pkg in $failed; do\
+             \n          if opam show -f x-ci-accept-failures: \"$pkg\" | grep -qF \"\\\"debian-12\\\"\"; then\
+             \n            echo \"A package failed and has been disabled for CI using the 'x-ci-accept-failures' field.\";\
+             \n          fi;\
+             \n          test \"$pkg\" != 'ocsipersist-dbm-config.2.0.0' && partial_fails=\"$partial_fails $pkg\";\
+             \n        done;\
+             \n        test \"${partial_fails}\" != \"\" && echo \"opam-repo-ci detected dependencies failing: ${partial_fails}\";\
+             \n        exit 1"))
+ (run (network host)
+      (shell "(opam depext --with-test ocsipersist-dbm-config.2.0.0 && opam reinstall --with-test ocsipersist-dbm-config.2.0.0) || true"))
+ (run (shell  "opam depext --with-test ocsipersist-dbm-config.2.0.0 && opam reinstall --with-test --verbose ocsipersist-dbm-config.2.0.0;\
+             \n        res=$?;\
+             \n        test \"$res\" != 31 && exit \"$res\";\
+             \n        export OPAMCLI=2.0;\
+             \n        build_dir=$(opam var prefix)/.opam-switch/build;\
+             \n        failed=$(ls \"$build_dir\");\
+             \n        partial_fails=\"\";\
+             \n        for pkg in $failed; do\
+             \n          if opam show -f x-ci-accept-failures: \"$pkg\" | grep -qF \"\\\"debian-12\\\"\"; then\
+             \n            echo \"A package failed and has been disabled for CI using the 'x-ci-accept-failures' field.\";\
+             \n          fi;\
+             \n          test \"$pkg\" != 'ocsipersist-dbm-config.2.0.0' && partial_fails=\"$partial_fails $pkg\";\
+             \n        done;\
+             \n        test \"${partial_fails}\" != \"\" && echo \"opam-repo-ci detected dependencies failing: ${partial_fails}\";\
+             \n        exit 1"))
+)
+
+2024-06-15 14:50.18: Waiting for resource in pool OCluster
+2024-06-15 15:05.46: Waiting for worker…
+2024-06-15 15:09.47: Got resource from pool OCluster
+Building on doris.caelum.ci.dev
+All commits already cached
+Updating files:  98% (31081/31531)Updating files:  99% (31216/31531)Updating files: 100% (31531/31531)Updating files: 100% (31531/31531), done.
+HEAD is now at b6de4bb8de Merge pull request #26056 from raphael-proust/opam-publish-aches-aches-lwt-ringo.1.1.0
+Updating b6de4bb8de..e60667a80e
+Fast-forward
+ .../ocsipersist-dbm-config.2.0.0/opam              | 27 +++++++++++++++++++
+ .../ocsipersist-dbm/ocsipersist-dbm.2.0.0/opam     | 28 ++++++++++++++++++++
+ .../ocsipersist-lib/ocsipersist-lib.2.0.0/opam     | 25 ++++++++++++++++++
+ .../ocsipersist-pgsql-config.2.0.0/opam            | 27 +++++++++++++++++++
+ .../ocsipersist-pgsql/ocsipersist-pgsql.2.0.0/opam | 28 ++++++++++++++++++++
+ .../ocsipersist-sqlite-config.2.0.0/opam           | 26 +++++++++++++++++++
+ .../ocsipersist-sqlite.2.0.0/opam                  | 27 +++++++++++++++++++
+ packages/ocsipersist/ocsipersist.2.0.0/opam        | 30 ++++++++++++++++++++++
+ 8 files changed, 218 insertions(+)
+ create mode 100644 packages/ocsipersist-dbm-config/ocsipersist-dbm-config.2.0.0/opam
+ create mode 100644 packages/ocsipersist-dbm/ocsipersist-dbm.2.0.0/opam
+ create mode 100644 packages/ocsipersist-lib/ocsipersist-lib.2.0.0/opam
+ create mode 100644 packages/ocsipersist-pgsql-config/ocsipersist-pgsql-config.2.0.0/opam
+ create mode 100644 packages/ocsipersist-pgsql/ocsipersist-pgsql.2.0.0/opam
+ create mode 100644 packages/ocsipersist-sqlite-config/ocsipersist-sqlite-config.2.0.0/opam
+ create mode 100644 packages/ocsipersist-sqlite/ocsipersist-sqlite.2.0.0/opam
+ create mode 100644 packages/ocsipersist/ocsipersist.2.0.0/opam
+
+[01;34m(from ocaml/opam:debian-12-ocaml-4.14@sha256:68ecefb12259af7ac8f85f40002bb77c47ee641474979fd6a320ed7bf1222c7c)[0m
+[01;2m[01;35m2024-06-15 15:09.57 ---> using "be6362479294069b96a78ceb45e5e59b696aa4ead55eec8c4ca81a46ae6af254" from cache[0m
+
+[01;34m/: (user (uid 1000) (gid 1000))[0m
+
+[01;34m/: (workdir /home/opam)[0m
+
+[01;34m/home/opam: (run (shell "sudo ln -f /usr/bin/opam-2.0 /usr/bin/opam"))[0m
+[01;2m[01;35m2024-06-15 15:09.57 ---> using "8f16c3337c5fccb4d5d95e4f50d896e72553a3d23318d878624430ed118d783e" from cache[0m
+
+[01;34m/home/opam: (run (network host)
+                 (shell "opam init --reinit --config .opamrc-sandbox -ni"))[0m
+[NOTE] Will configure from /home/opam/.opamrc-sandbox, then /home/opam/.opamrc, and finally from built-in defaults.
+Checking for available remotes: rsync and local, git.
+  - you won't be able to use mercurial repositories unless you install the hg command on your system.
+  - you won't be able to use darcs repositories unless you install the darcs command on your system.
+
+[WARNING] Recommended dependencies -- most packages rely on these:
+  - m4
+
+<><> Updating repositories ><><><><><><><><><><><><><><><><><><><><><><><><><><>
+[default] synchronised from file:///home/opam/opam-repository
+default (at file:///home/opam/opam-repository): 
+    [INFO] opam 2.1 includes many performance improvements over 2.0; please consider upgrading (https://opam.ocaml.org/doc/Install.html)
+
+[01;2m[01;35m2024-06-15 15:09.57 ---> using "f975d51224c42d8857ddb239b940c24dd15846640c4e179f88cfaec9eef2cb21" from cache[0m
+
+[01;34m/home/opam: (run (shell "uname -rs && opam exec -- ocaml -version && opam --version"))[0m
+Linux 5.15.0-107-generic
+The OCaml toplevel, version 4.14.2
+2.0.10
+[01;2m[01;35m2024-06-15 15:09.57 ---> using "d68ab7ea6ffb8fcd488a6c555957580ce09a73da15abd0763d67b15b7483a100" from cache[0m
+
+[01;34m/home/opam: (env OPAMDOWNLOADJOBS 1)[0m
+
+[01;34m/home/opam: (env OPAMERRLOGLEN 0)[0m
+
+[01;34m/home/opam: (env OPAMSOLVERTIMEOUT 500)[0m
+
+[01;34m/home/opam: (env OPAMPRECISETRACKING 1)[0m
+
+[01;34m/home/opam: (env CI true)[0m
+
+[01;34m/home/opam: (env OPAM_REPO_CI true)[0m
+
+[01;34m/home/opam: (run (shell "rm -rf opam-repository/"))[0m
+[01;2m[01;35m2024-06-15 15:09.57 ---> using "f3407c47872ce27783f8ed6a6e794e49a25e43366a287e6ef08b6a7b4f48b49d" from cache[0m
+
+[01;34m/home/opam: (copy (src .) (dst opam-repository/))[0m
+[01;2m[01;35m2024-06-15 15:09.59 ---> using "f659e5c841e869047b77eb7e1e0321bd72466edb0878b53bc564636262a6f5a2" from cache[0m
+
+[01;34m/home/opam: (run (shell "opam repository set-url --strict default opam-repository/"))[0m
+[default] Initialised
+default (at file:///home/opam/opam-repository): 
+    [INFO] opam 2.1 includes many performance improvements over 2.0; please consider upgrading (https://opam.ocaml.org/doc/Install.html)
+
+[01;2m[01;35m2024-06-15 15:10.08 ---> saved as "8bef8e3484488bc5cf54dd0a8acbff00f6f01070860a66660436aeb1b5b6b98a"[0m
+
+[01;34m/home/opam: (run (network host)
+                 (shell "opam depext -u || true"))[0m
+# Detecting depexts using vars: arch=x86_64, os=linux, os-distribution=debian, os-family=debian
+# No extra OS packages requirements found.
+# All required OS packages found.
+The following command needs to be run through "sudo":
+    apt-get update
+Hit:1 http://deb.debian.org/debian bookworm InRelease
+Get:2 http://deb.debian.org/debian bookworm-updates InRelease [55.4 kB]
+Get:3 http://deb.debian.org/debian-security bookworm-security InRelease [48.0 kB]
+Get:4 http://deb.debian.org/debian-security bookworm-security/main amd64 Packages [160 kB]
+Fetched 263 kB in 0s (853 kB/s)
+Reading package lists...
+# OS package update successful
+[01;2m[01;35m2024-06-15 15:10.10 ---> saved as "d332f1c907a739faea430db7f049f39f19360981250a3eb26bec6f50e58ba6f0"[0m
+
+[01;34m/home/opam: (run (shell "opam pin add -k version -yn ocsipersist-dbm-config.2.0.0 2.0.0"))[0m
+ocsipersist-dbm-config is now pinned to version 2.0.0
+[01;2m[01;35m2024-06-15 15:10.10 ---> saved as "36b44529b981772e6744951b6c8051c918ccec6b88abccb6fa029c4b38dbb830"[0m
+
+[01;34m/home/opam: (run (cache (opam-archives (target /home/opam/.opam/download-cache)))
+                 (network host)
+                 (shell  "opam depext ocsipersist-dbm-config.2.0.0 && opam reinstall ocsipersist-dbm-config.2.0.0;\
+                        \n        res=$?;\
+                        \n        test \"$res\" != 31 && exit \"$res\";\
+                        \n        export OPAMCLI=2.0;\
+                        \n        build_dir=$(opam var prefix)/.opam-switch/build;\
+                        \n        failed=$(ls \"$build_dir\");\
+                        \n        partial_fails=\"\";\
+                        \n        for pkg in $failed; do\
+                        \n          if opam show -f x-ci-accept-failures: \"$pkg\" | grep -qF \"\\\"debian-12\\\"\"; then\
+                        \n            echo \"A package failed and has been disabled for CI using the 'x-ci-accept-failures' field.\";\
+                        \n          fi;\
+                        \n          test \"$pkg\" != 'ocsipersist-dbm-config.2.0.0' && partial_fails=\"$partial_fails $pkg\";\
+                        \n        done;\
+                        \n        test \"${partial_fails}\" != \"\" && echo \"opam-repo-ci detected dependencies failing: ${partial_fails}\";\
+                        \n        exit 1"))[0m
+# Detecting depexts using vars: arch=x86_64, os=linux, os-distribution=debian, os-family=debian
+# The following system packages are needed:
+libgdbm-dev
+libgmp-dev
+libssl-dev
+pkg-config
+zlib1g-dev
+The following command needs to be run through "sudo":
+    apt-get install -qq -yy libgdbm-dev libgmp-dev libssl-dev pkg-config zlib1g-dev
+debconf: delaying package configuration, since apt-utils is not installed
+Selecting previously unselected package libgdbm-dev:amd64.
+(Reading database ... (Reading database ... 5%(Reading database ... 10%(Reading database ... 15%(Reading database ... 20%(Reading database ... 25%(Reading database ... 30%(Reading database ... 35%(Reading database ... 40%(Reading database ... 45%(Reading database ... 50%(Reading database ... 55%(Reading database ... 60%(Reading database ... 65%(Reading database ... 70%(Reading database ... 75%(Reading database ... 80%(Reading database ... 85%(Reading database ... 90%(Reading database ... 95%(Reading database ... 100%(Reading database ... 18735 files and directories currently installed.)
+Preparing to unpack .../0-libgdbm-dev_1.23-3_amd64.deb ...
+Unpacking libgdbm-dev:amd64 (1.23-3) ...
+Selecting previously unselected package libgmpxx4ldbl:amd64.
+Preparing to unpack .../1-libgmpxx4ldbl_2%3a6.2.1+dfsg1-1.1_amd64.deb ...
+Unpacking libgmpxx4ldbl:amd64 (2:6.2.1+dfsg1-1.1) ...
+Selecting previously unselected package libgmp-dev:amd64.
+Preparing to unpack .../2-libgmp-dev_2%3a6.2.1+dfsg1-1.1_amd64.deb ...
+Unpacking libgmp-dev:amd64 (2:6.2.1+dfsg1-1.1) ...
+Selecting previously unselected package libpkgconf3:amd64.
+Preparing to unpack .../3-libpkgconf3_1.8.1-1_amd64.deb ...
+Unpacking libpkgconf3:amd64 (1.8.1-1) ...
+Selecting previously unselected package libssl-dev:amd64.
+Preparing to unpack .../4-libssl-dev_3.0.11-1~deb12u2_amd64.deb ...
+Unpacking libssl-dev:amd64 (3.0.11-1~deb12u2) ...
+Selecting previously unselected package pkgconf-bin.
+Preparing to unpack .../5-pkgconf-bin_1.8.1-1_amd64.deb ...
+Unpacking pkgconf-bin (1.8.1-1) ...
+Selecting previously unselected package pkgconf:amd64.
+Preparing to unpack .../6-pkgconf_1.8.1-1_amd64.deb ...
+Unpacking pkgconf:amd64 (1.8.1-1) ...
+Selecting previously unselected package pkg-config:amd64.
+Preparing to unpack .../7-pkg-config_1.8.1-1_amd64.deb ...
+Unpacking pkg-config:amd64 (1.8.1-1) ...
+Selecting previously unselected package zlib1g-dev:amd64.
+Preparing to unpack .../8-zlib1g-dev_1%3a1.2.13.dfsg-1_amd64.deb ...
+Unpacking zlib1g-dev:amd64 (1:1.2.13.dfsg-1) ...
+Setting up libpkgconf3:amd64 (1.8.1-1) ...
+Setting up libgmpxx4ldbl:amd64 (2:6.2.1+dfsg1-1.1) ...
+Setting up libssl-dev:amd64 (3.0.11-1~deb12u2) ...
+Setting up pkgconf-bin (1.8.1-1) ...
+Setting up zlib1g-dev:amd64 (1:1.2.13.dfsg-1) ...
+Setting up libgdbm-dev:amd64 (1.23-3) ...
+Setting up libgmp-dev:amd64 (2:6.2.1+dfsg1-1.1) ...
+Setting up pkgconf:amd64 (1.8.1-1) ...
+Setting up pkg-config:amd64 (1.8.1-1) ...
+Processing triggers for libc-bin (2.36-9+deb12u7) ...
+# OS packages installation successful
+ocsipersist-dbm-config.2.0.0 is not installed. Install it? [Y/n] y
+[ERROR] Sorry, resolution of the request timed out.
+        Try to specify a simpler request, use a different solver, or increase the allowed time by setting OPAMSOLVERTIMEOUT to a bigger value (currently, it is set to 500.0 seconds).
+"/usr/bin/env" "bash" "-c" "opam depext ocsipersist-dbm-config.2.0.0 && opam reinstall ocsipersist-dbm-config.2.0.0;
+        res=$?;
+        test "$res" != 31 && exit "$res";
+        export OPAMCLI=2.0;
+        build_dir=$(opam var prefix)/.opam-switch/build;
+        failed=$(ls "$build_dir");
+        partial_fails="";
+        for pkg in $failed; do
+          if opam show -f x-ci-accept-failures: "$pkg" | grep -qF "\"debian-12\""; then
+            echo "A package failed and has been disabled for CI using the 'x-ci-accept-failures' field.";
+          fi;
+          test "$pkg" != 'ocsipersist-dbm-config.2.0.0' && partial_fails="$partial_fails $pkg";
+        done;
+        test "${partial_fails}" != "" && echo "opam-repo-ci detected dependencies failing: ${partial_fails}";
+        exit 1" failed with exit status 60
+2024-06-15 15:19.02: Job failed: Failed: Build failed
+2024-06-15 15:19.02: Log analysis:
+2024-06-15 15:19.02: >>> 
+[ERROR] Sorry, resolution of the request timed out.
+ (score = 20)
+2024-06-15 15:19.02: Sorry, resolution of the request timed out.

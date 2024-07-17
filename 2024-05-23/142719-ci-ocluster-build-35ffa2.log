@@ -1,0 +1,323 @@
+2024-05-23 14:27.19: New job: test git-cohttp-mirage.3.1.1 with dune-secondary.3.8.1, using opam dev
+                              from https://github.com/ocaml/opam-repository.git#refs/pull/25928/head (2f0a69c7ebd1768cbfd28ba596b3272e99d1f383)
+                              on debian-12-ocaml-4.14/amd64
+
+To reproduce locally:
+
+cd $(mktemp -d)
+git clone --recursive "https://github.com/ocaml/opam-repository.git" && cd "opam-repository" && git fetch origin "refs/pull/25928/head" && git reset --hard 2f0a69c7
+git fetch origin master
+git merge --no-edit 9395b46c54472a81784178457c1b96ff87ef1740
+cat > ../Dockerfile <<'END-OF-DOCKERFILE'
+[34mFROM ocaml/opam:debian-12-ocaml-4.14@sha256:575952ac1a1b71568d969fe2b9788c1516c1252dda6ccffdc995036cc8cc9e3b
+USER 1000:1000
+WORKDIR /home/opam
+RUN sudo ln -f /usr/bin/opam-dev /usr/bin/opam
+RUN opam init --reinit -ni
+RUN uname -rs && opam exec -- ocaml -version && opam --version
+ENV OPAMDOWNLOADJOBS="1"
+ENV OPAMERRLOGLEN="0"
+ENV OPAMSOLVERTIMEOUT="500"
+ENV OPAMPRECISETRACKING="1"
+ENV CI="true"
+ENV OPAM_REPO_CI="true"
+RUN rm -rf opam-repository/
+COPY --chown=1000:1000 . opam-repository/
+RUN opam repository set-url --strict default opam-repository/
+RUN opam update --depexts || true
+RUN opam pin add -k version -yn dune-secondary.3.8.1 3.8.1
+RUN opam reinstall dune-secondary.3.8.1; \
+    res=$?; \
+    test "$res" != 31 && exit "$res"; \
+    export OPAMCLI=2.0; \
+    build_dir=$(opam var prefix)/.opam-switch/build; \
+    failed=$(ls "$build_dir"); \
+    partial_fails=""; \
+    for pkg in $failed; do \
+    if opam show -f x-ci-accept-failures: "$pkg" | grep -qF "\"debian-12\""; then \
+    echo "A package failed and has been disabled for CI using the 'x-ci-accept-failures' field."; \
+    fi; \
+    test "$pkg" != 'dune-secondary.3.8.1' && partial_fails="$partial_fails $pkg"; \
+    done; \
+    test "${partial_fails}" != "" && echo "opam-repo-ci detected dependencies failing: ${partial_fails}"; \
+    exit 1
+RUN opam reinstall git-cohttp-mirage.3.1.1; \
+    res=$?; \
+    test "$res" != 31 && exit "$res"; \
+    export OPAMCLI=2.0; \
+    build_dir=$(opam var prefix)/.opam-switch/build; \
+    failed=$(ls "$build_dir"); \
+    partial_fails=""; \
+    for pkg in $failed; do \
+    if opam show -f x-ci-accept-failures: "$pkg" | grep -qF "\"debian-12\""; then \
+    echo "A package failed and has been disabled for CI using the 'x-ci-accept-failures' field."; \
+    fi; \
+    test "$pkg" != 'git-cohttp-mirage.3.1.1' && partial_fails="$partial_fails $pkg"; \
+    done; \
+    test "${partial_fails}" != "" && echo "opam-repo-ci detected dependencies failing: ${partial_fails}"; \
+    exit 1
+RUN (opam reinstall --with-test git-cohttp-mirage.3.1.1) || true
+RUN opam reinstall --with-test --verbose git-cohttp-mirage.3.1.1; \
+    res=$?; \
+    test "$res" != 31 && exit "$res"; \
+    export OPAMCLI=2.0; \
+    build_dir=$(opam var prefix)/.opam-switch/build; \
+    failed=$(ls "$build_dir"); \
+    partial_fails=""; \
+    for pkg in $failed; do \
+    if opam show -f x-ci-accept-failures: "$pkg" | grep -qF "\"debian-12\""; then \
+    echo "A package failed and has been disabled for CI using the 'x-ci-accept-failures' field."; \
+    fi; \
+    test "$pkg" != 'git-cohttp-mirage.3.1.1' && partial_fails="$partial_fails $pkg"; \
+    done; \
+    test "${partial_fails}" != "" && echo "opam-repo-ci detected dependencies failing: ${partial_fails}"; \
+    exit 1
+[0m
+END-OF-DOCKERFILE
+docker build -f ../Dockerfile .
+
+2024-05-23 14:27.19: Using cache hint "ocaml/opam:debian-12-ocaml-4.14@sha256:575952ac1a1b71568d969fe2b9788c1516c1252dda6ccffdc995036cc8cc9e3b-dune-secondary.3.8.1-git-cohttp-mirage.3.1.1-2f0a69c7ebd1768cbfd28ba596b3272e99d1f383"
+2024-05-23 14:27.19: Using OBuilder spec:
+((from ocaml/opam:debian-12-ocaml-4.14@sha256:575952ac1a1b71568d969fe2b9788c1516c1252dda6ccffdc995036cc8cc9e3b)
+ (user (uid 1000) (gid 1000))
+ (workdir /home/opam)
+ (run (shell "sudo ln -f /usr/bin/opam-dev /usr/bin/opam"))
+ (run (network host)
+      (shell "opam init --reinit --config .opamrc-sandbox -ni"))
+ (run (shell "uname -rs && opam exec -- ocaml -version && opam --version"))
+ (env OPAMDOWNLOADJOBS 1)
+ (env OPAMERRLOGLEN 0)
+ (env OPAMSOLVERTIMEOUT 500)
+ (env OPAMPRECISETRACKING 1)
+ (env CI true)
+ (env OPAM_REPO_CI true)
+ (run (shell "rm -rf opam-repository/"))
+ (copy (src .) (dst opam-repository/))
+ (run (shell "opam repository set-url --strict default opam-repository/"))
+ (run (network host)
+      (shell "opam update --depexts || true"))
+ (run (shell "opam pin add -k version -yn dune-secondary.3.8.1 3.8.1"))
+ (run (cache (opam-archives (target /home/opam/.opam/download-cache)))
+      (network host)
+      (shell  "opam reinstall dune-secondary.3.8.1;\
+             \n        res=$?;\
+             \n        test \"$res\" != 31 && exit \"$res\";\
+             \n        export OPAMCLI=2.0;\
+             \n        build_dir=$(opam var prefix)/.opam-switch/build;\
+             \n        failed=$(ls \"$build_dir\");\
+             \n        partial_fails=\"\";\
+             \n        for pkg in $failed; do\
+             \n          if opam show -f x-ci-accept-failures: \"$pkg\" | grep -qF \"\\\"debian-12\\\"\"; then\
+             \n            echo \"A package failed and has been disabled for CI using the 'x-ci-accept-failures' field.\";\
+             \n          fi;\
+             \n          test \"$pkg\" != 'dune-secondary.3.8.1' && partial_fails=\"$partial_fails $pkg\";\
+             \n        done;\
+             \n        test \"${partial_fails}\" != \"\" && echo \"opam-repo-ci detected dependencies failing: ${partial_fails}\";\
+             \n        exit 1"))
+ (run (cache (opam-archives (target /home/opam/.opam/download-cache)))
+      (network host)
+      (shell  "opam reinstall git-cohttp-mirage.3.1.1;\
+             \n        res=$?;\
+             \n        test \"$res\" != 31 && exit \"$res\";\
+             \n        export OPAMCLI=2.0;\
+             \n        build_dir=$(opam var prefix)/.opam-switch/build;\
+             \n        failed=$(ls \"$build_dir\");\
+             \n        partial_fails=\"\";\
+             \n        for pkg in $failed; do\
+             \n          if opam show -f x-ci-accept-failures: \"$pkg\" | grep -qF \"\\\"debian-12\\\"\"; then\
+             \n            echo \"A package failed and has been disabled for CI using the 'x-ci-accept-failures' field.\";\
+             \n          fi;\
+             \n          test \"$pkg\" != 'git-cohttp-mirage.3.1.1' && partial_fails=\"$partial_fails $pkg\";\
+             \n        done;\
+             \n        test \"${partial_fails}\" != \"\" && echo \"opam-repo-ci detected dependencies failing: ${partial_fails}\";\
+             \n        exit 1"))
+ (run (network host)
+      (shell "(opam reinstall --with-test git-cohttp-mirage.3.1.1) || true"))
+ (run (shell  "opam reinstall --with-test --verbose git-cohttp-mirage.3.1.1;\
+             \n        res=$?;\
+             \n        test \"$res\" != 31 && exit \"$res\";\
+             \n        export OPAMCLI=2.0;\
+             \n        build_dir=$(opam var prefix)/.opam-switch/build;\
+             \n        failed=$(ls \"$build_dir\");\
+             \n        partial_fails=\"\";\
+             \n        for pkg in $failed; do\
+             \n          if opam show -f x-ci-accept-failures: \"$pkg\" | grep -qF \"\\\"debian-12\\\"\"; then\
+             \n            echo \"A package failed and has been disabled for CI using the 'x-ci-accept-failures' field.\";\
+             \n          fi;\
+             \n          test \"$pkg\" != 'git-cohttp-mirage.3.1.1' && partial_fails=\"$partial_fails $pkg\";\
+             \n        done;\
+             \n        test \"${partial_fails}\" != \"\" && echo \"opam-repo-ci detected dependencies failing: ${partial_fails}\";\
+             \n        exit 1"))
+)
+
+2024-05-23 14:27.19: Waiting for resource in pool OCluster
+2024-05-24 00:42.26: Waiting for worker…
+2024-05-24 00:45.38: Got resource from pool OCluster
+Building on x86-bm-c2.sw.ocaml.org
+All commits already cached
+Updating files:  60% (20613/33795)Updating files:  61% (20615/33795)Updating files:  62% (20953/33795)Updating files:  63% (21291/33795)Updating files:  64% (21629/33795)Updating files:  65% (21967/33795)Updating files:  66% (22305/33795)Updating files:  67% (22643/33795)Updating files:  68% (22981/33795)Updating files:  69% (23319/33795)Updating files:  70% (23657/33795)Updating files:  71% (23995/33795)Updating files:  72% (24333/33795)Updating files:  73% (24671/33795)Updating files:  74% (25009/33795)Updating files:  75% (25347/33795)Updating files:  76% (25685/33795)Updating files:  77% (26023/33795)Updating files:  78% (26361/33795)Updating files:  79% (26699/33795)Updating files:  80% (27036/33795)Updating files:  81% (27374/33795)Updating files:  82% (27712/33795)Updating files:  83% (28050/33795)Updating files:  84% (28388/33795)Updating files:  85% (28726/33795)Updating files:  86% (29064/33795)Updating files:  87% (29402/33795)Updating files:  88% (29740/33795)Updating files:  89% (30078/33795)Updating files:  90% (30416/33795)Updating files:  91% (30754/33795)Updating files:  92% (31092/33795)Updating files:  93% (31430/33795)Updating files:  94% (31768/33795)Updating files:  95% (32106/33795)Updating files:  96% (32444/33795)Updating files:  97% (32782/33795)Updating files:  98% (33120/33795)Updating files:  99% (33458/33795)Updating files: 100% (33795/33795)Updating files: 100% (33795/33795), done.
+HEAD is now at 9395b46c54 Merge pull request #25920 from hannesm/release-mirage-vnetif-v0.6.2
+Merge made by the 'ort' strategy.
+ packages/base-flambda2/base-flambda2.base/opam     |  8 +++
+ packages/dune-secondary/dune-secondary.3.8.1/opam  | 57 ++++++++++++++++++++++
+ .../menhir-secondary.20210419/opam                 | 28 +++++++++++
+ .../ocaml-secondary-compiler.4.14.1/opam           | 30 ++++++++++++
+ .../ocaml-variants.5.1.1+flambda2/opam             | 37 ++++++++++++++
+ 5 files changed, 160 insertions(+)
+ create mode 100644 packages/base-flambda2/base-flambda2.base/opam
+ create mode 100644 packages/dune-secondary/dune-secondary.3.8.1/opam
+ create mode 100644 packages/menhir-secondary/menhir-secondary.20210419/opam
+ create mode 100644 packages/ocaml-secondary-compiler/ocaml-secondary-compiler.4.14.1/opam
+ create mode 100644 packages/ocaml-variants/ocaml-variants.5.1.1+flambda2/opam
+
+[01;34m(from ocaml/opam:debian-12-ocaml-4.14@sha256:575952ac1a1b71568d969fe2b9788c1516c1252dda6ccffdc995036cc8cc9e3b)[0m
+Unable to find image 'ocaml/opam:debian-12-ocaml-4.14@sha256:575952ac1a1b71568d969fe2b9788c1516c1252dda6ccffdc995036cc8cc9e3b' locally
+docker.io/ocaml/opam@sha256:575952ac1a1b71568d969fe2b9788c1516c1252dda6ccffdc995036cc8cc9e3b: Pulling from ocaml/opam
+d8f8273aa989: Pulling fs layer
+d8f8273aa989: Verifying Checksum
+d8f8273aa989: Download complete
+d8f8273aa989: Pull complete
+Digest: sha256:575952ac1a1b71568d969fe2b9788c1516c1252dda6ccffdc995036cc8cc9e3b
+Status: Downloaded newer image for ocaml/opam@sha256:575952ac1a1b71568d969fe2b9788c1516c1252dda6ccffdc995036cc8cc9e3b
+[01;2m[01;35m2024-05-24 00:45.42 ---> using "b70a2807c2cfb3c5680f4fafeddd66a33d7dcdd9d48b1543e8642b8df113fdbf" from cache[0m
+
+[01;34m/: (user (uid 1000) (gid 1000))[0m
+
+[01;34m/: (workdir /home/opam)[0m
+
+[01;34m/home/opam: (run (shell "sudo ln -f /usr/bin/opam-dev /usr/bin/opam"))[0m
+[01;2m[01;35m2024-05-24 00:45.42 ---> using "c36f90ecff164603a21017340adb790a2f028b93271d75cce805aa2725f2c474" from cache[0m
+
+[01;34m/home/opam: (run (network host)
+                 (shell "opam init --reinit --config .opamrc-sandbox -ni"))[0m
+Configuring from /home/opam/.opamrc-sandbox, then /home/opam/.opamrc, and finally from built-in defaults.
+Checking for available remotes: rsync and local, git.
+  - you won't be able to use mercurial repositories unless you install the hg command on your system.
+  - you won't be able to use darcs repositories unless you install the darcs command on your system.
+
+This development version of opam requires an update to the layout of /home/opam/.opam from version 2.0 to version 2.2~beta, which can't be reverted.
+You may want to back it up before going further.
+
+Continue? [y/n] y
+Format upgrade done.
+
+<><> Updating repositories ><><><><><><><><><><><><><><><><><><><><><><><><><><>
+[default] synchronised from file:///home/opam/opam-repository
+[01;2m[01;35m2024-05-24 00:45.42 ---> using "41ba59c52c751987091a990bfc68743f47f1d48b58a0242e92679239747c0a38" from cache[0m
+
+[01;34m/home/opam: (run (shell "uname -rs && opam exec -- ocaml -version && opam --version"))[0m
+Linux 5.15.0-107-generic
+The OCaml toplevel, version 4.14.2
+2.2.0~beta3~dev
+[01;2m[01;35m2024-05-24 00:45.42 ---> using "43177bf724d2ad14c3885c9e8604bf82de09a17c5632804082eaf00f00843b27" from cache[0m
+
+[01;34m/home/opam: (env OPAMDOWNLOADJOBS 1)[0m
+
+[01;34m/home/opam: (env OPAMERRLOGLEN 0)[0m
+
+[01;34m/home/opam: (env OPAMSOLVERTIMEOUT 500)[0m
+
+[01;34m/home/opam: (env OPAMPRECISETRACKING 1)[0m
+
+[01;34m/home/opam: (env CI true)[0m
+
+[01;34m/home/opam: (env OPAM_REPO_CI true)[0m
+
+[01;34m/home/opam: (run (shell "rm -rf opam-repository/"))[0m
+[01;2m[01;35m2024-05-24 00:45.42 ---> using "dc5d5a1631518083bf7b71a8bbeb70067bb1c0e264ce14940be3414232922413" from cache[0m
+
+[01;34m/home/opam: (copy (src .) (dst opam-repository/))[0m
+[01;2m[01;35m2024-05-24 00:45.44 ---> using "d556626f6b0062a49d011de86989420f302ac4e6de251ff57f6cd4898a4b9642" from cache[0m
+
+[01;34m/home/opam: (run (shell "opam repository set-url --strict default opam-repository/"))[0m
+[default] Initialised
+[01;2m[01;35m2024-05-24 00:45.44 ---> using "459c9619e166ddc1e3ba1368e034b7f72b598e6ecb9b06f2a6a483480717e574" from cache[0m
+
+[01;34m/home/opam: (run (network host)
+                 (shell "opam update --depexts || true"))[0m
++ /usr/bin/sudo "apt-get" "update"
+- Hit:1 http://deb.debian.org/debian bookworm InRelease
+- Get:2 http://deb.debian.org/debian bookworm-updates InRelease [55.4 kB]
+- Get:3 http://deb.debian.org/debian-security bookworm-security InRelease [48.0 kB]
+- Get:4 http://deb.debian.org/debian-security bookworm-security/main amd64 Packages [156 kB]
+- Fetched 259 kB in 0s (998 kB/s)
+- Reading package lists...
+[01;2m[01;35m2024-05-24 00:45.44 ---> using "d6db531a0047732e69778757c47945135c78e6ba31f2415de63bea178b5e0369" from cache[0m
+
+[01;34m/home/opam: (run (shell "opam pin add -k version -yn dune-secondary.3.8.1 3.8.1"))[0m
+dune-secondary is now pinned to version 3.8.1
+[01;2m[01;35m2024-05-24 00:45.44 ---> using "c8ca08a7407fa577c9d4350f1e0a776ab6b23d39a24933cddb06a2b1a827da38" from cache[0m
+
+[01;34m/home/opam: (run (cache (opam-archives (target /home/opam/.opam/download-cache)))
+                 (network host)
+                 (shell  "opam reinstall dune-secondary.3.8.1;\
+                        \n        res=$?;\
+                        \n        test \"$res\" != 31 && exit \"$res\";\
+                        \n        export OPAMCLI=2.0;\
+                        \n        build_dir=$(opam var prefix)/.opam-switch/build;\
+                        \n        failed=$(ls \"$build_dir\");\
+                        \n        partial_fails=\"\";\
+                        \n        for pkg in $failed; do\
+                        \n          if opam show -f x-ci-accept-failures: \"$pkg\" | grep -qF \"\\\"debian-12\\\"\"; then\
+                        \n            echo \"A package failed and has been disabled for CI using the 'x-ci-accept-failures' field.\";\
+                        \n          fi;\
+                        \n          test \"$pkg\" != 'dune-secondary.3.8.1' && partial_fails=\"$partial_fails $pkg\";\
+                        \n        done;\
+                        \n        test \"${partial_fails}\" != \"\" && echo \"opam-repo-ci detected dependencies failing: ${partial_fails}\";\
+                        \n        exit 1"))[0m
+dune-secondary.3.8.1 is not installed. Install it? [y/n] y
+The following actions will be performed:
+=== install 2 packages
+  - install dune-secondary           3.8.1 (pinned)
+  - install ocaml-secondary-compiler 4.14.1         [required by dune-secondary]
+
+<><> Processing actions <><><><><><><><><><><><><><><><><><><><><><><><><><><><>
+-> retrieved dune-secondary.3.8.1  (cached)
+-> retrieved ocaml-secondary-compiler.4.14.1  (cached)
+-> installed ocaml-secondary-compiler.4.14.1
+-> installed dune-secondary.3.8.1
+Done.
+# Run eval $(opam env) to update the current shell environment
+[01;2m[01;35m2024-05-24 00:45.44 ---> using "381dd4be95fb75d2c2c35949d6ecd5bb59d48d9a420d0a8bd76eb0fbf8c83ee2" from cache[0m
+
+[01;34m/home/opam: (run (cache (opam-archives (target /home/opam/.opam/download-cache)))
+                 (network host)
+                 (shell  "opam reinstall git-cohttp-mirage.3.1.1;\
+                        \n        res=$?;\
+                        \n        test \"$res\" != 31 && exit \"$res\";\
+                        \n        export OPAMCLI=2.0;\
+                        \n        build_dir=$(opam var prefix)/.opam-switch/build;\
+                        \n        failed=$(ls \"$build_dir\");\
+                        \n        partial_fails=\"\";\
+                        \n        for pkg in $failed; do\
+                        \n          if opam show -f x-ci-accept-failures: \"$pkg\" | grep -qF \"\\\"debian-12\\\"\"; then\
+                        \n            echo \"A package failed and has been disabled for CI using the 'x-ci-accept-failures' field.\";\
+                        \n          fi;\
+                        \n          test \"$pkg\" != 'git-cohttp-mirage.3.1.1' && partial_fails=\"$partial_fails $pkg\";\
+                        \n        done;\
+                        \n        test \"${partial_fails}\" != \"\" && echo \"opam-repo-ci detected dependencies failing: ${partial_fails}\";\
+                        \n        exit 1"))[0m
+git-cohttp-mirage.3.1.1 is not installed. Install it? [y/n] y
+[ERROR] Sorry, resolution of the request timed out.
+        Try to specify a more precise request, use a different solver, or increase the allowed time by setting OPAMSOLVERTIMEOUT to a bigger value (currently, it is set to 500.0 seconds).
+"/usr/bin/env" "bash" "-c" "opam reinstall git-cohttp-mirage.3.1.1;
+        res=$?;
+        test "$res" != 31 && exit "$res";
+        export OPAMCLI=2.0;
+        build_dir=$(opam var prefix)/.opam-switch/build;
+        failed=$(ls "$build_dir");
+        partial_fails="";
+        for pkg in $failed; do
+          if opam show -f x-ci-accept-failures: "$pkg" | grep -qF "\"debian-12\""; then
+            echo "A package failed and has been disabled for CI using the 'x-ci-accept-failures' field.";
+          fi;
+          test "$pkg" != 'git-cohttp-mirage.3.1.1' && partial_fails="$partial_fails $pkg";
+        done;
+        test "${partial_fails}" != "" && echo "opam-repo-ci detected dependencies failing: ${partial_fails}";
+        exit 1" failed with exit status 60
+2024-05-24 00:54.38: Job failed: Failed: Build failed
+2024-05-24 00:54.38: Log analysis:
+2024-05-24 00:54.38: >>> 
+[ERROR] Sorry, resolution of the request timed out.
+ (score = 20)
+2024-05-24 00:54.38: Sorry, resolution of the request timed out.

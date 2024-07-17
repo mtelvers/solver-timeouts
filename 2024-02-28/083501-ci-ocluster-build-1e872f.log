@@ -1,0 +1,546 @@
+2024-02-28 08:35.01: New job: build calculon.0.4, using opam dev
+                              from https://github.com/ocaml/opam-repository.git#refs/pull/25355/head (c7c2fa39fb5af4955ea949ab22763e19054d8427)
+                              on debian-12-ocaml-4.10/amd64
+
+To reproduce locally:
+
+cd $(mktemp -d)
+git clone --recursive "https://github.com/ocaml/opam-repository.git" && cd "opam-repository" && git fetch origin "refs/pull/25355/head" && git reset --hard c7c2fa39
+git fetch origin master
+git merge --no-edit f0a3f6986187aa444ac36066bea7af81e8319cb6
+cat > ../Dockerfile <<'END-OF-DOCKERFILE'
+[34mFROM ocaml/opam:debian-12-ocaml-4.10@sha256:2246586939d46c983468d661d702fa929586d0a9cf3d33a0143914871ead6fef
+USER 1000:1000
+WORKDIR /home/opam
+RUN sudo ln -f /usr/bin/opam-dev /usr/bin/opam
+RUN opam init --reinit -ni
+ENV OPAMDOWNLOADJOBS="1"
+ENV OPAMERRLOGLEN="0"
+ENV OPAMSOLVERTIMEOUT="500"
+ENV OPAMPRECISETRACKING="1"
+ENV CI="true"
+ENV OPAM_REPO_CI="true"
+RUN rm -rf opam-repository/
+COPY --chown=1000:1000 . opam-repository/
+RUN opam repository set-url --strict default opam-repository/
+RUN opam update --depexts || true
+ENV OPAMCRITERIA="-removed,-count[avoid-version,changed],-count[version-lag,request],-count[version-lag,changed],-count[missing-depexts,changed],-changed"
+ENV OPAMFIXUPCRITERIA="-removed,-count[avoid-version,changed],-count[version-lag,request],-count[version-lag,changed],-count[missing-depexts,changed],-changed"
+ENV OPAMUPGRADECRITERIA="-removed,-count[avoid-version,changed],-count[version-lag,request],-count[version-lag,changed],-count[missing-depexts,changed],-changed"
+RUN opam pin add -k version -yn calculon.0.4 0.4
+RUN opam reinstall calculon.0.4; \
+    res=$?; \
+    test "$res" != 31 && exit "$res"; \
+    export OPAMCLI=2.0; \
+    build_dir=$(opam var prefix)/.opam-switch/build; \
+    failed=$(ls "$build_dir"); \
+    partial_fails=""; \
+    for pkg in $failed; do \
+    if opam show -f x-ci-accept-failures: "$pkg" | grep -qF "\"debian-12\""; then \
+    echo "A package failed and has been disabled for CI using the 'x-ci-accept-failures' field."; \
+    fi; \
+    test "$pkg" != 'calculon.0.4' && partial_fails="$partial_fails $pkg"; \
+    done; \
+    test "${partial_fails}" != "" && echo "opam-repo-ci detected dependencies failing: ${partial_fails}"; \
+    exit 1
+[0m
+END-OF-DOCKERFILE
+docker build -f ../Dockerfile .
+
+2024-02-28 08:35.01: Using cache hint "ocaml/opam:debian-12-ocaml-4.10@sha256:2246586939d46c983468d661d702fa929586d0a9cf3d33a0143914871ead6fef-calculon.0.4-c7c2fa39fb5af4955ea949ab22763e19054d8427"
+2024-02-28 08:35.01: Using OBuilder spec:
+((from ocaml/opam:debian-12-ocaml-4.10@sha256:2246586939d46c983468d661d702fa929586d0a9cf3d33a0143914871ead6fef)
+ (user (uid 1000) (gid 1000))
+ (workdir /home/opam)
+ (run (shell "sudo ln -f /usr/bin/opam-dev /usr/bin/opam"))
+ (run (network host)
+      (shell "opam init --reinit --config .opamrc-sandbox -ni"))
+ (env OPAMDOWNLOADJOBS 1)
+ (env OPAMERRLOGLEN 0)
+ (env OPAMSOLVERTIMEOUT 500)
+ (env OPAMPRECISETRACKING 1)
+ (env CI true)
+ (env OPAM_REPO_CI true)
+ (run (shell "rm -rf opam-repository/"))
+ (copy (src .) (dst opam-repository/))
+ (run (shell "opam repository set-url --strict default opam-repository/"))
+ (run (network host)
+      (shell "opam update --depexts || true"))
+ (env OPAMCRITERIA -removed,-count[avoid-version,changed],-count[version-lag,request],-count[version-lag,changed],-count[missing-depexts,changed],-changed)
+ (env OPAMFIXUPCRITERIA -removed,-count[avoid-version,changed],-count[version-lag,request],-count[version-lag,changed],-count[missing-depexts,changed],-changed)
+ (env OPAMUPGRADECRITERIA -removed,-count[avoid-version,changed],-count[version-lag,request],-count[version-lag,changed],-count[missing-depexts,changed],-changed)
+ (run (shell "opam pin add -k version -yn calculon.0.4 0.4"))
+ (run (cache (opam-archives (target /home/opam/.opam/download-cache)))
+      (network host)
+      (shell  "opam reinstall calculon.0.4;\
+             \n        res=$?;\
+             \n        test \"$res\" != 31 && exit \"$res\";\
+             \n        export OPAMCLI=2.0;\
+             \n        build_dir=$(opam var prefix)/.opam-switch/build;\
+             \n        failed=$(ls \"$build_dir\");\
+             \n        partial_fails=\"\";\
+             \n        for pkg in $failed; do\
+             \n          if opam show -f x-ci-accept-failures: \"$pkg\" | grep -qF \"\\\"debian-12\\\"\"; then\
+             \n            echo \"A package failed and has been disabled for CI using the 'x-ci-accept-failures' field.\";\
+             \n          fi;\
+             \n          test \"$pkg\" != 'calculon.0.4' && partial_fails=\"$partial_fails $pkg\";\
+             \n        done;\
+             \n        test \"${partial_fails}\" != \"\" && echo \"opam-repo-ci detected dependencies failing: ${partial_fails}\";\
+             \n        exit 1"))
+)
+
+2024-02-28 08:35.01: Waiting for resource in pool OCluster
+2024-02-28 09:54.38: Waiting for worker…
+2024-02-28 09:55.39: Got resource from pool OCluster
+Building on x86-bm-c1.sw.ocaml.org
+All commits already cached
+Updating files:  54% (17993/33182)Updating files:  55% (18251/33182)Updating files:  56% (18582/33182)Updating files:  57% (18914/33182)Updating files:  58% (19246/33182)Updating files:  59% (19578/33182)Updating files:  60% (19910/33182)Updating files:  61% (20242/33182)Updating files:  62% (20573/33182)Updating files:  63% (20905/33182)Updating files:  64% (21237/33182)Updating files:  65% (21569/33182)Updating files:  66% (21901/33182)Updating files:  67% (22232/33182)Updating files:  68% (22564/33182)Updating files:  69% (22896/33182)Updating files:  70% (23228/33182)Updating files:  71% (23560/33182)Updating files:  72% (23892/33182)Updating files:  73% (24223/33182)Updating files:  74% (24555/33182)Updating files:  75% (24887/33182)Updating files:  76% (25219/33182)Updating files:  77% (25551/33182)Updating files:  78% (25882/33182)Updating files:  79% (26214/33182)Updating files:  80% (26546/33182)Updating files:  81% (26878/33182)Updating files:  82% (27210/33182)Updating files:  83% (27542/33182)Updating files:  84% (27873/33182)Updating files:  85% (28205/33182)Updating files:  86% (28537/33182)Updating files:  87% (28869/33182)Updating files:  88% (29201/33182)Updating files:  89% (29532/33182)Updating files:  90% (29864/33182)Updating files:  91% (30196/33182)Updating files:  92% (30528/33182)Updating files:  93% (30860/33182)Updating files:  94% (31192/33182)Updating files:  95% (31523/33182)Updating files:  96% (31855/33182)Updating files:  97% (32187/33182)Updating files:  98% (32519/33182)Updating files:  99% (32851/33182)Updating files: 100% (33182/33182)Updating files: 100% (33182/33182), done.
+HEAD is now at f0a3f69861 Merge pull request #25362 from tmcgilchrist/release-runtime_events_tools-0.5.1
+Merge made by the 'ort' strategy.
+ packages/ISO3166/ISO3166.0.1.0/opam                |  2 +-
+ packages/atacama/atacama.0.0.4/opam                |  2 +-
+ packages/bastet/bastet.1.1.0/opam                  |  2 +-
+ packages/bastet/bastet.1.2.0/opam                  |  2 +-
+ packages/bastet/bastet.1.2.4/opam                  |  2 +-
+ packages/bastet/bastet.1.2.5/opam                  |  2 +-
+ packages/bastet/bastet.2.0.0/opam                  |  2 +-
+ packages/bastet_async/bastet_async.0.1.0/opam      |  2 +-
+ packages/bastet_lwt/bastet_lwt.0.1.0/opam          |  2 +-
+ packages/calculon-web/calculon-web.0.4/opam        |  2 +-
+ packages/calculon/calculon.0.4/opam                |  2 +-
+ .../camlp5-buildscripts.0.01/opam                  |  2 +-
+ .../camlp5-buildscripts.0.02/opam                  |  2 +-
+ .../camlp5-buildscripts.0.03/opam                  |  2 +-
+ packages/capnp-rpc-unix/capnp-rpc-unix.1.2.3/opam  |  2 +-
+ packages/carbon/carbon.0.1.0/opam                  |  2 +-
+ packages/castore/castore.0.0.2/opam                |  2 +-
+ packages/cconv-ppx/cconv-ppx.0.5/opam              |  2 +-
+ packages/cid/cid.0.1.0/opam                        |  2 +-
+ packages/cohttp-eio/cohttp-eio.6.0.0~alpha0/opam   |  2 +-
+ packages/cohttp-eio/cohttp-eio.6.0.0~alpha1/opam   |  2 +-
+ packages/cohttp-eio/cohttp-eio.6.0.0~alpha2/opam   |  2 +-
+ packages/cohttp-eio/cohttp-eio.6.0.0~beta2/opam    |  2 +-
+ packages/colors/colors.0.0.1/opam                  |  2 +-
+ packages/containers-data/containers-data.3.11/opam |  2 +-
+ packages/containers-data/containers-data.3.12/opam |  2 +-
+ .../containers-data/containers-data.3.13.1/opam    |  2 +-
+ packages/containers-data/containers-data.3.13/opam |  2 +-
+ packages/containers/containers.2.8.1/opam          |  2 +-
+ packages/containers/containers.2.8/opam            |  2 +-
+ .../current_examples/current_examples.0.6.1/opam   |  2 +-
+ .../current_examples/current_examples.0.6.2/opam   |  2 +-
+ .../current_examples/current_examples.0.6.4/opam   |  2 +-
+ .../current_examples/current_examples.0.6.6/opam   |  2 +-
+ .../current_examples/current_examples.0.6/opam     |  2 +-
+ packages/current_git/current_git.0.6.1/opam        |  2 +-
+ packages/current_git/current_git.0.6.2/opam        |  2 +-
+ packages/current_git/current_git.0.6.4/opam        |  2 +-
+ packages/current_git/current_git.0.6.6/opam        |  2 +-
+ packages/current_incr/current_incr.0.6.0/opam      |  2 +-
+ packages/current_incr/current_incr.0.6.1/opam      |  2 +-
+ packages/datalog/datalog.0.6/opam                  |  2 +-
+ packages/diskuvbox/diskuvbox.0.1.0/opam            |  2 +-
+ packages/diskuvbox/diskuvbox.0.1.1/opam            |  2 +-
+ packages/diskuvbox/diskuvbox.0.1.2/opam            |  2 +-
+ packages/diskuvbox/diskuvbox.0.2.0/opam            |  2 +-
+ packages/dkml-c-probe/dkml-c-probe.2.0.0/opam      |  2 +-
+ packages/dkml-c-probe/dkml-c-probe.3.0.0/opam      |  2 +-
+ packages/dolmen/dolmen.0.8.1/opam                  |  2 +-
+ packages/dolmen/dolmen.0.8/opam                    |  2 +-
+ packages/dolmen/dolmen.0.9/opam                    |  2 +-
+ packages/dolmen_loop/dolmen_loop.0.9/opam          |  2 +-
+ .../domain-local-await.0.1.0/opam                  |  2 +-
+ .../domain-local-await.0.2.0/opam                  |  2 +-
+ .../domain-local-await.0.2.1/opam                  |  2 +-
+ .../domain-local-await.1.0.0/opam                  |  2 +-
+ .../domain-local-await.1.0.1/opam                  |  2 +-
+ .../domain-local-timeout.0.1.0/opam                |  2 +-
+ .../domain-local-timeout.1.0.0/opam                |  2 +-
+ .../domain-local-timeout.1.0.1/opam                |  2 +-
+ packages/dune-release/dune-release.1.4.0/opam      |  2 +-
+ packages/dune-release/dune-release.1.5.0/opam      |  2 +-
+ packages/dune-release/dune-release.1.5.1/opam      |  2 +-
+ packages/eio/eio.0.10/opam                         |  2 +-
+ packages/eio/eio.0.11/opam                         |  2 +-
+ packages/eio/eio.0.12/opam                         |  2 +-
+ packages/eio/eio.0.13/opam                         |  2 +-
+ packages/eio/eio.0.14/opam                         |  2 +-
+ packages/eio/eio.0.8.1/opam                        |  2 +-
+ packages/eio/eio.0.9/opam                          |  2 +-
+ packages/eio_linux/eio_linux.0.1/opam              |  2 +-
+ packages/eio_linux/eio_linux.0.10/opam             |  2 +-
+ packages/eio_linux/eio_linux.0.11/opam             |  2 +-
+ packages/eio_linux/eio_linux.0.12/opam             |  2 +-
+ packages/eio_linux/eio_linux.0.13/opam             |  2 +-
+ packages/eio_linux/eio_linux.0.14/opam             |  2 +-
+ packages/eio_linux/eio_linux.0.2/opam              |  2 +-
+ packages/eio_linux/eio_linux.0.3/opam              |  2 +-
+ packages/eio_linux/eio_linux.0.4/opam              |  2 +-
+ packages/eio_linux/eio_linux.0.5/opam              |  2 +-
+ packages/eio_linux/eio_linux.0.6/opam              |  2 +-
+ packages/eio_linux/eio_linux.0.7/opam              |  2 +-
+ packages/eio_linux/eio_linux.0.8.1/opam            |  2 +-
+ packages/eio_linux/eio_linux.0.9/opam              |  2 +-
+ packages/eio_luv/eio_luv.0.1/opam                  |  2 +-
+ packages/eio_luv/eio_luv.0.2/opam                  |  2 +-
+ packages/eio_luv/eio_luv.0.3/opam                  |  2 +-
+ packages/eio_luv/eio_luv.0.4/opam                  |  2 +-
+ packages/eio_luv/eio_luv.0.5/opam                  |  2 +-
+ packages/eio_luv/eio_luv.0.6/opam                  |  2 +-
+ packages/eio_luv/eio_luv.0.7/opam                  |  2 +-
+ packages/eio_luv/eio_luv.0.8.1/opam                |  2 +-
+ packages/eio_luv/eio_luv.0.9/opam                  |  2 +-
+ packages/eio_main/eio_main.0.10/opam               |  2 +-
+ packages/eio_main/eio_main.0.11/opam               |  2 +-
+ packages/eio_main/eio_main.0.12/opam               |  2 +-
+ packages/eio_main/eio_main.0.13/opam               |  2 +-
+ packages/eio_main/eio_main.0.14/opam               |  2 +-
+ packages/eio_main/eio_main.0.2/opam                |  2 +-
+ packages/eio_main/eio_main.0.3/opam                |  2 +-
+ packages/eio_main/eio_main.0.4/opam                |  2 +-
+ packages/eio_main/eio_main.0.5/opam                |  2 +-
+ packages/eio_main/eio_main.0.6/opam                |  2 +-
+ packages/eio_main/eio_main.0.7/opam                |  2 +-
+ packages/eio_main/eio_main.0.8.1/opam              |  2 +-
+ packages/eio_main/eio_main.0.9/opam                |  2 +-
+ packages/eio_posix/eio_posix.0.10/opam             |  2 +-
+ packages/eio_posix/eio_posix.0.11/opam             |  2 +-
+ packages/eio_posix/eio_posix.0.12/opam             |  2 +-
+ packages/eio_posix/eio_posix.0.13/opam             |  2 +-
+ packages/eio_posix/eio_posix.0.14/opam             |  2 +-
+ packages/eio_posix/eio_posix.0.9/opam              |  2 +-
+ packages/electrod/electrod.0.5/opam                |  2 +-
+ packages/electrod/electrod.0.6.2/opam              |  2 +-
+ packages/electrod/electrod.0.6/opam                |  2 +-
+ packages/electrod/electrod.0.7.1/opam              |  2 +-
+ packages/electrod/electrod.0.8.0/opam              |  2 +-
+ packages/electrod/electrod.0.9.0/opam              |  2 +-
+ packages/electrod/electrod.1.0.0/opam              |  2 +-
+ packages/extism/extism.1.0.0/opam                  |  2 +-
+ packages/ezcurl-lwt/ezcurl-lwt.0.1/opam            |  2 +-
+ packages/ezcurl-lwt/ezcurl-lwt.0.2.1/opam          |  2 +-
+ packages/ezcurl-lwt/ezcurl-lwt.0.2.2/opam          |  2 +-
+ packages/ezcurl-lwt/ezcurl-lwt.0.2.3/opam          |  2 +-
+ packages/ezcurl-lwt/ezcurl-lwt.0.2.4/opam          |  2 +-
+ packages/ezcurl-lwt/ezcurl-lwt.0.2/opam            |  2 +-
+ packages/geojson/geojson.0.1.0/opam                |  2 +-
+ packages/geojson/geojson.0.1.1/opam                |  2 +-
+ packages/geojson/geojson.0.2.0/opam                |  2 +-
+ packages/geojsone/geojsone.0.1.0/opam              |  2 +-
+ packages/geojsone/geojsone.0.1.1/opam              |  2 +-
+ packages/geojsone/geojsone.0.2.0/opam              |  2 +-
+ packages/gitlab-jsoo/gitlab-jsoo.0.1.0/opam        |  2 +-
+ packages/gitlab-unix/gitlab-unix.0.1.0/opam        |  2 +-
+ packages/gitlab/gitlab.0.1.0/opam                  |  2 +-
+ packages/grpc-examples/grpc-examples.0.2.0/opam    |  2 +-
+ packages/hilite/hilite.0.1.0/opam                  |  2 +-
+ packages/hilite/hilite.0.1.1/opam                  |  2 +-
+ packages/hilite/hilite.0.2.0/opam                  |  2 +-
+ packages/hilite/hilite.0.3.0/opam                  |  2 +-
+ packages/hilite/hilite.0.4.0/opam                  |  2 +-
+ packages/http-cookie/http-cookie.4.3.0/opam        |  2 +-
+ packages/http-date/http-date.0.1/opam              |  2 +-
+ packages/irmin-cli/irmin-cli.3.4.0/opam            |  2 +-
+ packages/irmin-cli/irmin-cli.3.4.1/opam            |  2 +-
+ packages/irmin-cli/irmin-cli.3.4.2/opam            |  2 +-
+ packages/irmin-cli/irmin-cli.3.4.3/opam            |  2 +-
+ packages/irmin-cli/irmin-cli.3.5.0/opam            |  2 +-
+ packages/irmin-cli/irmin-cli.3.5.1/opam            |  2 +-
+ packages/irmin-cli/irmin-cli.3.5.2/opam            |  2 +-
+ packages/irmin-cli/irmin-cli.3.6.0/opam            |  2 +-
+ packages/irmin-cli/irmin-cli.3.6.1/opam            |  2 +-
+ packages/irmin-cli/irmin-cli.3.7.0/opam            |  2 +-
+ packages/irmin-cli/irmin-cli.3.7.1/opam            |  2 +-
+ packages/irmin-cli/irmin-cli.3.7.2/opam            |  2 +-
+ packages/irmin-cli/irmin-cli.3.8.0/opam            |  2 +-
+ packages/irmin-cli/irmin-cli.3.9.0/opam            |  2 +-
+ packages/irmin-unix/irmin-unix.3.0.0/opam          |  2 +-
+ packages/irmin-unix/irmin-unix.3.1.0/opam          |  2 +-
+ packages/irmin-unix/irmin-unix.3.2.0/opam          |  2 +-
+ packages/irmin-unix/irmin-unix.3.2.1/opam          |  2 +-
+ packages/irmin-unix/irmin-unix.3.2.2/opam          |  2 +-
+ packages/irmin-unix/irmin-unix.3.3.0/opam          |  2 +-
+ packages/irmin-unix/irmin-unix.3.3.1/opam          |  2 +-
+ packages/irmin-unix/irmin-unix.3.3.2/opam          |  2 +-
+ packages/iter/iter.1.2/opam                        |  2 +-
+ packages/iter/iter.1.3/opam                        |  2 +-
+ packages/iter/iter.1.4/opam                        |  2 +-
+ packages/iter/iter.1.5/opam                        |  2 +-
+ packages/iter/iter.1.6/opam                        |  2 +-
+ packages/iter/iter.1.7/opam                        |  2 +-
+ packages/iter/iter.1.8/opam                        |  2 +-
+ packages/kcas/kcas.0.2.1/opam                      |  2 +-
+ packages/kcas/kcas.0.2.2/opam                      |  2 +-
+ packages/kcas/kcas.0.2.3/opam                      |  2 +-
+ packages/kcas/kcas.0.2.4/opam                      |  2 +-
+ packages/kcas/kcas.0.3.0/opam                      |  2 +-
+ packages/kcas/kcas.0.3.1/opam                      |  2 +-
+ packages/kcas/kcas.0.4.0/opam                      |  2 +-
+ packages/kcas/kcas.0.5.0/opam                      |  2 +-
+ packages/kcas/kcas.0.5.1/opam                      |  2 +-
+ packages/kcas/kcas.0.5.2/opam                      |  2 +-
+ packages/kcas/kcas.0.5.3/opam                      |  2 +-
+ packages/kcas/kcas.0.6.0/opam                      |  2 +-
+ packages/kcas/kcas.0.6.1/opam                      |  2 +-
+ packages/kcas_data/kcas_data.0.2.4/opam            |  2 +-
+ packages/kcas_data/kcas_data.0.3.0/opam            |  2 +-
+ packages/kcas_data/kcas_data.0.3.1/opam            |  2 +-
+ packages/kcas_data/kcas_data.0.4.0/opam            |  2 +-
+ packages/kcas_data/kcas_data.0.5.0/opam            |  2 +-
+ packages/kcas_data/kcas_data.0.5.1/opam            |  2 +-
+ packages/kcas_data/kcas_data.0.5.2/opam            |  2 +-
+ packages/kcas_data/kcas_data.0.5.3/opam            |  2 +-
+ packages/kcas_data/kcas_data.0.6.0/opam            |  2 +-
+ packages/kcas_data/kcas_data.0.6.1/opam            |  2 +-
+ packages/lab/lab.0.1.0/opam                        |  2 +-
+ packages/lab/lab.0.1.1/opam                        |  2 +-
+ packages/lab/lab.0.1.2/opam                        |  2 +-
+ packages/lab/lab.0.1.4/opam                        |  2 +-
+ packages/lab/lab.0.1.5/opam                        |  2 +-
+ packages/lab/lab.0.1.7/opam                        |  2 +-
+ packages/lab/lab.0.1.8/opam                        |  2 +-
+ packages/lambda_streams/lambda_streams.0.1.2/opam  |  2 +-
+ packages/leaves/leaves.0.0.2/opam                  |  2 +-
+ packages/lwt_eio/lwt_eio.0.1/opam                  |  2 +-
+ packages/lwt_eio/lwt_eio.0.2/opam                  |  2 +-
+ packages/lwt_eio/lwt_eio.0.3/opam                  |  2 +-
+ packages/lwt_eio/lwt_eio.0.4/opam                  |  2 +-
+ packages/lwt_eio/lwt_eio.0.5/opam                  |  2 +-
+ packages/mdx/mdx.2.4.0/opam                        | 63 ++++++++++++++++++++++
+ packages/merlin/merlin.3.3.0/opam                  |  2 +-
+ packages/merlin/merlin.3.3.1/opam                  |  2 +-
+ packages/merlin/merlin.3.3.2/opam                  |  2 +-
+ packages/merlin/merlin.3.3.3/opam                  |  2 +-
+ packages/merlin/merlin.3.3.4/opam                  |  2 +-
+ packages/merlin/merlin.3.3.5/opam                  |  2 +-
+ packages/merlin/merlin.3.3.6/opam                  |  2 +-
+ packages/merlin/merlin.3.3.7/opam                  |  2 +-
+ packages/merlin/merlin.3.3.7~4.11preview1/opam     |  2 +-
+ packages/merlin/merlin.3.3.8/opam                  |  2 +-
+ packages/merlin/merlin.3.3.9/opam                  |  2 +-
+ packages/merlin/merlin.3.4.0/opam                  |  2 +-
+ packages/merlin/merlin.3.4.1/opam                  |  2 +-
+ packages/merlin/merlin.3.4.2/opam                  |  2 +-
+ packages/merlin/merlin.3.5.0/opam                  |  2 +-
+ packages/merlin/merlin.3.6.1/opam                  |  2 +-
+ packages/merlin/merlin.3.7.0/opam                  |  2 +-
+ packages/minttea/minttea.0.0.2/opam                |  2 +-
+ packages/moonpool/moonpool.0.1.1/opam              |  2 +-
+ packages/moonpool/moonpool.0.1/opam                |  2 +-
+ packages/moonpool/moonpool.0.2/opam                |  2 +-
+ packages/moonpool/moonpool.0.3/opam                |  2 +-
+ packages/moonpool/moonpool.0.4/opam                |  2 +-
+ packages/moonpool/moonpool.0.5.1/opam              |  2 +-
+ packages/moonpool/moonpool.0.5/opam                |  2 +-
+ packages/msat/msat.0.8/opam                        |  2 +-
+ packages/multibase/multibase.0.1.0/opam            |  2 +-
+ packages/multicodec/multicodec.0.1.0/opam          |  2 +-
+ .../multicore-bench/multicore-bench.0.1.0/opam     |  2 +-
+ .../multihash-digestif.0.1.0/opam                  |  2 +-
+ packages/odoc/odoc.2.0.0/opam                      |  2 +-
+ packages/odoc/odoc.2.0.1/opam                      |  2 +-
+ packages/odoc/odoc.2.0.2/opam                      |  2 +-
+ packages/odoc/odoc.2.1.0/opam                      |  2 +-
+ packages/odoc/odoc.2.1.1/opam                      |  2 +-
+ packages/odoc/odoc.2.2.0/opam                      |  2 +-
+ packages/odoc/odoc.2.2.1/opam                      |  2 +-
+ packages/odoc/odoc.2.2.2/opam                      |  2 +-
+ .../ortac-qcheck-stm/ortac-qcheck-stm.0.1.0/opam   |  2 +-
+ packages/owi/owi.0.1/opam                          |  2 +-
+ .../pa_ppx_parsetree/pa_ppx_parsetree.0.01/opam    |  2 +-
+ .../pa_ppx_parsetree/pa_ppx_parsetree.0.02/opam    |  2 +-
+ packages/pa_ppx_q_ast/pa_ppx_q_ast.0.11/opam       |  2 +-
+ .../pa_ppx_quotation2extension.0.01/opam           |  2 +-
+ .../pa_ppx_quotation2extension.0.02/opam           |  2 +-
+ packages/pa_ppx_regexp/pa_ppx_regexp.0.01/opam     |  2 +-
+ packages/pa_ppx_static/pa_ppx_static.0.01/opam     |  2 +-
+ packages/par_incr/par_incr.0.1/opam                |  2 +-
+ packages/pari-bindings/pari-bindings.0.1/opam      |  2 +-
+ packages/pari/pari.0.1/opam                        |  2 +-
+ packages/polars/polars.0.0.1/opam                  |  2 +-
+ packages/polars_async/polars_async.0.0.1/opam      |  2 +-
+ .../ppx_deriving_yaml/ppx_deriving_yaml.0.1.0/opam |  2 +-
+ .../ppx_deriving_yaml/ppx_deriving_yaml.0.1.1/opam |  2 +-
+ .../ppx_deriving_yaml/ppx_deriving_yaml.0.2.0/opam |  2 +-
+ .../ppx_deriving_yaml/ppx_deriving_yaml.0.2.1/opam |  2 +-
+ .../ppx_deriving_yaml/ppx_deriving_yaml.0.2.2/opam |  2 +-
+ packages/preface/preface.1.0.0/opam                |  2 +-
+ .../pretty_expressive/pretty_expressive.0.2/opam   |  2 +-
+ .../pretty_expressive/pretty_expressive.0.3/opam   |  2 +-
+ .../pretty_expressive/pretty_expressive.0.4/opam   |  2 +-
+ packages/printbox-html/printbox-html.0.7/opam      |  2 +-
+ packages/printbox-html/printbox-html.0.8/opam      |  2 +-
+ packages/printbox-html/printbox-html.0.9/opam      |  2 +-
+ packages/printbox-md/printbox-md.0.9/opam          |  2 +-
+ packages/printbox-text/printbox-text.0.6.1/opam    |  2 +-
+ packages/printbox-text/printbox-text.0.6/opam      |  2 +-
+ packages/printbox-text/printbox-text.0.7/opam      |  2 +-
+ packages/printbox-text/printbox-text.0.8/opam      |  2 +-
+ packages/printbox-text/printbox-text.0.9/opam      |  2 +-
+ packages/printbox/printbox.0.5/opam                |  2 +-
+ packages/reparse/reparse.3.0.0/opam                |  2 +-
+ packages/reparse/reparse.3.0.1/opam                |  2 +-
+ packages/reparse/reparse.3.1.0/opam                |  2 +-
+ packages/riot/riot.0.0.7/opam                      |  2 +-
+ packages/routes/routes.1.0.0/opam                  |  2 +-
+ packages/routes/routes.2.0.0/opam                  |  2 +-
+ packages/rtree/rtree.0.1.0/opam                    |  2 +-
+ packages/rtree/rtree.0.1.1/opam                    |  2 +-
+ packages/search/search.0.1.0/opam                  |  2 +-
+ packages/search/search.0.1.1/opam                  |  2 +-
+ packages/spelll/spelll.0.3/opam                    |  2 +-
+ packages/spelll/spelll.0.4/opam                    |  2 +-
+ packages/spices/spices.0.0.2/opam                  |  2 +-
+ packages/spin/spin.0.6.0/opam                      |  2 +-
+ packages/thread-table/thread-table.0.1.0/opam      |  2 +-
+ packages/tls-eio/tls-eio.0.15.4/opam               |  6 +--
+ packages/tls-eio/tls-eio.0.15.5/opam               |  6 +--
+ packages/tls-eio/tls-eio.0.16.0/opam               |  8 +--
+ packages/tls-eio/tls-eio.0.17.0/opam               |  8 +--
+ packages/tls-eio/tls-eio.0.17.1/opam               |  8 +--
+ packages/tls-eio/tls-eio.0.17.2/opam               | 10 ++--
+ packages/tls-eio/tls-eio.0.17.3/opam               | 10 ++--
+ packages/toml/toml.7.1.0/opam                      |  2 +-
+ packages/topojson/topojson.0.1.0/opam              |  2 +-
+ packages/topojsone/topojsone.0.1.0/opam            |  2 +-
+ packages/um-abt/um-abt.0.1.3/opam                  |  2 +-
+ packages/um-abt/um-abt.0.1.5/opam                  |  2 +-
+ packages/um-abt/um-abt.0.1.7/opam                  |  2 +-
+ packages/uring/uring.0.4/opam                      |  2 +-
+ packages/uring/uring.0.5/opam                      |  2 +-
+ packages/uring/uring.0.6/opam                      |  2 +-
+ packages/uring/uring.0.7/opam                      |  2 +-
+ packages/uring/uring.0.8/opam                      |  2 +-
+ packages/wtr-ppx/wtr-ppx.3.0.0/opam                |  2 +-
+ packages/wtr/wtr.1.0.0/opam                        |  2 +-
+ packages/wtr/wtr.2.0.0/opam                        |  2 +-
+ packages/wtr/wtr.3.0.0/opam                        |  2 +-
+ packages/yaml-sexp/yaml-sexp.3.0.0/opam            |  2 +-
+ packages/yaml-sexp/yaml-sexp.3.0.1/opam            |  2 +-
+ packages/yaml-sexp/yaml-sexp.3.1.0/opam            |  2 +-
+ packages/yaml-sexp/yaml-sexp.3.2.0/opam            |  2 +-
+ packages/yaml/yaml.1.0.0/opam                      |  2 +-
+ packages/yaml/yaml.2.0.0/opam                      |  2 +-
+ packages/yaml/yaml.2.0.1/opam                      |  2 +-
+ packages/yaml/yaml.2.1.0/opam                      |  2 +-
+ packages/yaml/yaml.3.0.0/opam                      |  2 +-
+ packages/yaml/yaml.3.0.1/opam                      |  2 +-
+ packages/yaml/yaml.3.1.0/opam                      |  2 +-
+ packages/yaml/yaml.3.2.0/opam                      |  2 +-
+ packages/zarith-ppx/zarith-ppx.0.1/opam            |  2 +-
+ 331 files changed, 414 insertions(+), 351 deletions(-)
+ create mode 100644 packages/mdx/mdx.2.4.0/opam
+
+[01;34m(from ocaml/opam:debian-12-ocaml-4.10@sha256:2246586939d46c983468d661d702fa929586d0a9cf3d33a0143914871ead6fef)[0m
+[01;2m[01;35m2024-02-28 09:55.55 ---> using "a6ad3b74b023e6a16f82be04e4fadf2134ad6de4b0763604061fe7a935875a0c" from cache[0m
+
+[01;34m/: (user (uid 1000) (gid 1000))[0m
+
+[01;34m/: (workdir /home/opam)[0m
+
+[01;34m/home/opam: (run (shell "sudo ln -f /usr/bin/opam-dev /usr/bin/opam"))[0m
+[01;2m[01;35m2024-02-28 09:55.55 ---> using "c5c381cbd47948299596aee9ed2e75c2f2a366cb4b37ce47b25877a7c32f629a" from cache[0m
+
+[01;34m/home/opam: (run (network host)
+                 (shell "opam init --reinit --config .opamrc-sandbox -ni"))[0m
+Configuring from /home/opam/.opamrc-sandbox, then /home/opam/.opamrc, and finally from built-in defaults.
+Checking for available remotes: rsync and local, git.
+  - you won't be able to use mercurial repositories unless you install the hg command on your system.
+  - you won't be able to use darcs repositories unless you install the darcs command on your system.
+
+Continue? [y/n] y
+This development version of opam requires an update to the layout of /home/opam/.opam from version 2.0 to version 2.2~alpha, which can't be reverted.
+You may want to back it up before going further.
+
+[NOTE] The 'jobs' option was reset, its value was 255 and its new value will vary according to the current number of cores on your machine. You can restore the fixed value using:
+           opam option jobs=255 --global
+Format upgrade done.
+
+<><> Updating repositories ><><><><><><><><><><><><><><><><><><><><><><><><><><>
+[default] synchronised from file:///home/opam/opam-repository
+[01;2m[01;35m2024-02-28 09:55.55 ---> using "47002d94ef65908157a5988ce0268cd9c8f8368a866c56547f6894326401aed3" from cache[0m
+
+[01;34m/home/opam: (env OPAMDOWNLOADJOBS 1)[0m
+
+[01;34m/home/opam: (env OPAMERRLOGLEN 0)[0m
+
+[01;34m/home/opam: (env OPAMSOLVERTIMEOUT 500)[0m
+
+[01;34m/home/opam: (env OPAMPRECISETRACKING 1)[0m
+
+[01;34m/home/opam: (env CI true)[0m
+
+[01;34m/home/opam: (env OPAM_REPO_CI true)[0m
+
+[01;34m/home/opam: (run (shell "rm -rf opam-repository/"))[0m
+[01;2m[01;35m2024-02-28 09:55.55 ---> using "21cd9ee469b5590a281180c6e86b11578d57fccea3a01d464500f49f8bf9312e" from cache[0m
+
+[01;34m/home/opam: (copy (src .) (dst opam-repository/))[0m
+[01;2m[01;35m2024-02-28 09:55.58 ---> using "da7a8ac85332287a24ff4933c477678229e419f01ab66dc02e557c5986d34aa9" from cache[0m
+
+[01;34m/home/opam: (run (shell "opam repository set-url --strict default opam-repository/"))[0m
+[default] Initialised
+[01;2m[01;35m2024-02-28 09:55.58 ---> using "f63ffee007e642a77e33f27cd196e6452581851cd94f9eba2aa6416ef38b3882" from cache[0m
+
+[01;34m/home/opam: (run (network host)
+                 (shell "opam update --depexts || true"))[0m
++ /usr/bin/sudo "apt-get" "update"
+- Hit:1 http://deb.debian.org/debian bookworm InRelease
+- Get:2 http://deb.debian.org/debian bookworm-updates InRelease [55.4 kB]
+- Get:3 http://deb.debian.org/debian-security bookworm-security InRelease [48.0 kB]
+- Get:4 http://deb.debian.org/debian-security bookworm-security/main amd64 Packages [144 kB]
+- Fetched 247 kB in 0s (885 kB/s)
+- Reading package lists...
+[01;2m[01;35m2024-02-28 09:55.58 ---> using "06190f879530f2c66c1cad1be6500012fe4e2715c3ef4f1cb1f72c8b0eaa11ab" from cache[0m
+
+[01;34m/home/opam: (env OPAMCRITERIA -removed,-count[avoid-version,changed],-count[version-lag,request],-count[version-lag,changed],-count[missing-depexts,changed],-changed)[0m
+
+[01;34m/home/opam: (env OPAMFIXUPCRITERIA -removed,-count[avoid-version,changed],-count[version-lag,request],-count[version-lag,changed],-count[missing-depexts,changed],-changed)[0m
+
+[01;34m/home/opam: (env OPAMUPGRADECRITERIA -removed,-count[avoid-version,changed],-count[version-lag,request],-count[version-lag,changed],-count[missing-depexts,changed],-changed)[0m
+
+[01;34m/home/opam: (run (shell "opam pin add -k version -yn calculon.0.4 0.4"))[0m
+calculon is now pinned to version 0.4
+[01;2m[01;35m2024-02-28 09:55.59 ---> saved as "eff294d9fdb42151e599d7b0f51159451cbcb4da63dde5fe6acb95e5a80539ef"[0m
+
+[01;34m/home/opam: (run (cache (opam-archives (target /home/opam/.opam/download-cache)))
+                 (network host)
+                 (shell  "opam reinstall calculon.0.4;\
+                        \n        res=$?;\
+                        \n        test \"$res\" != 31 && exit \"$res\";\
+                        \n        export OPAMCLI=2.0;\
+                        \n        build_dir=$(opam var prefix)/.opam-switch/build;\
+                        \n        failed=$(ls \"$build_dir\");\
+                        \n        partial_fails=\"\";\
+                        \n        for pkg in $failed; do\
+                        \n          if opam show -f x-ci-accept-failures: \"$pkg\" | grep -qF \"\\\"debian-12\\\"\"; then\
+                        \n            echo \"A package failed and has been disabled for CI using the 'x-ci-accept-failures' field.\";\
+                        \n          fi;\
+                        \n          test \"$pkg\" != 'calculon.0.4' && partial_fails=\"$partial_fails $pkg\";\
+                        \n        done;\
+                        \n        test \"${partial_fails}\" != \"\" && echo \"opam-repo-ci detected dependencies failing: ${partial_fails}\";\
+                        \n        exit 1"))[0m
+calculon.0.4 is not installed. Install it? [y/n] y
+[ERROR] Sorry, resolution of the request timed out.
+        Try to specify a more precise request, use a different solver, or increase the allowed time by setting OPAMSOLVERTIMEOUT to a bigger value (currently, it is set to 500.0 seconds).
+"/usr/bin/env" "bash" "-c" "opam reinstall calculon.0.4;
+        res=$?;
+        test "$res" != 31 && exit "$res";
+        export OPAMCLI=2.0;
+        build_dir=$(opam var prefix)/.opam-switch/build;
+        failed=$(ls "$build_dir");
+        partial_fails="";
+        for pkg in $failed; do
+          if opam show -f x-ci-accept-failures: "$pkg" | grep -qF "\"debian-12\""; then
+            echo "A package failed and has been disabled for CI using the 'x-ci-accept-failures' field.";
+          fi;
+          test "$pkg" != 'calculon.0.4' && partial_fails="$partial_fails $pkg";
+        done;
+        test "${partial_fails}" != "" && echo "opam-repo-ci detected dependencies failing: ${partial_fails}";
+        exit 1" failed with exit status 60
+2024-02-28 10:04.45: Job failed: Failed: Build failed
+2024-02-28 10:04.45: Log analysis:
+2024-02-28 10:04.45: >>> 
+[ERROR] Sorry, resolution of the request timed out.
+ (score = 20)
+2024-02-28 10:04.45: Sorry, resolution of the request timed out.

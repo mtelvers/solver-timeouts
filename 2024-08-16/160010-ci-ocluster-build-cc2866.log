@@ -1,0 +1,358 @@
+2024-08-16 16:00.10: New job: test mavryk-dac-client-lib.20.2~rc2, using opam 2.1
+                              from https://github.com/ocaml/opam-repository.git#refs/pull/26365/head (abe818522fd878ce36fccbafa977a434ddef2d61)
+                              on debian-12-ocaml-4.14/amd64
+
+To reproduce locally:
+
+cd $(mktemp -d)
+git clone --recursive "https://github.com/ocaml/opam-repository.git" && cd "opam-repository" && git fetch origin "refs/pull/26365/head" && git reset --hard abe81852
+git fetch origin master
+git merge --no-edit 6eee105e52e098e36949a584c053a18bcb9b2f6b
+cat > ../Dockerfile <<'END-OF-DOCKERFILE'
+[34mFROM ocaml/opam:debian-12-ocaml-4.14@sha256:69ef0774f5cbddd472ab7b4ed241ca72bff5d63eddde00603b6501d0e4e60b3f
+USER 1000:1000
+WORKDIR /home/opam
+RUN sudo ln -f /usr/bin/opam-2.1 /usr/bin/opam
+RUN opam init --reinit -ni
+RUN uname -rs && opam exec -- ocaml -version && opam --version
+ENV OPAMDOWNLOADJOBS="1"
+ENV OPAMERRLOGLEN="0"
+ENV OPAMSOLVERTIMEOUT="500"
+ENV OPAMPRECISETRACKING="1"
+ENV CI="true"
+ENV OPAM_REPO_CI="true"
+RUN rm -rf opam-repository/
+COPY --chown=1000:1000 . opam-repository/
+RUN opam repository set-url --strict default opam-repository/
+RUN opam update --depexts || true
+RUN opam pin add -k version -yn mavryk-dac-client-lib.20.2~rc2 20.2~rc2
+RUN opam reinstall mavryk-dac-client-lib.20.2~rc2; \
+    res=$?; \
+    test "$res" != 31 && exit "$res"; \
+    export OPAMCLI=2.0; \
+    build_dir=$(opam var prefix)/.opam-switch/build; \
+    failed=$(ls "$build_dir"); \
+    partial_fails=""; \
+    for pkg in $failed; do \
+    if opam show -f x-ci-accept-failures: "$pkg" | grep -qF "\"debian-12\""; then \
+    echo "A package failed and has been disabled for CI using the 'x-ci-accept-failures' field."; \
+    fi; \
+    test "$pkg" != 'mavryk-dac-client-lib.20.2~rc2' && partial_fails="$partial_fails $pkg"; \
+    done; \
+    test "${partial_fails}" != "" && echo "opam-repo-ci detected dependencies failing: ${partial_fails}"; \
+    exit 1
+RUN (opam reinstall --with-test mavryk-dac-client-lib.20.2~rc2) || true
+RUN opam reinstall --with-test --verbose mavryk-dac-client-lib.20.2~rc2; \
+    res=$?; \
+    test "$res" != 31 && exit "$res"; \
+    export OPAMCLI=2.0; \
+    build_dir=$(opam var prefix)/.opam-switch/build; \
+    failed=$(ls "$build_dir"); \
+    partial_fails=""; \
+    for pkg in $failed; do \
+    if opam show -f x-ci-accept-failures: "$pkg" | grep -qF "\"debian-12\""; then \
+    echo "A package failed and has been disabled for CI using the 'x-ci-accept-failures' field."; \
+    fi; \
+    test "$pkg" != 'mavryk-dac-client-lib.20.2~rc2' && partial_fails="$partial_fails $pkg"; \
+    done; \
+    test "${partial_fails}" != "" && echo "opam-repo-ci detected dependencies failing: ${partial_fails}"; \
+    exit 1
+[0m
+END-OF-DOCKERFILE
+docker build -f ../Dockerfile .
+
+2024-08-16 16:00.10: Using cache hint "ocaml/opam:debian-12-ocaml-4.14@sha256:69ef0774f5cbddd472ab7b4ed241ca72bff5d63eddde00603b6501d0e4e60b3f-mavryk-dac-client-lib.20.2~rc2-abe818522fd878ce36fccbafa977a434ddef2d61"
+2024-08-16 16:00.10: Using OBuilder spec:
+((from ocaml/opam:debian-12-ocaml-4.14@sha256:69ef0774f5cbddd472ab7b4ed241ca72bff5d63eddde00603b6501d0e4e60b3f)
+ (user (uid 1000) (gid 1000))
+ (workdir /home/opam)
+ (run (shell "sudo ln -f /usr/bin/opam-2.1 /usr/bin/opam"))
+ (run (network host)
+      (shell "opam init --reinit --config .opamrc-sandbox -ni"))
+ (run (shell "uname -rs && opam exec -- ocaml -version && opam --version"))
+ (env OPAMDOWNLOADJOBS 1)
+ (env OPAMERRLOGLEN 0)
+ (env OPAMSOLVERTIMEOUT 500)
+ (env OPAMPRECISETRACKING 1)
+ (env CI true)
+ (env OPAM_REPO_CI true)
+ (run (shell "rm -rf opam-repository/"))
+ (copy (src .) (dst opam-repository/))
+ (run (shell "opam repository set-url --strict default opam-repository/"))
+ (run (network host)
+      (shell "opam update --depexts || true"))
+ (run (shell "opam pin add -k version -yn mavryk-dac-client-lib.20.2~rc2 20.2~rc2"))
+ (run (cache (opam-archives (target /home/opam/.opam/download-cache)))
+      (network host)
+      (shell  "opam reinstall mavryk-dac-client-lib.20.2~rc2;\
+             \n        res=$?;\
+             \n        test \"$res\" != 31 && exit \"$res\";\
+             \n        export OPAMCLI=2.0;\
+             \n        build_dir=$(opam var prefix)/.opam-switch/build;\
+             \n        failed=$(ls \"$build_dir\");\
+             \n        partial_fails=\"\";\
+             \n        for pkg in $failed; do\
+             \n          if opam show -f x-ci-accept-failures: \"$pkg\" | grep -qF \"\\\"debian-12\\\"\"; then\
+             \n            echo \"A package failed and has been disabled for CI using the 'x-ci-accept-failures' field.\";\
+             \n          fi;\
+             \n          test \"$pkg\" != 'mavryk-dac-client-lib.20.2~rc2' && partial_fails=\"$partial_fails $pkg\";\
+             \n        done;\
+             \n        test \"${partial_fails}\" != \"\" && echo \"opam-repo-ci detected dependencies failing: ${partial_fails}\";\
+             \n        exit 1"))
+ (run (network host)
+      (shell "(opam reinstall --with-test mavryk-dac-client-lib.20.2~rc2) || true"))
+ (run (shell  "opam reinstall --with-test --verbose mavryk-dac-client-lib.20.2~rc2;\
+             \n        res=$?;\
+             \n        test \"$res\" != 31 && exit \"$res\";\
+             \n        export OPAMCLI=2.0;\
+             \n        build_dir=$(opam var prefix)/.opam-switch/build;\
+             \n        failed=$(ls \"$build_dir\");\
+             \n        partial_fails=\"\";\
+             \n        for pkg in $failed; do\
+             \n          if opam show -f x-ci-accept-failures: \"$pkg\" | grep -qF \"\\\"debian-12\\\"\"; then\
+             \n            echo \"A package failed and has been disabled for CI using the 'x-ci-accept-failures' field.\";\
+             \n          fi;\
+             \n          test \"$pkg\" != 'mavryk-dac-client-lib.20.2~rc2' && partial_fails=\"$partial_fails $pkg\";\
+             \n        done;\
+             \n        test \"${partial_fails}\" != \"\" && echo \"opam-repo-ci detected dependencies failing: ${partial_fails}\";\
+             \n        exit 1"))
+)
+
+2024-08-16 16:00.10: Waiting for resource in pool OCluster
+2024-08-16 20:29.02: Waiting for worker…
+2024-08-16 20:59.43: Got resource from pool OCluster
+Building on x86-bm-c15.sw.ocaml.org
+All commits already cached
+Updating files:  68% (21855/32029)Updating files:  69% (22101/32029)Updating files:  70% (22421/32029)Updating files:  71% (22741/32029)Updating files:  72% (23061/32029)Updating files:  73% (23382/32029)Updating files:  74% (23702/32029)Updating files:  75% (24022/32029)Updating files:  76% (24343/32029)Updating files:  77% (24663/32029)Updating files:  78% (24983/32029)Updating files:  79% (25303/32029)Updating files:  80% (25624/32029)Updating files:  81% (25944/32029)Updating files:  82% (26264/32029)Updating files:  83% (26585/32029)Updating files:  84% (26905/32029)Updating files:  85% (27225/32029)Updating files:  86% (27545/32029)Updating files:  87% (27866/32029)Updating files:  88% (28186/32029)Updating files:  89% (28506/32029)Updating files:  90% (28827/32029)Updating files:  91% (29147/32029)Updating files:  92% (29467/32029)Updating files:  93% (29787/32029)Updating files:  94% (30108/32029)Updating files:  95% (30428/32029)Updating files:  96% (30748/32029)Updating files:  97% (31069/32029)Updating files:  98% (31389/32029)Updating files:  99% (31709/32029)Updating files: 100% (32029/32029)Updating files: 100% (32029/32029), done.
+HEAD is now at 6eee105e52 Merge pull request #26362 from kit-ty-kate/opam-publish-opam-0install-cudf.0.5.0
+Updating 6eee105e52..abe818522f
+Fast-forward
+ .../mavkit-accuser-PtAtLas.20.2~rc2/opam           | 32 ++++++++
+ .../mavkit-accuser-PtBoreas.20.2~rc2/opam          | 32 ++++++++
+ .../mavkit-alcotezt/mavkit-alcotezt.20.2~rc2/opam  | 26 ++++++
+ .../mavkit-baker-PtAtLas.20.2~rc2/opam             | 32 ++++++++
+ .../mavkit-baker-PtBoreas.20.2~rc2/opam            | 32 ++++++++
+ packages/mavkit-client/mavkit-client.20.2~rc2/opam | 43 ++++++++++
+ packages/mavkit-codec/mavkit-codec.20.2~rc2/opam   | 41 ++++++++++
+ .../mavkit-crawler/mavkit-crawler.20.2~rc2/opam    | 30 +++++++
+ .../mavkit-dac-client.20.2~rc2/opam                | 37 +++++++++
+ .../mavkit-dac-node/mavkit-dac-node.20.2~rc2/opam  | 41 ++++++++++
+ .../mavkit-dal-node/mavkit-dal-node.20.2~rc2/opam  | 44 ++++++++++
+ .../mavkit-distributed-internal.20.2~rc2/opam      | 26 ++++++
+ .../mavkit-distributed-lwt-internal.20.2~rc2/opam  | 29 +++++++
+ .../mavkit-injector/mavkit-injector.20.2~rc2/opam  | 29 +++++++
+ .../mavkit-internal-libs.20.2~rc2/opam             | 51 ++++++++++++
+ .../mavkit-l2-libs/mavkit-l2-libs.20.2~rc2/opam    | 48 +++++++++++
+ packages/mavkit-libs/mavkit-libs.20.2~rc2/opam     | 93 ++++++++++++++++++++++
+ .../mavkit-node-config.20.2~rc2/opam               | 30 +++++++
+ packages/mavkit-node/mavkit-node.20.2~rc2/opam     | 56 +++++++++++++
+ .../mavkit-proto-libs.20.2~rc2/opam                | 41 ++++++++++
+ .../opam                                           | 31 ++++++++
+ .../mavkit-protocol-001-PtAtLas-libs.20.2~rc2/opam | 49 ++++++++++++
+ .../opam                                           | 49 ++++++++++++
+ .../mavkit-protocol-alpha-libs.20.2~rc2/opam       | 50 ++++++++++++
+ .../mavkit-protocol-compiler.20.2~rc2/opam         | 34 ++++++++
+ .../mavkit-proxy-server.20.2~rc2/opam              | 50 ++++++++++++
+ .../mavkit-rpc-process.20.2~rc2/opam               | 34 ++++++++
+ .../mavkit-shell-libs.20.2~rc2/opam                | 63 +++++++++++++++
+ packages/mavkit-signer/mavkit-signer.20.2~rc2/opam | 30 +++++++
+ .../mavkit-smart-rollup-node-PtAtLas.20.2~rc2/opam | 46 +++++++++++
+ .../opam                                           | 46 +++++++++++
+ .../mavkit-smart-rollup-node-alpha.20.2~rc2/opam   | 46 +++++++++++
+ .../mavkit-smart-rollup-node-lib.20.2~rc2/opam     | 41 ++++++++++
+ .../mavkit-smart-rollup-node.20.2~rc2/opam         | 37 +++++++++
+ .../opam                                           | 32 ++++++++
+ .../opam                                           | 25 ++++++
+ .../opam                                           | 26 ++++++
+ .../mavkit-version/mavkit-version.20.2~rc2/opam    | 27 +++++++
+ packages/mavkit/mavkit.20.2~rc2/opam               | 38 +++++++++
+ .../mavryk-benchmark.20.2~rc2/opam                 | 31 ++++++++
+ .../mavryk-bls12-381.20.2~rc2/opam                 | 33 ++++++++
+ .../mavryk-client-demo-counter.20.2~rc2/opam       | 28 +++++++
+ .../mavryk-client-genesis.20.2~rc2/opam            | 29 +++++++
+ .../mavryk-dac-client-lib.20.2~rc2/opam            | 28 +++++++
+ .../mavryk-dac-lib/mavryk-dac-lib.20.2~rc2/opam    | 27 +++++++
+ .../mavryk-dac-node-lib.20.2~rc2/opam              | 30 +++++++
+ .../mavryk-dal-node-lib.20.2~rc2/opam              | 28 +++++++
+ .../mavryk-dal-node-services.20.2~rc2/opam         | 26 ++++++
+ .../mavryk-openapi/mavryk-openapi.20.2~rc2/opam    | 28 +++++++
+ .../mavryk-protocol-000-Ps9mPmXa.20.2~rc2/opam     | 30 +++++++
+ .../mavryk-protocol-001-PtAtLas.20.2~rc2/opam      | 31 ++++++++
+ .../mavryk-protocol-002-PtBoreas.20.2~rc2/opam     | 31 ++++++++
+ .../mavryk-protocol-alpha.20.2~rc2/opam            | 31 ++++++++
+ .../mavryk-protocol-demo-counter.20.2~rc2/opam     | 27 +++++++
+ .../mavryk-protocol-demo-noops.20.2~rc2/opam       | 27 +++++++
+ .../mavryk-protocol-genesis.20.2~rc2/opam          | 27 +++++++
+ .../mavryk-proxy-server-config.20.2~rc2/opam       | 30 +++++++
+ packages/tezt-mavryk/tezt-mavryk.20.2~rc2/opam     | 33 ++++++++
+ 58 files changed, 2102 insertions(+)
+ create mode 100644 packages/mavkit-accuser-PtAtLas/mavkit-accuser-PtAtLas.20.2~rc2/opam
+ create mode 100644 packages/mavkit-accuser-PtBoreas/mavkit-accuser-PtBoreas.20.2~rc2/opam
+ create mode 100644 packages/mavkit-alcotezt/mavkit-alcotezt.20.2~rc2/opam
+ create mode 100644 packages/mavkit-baker-PtAtLas/mavkit-baker-PtAtLas.20.2~rc2/opam
+ create mode 100644 packages/mavkit-baker-PtBoreas/mavkit-baker-PtBoreas.20.2~rc2/opam
+ create mode 100644 packages/mavkit-client/mavkit-client.20.2~rc2/opam
+ create mode 100644 packages/mavkit-codec/mavkit-codec.20.2~rc2/opam
+ create mode 100644 packages/mavkit-crawler/mavkit-crawler.20.2~rc2/opam
+ create mode 100644 packages/mavkit-dac-client/mavkit-dac-client.20.2~rc2/opam
+ create mode 100644 packages/mavkit-dac-node/mavkit-dac-node.20.2~rc2/opam
+ create mode 100644 packages/mavkit-dal-node/mavkit-dal-node.20.2~rc2/opam
+ create mode 100644 packages/mavkit-distributed-internal/mavkit-distributed-internal.20.2~rc2/opam
+ create mode 100644 packages/mavkit-distributed-lwt-internal/mavkit-distributed-lwt-internal.20.2~rc2/opam
+ create mode 100644 packages/mavkit-injector/mavkit-injector.20.2~rc2/opam
+ create mode 100644 packages/mavkit-internal-libs/mavkit-internal-libs.20.2~rc2/opam
+ create mode 100644 packages/mavkit-l2-libs/mavkit-l2-libs.20.2~rc2/opam
+ create mode 100644 packages/mavkit-libs/mavkit-libs.20.2~rc2/opam
+ create mode 100644 packages/mavkit-node-config/mavkit-node-config.20.2~rc2/opam
+ create mode 100644 packages/mavkit-node/mavkit-node.20.2~rc2/opam
+ create mode 100644 packages/mavkit-proto-libs/mavkit-proto-libs.20.2~rc2/opam
+ create mode 100644 packages/mavkit-protocol-000-Ps9mPmXa-libs/mavkit-protocol-000-Ps9mPmXa-libs.20.2~rc2/opam
+ create mode 100644 packages/mavkit-protocol-001-PtAtLas-libs/mavkit-protocol-001-PtAtLas-libs.20.2~rc2/opam
+ create mode 100644 packages/mavkit-protocol-002-PtBoreas-libs/mavkit-protocol-002-PtBoreas-libs.20.2~rc2/opam
+ create mode 100644 packages/mavkit-protocol-alpha-libs/mavkit-protocol-alpha-libs.20.2~rc2/opam
+ create mode 100644 packages/mavkit-protocol-compiler/mavkit-protocol-compiler.20.2~rc2/opam
+ create mode 100644 packages/mavkit-proxy-server/mavkit-proxy-server.20.2~rc2/opam
+ create mode 100644 packages/mavkit-rpc-process/mavkit-rpc-process.20.2~rc2/opam
+ create mode 100644 packages/mavkit-shell-libs/mavkit-shell-libs.20.2~rc2/opam
+ create mode 100644 packages/mavkit-signer/mavkit-signer.20.2~rc2/opam
+ create mode 100644 packages/mavkit-smart-rollup-node-PtAtLas/mavkit-smart-rollup-node-PtAtLas.20.2~rc2/opam
+ create mode 100644 packages/mavkit-smart-rollup-node-PtBoreas/mavkit-smart-rollup-node-PtBoreas.20.2~rc2/opam
+ create mode 100644 packages/mavkit-smart-rollup-node-alpha/mavkit-smart-rollup-node-alpha.20.2~rc2/opam
+ create mode 100644 packages/mavkit-smart-rollup-node-lib/mavkit-smart-rollup-node-lib.20.2~rc2/opam
+ create mode 100644 packages/mavkit-smart-rollup-node/mavkit-smart-rollup-node.20.2~rc2/opam
+ create mode 100644 packages/mavkit-smart-rollup-wasm-debugger-lib/mavkit-smart-rollup-wasm-debugger-lib.20.2~rc2/opam
+ create mode 100644 packages/mavkit-smart-rollup-wasm-debugger-plugin/mavkit-smart-rollup-wasm-debugger-plugin.20.2~rc2/opam
+ create mode 100644 packages/mavkit-smart-rollup-wasm-debugger/mavkit-smart-rollup-wasm-debugger.20.2~rc2/opam
+ create mode 100644 packages/mavkit-version/mavkit-version.20.2~rc2/opam
+ create mode 100644 packages/mavkit/mavkit.20.2~rc2/opam
+ create mode 100644 packages/mavryk-benchmark/mavryk-benchmark.20.2~rc2/opam
+ create mode 100644 packages/mavryk-bls12-381/mavryk-bls12-381.20.2~rc2/opam
+ create mode 100644 packages/mavryk-client-demo-counter/mavryk-client-demo-counter.20.2~rc2/opam
+ create mode 100644 packages/mavryk-client-genesis/mavryk-client-genesis.20.2~rc2/opam
+ create mode 100644 packages/mavryk-dac-client-lib/mavryk-dac-client-lib.20.2~rc2/opam
+ create mode 100644 packages/mavryk-dac-lib/mavryk-dac-lib.20.2~rc2/opam
+ create mode 100644 packages/mavryk-dac-node-lib/mavryk-dac-node-lib.20.2~rc2/opam
+ create mode 100644 packages/mavryk-dal-node-lib/mavryk-dal-node-lib.20.2~rc2/opam
+ create mode 100644 packages/mavryk-dal-node-services/mavryk-dal-node-services.20.2~rc2/opam
+ create mode 100644 packages/mavryk-openapi/mavryk-openapi.20.2~rc2/opam
+ create mode 100644 packages/mavryk-protocol-000-Ps9mPmXa/mavryk-protocol-000-Ps9mPmXa.20.2~rc2/opam
+ create mode 100644 packages/mavryk-protocol-001-PtAtLas/mavryk-protocol-001-PtAtLas.20.2~rc2/opam
+ create mode 100644 packages/mavryk-protocol-002-PtBoreas/mavryk-protocol-002-PtBoreas.20.2~rc2/opam
+ create mode 100644 packages/mavryk-protocol-alpha/mavryk-protocol-alpha.20.2~rc2/opam
+ create mode 100644 packages/mavryk-protocol-demo-counter/mavryk-protocol-demo-counter.20.2~rc2/opam
+ create mode 100644 packages/mavryk-protocol-demo-noops/mavryk-protocol-demo-noops.20.2~rc2/opam
+ create mode 100644 packages/mavryk-protocol-genesis/mavryk-protocol-genesis.20.2~rc2/opam
+ create mode 100644 packages/mavryk-proxy-server-config/mavryk-proxy-server-config.20.2~rc2/opam
+ create mode 100644 packages/tezt-mavryk/tezt-mavryk.20.2~rc2/opam
+
+[01;34m(from ocaml/opam:debian-12-ocaml-4.14@sha256:69ef0774f5cbddd472ab7b4ed241ca72bff5d63eddde00603b6501d0e4e60b3f)[0m
+[01;2m[01;35m2024-08-16 20:59.45 ---> using "3b0157ebb129531d5cf79767d1ddda107d4a5cf477561a94cf78dbb40f9e3848" from cache[0m
+
+[01;34m/: (user (uid 1000) (gid 1000))[0m
+
+[01;34m/: (workdir /home/opam)[0m
+
+[01;34m/home/opam: (run (shell "sudo ln -f /usr/bin/opam-2.1 /usr/bin/opam"))[0m
+[01;2m[01;35m2024-08-16 20:59.45 ---> using "972cb89f46e3f145bca90ff7ec0d459a39c832324571819ecc4fa6201813f979" from cache[0m
+
+[01;34m/home/opam: (run (network host)
+                 (shell "opam init --reinit --config .opamrc-sandbox -ni"))[0m
+Configuring from /home/opam/.opamrc-sandbox, then /home/opam/.opamrc, and finally from built-in defaults.
+Checking for available remotes: rsync and local, git.
+  - you won't be able to use mercurial repositories unless you install the hg command on your system.
+  - you won't be able to use darcs repositories unless you install the darcs command on your system.
+
+This development version of opam requires an update to the layout of /home/opam/.opam from version 2.0 to version 2.1, which can't be reverted.
+You may want to back it up before going further.
+
+Continue? [Y/n] y
+Format upgrade done.
+
+<><> Updating repositories ><><><><><><><><><><><><><><><><><><><><><><><><><><>
+[default] synchronised from file:///home/opam/opam-repository
+[01;2m[01;35m2024-08-16 20:59.45 ---> using "0af98915191a2113f6e5010119547c16c658c568f3eb82eb10913466fa882949" from cache[0m
+
+[01;34m/home/opam: (run (shell "uname -rs && opam exec -- ocaml -version && opam --version"))[0m
+Linux 5.15.0-116-generic
+The OCaml toplevel, version 4.14.2
+2.1.6
+[01;2m[01;35m2024-08-16 20:59.45 ---> using "83fd13d5fd3842c93d46428ab6b41428b26d9ef1bae27db6b17e1b6043689b6d" from cache[0m
+
+[01;34m/home/opam: (env OPAMDOWNLOADJOBS 1)[0m
+
+[01;34m/home/opam: (env OPAMERRLOGLEN 0)[0m
+
+[01;34m/home/opam: (env OPAMSOLVERTIMEOUT 500)[0m
+
+[01;34m/home/opam: (env OPAMPRECISETRACKING 1)[0m
+
+[01;34m/home/opam: (env CI true)[0m
+
+[01;34m/home/opam: (env OPAM_REPO_CI true)[0m
+
+[01;34m/home/opam: (run (shell "rm -rf opam-repository/"))[0m
+[01;2m[01;35m2024-08-16 20:59.45 ---> using "40aee02940656a4bc1d02e010efe7a11276e92a97288f799a6a56845d6402f36" from cache[0m
+
+[01;34m/home/opam: (copy (src .) (dst opam-repository/))[0m
+[01;2m[01;35m2024-08-16 20:59.47 ---> using "b1fc923a32969f8fdefc8b82c02df02aeb4a72db90d1b4c20103da03b8cb4ef3" from cache[0m
+
+[01;34m/home/opam: (run (shell "opam repository set-url --strict default opam-repository/"))[0m
+[default] Initialised
+[01;2m[01;35m2024-08-16 20:59.47 ---> using "affea62fa0f89d3799edee4e9e4514807b0d392dbc47d60c4d66d3d076c22d34" from cache[0m
+
+[01;34m/home/opam: (run (network host)
+                 (shell "opam update --depexts || true"))[0m
++ /usr/bin/sudo "apt-get" "update"
+- Hit:1 http://deb.debian.org/debian bookworm InRelease
+- Get:2 http://deb.debian.org/debian bookworm-updates InRelease [55.4 kB]
+- Get:3 http://deb.debian.org/debian-security bookworm-security InRelease [48.0 kB]
+- Get:4 http://deb.debian.org/debian-security bookworm-security/main amd64 Packages [170 kB]
+- Fetched 273 kB in 0s (1068 kB/s)
+- Reading package lists...
+[01;2m[01;35m2024-08-16 20:59.47 ---> using "5d80eb3996dcc3f1ee6e7486f43b42eaf2e20900175a1abd66290e8c86a28fe9" from cache[0m
+
+[01;34m/home/opam: (run (shell "opam pin add -k version -yn mavryk-dac-client-lib.20.2~rc2 20.2~rc2"))[0m
+mavryk-dac-client-lib is now pinned to version 20.2~rc2
+[01;2m[01;35m2024-08-16 20:59.47 ---> using "e1f144ef264d5eddc653b964dd68545d206d6ea080febe6c2113ab63767d1e92" from cache[0m
+
+[01;34m/home/opam: (run (cache (opam-archives (target /home/opam/.opam/download-cache)))
+                 (network host)
+                 (shell  "opam reinstall mavryk-dac-client-lib.20.2~rc2;\
+                        \n        res=$?;\
+                        \n        test \"$res\" != 31 && exit \"$res\";\
+                        \n        export OPAMCLI=2.0;\
+                        \n        build_dir=$(opam var prefix)/.opam-switch/build;\
+                        \n        failed=$(ls \"$build_dir\");\
+                        \n        partial_fails=\"\";\
+                        \n        for pkg in $failed; do\
+                        \n          if opam show -f x-ci-accept-failures: \"$pkg\" | grep -qF \"\\\"debian-12\\\"\"; then\
+                        \n            echo \"A package failed and has been disabled for CI using the 'x-ci-accept-failures' field.\";\
+                        \n          fi;\
+                        \n          test \"$pkg\" != 'mavryk-dac-client-lib.20.2~rc2' && partial_fails=\"$partial_fails $pkg\";\
+                        \n        done;\
+                        \n        test \"${partial_fails}\" != \"\" && echo \"opam-repo-ci detected dependencies failing: ${partial_fails}\";\
+                        \n        exit 1"))[0m
+mavryk-dac-client-lib.20.2~rc2 is not installed. Install it? [Y/n] y
+[ERROR] Sorry, resolution of the request timed out.
+        Try to specify a more precise request, use a different solver, or increase the allowed time by setting OPAMSOLVERTIMEOUT to a bigger value (currently, it is set to 500.0 seconds).
+"/usr/bin/env" "bash" "-c" "opam reinstall mavryk-dac-client-lib.20.2~rc2;
+        res=$?;
+        test "$res" != 31 && exit "$res";
+        export OPAMCLI=2.0;
+        build_dir=$(opam var prefix)/.opam-switch/build;
+        failed=$(ls "$build_dir");
+        partial_fails="";
+        for pkg in $failed; do
+          if opam show -f x-ci-accept-failures: "$pkg" | grep -qF "\"debian-12\""; then
+            echo "A package failed and has been disabled for CI using the 'x-ci-accept-failures' field.";
+          fi;
+          test "$pkg" != 'mavryk-dac-client-lib.20.2~rc2' && partial_fails="$partial_fails $pkg";
+        done;
+        test "${partial_fails}" != "" && echo "opam-repo-ci detected dependencies failing: ${partial_fails}";
+        exit 1" failed with exit status 60
+2024-08-16 21:07.25: Job failed: Failed: Build failed
+2024-08-16 21:07.25: Log analysis:
+2024-08-16 21:07.25: >>> 
+[ERROR] Sorry, resolution of the request timed out.
+ (score = 20)
+2024-08-16 21:07.25: Sorry, resolution of the request timed out.

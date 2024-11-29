@@ -1,0 +1,484 @@
+2024-11-23 11:13.14: New job: test cohttp-curl-lwt.6.0.0, using opam dev
+                              from https://github.com/ocaml/opam-repository.git#refs/pull/26925/head (5e85658ef7dec0b072e561cdfb8474c0b3651ab9)
+                              on macos-homebrew-ocaml-4.14/arm64
+
+To reproduce locally:
+
+cd $(mktemp -d)
+git clone --recursive "https://github.com/ocaml/opam-repository.git" && cd "opam-repository" && git fetch origin "refs/pull/26925/head" && git reset --hard 5e85658e
+git fetch origin master
+git merge --no-edit 595a5de8851ee6850657337060ce4b5acbfb0aa9
+cat > ../Dockerfile <<'END-OF-DOCKERFILE'
+[34mFROM macos-homebrew-ocaml-4.14
+USER 1000:1000
+RUN ln -f ~/local/bin/opam-dev ~/local/bin/opam
+RUN opam init --reinit -ni
+RUN uname -rs && opam exec -- ocaml -version && opam --version
+ENV OPAMDOWNLOADJOBS="1"
+ENV OPAMERRLOGLEN="0"
+ENV OPAMSOLVERTIMEOUT="1000"
+ENV OPAMPRECISETRACKING="1"
+ENV CI="true"
+ENV OPAM_REPO_CI="true"
+RUN rm -rf opam-repository/
+COPY --chown=1000:1000 . opam-repository/
+RUN opam repository set-url -k local --strict default opam-repository/
+RUN opam update --depexts || true
+RUN opam pin add -k version -yn cohttp-curl-lwt.6.0.0 6.0.0
+RUN opam reinstall cohttp-curl-lwt.6.0.0; \
+    res=$?; \
+    test "$res" != 31 && exit "$res"; \
+    export OPAMCLI=2.0; \
+    build_dir=$(opam var prefix)/.opam-switch/build; \
+    failed=$(ls "$build_dir"); \
+    partial_fails=""; \
+    for pkg in $failed; do \
+    if opam show -f x-ci-accept-failures: "$pkg" | grep -qF "\"macos-homebrew\""; then \
+    echo "A package failed and has been disabled for CI using the 'x-ci-accept-failures' field."; \
+    fi; \
+    test "$pkg" != 'cohttp-curl-lwt.6.0.0' && partial_fails="$partial_fails $pkg"; \
+    done; \
+    test "${partial_fails}" != "" && echo "opam-repo-ci detected dependencies failing: ${partial_fails}"; \
+    exit 1
+RUN (opam reinstall --with-test cohttp-curl-lwt.6.0.0) || true
+RUN opam reinstall --with-test --verbose cohttp-curl-lwt.6.0.0; \
+    res=$?; \
+    test "$res" != 31 && exit "$res"; \
+    export OPAMCLI=2.0; \
+    build_dir=$(opam var prefix)/.opam-switch/build; \
+    failed=$(ls "$build_dir"); \
+    partial_fails=""; \
+    for pkg in $failed; do \
+    if opam show -f x-ci-accept-failures: "$pkg" | grep -qF "\"macos-homebrew\""; then \
+    echo "A package failed and has been disabled for CI using the 'x-ci-accept-failures' field."; \
+    fi; \
+    test "$pkg" != 'cohttp-curl-lwt.6.0.0' && partial_fails="$partial_fails $pkg"; \
+    done; \
+    test "${partial_fails}" != "" && echo "opam-repo-ci detected dependencies failing: ${partial_fails}"; \
+    exit 1
+[0m
+END-OF-DOCKERFILE
+docker build -f ../Dockerfile .
+
+2024-11-23 11:13.14: Using cache hint "macos-homebrew-ocaml-4.14-cohttp-curl-lwt.6.0.0-5e85658ef7dec0b072e561cdfb8474c0b3651ab9"
+2024-11-23 11:13.14: Using OBuilder spec:
+((from macos-homebrew-ocaml-4.14)
+ (user (uid 1000) (gid 1000))
+ (run (shell "ln -f ~/local/bin/opam-dev ~/local/bin/opam"))
+ (run (network host)
+      (shell "opam init --reinit -ni"))
+ (run (shell "uname -rs && opam exec -- ocaml -version && opam --version"))
+ (env OPAMDOWNLOADJOBS 1)
+ (env OPAMERRLOGLEN 0)
+ (env OPAMSOLVERTIMEOUT 1000)
+ (env OPAMPRECISETRACKING 1)
+ (env CI true)
+ (env OPAM_REPO_CI true)
+ (run (shell "rm -rf opam-repository/"))
+ (copy (src .) (dst opam-repository/))
+ (run (shell "opam repository set-url -k local --strict default opam-repository/"))
+ (run (network host)
+      (shell "opam update --depexts || true"))
+ (run (shell "opam pin add -k version -yn cohttp-curl-lwt.6.0.0 6.0.0"))
+ (run (cache (opam-archives (target /Users/mac1000/.opam/download-cache)) (homebrew (target /Users/mac1000/Library/Caches/Homebrew)))
+      (network host)
+      (shell  "opam reinstall cohttp-curl-lwt.6.0.0;\
+             \n        res=$?;\
+             \n        test \"$res\" != 31 && exit \"$res\";\
+             \n        export OPAMCLI=2.0;\
+             \n        build_dir=$(opam var prefix)/.opam-switch/build;\
+             \n        failed=$(ls \"$build_dir\");\
+             \n        partial_fails=\"\";\
+             \n        for pkg in $failed; do\
+             \n          if opam show -f x-ci-accept-failures: \"$pkg\" | grep -qF \"\\\"macos-homebrew\\\"\"; then\
+             \n            echo \"A package failed and has been disabled for CI using the 'x-ci-accept-failures' field.\";\
+             \n          fi;\
+             \n          test \"$pkg\" != 'cohttp-curl-lwt.6.0.0' && partial_fails=\"$partial_fails $pkg\";\
+             \n        done;\
+             \n        test \"${partial_fails}\" != \"\" && echo \"opam-repo-ci detected dependencies failing: ${partial_fails}\";\
+             \n        exit 1"))
+ (run (network host)
+      (shell "(opam reinstall --with-test cohttp-curl-lwt.6.0.0) || true"))
+ (run (shell  "opam reinstall --with-test --verbose cohttp-curl-lwt.6.0.0;\
+             \n        res=$?;\
+             \n        test \"$res\" != 31 && exit \"$res\";\
+             \n        export OPAMCLI=2.0;\
+             \n        build_dir=$(opam var prefix)/.opam-switch/build;\
+             \n        failed=$(ls \"$build_dir\");\
+             \n        partial_fails=\"\";\
+             \n        for pkg in $failed; do\
+             \n          if opam show -f x-ci-accept-failures: \"$pkg\" | grep -qF \"\\\"macos-homebrew\\\"\"; then\
+             \n            echo \"A package failed and has been disabled for CI using the 'x-ci-accept-failures' field.\";\
+             \n          fi;\
+             \n          test \"$pkg\" != 'cohttp-curl-lwt.6.0.0' && partial_fails=\"$partial_fails $pkg\";\
+             \n        done;\
+             \n        test \"${partial_fails}\" != \"\" && echo \"opam-repo-ci detected dependencies failing: ${partial_fails}\";\
+             \n        exit 1"))
+)
+
+2024-11-23 11:13.14: Waiting for resource in pool OCluster
+2024-11-23 11:13.15: Waiting for worker…
+2024-11-23 11:13.15: Got resource from pool OCluster
+Building on m1-worker-02
+All commits already cached
+Updating files:  37% (12408/32722)Updating files:  38% (12435/32722)Updating files:  39% (12762/32722)Updating files:  40% (13089/32722)Updating files:  41% (13417/32722)Updating files:  42% (13744/32722)Updating files:  43% (14071/32722)Updating files:  44% (14398/32722)Updating files:  45% (14725/32722)Updating files:  46% (15053/32722)Updating files:  47% (15380/32722)Updating files:  48% (15707/32722)Updating files:  49% (16034/32722)Updating files:  50% (16361/32722)Updating files:  51% (16689/32722)Updating files:  52% (17016/32722)Updating files:  53% (17343/32722)Updating files:  54% (17670/32722)Updating files:  55% (17998/32722)Updating files:  56% (18325/32722)Updating files:  57% (18652/32722)Updating files:  58% (18979/32722)Updating files:  59% (19306/32722)Updating files:  60% (19634/32722)Updating files:  61% (19961/32722)Updating files:  62% (20288/32722)Updating files:  63% (20615/32722)Updating files:  64% (20943/32722)Updating files:  65% (21270/32722)Updating files:  66% (21597/32722)Updating files:  67% (21924/32722)Updating files:  67% (21935/32722)Updating files:  68% (22251/32722)Updating files:  69% (22579/32722)Updating files:  70% (22906/32722)Updating files:  71% (23233/32722)Updating files:  72% (23560/32722)Updating files:  73% (23888/32722)Updating files:  74% (24215/32722)Updating files:  75% (24542/32722)Updating files:  76% (24869/32722)Updating files:  77% (25196/32722)Updating files:  78% (25524/32722)Updating files:  79% (25851/32722)Updating files:  80% (26178/32722)Updating files:  81% (26505/32722)Updating files:  82% (26833/32722)Updating files:  83% (27160/32722)Updating files:  84% (27487/32722)Updating files:  85% (27814/32722)Updating files:  86% (28141/32722)Updating files:  87% (28469/32722)Updating files:  88% (28796/32722)Updating files:  89% (29123/32722)Updating files:  90% (29450/32722)Updating files:  91% (29778/32722)Updating files:  92% (30105/32722)Updating files:  93% (30432/32722)Updating files:  94% (30759/32722)Updating files:  95% (31086/32722)Updating files:  96% (31414/32722)Updating files:  97% (31741/32722)Updating files:  98% (32068/32722)Updating files:  99% (32395/32722)Updating files: 100% (32722/32722)Updating files: 100% (32722/32722), done.
+HEAD is now at 595a5de885 Merge pull request #26930 from avsm/graphql-cohttp-upper
+Merge made by the 'ort' strategy.
+ packages/cohttp-async/cohttp-async.6.0.0/opam      | 73 +++++++++++++++++++++
+ packages/cohttp-bench/cohttp-bench.6.0.0/opam      | 61 ++++++++++++++++++
+ .../cohttp-curl-async/cohttp-curl-async.6.0.0/opam | 62 ++++++++++++++++++
+ .../cohttp-curl-lwt/cohttp-curl-lwt.6.0.0/opam     | 61 ++++++++++++++++++
+ packages/cohttp-curl/cohttp-curl.6.0.0/opam        | 50 +++++++++++++++
+ packages/cohttp-eio/cohttp-eio.6.0.0/opam          | 62 ++++++++++++++++++
+ .../cohttp-lwt-jsoo/cohttp-lwt-jsoo.6.0.0/opam     | 62 ++++++++++++++++++
+ .../cohttp-lwt-unix/cohttp-lwt-unix.6.0.0/opam     | 69 ++++++++++++++++++++
+ packages/cohttp-lwt/cohttp-lwt.6.0.0/opam          | 61 ++++++++++++++++++
+ packages/cohttp-mirage/cohttp-mirage.6.0.0/opam    | 69 ++++++++++++++++++++
+ .../cohttp-server-lwt-unix.6.0.0/opam              | 56 ++++++++++++++++
+ packages/cohttp-top/cohttp-top.6.0.0/opam          | 53 ++++++++++++++++
+ packages/cohttp/cohttp.6.0.0/opam                  | 74 ++++++++++++++++++++++
+ packages/http/http.6.0.0/opam                      | 59 +++++++++++++++++
+ 14 files changed, 872 insertions(+)
+ create mode 100644 packages/cohttp-async/cohttp-async.6.0.0/opam
+ create mode 100644 packages/cohttp-bench/cohttp-bench.6.0.0/opam
+ create mode 100644 packages/cohttp-curl-async/cohttp-curl-async.6.0.0/opam
+ create mode 100644 packages/cohttp-curl-lwt/cohttp-curl-lwt.6.0.0/opam
+ create mode 100644 packages/cohttp-curl/cohttp-curl.6.0.0/opam
+ create mode 100644 packages/cohttp-eio/cohttp-eio.6.0.0/opam
+ create mode 100644 packages/cohttp-lwt-jsoo/cohttp-lwt-jsoo.6.0.0/opam
+ create mode 100644 packages/cohttp-lwt-unix/cohttp-lwt-unix.6.0.0/opam
+ create mode 100644 packages/cohttp-lwt/cohttp-lwt.6.0.0/opam
+ create mode 100644 packages/cohttp-mirage/cohttp-mirage.6.0.0/opam
+ create mode 100644 packages/cohttp-server-lwt-unix/cohttp-server-lwt-unix.6.0.0/opam
+ create mode 100644 packages/cohttp-top/cohttp-top.6.0.0/opam
+ create mode 100644 packages/cohttp/cohttp.6.0.0/opam
+ create mode 100644 packages/http/http.6.0.0/opam
+
+[01;34m(from macos-homebrew-ocaml-4.14)[0m
+[01;2m[01;35m2024-11-23 11:13.19 ---> using "0c60f117aee57abea8364cb033d47bb1d63ff0f68e5ee97378e032498e8442af" from cache[0m
+
+[01;34m/: (user (uid 1000) (gid 1000))[0m
+
+[01;34m/: (run (shell "ln -f ~/local/bin/opam-dev ~/local/bin/opam"))[0m
+[01;2m[01;35m2024-11-23 11:13.19 ---> using "f20a31eccb94af52fa2a3ef86b723bc6460bac3d8a92b8861915540c2498d20a" from cache[0m
+
+[01;34m/: (run (network host)
+        (shell "opam init --reinit -ni"))[0m
+No configuration file found, using built-in defaults.
+Checking for available remotes: rsync and local, git.
+  - you won't be able to use mercurial repositories unless you install the hg command on your system.
+  - you won't be able to use darcs repositories unless you install the darcs command on your system.
+
+This version of opam requires an update to the layout of /Users/mac1000/.opam from version 2.1 to version 2.2, which can't be reverted.
+You may want to back it up before going further.
+
+Continue? [y/n] y
+[NOTE] The 'jobs' option was reset, its value was 1 and its new value will vary according to the current number of cores on your machine. You can restore the fixed value using:
+           opam option jobs=1 --global
+Format upgrade done.
+
+<><> Updating repositories ><><><><><><><><><><><><><><><><><><><><><><><><><><>
+[default] no changes from git+file:///Users/mac1000/opam-repository
+[01;2m[01;35m2024-11-23 11:13.19 ---> using "7818e224f85c11d1d318abe9ba4e297be345388b7ed476f912b6900c6bae56aa" from cache[0m
+
+[01;34m/: (run (shell "uname -rs && opam exec -- ocaml -version && opam --version"))[0m
+Darwin 23.4.0
+The OCaml toplevel, version 4.14.2
+2.3.0
+[01;2m[01;35m2024-11-23 11:13.19 ---> using "b68dfff025f7534bf3966778231000a9d9e4e27525baf87e50daaae0b61c1ee7" from cache[0m
+
+[01;34m/: (env OPAMDOWNLOADJOBS 1)[0m
+
+[01;34m/: (env OPAMERRLOGLEN 0)[0m
+
+[01;34m/: (env OPAMSOLVERTIMEOUT 1000)[0m
+
+[01;34m/: (env OPAMPRECISETRACKING 1)[0m
+
+[01;34m/: (env CI true)[0m
+
+[01;34m/: (env OPAM_REPO_CI true)[0m
+
+[01;34m/: (run (shell "rm -rf opam-repository/"))[0m
+[01;2m[01;35m2024-11-23 11:13.19 ---> using "db65ca45b0dda4f74e29bfe7d60602daffc92169f11d7cb2a2ac00d1ebd104ff" from cache[0m
+
+[01;34m/: (copy (src .) (dst opam-repository/))[0m
+[01;2m[01;35m2024-11-23 11:13.29 ---> saved as "810e0ee5e4e51d7f1e9431accd47fb59736a6b1c11a6048a90ec765d950a3264"[0m
+
+[01;34m/: (run (shell "opam repository set-url -k local --strict default opam-repository/"))[0m
+[default] Initialised
+[01;2m[01;35m2024-11-23 11:13.55 ---> saved as "dca6de27ef22cb93cd5523c1fb58e61d7a9475109308a5e4229d812bfdc96f45"[0m
+
+[01;34m/: (run (network host)
+        (shell "opam update --depexts || true"))[0m
++ /opt/homebrew/bin/brew "update"
+- ==> Updating Homebrew...
+- ==> Homebrew collects anonymous analytics.
+- Read the analytics documentation (and how to opt-out) here:
+-   https://docs.brew.sh/Analytics
+- No analytics have been recorded yet (nor will be during this `brew` run).
+- 
+- ==> Homebrew is run entirely by unpaid volunteers. Please consider donating:
+-   https://github.com/Homebrew/brew#donations
+- 
+- Already up-to-date.
+[01;2m[01;35m2024-11-23 11:14.10 ---> saved as "dcab1866212fbe181192778452c067634fcd124625e5497e8a7b0a6331e3eb68"[0m
+
+[01;34m/: (run (shell "opam pin add -k version -yn cohttp-curl-lwt.6.0.0 6.0.0"))[0m
+cohttp-curl-lwt is now pinned to version 6.0.0
+[01;2m[01;35m2024-11-23 11:14.11 ---> saved as "4ecdd5517871e36e4b65ddfb8d9a85b5855e994151e33f56539085510f2beba4"[0m
+
+[01;34m/: (run (cache (opam-archives (target /Users/mac1000/.opam/download-cache)) (homebrew (target /Users/mac1000/Library/Caches/Homebrew)))
+        (network host)
+        (shell  "opam reinstall cohttp-curl-lwt.6.0.0;\
+               \n        res=$?;\
+               \n        test \"$res\" != 31 && exit \"$res\";\
+               \n        export OPAMCLI=2.0;\
+               \n        build_dir=$(opam var prefix)/.opam-switch/build;\
+               \n        failed=$(ls \"$build_dir\");\
+               \n        partial_fails=\"\";\
+               \n        for pkg in $failed; do\
+               \n          if opam show -f x-ci-accept-failures: \"$pkg\" | grep -qF \"\\\"macos-homebrew\\\"\"; then\
+               \n            echo \"A package failed and has been disabled for CI using the 'x-ci-accept-failures' field.\";\
+               \n          fi;\
+               \n          test \"$pkg\" != 'cohttp-curl-lwt.6.0.0' && partial_fails=\"$partial_fails $pkg\";\
+               \n        done;\
+               \n        test \"${partial_fails}\" != \"\" && echo \"opam-repo-ci detected dependencies failing: ${partial_fails}\";\
+               \n        exit 1"))[0m
+cohttp-curl-lwt.6.0.0 is not installed. Install it? [y/n] y
+The following actions will be performed:
+=== install 14 packages
+  - install base-bytes        base           [required by ocplib-endian]
+  - install cohttp-curl       6.0.0          [required by cohttp-curl-lwt]
+  - install cohttp-curl-lwt   6.0.0 (pinned)
+  - install conf-libcurl      2              [required by ocurl]
+  - install cppo              1.7.0          [required by lwt]
+  - install csexp             1.5.2          [required by dune-configurator]
+  - install dune              3.16.1         [required by cohttp-curl-lwt]
+  - install dune-configurator 3.16.1         [required by lwt]
+  - install http              6.0.0          [required by cohttp-curl-lwt]
+  - install lwt               5.9.0          [required by cohttp-curl-lwt]
+  - install ocamlfind         1.9.6          [required by ocurl]
+  - install ocplib-endian     1.2            [required by lwt]
+  - install ocurl             0.9.2          [required by cohttp-curl-lwt]
+  - install stringext         1.6.0          [required by cohttp-curl-lwt]
+
+The following system packages will first need to be installed:
+    curl
+
+<><> Handling external dependencies <><><><><><><><><><><><><><><><><><><><><><>
+
+opam believes some required external dependencies are missing. opam can:
+> 1. Run brew to install them (may need root/sudo access)
+  2. Display the recommended brew command and wait while you run it manually (e.g. in another terminal)
+  3. Continue anyway, and, upon success, permanently register that this external dependency is present, but not detectable
+  4. Abort the installation
+
+[1/2/3/4] 1
+
++ /opt/homebrew/bin/brew "install" "curl"
+- ==> Downloading https://ghcr.io/v2/homebrew/core/curl/manifests/8.11.0_1-1
+- Already downloaded: /Users/mac1000/Library/Caches/Homebrew/downloads/5d24dadbb4e423eafb763d5840ef3ac63f8d8886a37958e637aba6ff20333bd3--curl-8.11.0_1-1.bottle_manifest.json
+- ==> Fetching dependencies for curl: brotli, libnghttp2, ca-certificates, openssl@3, libssh2, rtmpdump, lz4, xz and zstd
+- ==> Downloading https://ghcr.io/v2/homebrew/core/brotli/manifests/1.1.0-1
+- Already downloaded: /Users/mac1000/Library/Caches/Homebrew/downloads/565098509cdfa90593ec9a41b41239f073843f88caed60ddaa3e6194ac4defda--brotli-1.1.0-1.bottle_manifest.json
+- ==> Fetching brotli
+- ==> Downloading https://ghcr.io/v2/homebrew/core/brotli/blobs/sha256:2a95140d61198e3153ff27d8847b76dd34162f6e6e39f3e0f34d2b3a3e4f15dd
+- Already downloaded: /Users/mac1000/Library/Caches/Homebrew/downloads/b3852b9f89602b27a98dbdfbcb74ccadfe3ee37647a8643e70d9b71de1e2d621--brotli--1.1.0.arm64_sonoma.bottle.1.tar.gz
+- ==> Downloading https://ghcr.io/v2/homebrew/core/libnghttp2/manifests/1.64.0
+- Already downloaded: /Users/mac1000/Library/Caches/Homebrew/downloads/ca092fa9d99f26d52103722d42230c00f21eb8a4a36bf1d40fc9d5f798562d92--libnghttp2-1.64.0.bottle_manifest.json
+- ==> Fetching libnghttp2
+- ==> Downloading https://ghcr.io/v2/homebrew/core/libnghttp2/blobs/sha256:13eddf43c08a660b4efb246dae54ef46fedb6cb083a916fa4900a6906297fd2f
+- Already downloaded: /Users/mac1000/Library/Caches/Homebrew/downloads/f1b45e06a4c2fece03bc18485af6ae774831af83c7b781b9bbc41110887866f6--libnghttp2--1.64.0.arm64_sonoma.bottle.tar.gz
+- ==> Downloading https://ghcr.io/v2/homebrew/core/ca-certificates/manifests/2024-09-24
+- Already downloaded: /Users/mac1000/Library/Caches/Homebrew/downloads/338dad7c2ff7c822cda7c417944521589856741c0fbd7a7f07b88a18d7fb7e05--ca-certificates-2024-09-24.bottle_manifest.json
+- ==> Fetching ca-certificates
+- ==> Downloading https://ghcr.io/v2/homebrew/core/ca-certificates/blobs/sha256:212f2576348d5f5797d8d3905eb70d0d9bf8829345bce9e20e2fd0336f344648
+- Already downloaded: /Users/mac1000/Library/Caches/Homebrew/downloads/a42908db56776e38039ac5f25968df8df16307650c519973b7d5ed689a293c88--ca-certificates--2024-09-24.all.bottle.tar.gz
+- ==> Downloading https://ghcr.io/v2/homebrew/core/openssl/3/manifests/3.4.0
+- Already downloaded: /Users/mac1000/Library/Caches/Homebrew/downloads/a8a169d38329b14f967d497d0ea77eee6dc5444175093fc7b26026b357e81736--openssl@3-3.4.0.bottle_manifest.json
+- ==> Fetching openssl@3
+- ==> Downloading https://ghcr.io/v2/homebrew/core/openssl/3/blobs/sha256:706b2f224c9519816d987e28ecfae9cfb41d99b728e237ef98fa1c0698d1f626
+- Already downloaded: /Users/mac1000/Library/Caches/Homebrew/downloads/e6b9a3499de574de4a16b9db9b8c36dd341f53c81493dcdbe25113c80933ee0b--openssl@3--3.4.0.arm64_sonoma.bottle.tar.gz
+- ==> Downloading https://ghcr.io/v2/homebrew/core/libssh2/manifests/1.11.1
+- Already downloaded: /Users/mac1000/Library/Caches/Homebrew/downloads/6d2495eb2b5f37f7931b23940ceb29db14a4742a49d1d8cce26964ad91a03f26--libssh2-1.11.1.bottle_manifest.json
+- ==> Fetching libssh2
+- ==> Downloading https://ghcr.io/v2/homebrew/core/libssh2/blobs/sha256:2e6ffae575cf6e8335026f209f24c8a12250afa093e7a49577ee95c3bb781554
+- Already downloaded: /Users/mac1000/Library/Caches/Homebrew/downloads/9ba186c7a1a9773adff4965fb98340e2ff1a25dcd667d696d0c8e7b28debaca9--libssh2--1.11.1.arm64_sonoma.bottle.tar.gz
+- ==> Downloading https://ghcr.io/v2/homebrew/core/rtmpdump/manifests/2.4-20151223_3
+- Already downloaded: /Users/mac1000/Library/Caches/Homebrew/downloads/b40cb4d6b301aad8ce26f9deb74a74c0d98d1868d19881f9bff55b81d6f11e50--rtmpdump-2.4-20151223_3.bottle_manifest.json
+- ==> Fetching rtmpdump
+- ==> Downloading https://ghcr.io/v2/homebrew/core/rtmpdump/blobs/sha256:fc5748b95d47c39bb4d633090cc0a7b5fe90bda5ef163fa5b8809272c9bf4618
+- Already downloaded: /Users/mac1000/Library/Caches/Homebrew/downloads/29a8b94b6f773b8a95202fd7e8c6f0ddbb98973233725e67691f3a939d449587--rtmpdump--2.4-20151223_3.arm64_sonoma.bottle.tar.gz
+- ==> Downloading https://ghcr.io/v2/homebrew/core/lz4/manifests/1.10.0-1
+- Already downloaded: /Users/mac1000/Library/Caches/Homebrew/downloads/8e11e90eb21a06e0f199af9d80e011e3693c77dd353b2477579d95c8471a5802--lz4-1.10.0-1.bottle_manifest.json
+- ==> Fetching lz4
+- ==> Downloading https://ghcr.io/v2/homebrew/core/lz4/blobs/sha256:6590245dc4a919c46afa16366914cd4b5c0c4a8f4fb35a4f6ab89053f289ae5d
+- Already downloaded: /Users/mac1000/Library/Caches/Homebrew/downloads/a55f61ddbdff069a1efe8a91355fe7541dc2dd53cddb6ab925c6af8d6b7de045--lz4--1.10.0.arm64_sonoma.bottle.1.tar.gz
+- ==> Downloading https://ghcr.io/v2/homebrew/core/xz/manifests/5.6.3
+- Already downloaded: /Users/mac1000/Library/Caches/Homebrew/downloads/e68799185cc17334108ba286ba8c3df0587c9fd8375647d85f7157b62a797599--xz-5.6.3.bottle_manifest.json
+- ==> Fetching xz
+- ==> Downloading https://ghcr.io/v2/homebrew/core/xz/blobs/sha256:c54997c6e29b576cf426815663aa21a3be2f7805d540e4a1da66cdcb834ae85f
+- Already downloaded: /Users/mac1000/Library/Caches/Homebrew/downloads/75a9464e0ac8d9a7a2afc74a406562cfd2fe182c42adb4ebec7f6eb8d14e61c6--xz--5.6.3.arm64_sonoma.bottle.tar.gz
+- ==> Downloading https://ghcr.io/v2/homebrew/core/zstd/manifests/1.5.6
+- Already downloaded: /Users/mac1000/Library/Caches/Homebrew/downloads/29403e0df5404d8aeca0e750ac135ec9ef44fc5eeb6df69170ed602acabf0ffb--zstd-1.5.6.bottle_manifest.json
+- ==> Fetching zstd
+- ==> Downloading https://ghcr.io/v2/homebrew/core/zstd/blobs/sha256:2028141683f55bffcd0693b9e49eef1e3dabc1e184214cacb173ca9bd54dabc0
+- Already downloaded: /Users/mac1000/Library/Caches/Homebrew/downloads/af6fd07ad9cd935975dd761af51c9baba7eb782dda7630d4abd399fa98e53578--zstd--1.5.6.arm64_sonoma.bottle.tar.gz
+- ==> Fetching curl
+- ==> Downloading https://ghcr.io/v2/homebrew/core/curl/blobs/sha256:47b31a69fda0558adedb16bdac0d4003a3efd902a0f28a6615734dbf3c1042d1
+- Already downloaded: /Users/mac1000/Library/Caches/Homebrew/downloads/54d58b6c3ecb9b7e09d365901f418d056b532910b887d30e37ff0c4c101e8597--curl--8.11.0_1.arm64_sonoma.bottle.1.tar.gz
+- ==> Installing dependencies for curl: brotli, libnghttp2, ca-certificates, openssl@3, libssh2, rtmpdump, lz4, xz and zstd
+- ==> Installing curl dependency: brotli
+- ==> Downloading https://ghcr.io/v2/homebrew/core/brotli/manifests/1.1.0-1
+- Already downloaded: /Users/mac1000/Library/Caches/Homebrew/downloads/565098509cdfa90593ec9a41b41239f073843f88caed60ddaa3e6194ac4defda--brotli-1.1.0-1.bottle_manifest.json
+- ==> Pouring brotli--1.1.0.arm64_sonoma.bottle.1.tar.gz
+- 🍺  /opt/homebrew/Cellar/brotli/1.1.0: 25 files, 1014.6KB
+- ==> Installing curl dependency: libnghttp2
+- ==> Downloading https://ghcr.io/v2/homebrew/core/libnghttp2/manifests/1.64.0
+- Already downloaded: /Users/mac1000/Library/Caches/Homebrew/downloads/ca092fa9d99f26d52103722d42230c00f21eb8a4a36bf1d40fc9d5f798562d92--libnghttp2-1.64.0.bottle_manifest.json
+- ==> Pouring libnghttp2--1.64.0.arm64_sonoma.bottle.tar.gz
+- 🍺  /opt/homebrew/Cellar/libnghttp2/1.64.0: 14 files, 793.3KB
+- ==> Installing curl dependency: ca-certificates
+- ==> Downloading https://ghcr.io/v2/homebrew/core/ca-certificates/manifests/2024-09-24
+- Already downloaded: /Users/mac1000/Library/Caches/Homebrew/downloads/338dad7c2ff7c822cda7c417944521589856741c0fbd7a7f07b88a18d7fb7e05--ca-certificates-2024-09-24.bottle_manifest.json
+- ==> Pouring ca-certificates--2024-09-24.all.bottle.tar.gz
+- [34m==>[0m [1mRegenerating CA certificate bundle from keychain, this may take a while...[0m
+- 🍺  /opt/homebrew/Cellar/ca-certificates/2024-09-24: 4 files, 237.0KB
+- ==> Installing curl dependency: openssl@3
+- ==> Downloading https://ghcr.io/v2/homebrew/core/openssl/3/manifests/3.4.0
+- Already downloaded: /Users/mac1000/Library/Caches/Homebrew/downloads/a8a169d38329b14f967d497d0ea77eee6dc5444175093fc7b26026b357e81736--openssl@3-3.4.0.bottle_manifest.json
+- ==> Pouring openssl@3--3.4.0.arm64_sonoma.bottle.tar.gz
+- 🍺  /opt/homebrew/Cellar/openssl@3/3.4.0: 7,236 files, 33.2MB
+- ==> Installing curl dependency: libssh2
+- ==> Downloading https://ghcr.io/v2/homebrew/core/libssh2/manifests/1.11.1
+- Already downloaded: /Users/mac1000/Library/Caches/Homebrew/downloads/6d2495eb2b5f37f7931b23940ceb29db14a4742a49d1d8cce26964ad91a03f26--libssh2-1.11.1.bottle_manifest.json
+- ==> Pouring libssh2--1.11.1.arm64_sonoma.bottle.tar.gz
+- 🍺  /opt/homebrew/Cellar/libssh2/1.11.1: 201 files, 1.2MB
+- ==> Installing curl dependency: rtmpdump
+- ==> Downloading https://ghcr.io/v2/homebrew/core/rtmpdump/manifests/2.4-20151223_3
+- Already downloaded: /Users/mac1000/Library/Caches/Homebrew/downloads/b40cb4d6b301aad8ce26f9deb74a74c0d98d1868d19881f9bff55b81d6f11e50--rtmpdump-2.4-20151223_3.bottle_manifest.json
+- ==> Pouring rtmpdump--2.4-20151223_3.arm64_sonoma.bottle.tar.gz
+- 🍺  /opt/homebrew/Cellar/rtmpdump/2.4-20151223_3: 21 files, 652.4KB
+- ==> Installing curl dependency: lz4
+- ==> Downloading https://ghcr.io/v2/homebrew/core/lz4/manifests/1.10.0-1
+- Already downloaded: /Users/mac1000/Library/Caches/Homebrew/downloads/8e11e90eb21a06e0f199af9d80e011e3693c77dd353b2477579d95c8471a5802--lz4-1.10.0-1.bottle_manifest.json
+- ==> Pouring lz4--1.10.0.arm64_sonoma.bottle.1.tar.gz
+- 🍺  /opt/homebrew/Cellar/lz4/1.10.0: 24 files, 712.7KB
+- ==> Installing curl dependency: xz
+- ==> Downloading https://ghcr.io/v2/homebrew/core/xz/manifests/5.6.3
+- Already downloaded: /Users/mac1000/Library/Caches/Homebrew/downloads/e68799185cc17334108ba286ba8c3df0587c9fd8375647d85f7157b62a797599--xz-5.6.3.bottle_manifest.json
+- ==> Pouring xz--5.6.3.arm64_sonoma.bottle.tar.gz
+- 🍺  /opt/homebrew/Cellar/xz/5.6.3: 96 files, 2.0MB
+- ==> Installing curl dependency: zstd
+- ==> Downloading https://ghcr.io/v2/homebrew/core/zstd/manifests/1.5.6
+- Already downloaded: /Users/mac1000/Library/Caches/Homebrew/downloads/29403e0df5404d8aeca0e750ac135ec9ef44fc5eeb6df69170ed602acabf0ffb--zstd-1.5.6.bottle_manifest.json
+- ==> Pouring zstd--1.5.6.arm64_sonoma.bottle.tar.gz
+- 🍺  /opt/homebrew/Cellar/zstd/1.5.6: 32 files, 2.2MB
+- ==> Installing curl
+- ==> Pouring curl--8.11.0_1.arm64_sonoma.bottle.1.tar.gz
+- ==> Caveats
+- curl is keg-only, which means it was not symlinked into /opt/homebrew,
+- because macOS already provides this software and installing another version in
+- parallel can cause all kinds of trouble.
+- 
+- If you need to have curl first in your PATH, run:
+-   echo 'export PATH="/opt/homebrew/opt/curl/bin:$PATH"' >> ~/.profile
+- 
+- For compilers to find curl you may need to set:
+-   export LDFLAGS="-L/opt/homebrew/opt/curl/lib"
+-   export CPPFLAGS="-I/opt/homebrew/opt/curl/include"
+- ==> Summary
+- 🍺  /opt/homebrew/Cellar/curl/8.11.0_1: 531 files, 4MB
+- ==> Running `brew cleanup curl`...
+- Disable this behaviour by setting HOMEBREW_NO_INSTALL_CLEANUP.
+- Hide these hints with HOMEBREW_NO_ENV_HINTS (see `man brew`).
+- ==> Caveats
+- ==> curl
+- curl is keg-only, which means it was not symlinked into /opt/homebrew,
+- because macOS already provides this software and installing another version in
+- parallel can cause all kinds of trouble.
+- 
+- If you need to have curl first in your PATH, run:
+-   echo 'export PATH="/opt/homebrew/opt/curl/bin:$PATH"' >> ~/.profile
+- 
+- For compilers to find curl you may need to set:
+-   export LDFLAGS="-L/opt/homebrew/opt/curl/lib"
+-   export CPPFLAGS="-I/opt/homebrew/opt/curl/include"
+
+<><> Processing actions <><><><><><><><><><><><><><><><><><><><><><><><><><><><>
+-> retrieved cohttp-curl.6.0.0, cohttp-curl-lwt.6.0.0, http.6.0.0  (cached)
+-> retrieved cppo.1.7.0  (cached)
+-> installed conf-libcurl.2
+-> retrieved csexp.1.5.2  (cached)
+-> retrieved dune.3.16.1, dune-configurator.3.16.1  (cached)
+-> retrieved lwt.5.9.0  (cached)
+-> retrieved ocamlfind.1.9.6  (cached)
+-> retrieved ocplib-endian.1.2  (cached)
+-> retrieved ocurl.0.9.2  (cached)
+-> retrieved stringext.1.6.0  (cached)
+-> installed ocamlfind.1.9.6
+-> installed base-bytes.base
+-> installed dune.3.16.1
+-> installed csexp.1.5.2
+-> installed stringext.1.6.0
+-> installed http.6.0.0
+-> installed cppo.1.7.0
+-> installed ocplib-endian.1.2
+-> installed dune-configurator.3.16.1
+-> installed lwt.5.9.0
+-> installed ocurl.0.9.2
+-> installed cohttp-curl.6.0.0
+-> installed cohttp-curl-lwt.6.0.0
+Done.
+# To update the current shell environment, run: eval $(opam env)
+[01;2m[01;35m2024-11-23 11:15.21 ---> saved as "b03eb0425d207c51b6d718f567ca94d99cf07973685014909babcf5ecdde0f00"[0m
+
+[01;34m/: (run (network host)
+        (shell "(opam reinstall --with-test cohttp-curl-lwt.6.0.0) || true"))[0m
+[ERROR] Sorry, resolution of the request timed out.
+        Try to specify a more precise request, use a different solver, or increase the allowed time by setting OPAMSOLVERTIMEOUT to a bigger value (currently, it is set to 1000.0 seconds).
+[01;2m[01;35m2024-11-23 11:32.07 ---> saved as "5f625239315f2712d879cea776a4c92e0477cd916d6fd4ee0127ac6b754f599e"[0m
+
+[01;34m/: (run (shell  "opam reinstall --with-test --verbose cohttp-curl-lwt.6.0.0;\
+               \n        res=$?;\
+               \n        test \"$res\" != 31 && exit \"$res\";\
+               \n        export OPAMCLI=2.0;\
+               \n        build_dir=$(opam var prefix)/.opam-switch/build;\
+               \n        failed=$(ls \"$build_dir\");\
+               \n        partial_fails=\"\";\
+               \n        for pkg in $failed; do\
+               \n          if opam show -f x-ci-accept-failures: \"$pkg\" | grep -qF \"\\\"macos-homebrew\\\"\"; then\
+               \n            echo \"A package failed and has been disabled for CI using the 'x-ci-accept-failures' field.\";\
+               \n          fi;\
+               \n          test \"$pkg\" != 'cohttp-curl-lwt.6.0.0' && partial_fails=\"$partial_fails $pkg\";\
+               \n        done;\
+               \n        test \"${partial_fails}\" != \"\" && echo \"opam-repo-ci detected dependencies failing: ${partial_fails}\";\
+               \n        exit 1"))[0m
+[ERROR] Sorry, resolution of the request timed out.
+        Try to specify a more precise request, use a different solver, or increase the allowed time by setting OPAMSOLVERTIMEOUT to a bigger value (currently, it is set to 1000.0 seconds).
+'opam reinstall --with-test --verbose cohttp-curl-lwt.6.0.0' failed.
+"/usr/bin/env" "bash" "-c" "opam reinstall --with-test --verbose cohttp-curl-lwt.6.0.0;
+        res=$?;
+        test "$res" != 31 && exit "$res";
+        export OPAMCLI=2.0;
+        build_dir=$(opam var prefix)/.opam-switch/build;
+        failed=$(ls "$build_dir");
+        partial_fails="";
+        for pkg in $failed; do
+          if opam show -f x-ci-accept-failures: "$pkg" | grep -qF "\"macos-homebrew\""; then
+            echo "A package failed and has been disabled for CI using the 'x-ci-accept-failures' field.";
+          fi;
+          test "$pkg" != 'cohttp-curl-lwt.6.0.0' && partial_fails="$partial_fails $pkg";
+        done;
+        test "${partial_fails}" != "" && echo "opam-repo-ci detected dependencies failing: ${partial_fails}";
+        exit 1" failed with exit status 60
+2024-11-23 11:49.01: Job failed: Failed: Build failed
+2024-11-23 11:49.01: Log analysis:
+2024-11-23 11:49.01: >>> 
+[ERROR] Sorry, resolution of the request timed out.
+ (score = 20)
+2024-11-23 11:49.01: >>> 
+[ERROR] Sorry, resolution of the request timed out.
+ (score = 20)
+2024-11-23 11:49.01: Sorry, resolution of the request timed out.

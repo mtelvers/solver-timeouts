@@ -1,0 +1,546 @@
+2024-11-26 11:25.04: New job: test cohttp-server-lwt-unix.6.0.0, using opam dev
+                              from https://github.com/ocaml/opam-repository.git#refs/pull/26925/head (5e85658ef7dec0b072e561cdfb8474c0b3651ab9)
+                              on debian-12-ocaml-5.2/s390x
+
+To reproduce locally:
+
+cd $(mktemp -d)
+git clone --recursive "https://github.com/ocaml/opam-repository.git" && cd "opam-repository" && git fetch origin "refs/pull/26925/head" && git reset --hard 5e85658e
+git fetch origin master
+git merge --no-edit 81aaa24ea68e7f69c792347268c5ac43d6b50569
+cat > ../Dockerfile <<'END-OF-DOCKERFILE'
+[34mFROM ocaml/opam:debian-12-ocaml-5.2@sha256:b508640544d78812a6ad704fa752ed0071600b204b4ec3d38dbffb84da481bed
+USER 1000:1000
+WORKDIR /home/opam
+RUN sudo ln -f /usr/bin/opam-dev /usr/bin/opam
+RUN opam init --reinit -ni
+RUN uname -rs && opam exec -- ocaml -version && opam --version
+ENV OPAMDOWNLOADJOBS="1"
+ENV OPAMERRLOGLEN="0"
+ENV OPAMSOLVERTIMEOUT="1000"
+ENV OPAMPRECISETRACKING="1"
+ENV CI="true"
+ENV OPAM_REPO_CI="true"
+RUN rm -rf opam-repository/
+COPY --chown=1000:1000 . opam-repository/
+RUN opam repository set-url --strict default opam-repository/
+RUN opam update --depexts || true
+RUN opam pin add -k version -yn cohttp-server-lwt-unix.6.0.0 6.0.0
+RUN opam reinstall cohttp-server-lwt-unix.6.0.0; \
+    res=$?; \
+    test "$res" != 31 && exit "$res"; \
+    export OPAMCLI=2.0; \
+    build_dir=$(opam var prefix)/.opam-switch/build; \
+    failed=$(ls "$build_dir"); \
+    partial_fails=""; \
+    for pkg in $failed; do \
+    if opam show -f x-ci-accept-failures: "$pkg" | grep -qF "\"debian-12\""; then \
+    echo "A package failed and has been disabled for CI using the 'x-ci-accept-failures' field."; \
+    fi; \
+    test "$pkg" != 'cohttp-server-lwt-unix.6.0.0' && partial_fails="$partial_fails $pkg"; \
+    done; \
+    test "${partial_fails}" != "" && echo "opam-repo-ci detected dependencies failing: ${partial_fails}"; \
+    exit 1
+RUN (opam reinstall --with-test cohttp-server-lwt-unix.6.0.0) || true
+RUN opam reinstall --with-test --verbose cohttp-server-lwt-unix.6.0.0; \
+    res=$?; \
+    test "$res" != 31 && exit "$res"; \
+    export OPAMCLI=2.0; \
+    build_dir=$(opam var prefix)/.opam-switch/build; \
+    failed=$(ls "$build_dir"); \
+    partial_fails=""; \
+    for pkg in $failed; do \
+    if opam show -f x-ci-accept-failures: "$pkg" | grep -qF "\"debian-12\""; then \
+    echo "A package failed and has been disabled for CI using the 'x-ci-accept-failures' field."; \
+    fi; \
+    test "$pkg" != 'cohttp-server-lwt-unix.6.0.0' && partial_fails="$partial_fails $pkg"; \
+    done; \
+    test "${partial_fails}" != "" && echo "opam-repo-ci detected dependencies failing: ${partial_fails}"; \
+    exit 1
+[0m
+END-OF-DOCKERFILE
+docker build -f ../Dockerfile .
+
+2024-11-26 11:25.04: Using cache hint "ocaml/opam:debian-12-ocaml-5.2@sha256:b508640544d78812a6ad704fa752ed0071600b204b4ec3d38dbffb84da481bed-cohttp-server-lwt-unix.6.0.0-5e85658ef7dec0b072e561cdfb8474c0b3651ab9"
+2024-11-26 11:25.04: Using OBuilder spec:
+((from ocaml/opam:debian-12-ocaml-5.2@sha256:b508640544d78812a6ad704fa752ed0071600b204b4ec3d38dbffb84da481bed)
+ (user (uid 1000) (gid 1000))
+ (workdir /home/opam)
+ (run (shell "sudo ln -f /usr/bin/opam-dev /usr/bin/opam"))
+ (run (network host)
+      (shell "opam init --reinit --config .opamrc-sandbox -ni"))
+ (run (shell "uname -rs && opam exec -- ocaml -version && opam --version"))
+ (env OPAMDOWNLOADJOBS 1)
+ (env OPAMERRLOGLEN 0)
+ (env OPAMSOLVERTIMEOUT 1000)
+ (env OPAMPRECISETRACKING 1)
+ (env CI true)
+ (env OPAM_REPO_CI true)
+ (run (shell "rm -rf opam-repository/"))
+ (copy (src .) (dst opam-repository/))
+ (run (shell "opam repository set-url --strict default opam-repository/"))
+ (run (network host)
+      (shell "opam update --depexts || true"))
+ (run (shell "opam pin add -k version -yn cohttp-server-lwt-unix.6.0.0 6.0.0"))
+ (run (cache (opam-archives (target /home/opam/.opam/download-cache)))
+      (network host)
+      (shell  "opam reinstall cohttp-server-lwt-unix.6.0.0;\
+             \n        res=$?;\
+             \n        test \"$res\" != 31 && exit \"$res\";\
+             \n        export OPAMCLI=2.0;\
+             \n        build_dir=$(opam var prefix)/.opam-switch/build;\
+             \n        failed=$(ls \"$build_dir\");\
+             \n        partial_fails=\"\";\
+             \n        for pkg in $failed; do\
+             \n          if opam show -f x-ci-accept-failures: \"$pkg\" | grep -qF \"\\\"debian-12\\\"\"; then\
+             \n            echo \"A package failed and has been disabled for CI using the 'x-ci-accept-failures' field.\";\
+             \n          fi;\
+             \n          test \"$pkg\" != 'cohttp-server-lwt-unix.6.0.0' && partial_fails=\"$partial_fails $pkg\";\
+             \n        done;\
+             \n        test \"${partial_fails}\" != \"\" && echo \"opam-repo-ci detected dependencies failing: ${partial_fails}\";\
+             \n        exit 1"))
+ (run (network host)
+      (shell "(opam reinstall --with-test cohttp-server-lwt-unix.6.0.0) || true"))
+ (run (shell  "opam reinstall --with-test --verbose cohttp-server-lwt-unix.6.0.0;\
+             \n        res=$?;\
+             \n        test \"$res\" != 31 && exit \"$res\";\
+             \n        export OPAMCLI=2.0;\
+             \n        build_dir=$(opam var prefix)/.opam-switch/build;\
+             \n        failed=$(ls \"$build_dir\");\
+             \n        partial_fails=\"\";\
+             \n        for pkg in $failed; do\
+             \n          if opam show -f x-ci-accept-failures: \"$pkg\" | grep -qF \"\\\"debian-12\\\"\"; then\
+             \n            echo \"A package failed and has been disabled for CI using the 'x-ci-accept-failures' field.\";\
+             \n          fi;\
+             \n          test \"$pkg\" != 'cohttp-server-lwt-unix.6.0.0' && partial_fails=\"$partial_fails $pkg\";\
+             \n        done;\
+             \n        test \"${partial_fails}\" != \"\" && echo \"opam-repo-ci detected dependencies failing: ${partial_fails}\";\
+             \n        exit 1"))
+)
+
+2024-11-26 11:25.04: Waiting for resource in pool OCluster
+2024-11-26 11:25.04: Waiting for worker…
+2024-11-26 11:46.15: Got resource from pool OCluster
+Building on s390x-worker-01.marist.ci.dev
+All commits already cached
+Updating files:  14% (4805/32741)Updating files:  15% (4912/32741)Updating files:  16% (5239/32741)Updating files:  17% (5566/32741)Updating files:  18% (5894/32741)Updating files:  19% (6221/32741)Updating files:  20% (6549/32741)Updating files:  21% (6876/32741)Updating files:  22% (7204/32741)Updating files:  23% (7531/32741)Updating files:  24% (7858/32741)Updating files:  25% (8186/32741)Updating files:  25% (8380/32741)Updating files:  26% (8513/32741)Updating files:  27% (8841/32741)Updating files:  28% (9168/32741)Updating files:  29% (9495/32741)Updating files:  30% (9823/32741)Updating files:  31% (10150/32741)Updating files:  32% (10478/32741)Updating files:  33% (10805/32741)Updating files:  34% (11132/32741)Updating files:  35% (11460/32741)Updating files:  36% (11787/32741)Updating files:  37% (12115/32741)Updating files:  38% (12442/32741)Updating files:  39% (12769/32741)Updating files:  40% (13097/32741)Updating files:  41% (13424/32741)Updating files:  42% (13752/32741)Updating files:  43% (14079/32741)Updating files:  44% (14407/32741)Updating files:  45% (14734/32741)Updating files:  46% (15061/32741)Updating files:  47% (15389/32741)Updating files:  48% (15716/32741)Updating files:  49% (16044/32741)Updating files:  50% (16371/32741)Updating files:  51% (16698/32741)Updating files:  52% (17026/32741)Updating files:  53% (17353/32741)Updating files:  54% (17681/32741)Updating files:  55% (18008/32741)Updating files:  56% (18335/32741)Updating files:  57% (18663/32741)Updating files:  58% (18990/32741)Updating files:  59% (19318/32741)Updating files:  60% (19645/32741)Updating files:  61% (19973/32741)Updating files:  62% (20300/32741)Updating files:  63% (20627/32741)Updating files:  64% (20955/32741)Updating files:  65% (21282/32741)Updating files:  66% (21610/32741)Updating files:  67% (21937/32741)Updating files:  68% (22264/32741)Updating files:  69% (22592/32741)Updating files:  70% (22919/32741)Updating files:  71% (23247/32741)Updating files:  72% (23574/32741)Updating files:  73% (23901/32741)Updating files:  74% (24229/32741)Updating files:  75% (24556/32741)Updating files:  75% (24882/32741)Updating files:  76% (24884/32741)Updating files:  77% (25211/32741)Updating files:  78% (25538/32741)Updating files:  79% (25866/32741)Updating files:  80% (26193/32741)Updating files:  81% (26521/32741)Updating files:  82% (26848/32741)Updating files:  83% (27176/32741)Updating files:  84% (27503/32741)Updating files:  85% (27830/32741)Updating files:  86% (28158/32741)Updating files:  87% (28485/32741)Updating files:  88% (28813/32741)Updating files:  89% (29140/32741)Updating files:  90% (29467/32741)Updating files:  91% (29795/32741)Updating files:  92% (30122/32741)Updating files:  93% (30450/32741)Updating files:  94% (30777/32741)Updating files:  95% (31104/32741)Updating files:  96% (31432/32741)Updating files:  97% (31759/32741)Updating files:  98% (32087/32741)Updating files:  99% (32414/32741)Updating files: 100% (32741/32741)Updating files: 100% (32741/32741), done.
+HEAD is now at 81aaa24ea6 Merge pull request #26946 from mmottl/release-gsl-1.25.1
+Merge made by the 'ort' strategy.
+ packages/cohttp-async/cohttp-async.6.0.0/opam      | 73 +++++++++++++++++++++
+ packages/cohttp-bench/cohttp-bench.6.0.0/opam      | 61 ++++++++++++++++++
+ .../cohttp-curl-async/cohttp-curl-async.6.0.0/opam | 62 ++++++++++++++++++
+ .../cohttp-curl-lwt/cohttp-curl-lwt.6.0.0/opam     | 61 ++++++++++++++++++
+ packages/cohttp-curl/cohttp-curl.6.0.0/opam        | 50 +++++++++++++++
+ packages/cohttp-eio/cohttp-eio.6.0.0/opam          | 62 ++++++++++++++++++
+ .../cohttp-lwt-jsoo/cohttp-lwt-jsoo.6.0.0/opam     | 62 ++++++++++++++++++
+ .../cohttp-lwt-unix/cohttp-lwt-unix.6.0.0/opam     | 69 ++++++++++++++++++++
+ packages/cohttp-lwt/cohttp-lwt.6.0.0/opam          | 61 ++++++++++++++++++
+ packages/cohttp-mirage/cohttp-mirage.6.0.0/opam    | 69 ++++++++++++++++++++
+ .../cohttp-server-lwt-unix.6.0.0/opam              | 56 ++++++++++++++++
+ packages/cohttp-top/cohttp-top.6.0.0/opam          | 53 ++++++++++++++++
+ packages/cohttp/cohttp.6.0.0/opam                  | 74 ++++++++++++++++++++++
+ packages/http/http.6.0.0/opam                      | 59 +++++++++++++++++
+ 14 files changed, 872 insertions(+)
+ create mode 100644 packages/cohttp-async/cohttp-async.6.0.0/opam
+ create mode 100644 packages/cohttp-bench/cohttp-bench.6.0.0/opam
+ create mode 100644 packages/cohttp-curl-async/cohttp-curl-async.6.0.0/opam
+ create mode 100644 packages/cohttp-curl-lwt/cohttp-curl-lwt.6.0.0/opam
+ create mode 100644 packages/cohttp-curl/cohttp-curl.6.0.0/opam
+ create mode 100644 packages/cohttp-eio/cohttp-eio.6.0.0/opam
+ create mode 100644 packages/cohttp-lwt-jsoo/cohttp-lwt-jsoo.6.0.0/opam
+ create mode 100644 packages/cohttp-lwt-unix/cohttp-lwt-unix.6.0.0/opam
+ create mode 100644 packages/cohttp-lwt/cohttp-lwt.6.0.0/opam
+ create mode 100644 packages/cohttp-mirage/cohttp-mirage.6.0.0/opam
+ create mode 100644 packages/cohttp-server-lwt-unix/cohttp-server-lwt-unix.6.0.0/opam
+ create mode 100644 packages/cohttp-top/cohttp-top.6.0.0/opam
+ create mode 100644 packages/cohttp/cohttp.6.0.0/opam
+ create mode 100644 packages/http/http.6.0.0/opam
+
+[01;34m(from ocaml/opam:debian-12-ocaml-5.2@sha256:b508640544d78812a6ad704fa752ed0071600b204b4ec3d38dbffb84da481bed)[0m
+Unable to find image 'ocaml/opam:debian-12-ocaml-5.2@sha256:b508640544d78812a6ad704fa752ed0071600b204b4ec3d38dbffb84da481bed' locally
+docker.io/ocaml/opam@sha256:b508640544d78812a6ad704fa752ed0071600b204b4ec3d38dbffb84da481bed: Pulling from ocaml/opam
+9f9f8fa8b120: Pulling fs layer
+8e6cbae09e36: Pulling fs layer
+4ab695da637f: Pulling fs layer
+5ad82a311d0e: Pulling fs layer
+2b871046e303: Pulling fs layer
+0687f8c393d0: Pulling fs layer
+0c56b0a94aca: Pulling fs layer
+bbdfdb2635ff: Pulling fs layer
+5fd7b192f2d9: Pulling fs layer
+169c467384fb: Pulling fs layer
+2472ebc7595d: Pulling fs layer
+c59ed37e713a: Pulling fs layer
+868315a8af9a: Pulling fs layer
+d0e7bb6a72db: Pulling fs layer
+417ff03ca34f: Pulling fs layer
+0526264c6b23: Pulling fs layer
+a8b362961b12: Pulling fs layer
+5508f3d135e1: Pulling fs layer
+5049a0ab6dd0: Pulling fs layer
+4f4fb700ef54: Pulling fs layer
+fc6148839988: Pulling fs layer
+ef433ac0a16f: Pulling fs layer
+3eb65be92fa2: Pulling fs layer
+467c4875a8aa: Pulling fs layer
+9998672e06b6: Pulling fs layer
+98741f23e93f: Pulling fs layer
+b90a83b62eb8: Pulling fs layer
+370f876bf8b8: Pulling fs layer
+ee5b763fffc3: Pulling fs layer
+0670d9f68814: Pulling fs layer
+7f7db8e9ce1b: Pulling fs layer
+24ec35890220: Pulling fs layer
+ea2140c2a21a: Pulling fs layer
+b657ebc86ba2: Pulling fs layer
+78c0e74e3879: Pulling fs layer
+c95975c30c0f: Pulling fs layer
+81019a4d48d2: Pulling fs layer
+3a4768b10a00: Pulling fs layer
+26a5241f56da: Pulling fs layer
+57a4ff4cd774: Pulling fs layer
+f023f9cdd6ff: Pulling fs layer
+e46759631a18: Pulling fs layer
+980eceadf821: Pulling fs layer
+a1c31d848656: Pulling fs layer
+3eb65be92fa2: Waiting
+467c4875a8aa: Waiting
+9998672e06b6: Waiting
+98741f23e93f: Waiting
+b90a83b62eb8: Waiting
+370f876bf8b8: Waiting
+ee5b763fffc3: Waiting
+0670d9f68814: Waiting
+7f7db8e9ce1b: Waiting
+24ec35890220: Waiting
+ea2140c2a21a: Waiting
+868315a8af9a: Waiting
+d0e7bb6a72db: Waiting
+417ff03ca34f: Waiting
+0526264c6b23: Waiting
+5ad82a311d0e: Waiting
+2b871046e303: Waiting
+0687f8c393d0: Waiting
+0c56b0a94aca: Waiting
+a8b362961b12: Waiting
+5508f3d135e1: Waiting
+5049a0ab6dd0: Waiting
+bbdfdb2635ff: Waiting
+5fd7b192f2d9: Waiting
+4f4fb700ef54: Waiting
+169c467384fb: Waiting
+fc6148839988: Waiting
+b657ebc86ba2: Waiting
+78c0e74e3879: Waiting
+c95975c30c0f: Waiting
+81019a4d48d2: Waiting
+3a4768b10a00: Waiting
+2472ebc7595d: Waiting
+26a5241f56da: Waiting
+57a4ff4cd774: Waiting
+f023f9cdd6ff: Waiting
+e46759631a18: Waiting
+980eceadf821: Waiting
+a1c31d848656: Waiting
+ef433ac0a16f: Waiting
+c59ed37e713a: Waiting
+4ab695da637f: Verifying Checksum
+4ab695da637f: Download complete
+8e6cbae09e36: Verifying Checksum
+8e6cbae09e36: Download complete
+2b871046e303: Verifying Checksum
+2b871046e303: Download complete
+9f9f8fa8b120: Verifying Checksum
+9f9f8fa8b120: Download complete
+5ad82a311d0e: Verifying Checksum
+5ad82a311d0e: Download complete
+0c56b0a94aca: Verifying Checksum
+0c56b0a94aca: Download complete
+bbdfdb2635ff: Verifying Checksum
+bbdfdb2635ff: Download complete
+5fd7b192f2d9: Verifying Checksum
+5fd7b192f2d9: Download complete
+2472ebc7595d: Verifying Checksum
+2472ebc7595d: Download complete
+169c467384fb: Verifying Checksum
+169c467384fb: Download complete
+0687f8c393d0: Verifying Checksum
+0687f8c393d0: Download complete
+c59ed37e713a: Verifying Checksum
+c59ed37e713a: Download complete
+868315a8af9a: Verifying Checksum
+868315a8af9a: Download complete
+d0e7bb6a72db: Verifying Checksum
+d0e7bb6a72db: Download complete
+417ff03ca34f: Verifying Checksum
+417ff03ca34f: Download complete
+9f9f8fa8b120: Pull complete
+0526264c6b23: Download complete
+8e6cbae09e36: Pull complete
+4ab695da637f: Pull complete
+5049a0ab6dd0: Verifying Checksum
+5049a0ab6dd0: Download complete
+a8b362961b12: Verifying Checksum
+a8b362961b12: Download complete
+5508f3d135e1: Verifying Checksum
+5508f3d135e1: Download complete
+4f4fb700ef54: Verifying Checksum
+4f4fb700ef54: Download complete
+fc6148839988: Verifying Checksum
+fc6148839988: Download complete
+5ad82a311d0e: Pull complete
+ef433ac0a16f: Verifying Checksum
+ef433ac0a16f: Download complete
+2b871046e303: Pull complete
+3eb65be92fa2: Verifying Checksum
+3eb65be92fa2: Download complete
+467c4875a8aa: Download complete
+9998672e06b6: Verifying Checksum
+9998672e06b6: Download complete
+98741f23e93f: Verifying Checksum
+98741f23e93f: Download complete
+b90a83b62eb8: Verifying Checksum
+b90a83b62eb8: Download complete
+370f876bf8b8: Verifying Checksum
+370f876bf8b8: Download complete
+ee5b763fffc3: Verifying Checksum
+ee5b763fffc3: Download complete
+0670d9f68814: Verifying Checksum
+0670d9f68814: Download complete
+7f7db8e9ce1b: Download complete
+24ec35890220: Verifying Checksum
+24ec35890220: Download complete
+b657ebc86ba2: Verifying Checksum
+b657ebc86ba2: Download complete
+c95975c30c0f: Verifying Checksum
+c95975c30c0f: Download complete
+81019a4d48d2: Verifying Checksum
+81019a4d48d2: Download complete
+3a4768b10a00: Download complete
+26a5241f56da: Verifying Checksum
+26a5241f56da: Download complete
+57a4ff4cd774: Download complete
+ea2140c2a21a: Verifying Checksum
+ea2140c2a21a: Download complete
+e46759631a18: Verifying Checksum
+e46759631a18: Download complete
+f023f9cdd6ff: Verifying Checksum
+f023f9cdd6ff: Download complete
+78c0e74e3879: Verifying Checksum
+78c0e74e3879: Download complete
+980eceadf821: Verifying Checksum
+980eceadf821: Download complete
+a1c31d848656: Verifying Checksum
+a1c31d848656: Download complete
+0687f8c393d0: Pull complete
+0c56b0a94aca: Pull complete
+bbdfdb2635ff: Pull complete
+5fd7b192f2d9: Pull complete
+169c467384fb: Pull complete
+2472ebc7595d: Pull complete
+c59ed37e713a: Pull complete
+868315a8af9a: Pull complete
+d0e7bb6a72db: Pull complete
+417ff03ca34f: Pull complete
+0526264c6b23: Pull complete
+a8b362961b12: Pull complete
+5508f3d135e1: Pull complete
+5049a0ab6dd0: Pull complete
+4f4fb700ef54: Pull complete
+fc6148839988: Pull complete
+ef433ac0a16f: Pull complete
+3eb65be92fa2: Pull complete
+467c4875a8aa: Pull complete
+9998672e06b6: Pull complete
+98741f23e93f: Pull complete
+b90a83b62eb8: Pull complete
+370f876bf8b8: Pull complete
+ee5b763fffc3: Pull complete
+0670d9f68814: Pull complete
+7f7db8e9ce1b: Pull complete
+24ec35890220: Pull complete
+ea2140c2a21a: Pull complete
+b657ebc86ba2: Pull complete
+78c0e74e3879: Pull complete
+c95975c30c0f: Pull complete
+81019a4d48d2: Pull complete
+3a4768b10a00: Pull complete
+26a5241f56da: Pull complete
+57a4ff4cd774: Pull complete
+f023f9cdd6ff: Pull complete
+e46759631a18: Pull complete
+980eceadf821: Pull complete
+a1c31d848656: Pull complete
+Digest: sha256:b508640544d78812a6ad704fa752ed0071600b204b4ec3d38dbffb84da481bed
+Status: Downloaded newer image for ocaml/opam@sha256:b508640544d78812a6ad704fa752ed0071600b204b4ec3d38dbffb84da481bed
+[01;2m[01;35m2024-11-26 11:46.23 ---> using "301baea5c55377dfb60673fe1fd6bd526b1062530b1467181a3675a41c13536f" from cache[0m
+
+[01;34m/: (user (uid 1000) (gid 1000))[0m
+
+[01;34m/: (workdir /home/opam)[0m
+
+[01;34m/home/opam: (run (shell "sudo ln -f /usr/bin/opam-dev /usr/bin/opam"))[0m
+[01;2m[01;35m2024-11-26 11:46.23 ---> using "02711849925432fc1ba150fa7b1dbf68e78a47d60bdd1dd47db25af59764f0ce" from cache[0m
+
+[01;34m/home/opam: (run (network host)
+                 (shell "opam init --reinit --config .opamrc-sandbox -ni"))[0m
+Configuring from /home/opam/.opamrc-sandbox, then /home/opam/.opamrc, and finally from built-in defaults.
+Checking for available remotes: rsync and local, git.
+  - you won't be able to use mercurial repositories unless you install the hg command on your system.
+  - you won't be able to use darcs repositories unless you install the darcs command on your system.
+
+This development version of opam requires an update to the layout of /home/opam/.opam from version 2.0 to version 2.2, which can't be reverted.
+You may want to back it up before going further.
+
+Continue? [Y/n] y
+Format upgrade done.
+
+<><> Updating repositories ><><><><><><><><><><><><><><><><><><><><><><><><><><>
+[default] synchronised from file:///home/opam/opam-repository
+[01;2m[01;35m2024-11-26 11:46.23 ---> using "fd66d5ac2e606e81435c2e7dcd474152635018935943e4c9ff6f2c81640ab3f9" from cache[0m
+
+[01;34m/home/opam: (run (shell "uname -rs && opam exec -- ocaml -version && opam --version"))[0m
+Linux 6.8.0-48-generic
+The OCaml toplevel, version 5.2.1
+2.4.0~alpha1~dev
+[01;2m[01;35m2024-11-26 11:46.23 ---> using "57895f0818b236aa2782a93366672da86bde7174f777254f1f599d276f9694fc" from cache[0m
+
+[01;34m/home/opam: (env OPAMDOWNLOADJOBS 1)[0m
+
+[01;34m/home/opam: (env OPAMERRLOGLEN 0)[0m
+
+[01;34m/home/opam: (env OPAMSOLVERTIMEOUT 1000)[0m
+
+[01;34m/home/opam: (env OPAMPRECISETRACKING 1)[0m
+
+[01;34m/home/opam: (env CI true)[0m
+
+[01;34m/home/opam: (env OPAM_REPO_CI true)[0m
+
+[01;34m/home/opam: (run (shell "rm -rf opam-repository/"))[0m
+[01;2m[01;35m2024-11-26 11:46.23 ---> using "c7b14fed12c9f129a47e0f9d5abfbbaab4760251635c3ba170a07aff5fa63813" from cache[0m
+
+[01;34m/home/opam: (copy (src .) (dst opam-repository/))[0m
+[01;2m[01;35m2024-11-26 11:47.27 ---> saved as "b0ed812c45d8c552638210f73d5c4fd2a6e052901b3d59fa355519356b8f51c7"[0m
+
+[01;34m/home/opam: (run (shell "opam repository set-url --strict default opam-repository/"))[0m
+[default] Initialised
+[01;2m[01;35m2024-11-26 11:50.35 ---> saved as "127096b474674bfb56a2fa878a4269a4c6ce0714f662263ec0e4d1a5120ffb06"[0m
+
+[01;34m/home/opam: (run (network host)
+                 (shell "opam update --depexts || true"))[0m
++ /usr/bin/sudo "apt-get" "update"
+- Hit:1 http://deb.debian.org/debian bookworm InRelease
+- Get:2 http://deb.debian.org/debian bookworm-updates InRelease [55.4 kB]
+- Get:3 http://deb.debian.org/debian-security bookworm-security InRelease [48.0 kB]
+- Get:4 http://deb.debian.org/debian-security bookworm-security/main s390x Packages [195 kB]
+- Fetched 298 kB in 1s (368 kB/s)
+- Reading package lists...
+- 
+[01;2m[01;35m2024-11-26 11:50.55 ---> saved as "1f72dbdf3c9defdf417fefe2609e8dcd243f6ea011278e99a420f69ab51e930f"[0m
+
+[01;34m/home/opam: (run (shell "opam pin add -k version -yn cohttp-server-lwt-unix.6.0.0 6.0.0"))[0m
+cohttp-server-lwt-unix is now pinned to version 6.0.0
+[01;2m[01;35m2024-11-26 11:51.01 ---> saved as "1548ade6050aa8f83aa245ec0a8c03e66e91658a3bc37e00ff4753f72cf23332"[0m
+
+[01;34m/home/opam: (run (cache (opam-archives (target /home/opam/.opam/download-cache)))
+                 (network host)
+                 (shell  "opam reinstall cohttp-server-lwt-unix.6.0.0;\
+                        \n        res=$?;\
+                        \n        test \"$res\" != 31 && exit \"$res\";\
+                        \n        export OPAMCLI=2.0;\
+                        \n        build_dir=$(opam var prefix)/.opam-switch/build;\
+                        \n        failed=$(ls \"$build_dir\");\
+                        \n        partial_fails=\"\";\
+                        \n        for pkg in $failed; do\
+                        \n          if opam show -f x-ci-accept-failures: \"$pkg\" | grep -qF \"\\\"debian-12\\\"\"; then\
+                        \n            echo \"A package failed and has been disabled for CI using the 'x-ci-accept-failures' field.\";\
+                        \n          fi;\
+                        \n          test \"$pkg\" != 'cohttp-server-lwt-unix.6.0.0' && partial_fails=\"$partial_fails $pkg\";\
+                        \n        done;\
+                        \n        test \"${partial_fails}\" != \"\" && echo \"opam-repo-ci detected dependencies failing: ${partial_fails}\";\
+                        \n        exit 1"))[0m
+cohttp-server-lwt-unix.6.0.0 is not installed. Install it? [Y/n] y
+The following actions will be performed:
+=== install 10 packages
+  - install base-bytes             base           [required by ocplib-endian]
+  - install cohttp-server-lwt-unix 6.0.0 (pinned)
+  - install cppo                   1.7.0          [required by lwt]
+  - install csexp                  1.5.2          [required by dune-configurator]
+  - install dune                   3.16.1         [required by cohttp-server-lwt-unix]
+  - install dune-configurator      3.16.1         [required by lwt]
+  - install http                   6.0.0          [required by cohttp-server-lwt-unix]
+  - install lwt                    5.9.0          [required by cohttp-server-lwt-unix]
+  - install ocamlfind              1.9.6          [required by base-bytes]
+  - install ocplib-endian          1.2            [required by lwt]
+
+<><> Processing actions <><><><><><><><><><><><><><><><><><><><><><><><><><><><>
+-> retrieved cohttp-server-lwt-unix.6.0.0, http.6.0.0  (cached)
+-> retrieved cppo.1.7.0  (cached)
+-> retrieved csexp.1.5.2  (cached)
+-> retrieved dune.3.16.1, dune-configurator.3.16.1  (cached)
+-> retrieved lwt.5.9.0  (cached)
+-> retrieved ocamlfind.1.9.6  (cached)
+-> retrieved ocplib-endian.1.2  (cached)
+-> installed ocamlfind.1.9.6
+-> installed base-bytes.base
+-> installed dune.3.16.1
+-> installed csexp.1.5.2
+-> installed cppo.1.7.0
+-> installed http.6.0.0
+-> installed ocplib-endian.1.2
+-> installed dune-configurator.3.16.1
+-> installed lwt.5.9.0
+-> installed cohttp-server-lwt-unix.6.0.0
+Done.
+# To update the current shell environment, run: eval $(opam env)
+[01;2m[01;35m2024-11-26 11:53.09 ---> saved as "10567b5533e4a2e37dfae2274eef779d6489b48dc3f76c58cc026228e927f6ae"[0m
+
+[01;34m/home/opam: (run (network host)
+                 (shell "(opam reinstall --with-test cohttp-server-lwt-unix.6.0.0) || true"))[0m
+[ERROR] Sorry, resolution of the request timed out.
+        Try to specify a more precise request, use a different solver, or increase the allowed time by setting OPAMSOLVERTIMEOUT to a bigger value (currently, it is set to 1000.0 seconds).
+[01;2m[01;35m2024-11-26 12:10.08 ---> saved as "ee5b664eb3874d1b64a8a0cc7b11fa6f5ff4e267f5c1a35eb1f8c8492089dfb0"[0m
+
+[01;34m/home/opam: (run (shell  "opam reinstall --with-test --verbose cohttp-server-lwt-unix.6.0.0;\
+                        \n        res=$?;\
+                        \n        test \"$res\" != 31 && exit \"$res\";\
+                        \n        export OPAMCLI=2.0;\
+                        \n        build_dir=$(opam var prefix)/.opam-switch/build;\
+                        \n        failed=$(ls \"$build_dir\");\
+                        \n        partial_fails=\"\";\
+                        \n        for pkg in $failed; do\
+                        \n          if opam show -f x-ci-accept-failures: \"$pkg\" | grep -qF \"\\\"debian-12\\\"\"; then\
+                        \n            echo \"A package failed and has been disabled for CI using the 'x-ci-accept-failures' field.\";\
+                        \n          fi;\
+                        \n          test \"$pkg\" != 'cohttp-server-lwt-unix.6.0.0' && partial_fails=\"$partial_fails $pkg\";\
+                        \n        done;\
+                        \n        test \"${partial_fails}\" != \"\" && echo \"opam-repo-ci detected dependencies failing: ${partial_fails}\";\
+                        \n        exit 1"))[0m
+[ERROR] Sorry, resolution of the request timed out.
+        Try to specify a more precise request, use a different solver, or increase the allowed time by setting OPAMSOLVERTIMEOUT to a bigger value (currently, it is set to 1000.0 seconds).
+'opam reinstall --with-test --verbose cohttp-server-lwt-unix.6.0.0' failed.
+"/usr/bin/env" "bash" "-c" "opam reinstall --with-test --verbose cohttp-server-lwt-unix.6.0.0;
+        res=$?;
+        test "$res" != 31 && exit "$res";
+        export OPAMCLI=2.0;
+        build_dir=$(opam var prefix)/.opam-switch/build;
+        failed=$(ls "$build_dir");
+        partial_fails="";
+        for pkg in $failed; do
+          if opam show -f x-ci-accept-failures: "$pkg" | grep -qF "\"debian-12\""; then
+            echo "A package failed and has been disabled for CI using the 'x-ci-accept-failures' field.";
+          fi;
+          test "$pkg" != 'cohttp-server-lwt-unix.6.0.0' && partial_fails="$partial_fails $pkg";
+        done;
+        test "${partial_fails}" != "" && echo "opam-repo-ci detected dependencies failing: ${partial_fails}";
+        exit 1" failed with exit status 60
+2024-11-26 12:27.38: Job failed: Failed: Build failed
+2024-11-26 12:27.38: Log analysis:
+2024-11-26 12:27.38: >>> 
+[ERROR] Sorry, resolution of the request timed out.
+ (score = 20)
+2024-11-26 12:27.38: >>> 
+[ERROR] Sorry, resolution of the request timed out.
+ (score = 20)
+2024-11-26 12:27.38: Sorry, resolution of the request timed out.

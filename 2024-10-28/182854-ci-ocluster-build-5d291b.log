@@ -1,0 +1,427 @@
+2024-10-28 18:28.54: New job: test cohttp-curl-lwt.6.0.0~alpha2, using opam dev
+                              from https://github.com/ocaml/opam-repository.git#refs/pull/26799/head (05590ce777293a9ebf35d79eca2fae2e914982ee)
+                              on opensuse-tumbleweed-ocaml-5.2/amd64
+
+To reproduce locally:
+
+cd $(mktemp -d)
+git clone --recursive "https://github.com/ocaml/opam-repository.git" && cd "opam-repository" && git fetch origin "refs/pull/26799/head" && git reset --hard 05590ce7
+git fetch origin master
+git merge --no-edit 56e31a3bc1fd0bfd87e5251972e806b8f78082a5
+cat > ../Dockerfile <<'END-OF-DOCKERFILE'
+[34mFROM ocaml/opam:opensuse-tumbleweed-ocaml-5.2@sha256:1e9c4977daa1771de95bfd7f94d1ae717a575243c5c8c1e1cac7036443e831a5
+USER 1000:1000
+WORKDIR /home/opam
+RUN sudo ln -f /usr/bin/opam-dev /usr/bin/opam
+RUN opam init --reinit -ni
+RUN uname -rs && opam exec -- ocaml -version && opam --version
+ENV OPAMDOWNLOADJOBS="1"
+ENV OPAMERRLOGLEN="0"
+ENV OPAMSOLVERTIMEOUT="1000"
+ENV OPAMPRECISETRACKING="1"
+ENV CI="true"
+ENV OPAM_REPO_CI="true"
+RUN rm -rf opam-repository/
+COPY --chown=1000:1000 . opam-repository/
+RUN opam repository set-url --strict default opam-repository/
+RUN opam update --depexts || true
+RUN opam pin add -k version -yn cohttp-curl-lwt.6.0.0~alpha2 6.0.0~alpha2
+RUN opam reinstall cohttp-curl-lwt.6.0.0~alpha2; \
+    res=$?; \
+    test "$res" != 31 && exit "$res"; \
+    export OPAMCLI=2.0; \
+    build_dir=$(opam var prefix)/.opam-switch/build; \
+    failed=$(ls "$build_dir"); \
+    partial_fails=""; \
+    for pkg in $failed; do \
+    if opam show -f x-ci-accept-failures: "$pkg" | grep -qF "\"opensuse-tumbleweed\""; then \
+    echo "A package failed and has been disabled for CI using the 'x-ci-accept-failures' field."; \
+    fi; \
+    test "$pkg" != 'cohttp-curl-lwt.6.0.0~alpha2' && partial_fails="$partial_fails $pkg"; \
+    done; \
+    test "${partial_fails}" != "" && echo "opam-repo-ci detected dependencies failing: ${partial_fails}"; \
+    exit 1
+RUN (opam reinstall --with-test cohttp-curl-lwt.6.0.0~alpha2) || true
+RUN opam reinstall --with-test --verbose cohttp-curl-lwt.6.0.0~alpha2; \
+    res=$?; \
+    test "$res" != 31 && exit "$res"; \
+    export OPAMCLI=2.0; \
+    build_dir=$(opam var prefix)/.opam-switch/build; \
+    failed=$(ls "$build_dir"); \
+    partial_fails=""; \
+    for pkg in $failed; do \
+    if opam show -f x-ci-accept-failures: "$pkg" | grep -qF "\"opensuse-tumbleweed\""; then \
+    echo "A package failed and has been disabled for CI using the 'x-ci-accept-failures' field."; \
+    fi; \
+    test "$pkg" != 'cohttp-curl-lwt.6.0.0~alpha2' && partial_fails="$partial_fails $pkg"; \
+    done; \
+    test "${partial_fails}" != "" && echo "opam-repo-ci detected dependencies failing: ${partial_fails}"; \
+    exit 1
+[0m
+END-OF-DOCKERFILE
+docker build -f ../Dockerfile .
+
+2024-10-28 18:28.54: Using cache hint "ocaml/opam:opensuse-tumbleweed-ocaml-5.2@sha256:1e9c4977daa1771de95bfd7f94d1ae717a575243c5c8c1e1cac7036443e831a5-cohttp-curl-lwt.6.0.0~alpha2-05590ce777293a9ebf35d79eca2fae2e914982ee"
+2024-10-28 18:28.54: Using OBuilder spec:
+((from ocaml/opam:opensuse-tumbleweed-ocaml-5.2@sha256:1e9c4977daa1771de95bfd7f94d1ae717a575243c5c8c1e1cac7036443e831a5)
+ (user (uid 1000) (gid 1000))
+ (workdir /home/opam)
+ (run (shell "sudo ln -f /usr/bin/opam-dev /usr/bin/opam"))
+ (run (network host)
+      (shell "opam init --reinit --config .opamrc-sandbox -ni"))
+ (run (shell "uname -rs && opam exec -- ocaml -version && opam --version"))
+ (env OPAMDOWNLOADJOBS 1)
+ (env OPAMERRLOGLEN 0)
+ (env OPAMSOLVERTIMEOUT 1000)
+ (env OPAMPRECISETRACKING 1)
+ (env CI true)
+ (env OPAM_REPO_CI true)
+ (run (shell "rm -rf opam-repository/"))
+ (copy (src .) (dst opam-repository/))
+ (run (shell "opam repository set-url --strict default opam-repository/"))
+ (run (network host)
+      (shell "opam update --depexts || true"))
+ (run (shell "opam pin add -k version -yn cohttp-curl-lwt.6.0.0~alpha2 6.0.0~alpha2"))
+ (run (cache (opam-archives (target /home/opam/.opam/download-cache)))
+      (network host)
+      (shell  "opam reinstall cohttp-curl-lwt.6.0.0~alpha2;\
+             \n        res=$?;\
+             \n        test \"$res\" != 31 && exit \"$res\";\
+             \n        export OPAMCLI=2.0;\
+             \n        build_dir=$(opam var prefix)/.opam-switch/build;\
+             \n        failed=$(ls \"$build_dir\");\
+             \n        partial_fails=\"\";\
+             \n        for pkg in $failed; do\
+             \n          if opam show -f x-ci-accept-failures: \"$pkg\" | grep -qF \"\\\"opensuse-tumbleweed\\\"\"; then\
+             \n            echo \"A package failed and has been disabled for CI using the 'x-ci-accept-failures' field.\";\
+             \n          fi;\
+             \n          test \"$pkg\" != 'cohttp-curl-lwt.6.0.0~alpha2' && partial_fails=\"$partial_fails $pkg\";\
+             \n        done;\
+             \n        test \"${partial_fails}\" != \"\" && echo \"opam-repo-ci detected dependencies failing: ${partial_fails}\";\
+             \n        exit 1"))
+ (run (network host)
+      (shell "(opam reinstall --with-test cohttp-curl-lwt.6.0.0~alpha2) || true"))
+ (run (shell  "opam reinstall --with-test --verbose cohttp-curl-lwt.6.0.0~alpha2;\
+             \n        res=$?;\
+             \n        test \"$res\" != 31 && exit \"$res\";\
+             \n        export OPAMCLI=2.0;\
+             \n        build_dir=$(opam var prefix)/.opam-switch/build;\
+             \n        failed=$(ls \"$build_dir\");\
+             \n        partial_fails=\"\";\
+             \n        for pkg in $failed; do\
+             \n          if opam show -f x-ci-accept-failures: \"$pkg\" | grep -qF \"\\\"opensuse-tumbleweed\\\"\"; then\
+             \n            echo \"A package failed and has been disabled for CI using the 'x-ci-accept-failures' field.\";\
+             \n          fi;\
+             \n          test \"$pkg\" != 'cohttp-curl-lwt.6.0.0~alpha2' && partial_fails=\"$partial_fails $pkg\";\
+             \n        done;\
+             \n        test \"${partial_fails}\" != \"\" && echo \"opam-repo-ci detected dependencies failing: ${partial_fails}\";\
+             \n        exit 1"))
+)
+
+2024-10-28 18:28.54: Waiting for resource in pool OCluster
+2024-10-28 18:33.30: Waiting for worker…
+2024-10-28 18:36.09: Got resource from pool OCluster
+Building on x86-bm-c11.sw.ocaml.org
+All commits already cached
+Updating files:  79% (25709/32540)Updating files:  80% (26032/32540)Updating files:  81% (26358/32540)Updating files:  82% (26683/32540)Updating files:  83% (27009/32540)Updating files:  84% (27334/32540)Updating files:  85% (27659/32540)Updating files:  86% (27985/32540)Updating files:  87% (28310/32540)Updating files:  88% (28636/32540)Updating files:  89% (28961/32540)Updating files:  90% (29286/32540)Updating files:  91% (29612/32540)Updating files:  92% (29937/32540)Updating files:  93% (30263/32540)Updating files:  94% (30588/32540)Updating files:  95% (30913/32540)Updating files:  96% (31239/32540)Updating files:  97% (31564/32540)Updating files:  98% (31890/32540)Updating files:  99% (32215/32540)Updating files: 100% (32540/32540)Updating files: 100% (32540/32540), done.
+HEAD is now at 56e31a3bc1 Merge pull request #26796 from avsm/release-jekyll-format-v0.3.4
+Updating 56e31a3bc1..05590ce777
+Fast-forward
+ packages/cohttp-curl-async/cohttp-curl-async.6.0.0~alpha2/opam          | 2 ++
+ packages/cohttp-curl-lwt/cohttp-curl-lwt.6.0.0~alpha2/opam              | 2 ++
+ packages/cohttp-lwt-jsoo/cohttp-lwt-jsoo.6.0.0~alpha2/opam              | 2 ++
+ packages/cohttp-lwt-unix/cohttp-lwt-unix.6.0.0~alpha2/opam              | 2 ++
+ .../cohttp-server-lwt-unix/cohttp-server-lwt-unix.6.0.0~alpha2/opam     | 2 ++
+ packages/cohttp-top/cohttp-top.6.0.0~alpha2/opam                        | 2 ++
+ 6 files changed, 12 insertions(+)
+
+[01;34m(from ocaml/opam:opensuse-tumbleweed-ocaml-5.2@sha256:1e9c4977daa1771de95bfd7f94d1ae717a575243c5c8c1e1cac7036443e831a5)[0m
+[01;2m[01;35m2024-10-28 18:36.53 ---> saved as "f3a401b2d3f8bb34190381f1062ee3cf7a5e6b4ddd37cd2146b7f845ea9cb6c3"[0m
+
+[01;34m/: (user (uid 1000) (gid 1000))[0m
+
+[01;34m/: (workdir /home/opam)[0m
+
+[01;34m/home/opam: (run (shell "sudo ln -f /usr/bin/opam-dev /usr/bin/opam"))[0m
+[01;2m[01;35m2024-10-28 18:36.53 ---> saved as "ec06241a04e9b782e3609840c0fae94822ecdda2364fe97655f1da815b81f4dc"[0m
+
+[01;34m/home/opam: (run (network host)
+                 (shell "opam init --reinit --config .opamrc-sandbox -ni"))[0m
+Configuring from /home/opam/.opamrc-sandbox, then /home/opam/.opamrc, and finally from built-in defaults.
+Checking for available remotes: rsync and local, git.
+  - you won't be able to use mercurial repositories unless you install the hg command on your system.
+  - you won't be able to use darcs repositories unless you install the darcs command on your system.
+
+This development version of opam requires an update to the layout of /home/opam/.opam from version 2.0 to version 2.2, which can't be reverted.
+You may want to back it up before going further.
+
+Continue? [y/n] y
+[NOTE] The 'jobs' option was reset, its value was 31 and its new value will vary according to the current number of cores on your machine. You can restore the fixed value using:
+           opam option jobs=31 --global
+Format upgrade done.
+
+<><> Updating repositories ><><><><><><><><><><><><><><><><><><><><><><><><><><>
+[default] synchronised from file:///home/opam/opam-repository
+[01;2m[01;35m2024-10-28 18:38.21 ---> saved as "1ac37369b5e97d4c9647c0fa7fbc43d13bcb60866a90a5fa8df8a938786c04c7"[0m
+
+[01;34m/home/opam: (run (shell "uname -rs && opam exec -- ocaml -version && opam --version"))[0m
+Linux 5.15.0-122-generic
+The OCaml toplevel, version 5.2.0
+2.4.0~alpha1~dev
+[01;2m[01;35m2024-10-28 18:38.21 ---> saved as "87a50f516b89869932783e3358a4d57e8fb8a89fde0bf75eec05838933438c63"[0m
+
+[01;34m/home/opam: (env OPAMDOWNLOADJOBS 1)[0m
+
+[01;34m/home/opam: (env OPAMERRLOGLEN 0)[0m
+
+[01;34m/home/opam: (env OPAMSOLVERTIMEOUT 1000)[0m
+
+[01;34m/home/opam: (env OPAMPRECISETRACKING 1)[0m
+
+[01;34m/home/opam: (env CI true)[0m
+
+[01;34m/home/opam: (env OPAM_REPO_CI true)[0m
+
+[01;34m/home/opam: (run (shell "rm -rf opam-repository/"))[0m
+[01;2m[01;35m2024-10-28 18:38.27 ---> saved as "9d018411f1012e3d24dd7f24254d9b0257cef07a22a1adc38f87f742faad8c60"[0m
+
+[01;34m/home/opam: (copy (src .) (dst opam-repository/))[0m
+[01;2m[01;35m2024-10-28 18:38.39 ---> saved as "a65678435e2ed4d626f44f1776d2a185a8a80c25a9b01edd9652782fd4c93c78"[0m
+
+[01;34m/home/opam: (run (shell "opam repository set-url --strict default opam-repository/"))[0m
+[default] Initialised
+[01;2m[01;35m2024-10-28 18:39.36 ---> saved as "9b0d684ff23a45121b821d637a382683be4afa87d6c75c2089f7a822b8d7e39c"[0m
+
+[01;34m/home/opam: (run (network host)
+                 (shell "opam update --depexts || true"))[0m
++ /usr/bin/sudo "zypper" "--non-interactive" "refresh"
+- Retrieving repository 'openSUSE-Tumbleweed-Non-Oss' metadata [.........done]
+- Building repository 'openSUSE-Tumbleweed-Non-Oss' cache [....done]
+- Retrieving repository 'openSUSE-Tumbleweed-Oss' metadata [.
+- ...........
+- ........
+- .done]
+- Building repository 'openSUSE-Tumbleweed-Oss' cache [..
+- ..done]
+- Repository 'openSUSE-Tumbleweed-Update' is up to date.
+- All repositories have been refreshed.
+[01;2m[01;35m2024-10-28 18:39.47 ---> saved as "7661149d4b34ece56cec651242a1be49ccb34bac087b78d94d44ea23a98a43d0"[0m
+
+[01;34m/home/opam: (run (shell "opam pin add -k version -yn cohttp-curl-lwt.6.0.0~alpha2 6.0.0~alpha2"))[0m
+cohttp-curl-lwt is now pinned to version 6.0.0~alpha2
+[01;2m[01;35m2024-10-28 18:39.48 ---> saved as "57934e3893a86fbe0bf58dd4e585b3925127870bd9403b9a9ead2df4f1642bcf"[0m
+
+[01;34m/home/opam: (run (cache (opam-archives (target /home/opam/.opam/download-cache)))
+                 (network host)
+                 (shell  "opam reinstall cohttp-curl-lwt.6.0.0~alpha2;\
+                        \n        res=$?;\
+                        \n        test \"$res\" != 31 && exit \"$res\";\
+                        \n        export OPAMCLI=2.0;\
+                        \n        build_dir=$(opam var prefix)/.opam-switch/build;\
+                        \n        failed=$(ls \"$build_dir\");\
+                        \n        partial_fails=\"\";\
+                        \n        for pkg in $failed; do\
+                        \n          if opam show -f x-ci-accept-failures: \"$pkg\" | grep -qF \"\\\"opensuse-tumbleweed\\\"\"; then\
+                        \n            echo \"A package failed and has been disabled for CI using the 'x-ci-accept-failures' field.\";\
+                        \n          fi;\
+                        \n          test \"$pkg\" != 'cohttp-curl-lwt.6.0.0~alpha2' && partial_fails=\"$partial_fails $pkg\";\
+                        \n        done;\
+                        \n        test \"${partial_fails}\" != \"\" && echo \"opam-repo-ci detected dependencies failing: ${partial_fails}\";\
+                        \n        exit 1"))[0m
+cohttp-curl-lwt.6.0.0~alpha2 is not installed. Install it? [y/n] y
+The following actions will be performed:
+=== install 14 packages
+  - install base-bytes        base                  [required by ocplib-endian]
+  - install cohttp-curl       6.0.0~alpha2          [required by cohttp-curl-lwt]
+  - install cohttp-curl-lwt   6.0.0~alpha2 (pinned)
+  - install conf-libcurl      2                     [required by ocurl]
+  - install cppo              1.7.0                 [required by lwt]
+  - install csexp             1.5.2                 [required by dune-configurator]
+  - install dune              3.16.0                [required by cohttp-curl-lwt]
+  - install dune-configurator 3.16.0                [required by lwt]
+  - install http              6.0.0~alpha2          [required by cohttp-curl-lwt]
+  - install lwt               5.8.0                 [required by cohttp-curl-lwt]
+  - install ocamlfind         1.9.6                 [required by ocurl]
+  - install ocplib-endian     1.2                   [required by lwt]
+  - install ocurl             0.9.2                 [required by cohttp-curl-lwt]
+  - install stringext         1.6.0                 [required by cohttp-curl-lwt]
+
+The following system packages will first need to be installed:
+    libcurl-devel
+
+<><> Handling external dependencies <><><><><><><><><><><><><><><><><><><><><><>
+
+opam believes some required external dependencies are missing. opam can:
+> 1. Run zypper to install them (may need root/sudo access)
+  2. Display the recommended zypper command and wait while you run it manually (e.g. in another terminal)
+  3. Continue anyway, and, upon success, permanently register that this external dependency is present, but not detectable
+  4. Abort the installation
+
+[1/2/3/4] 1
+
++ /usr/bin/sudo "zypper" "--non-interactive" "install" "libcurl-devel"
+- Loading repository data...
+- Reading installed packages...
+- Resolving package dependencies...
+- 
+- The following 21 NEW packages are going to be installed:
+-   cmake cmake-full libarchive13 libbrotli-devel libbrotlienc1 libcrypto55 libcurl-devel libidn2-devel libjsoncpp25 libmpdec3 libnghttp2-devel libpsl-devel libpython3_11-1_0 libressl-devel librhash1 libssh-devel libssl58 libtls31 libuv1 libzstd-devel python311-base
+- 
+- 21 new packages to install.
+- 
+- Package download size:    27.3 MiB
+- 
+- Package install size change:
+-               |      96.9 MiB  required by packages that will be installed
+-     96.9 MiB  |  -      0 B    released by packages that will be removed
+- 
+- Backend:  classic_rpmtrans
+- Continue? [y/n/v/...? shows all options] (y): y
+- Retrieving: libarchive13-3.7.6-1.1.x86_64 (openSUSE-Tumbleweed-Oss) (1/21), 380.7 KiB    
+- Retrieving: libarchive13-3.7.6-1.1.x86_64.rpm [..done]
+- Retrieving: libbrotlienc1-1.1.0-1.3.x86_64 (openSUSE-Tumbleweed-Oss) (2/21), 260.7 KiB    
+- Retrieving: libbrotlienc1-1.1.0-1.3.x86_64.rpm [..done]
+- Retrieving: libcrypto55-4.0.0-1.1.x86_64 (openSUSE-Tumbleweed-Oss) (3/21), 684.1 KiB    
+- Retrieving: libcrypto55-4.0.0-1.1.x86_64.rpm [..done (4.8 MiB/s)]
+- Retrieving: libidn2-devel-2.3.7-1.2.x86_64 (openSUSE-Tumbleweed-Oss) (4/21),  48.7 KiB    
+- Retrieving: libidn2-devel-2.3.7-1.2.x86_64.rpm [.done]
+- Retrieving: libjsoncpp25-1.9.5-2.7.x86_64 (openSUSE-Tumbleweed-Oss) (5/21),  89.6 KiB    
+- Retrieving: libjsoncpp25-1.9.5-2.7.x86_64.rpm [.done]
+- Retrieving: libmpdec3-2.5.1-2.19.x86_64 (openSUSE-Tumbleweed-Oss) (6/21),  83.1 KiB    
+- Retrieving: libmpdec3-2.5.1-2.19.x86_64.rpm [.done]
+- Retrieving: libnghttp2-devel-1.62.1-1.1.x86_64 (openSUSE-Tumbleweed-Oss) (7/21),  57.9 KiB    
+- Retrieving: libnghttp2-devel-1.62.1-1.1.x86_64.rpm [.done]
+- Retrieving: libpsl-devel-0.21.5-1.2.x86_64 (openSUSE-Tumbleweed-Oss) (8/21),  29.8 KiB    
+- Retrieving: libpsl-devel-0.21.5-1.2.x86_64.rpm [.
+- done]
+- Retrieving: librhash1-1.4.4-1.4.x86_64 (openSUSE-Tumbleweed-Oss) (9/21), 133.7 KiB    
+- Retrieving: librhash1-1.4.4-1.4.x86_64.rpm [..done (5.4 MiB/s)]
+- Retrieving: libuv1-1.48.0-1.1.x86_64 (openSUSE-Tumbleweed-Oss) (10/21), 102.1 KiB    
+- Retrieving: libuv1-1.48.0-1.1.x86_64.rpm [.done]
+- Retrieving: libzstd-devel-1.5.6-1.2.x86_64 (openSUSE-Tumbleweed-Oss) (11/21),  66.5 KiB    
+- Retrieving: libzstd-devel-1.5.6-1.2.x86_64.rpm [..done (54.2 KiB/s)]
+- Retrieving: libbrotli-devel-1.1.0-1.3.x86_64 (openSUSE-Tumbleweed-Oss) (12/21),  35.3 KiB    
+- Retrieving: libbrotli-devel-1.1.0-1.3.x86_64.rpm [.done]
+- Retrieving: libssl58-4.0.0-1.1.x86_64 (openSUSE-Tumbleweed-Oss) (13/21), 157.4 KiB    
+- Retrieving: libssl58-4.0.0-1.1.x86_64.rpm [..done]
+- Retrieving: python311-base-3.11.10-1.2.x86_64 (openSUSE-Tumbleweed-Oss) (14/21),  11.0 MiB    
+- Retrieving: python311-base-3.11.10-1.2.x86_64.rpm [.....
+- .done (25.0 MiB/s)]
+- Retrieving: libpython3_11-1_0-3.11.10-1.2.x86_64 (openSUSE-Tumbleweed-Oss) (15/21),   1.6 MiB    
+- Retrieving: libpython3_11-1_0-3.11.10-1.2.x86_64.rpm [...done (10.6 MiB/s)]
+- Retrieving: libtls31-4.0.0-1.1.x86_64 (openSUSE-Tumbleweed-Oss) (16/21),  41.4 KiB    
+- Retrieving: libtls31-4.0.0-1.1.x86_64.rpm [.done]
+- Retrieving: cmake-full-3.30.5-1.1.x86_64 (openSUSE-Tumbleweed-Oss) (17/21),  12.3 MiB    
+- Retrieving: cmake-full-3.30.5-1.1.x86_64.rpm [....
+- .done (35.4 MiB/s)]
+- Retrieving: libressl-devel-4.0.0-1.1.x86_64 (openSUSE-Tumbleweed-Oss) (18/21), 187.1 KiB    
+- Retrieving: libressl-devel-4.0.0-1.1.x86_64.rpm [..done (651.3 KiB/s)]
+- Retrieving: cmake-3.30.5-1.1.x86_64 (openSUSE-Tumbleweed-Oss) (19/21),  38.1 KiB    
+- Retrieving: cmake-3.30.5-1.1.x86_64.rpm [.done]
+- Retrieving: libssh-devel-0.10.6-2.1.x86_64 (openSUSE-Tumbleweed-Oss) (20/21),  41.3 KiB    
+- Retrieving: libssh-devel-0.10.6-2.1.x86_64.rpm [.done]
+- Retrieving: libcurl-devel-8.10.1-1.1.x86_64 (openSUSE-Tumbleweed-Oss) (21/21), 148.6 KiB    
+- Retrieving: libcurl-devel-8.10.1-1.1.x86_64.rpm [..done]
+- 
+- Checking for file conflicts: [...done]
+- ( 1/21) Installing: libarchive13-3.7.6-1.1.x86_64 [..done]
+- ( 2/21) Installing: libbrotlienc1-1.1.0-1.3.x86_64 [..done]
+- ( 3/21) Installing: libcrypto55-4.0.0-1.1.x86_64 [..done]
+- ( 4/21) Installing: libidn2-devel-2.3.7-1.2.x86_64 [..done]
+- ( 5/21) Installing: libjsoncpp25-1.9.5-2.7.x86_64 [..done]
+- ( 6/21) Installing: libmpdec3-2.5.1-2.19.x86_64 [..done]
+- ( 7/21) Installing: libnghttp2-devel-1.62.1-1.1.x86_64 [..done]
+- ( 8/21) Installing: libpsl-devel-0.21.5-1.2.x86_64 [..done]
+- ( 9/21) Installing: librhash1-1.4.4-1.4.x86_64 [..
+- done]
+- (10/21) Installing: libuv1-1.48.0-1.1.x86_64 [..done]
+- (11/21) Installing: libzstd-devel-1.5.6-1.2.x86_64 [..done]
+- (12/21) Installing: libbrotli-devel-1.1.0-1.3.x86_64 [..done]
+- (13/21) Installing: libssl58-4.0.0-1.1.x86_64 [..done]
+- (14/21) Installing: python311-base-3.11.10-1.2.x86_64 [.......done]
+- (15/21) Installing: libpython3_11-1_0-3.11.10-1.2.x86_64 [..done]
+- (16/21) Installing: libtls31-4.0.0-1.1.x86_64 [..done]
+- (17/21) Installing: cmake-full-3.30.5-1.1.x86_64 [..
+- ....done]
+- (18/21) Installing: libressl-devel-4.0.0-1.1.x86_64 [..done]
+- (19/21) Installing: cmake-3.30.5-1.1.x86_64 [..done]
+- (20/21) Installing: libssh-devel-0.10.6-2.1.x86_64 [..done]
+- (21/21) Installing: libcurl-devel-8.10.1-1.1.x86_64 [..done]
+- Running post-transaction scripts [...done]
+
+<><> Processing actions <><><><><><><><><><><><><><><><><><><><><><><><><><><><>
+-> retrieved cohttp-curl.6.0.0~alpha2, cohttp-curl-lwt.6.0.0~alpha2, http.6.0.0~alpha2  (cached)
+-> retrieved cppo.1.7.0  (cached)
+-> installed conf-libcurl.2
+-> retrieved csexp.1.5.2  (cached)
+-> retrieved dune.3.16.0, dune-configurator.3.16.0  (cached)
+-> retrieved lwt.5.8.0  (cached)
+-> retrieved ocamlfind.1.9.6  (cached)
+-> retrieved ocplib-endian.1.2  (cached)
+-> retrieved ocurl.0.9.2  (cached)
+-> retrieved stringext.1.6.0  (cached)
+-> installed ocamlfind.1.9.6
+-> installed base-bytes.base
+-> installed dune.3.16.0
+-> installed stringext.1.6.0
+-> installed csexp.1.5.2
+-> installed http.6.0.0~alpha2
+-> installed cppo.1.7.0
+-> installed ocplib-endian.1.2
+-> installed dune-configurator.3.16.0
+-> installed lwt.5.8.0
+-> installed ocurl.0.9.2
+-> installed cohttp-curl.6.0.0~alpha2
+-> installed cohttp-curl-lwt.6.0.0~alpha2
+Done.
+# To update the current shell environment, run: eval $(opam env)
+[01;2m[01;35m2024-10-28 18:41.12 ---> saved as "471a50dd1920041810a139165f44fff91b18053083cc5906de6cf83c864682f5"[0m
+
+[01;34m/home/opam: (run (network host)
+                 (shell "(opam reinstall --with-test cohttp-curl-lwt.6.0.0~alpha2) || true"))[0m
+[ERROR] Sorry, resolution of the request timed out.
+        Try to specify a more precise request, use a different solver, or increase the allowed time by setting OPAMSOLVERTIMEOUT to a bigger value (currently, it is set to 1000.0 seconds).
+[01;2m[01;35m2024-10-28 18:58.10 ---> saved as "f38ba245d619448ddaf447c3c32374169c76d677035a0bab54cc418b94cf9416"[0m
+
+[01;34m/home/opam: (run (shell  "opam reinstall --with-test --verbose cohttp-curl-lwt.6.0.0~alpha2;\
+                        \n        res=$?;\
+                        \n        test \"$res\" != 31 && exit \"$res\";\
+                        \n        export OPAMCLI=2.0;\
+                        \n        build_dir=$(opam var prefix)/.opam-switch/build;\
+                        \n        failed=$(ls \"$build_dir\");\
+                        \n        partial_fails=\"\";\
+                        \n        for pkg in $failed; do\
+                        \n          if opam show -f x-ci-accept-failures: \"$pkg\" | grep -qF \"\\\"opensuse-tumbleweed\\\"\"; then\
+                        \n            echo \"A package failed and has been disabled for CI using the 'x-ci-accept-failures' field.\";\
+                        \n          fi;\
+                        \n          test \"$pkg\" != 'cohttp-curl-lwt.6.0.0~alpha2' && partial_fails=\"$partial_fails $pkg\";\
+                        \n        done;\
+                        \n        test \"${partial_fails}\" != \"\" && echo \"opam-repo-ci detected dependencies failing: ${partial_fails}\";\
+                        \n        exit 1"))[0m
+[ERROR] Sorry, resolution of the request timed out.
+        Try to specify a more precise request, use a different solver, or increase the allowed time by setting OPAMSOLVERTIMEOUT to a bigger value (currently, it is set to 1000.0 seconds).
+'opam reinstall --with-test --verbose cohttp-curl-lwt.6.0.0~alpha2' failed.
+"/usr/bin/env" "bash" "-c" "opam reinstall --with-test --verbose cohttp-curl-lwt.6.0.0~alpha2;
+        res=$?;
+        test "$res" != 31 && exit "$res";
+        export OPAMCLI=2.0;
+        build_dir=$(opam var prefix)/.opam-switch/build;
+        failed=$(ls "$build_dir");
+        partial_fails="";
+        for pkg in $failed; do
+          if opam show -f x-ci-accept-failures: "$pkg" | grep -qF "\"opensuse-tumbleweed\""; then
+            echo "A package failed and has been disabled for CI using the 'x-ci-accept-failures' field.";
+          fi;
+          test "$pkg" != 'cohttp-curl-lwt.6.0.0~alpha2' && partial_fails="$partial_fails $pkg";
+        done;
+        test "${partial_fails}" != "" && echo "opam-repo-ci detected dependencies failing: ${partial_fails}";
+        exit 1" failed with exit status 60
+2024-10-28 19:15.30: Job failed: Failed: Build failed
+2024-10-28 19:15.30: Log analysis:
+2024-10-28 19:15.30: >>> 
+[ERROR] Sorry, resolution of the request timed out.
+ (score = 20)
+2024-10-28 19:15.30: >>> 
+[ERROR] Sorry, resolution of the request timed out.
+ (score = 20)
+2024-10-28 19:15.30: Sorry, resolution of the request timed out.

@@ -1,0 +1,938 @@
+2024-08-20 09:30.56: New job: test octez-node.16.1, using opam 2.0
+                              from https://github.com/ocaml/opam-repository.git#refs/pull/26378/head (cd59661bc85b5a67c3837459d02c70c2c4aa15a1)
+                              on debian-12-ocaml-4.14/amd64
+
+To reproduce locally:
+
+cd $(mktemp -d)
+git clone --recursive "https://github.com/ocaml/opam-repository.git" && cd "opam-repository" && git fetch origin "refs/pull/26378/head" && git reset --hard cd59661b
+git fetch origin master
+git merge --no-edit 0f2e2e7a59bb6529f1cf8ec039da401833b24cdf
+cat > ../Dockerfile <<'END-OF-DOCKERFILE'
+[34mFROM ocaml/opam:debian-12-ocaml-4.14@sha256:69ef0774f5cbddd472ab7b4ed241ca72bff5d63eddde00603b6501d0e4e60b3f
+USER 1000:1000
+WORKDIR /home/opam
+RUN sudo ln -f /usr/bin/opam-2.0 /usr/bin/opam
+RUN opam init --reinit -ni
+RUN uname -rs && opam exec -- ocaml -version && opam --version
+ENV OPAMDOWNLOADJOBS="1"
+ENV OPAMERRLOGLEN="0"
+ENV OPAMSOLVERTIMEOUT="500"
+ENV OPAMPRECISETRACKING="1"
+ENV CI="true"
+ENV OPAM_REPO_CI="true"
+RUN rm -rf opam-repository/
+COPY --chown=1000:1000 . opam-repository/
+RUN opam repository set-url --strict default opam-repository/
+RUN opam depext -u || true
+RUN opam pin add -k version -yn octez-node.16.1 16.1
+RUN opam depext octez-node.16.1 && opam reinstall octez-node.16.1; \
+    res=$?; \
+    test "$res" != 31 && exit "$res"; \
+    export OPAMCLI=2.0; \
+    build_dir=$(opam var prefix)/.opam-switch/build; \
+    failed=$(ls "$build_dir"); \
+    partial_fails=""; \
+    for pkg in $failed; do \
+    if opam show -f x-ci-accept-failures: "$pkg" | grep -qF "\"debian-12\""; then \
+    echo "A package failed and has been disabled for CI using the 'x-ci-accept-failures' field."; \
+    fi; \
+    test "$pkg" != 'octez-node.16.1' && partial_fails="$partial_fails $pkg"; \
+    done; \
+    test "${partial_fails}" != "" && echo "opam-repo-ci detected dependencies failing: ${partial_fails}"; \
+    exit 1
+RUN (opam depext --with-test octez-node.16.1 && opam reinstall --with-test octez-node.16.1) || true
+RUN opam depext --with-test octez-node.16.1 && opam reinstall --with-test --verbose octez-node.16.1; \
+    res=$?; \
+    test "$res" != 31 && exit "$res"; \
+    export OPAMCLI=2.0; \
+    build_dir=$(opam var prefix)/.opam-switch/build; \
+    failed=$(ls "$build_dir"); \
+    partial_fails=""; \
+    for pkg in $failed; do \
+    if opam show -f x-ci-accept-failures: "$pkg" | grep -qF "\"debian-12\""; then \
+    echo "A package failed and has been disabled for CI using the 'x-ci-accept-failures' field."; \
+    fi; \
+    test "$pkg" != 'octez-node.16.1' && partial_fails="$partial_fails $pkg"; \
+    done; \
+    test "${partial_fails}" != "" && echo "opam-repo-ci detected dependencies failing: ${partial_fails}"; \
+    exit 1
+[0m
+END-OF-DOCKERFILE
+docker build -f ../Dockerfile .
+
+2024-08-20 09:30.56: Using cache hint "ocaml/opam:debian-12-ocaml-4.14@sha256:69ef0774f5cbddd472ab7b4ed241ca72bff5d63eddde00603b6501d0e4e60b3f-octez-node.16.1-cd59661bc85b5a67c3837459d02c70c2c4aa15a1"
+2024-08-20 09:30.56: Using OBuilder spec:
+((from ocaml/opam:debian-12-ocaml-4.14@sha256:69ef0774f5cbddd472ab7b4ed241ca72bff5d63eddde00603b6501d0e4e60b3f)
+ (user (uid 1000) (gid 1000))
+ (workdir /home/opam)
+ (run (shell "sudo ln -f /usr/bin/opam-2.0 /usr/bin/opam"))
+ (run (network host)
+      (shell "opam init --reinit --config .opamrc-sandbox -ni"))
+ (run (shell "uname -rs && opam exec -- ocaml -version && opam --version"))
+ (env OPAMDOWNLOADJOBS 1)
+ (env OPAMERRLOGLEN 0)
+ (env OPAMSOLVERTIMEOUT 500)
+ (env OPAMPRECISETRACKING 1)
+ (env CI true)
+ (env OPAM_REPO_CI true)
+ (run (shell "rm -rf opam-repository/"))
+ (copy (src .) (dst opam-repository/))
+ (run (shell "opam repository set-url --strict default opam-repository/"))
+ (run (network host)
+      (shell "opam depext -u || true"))
+ (run (shell "opam pin add -k version -yn octez-node.16.1 16.1"))
+ (run (cache (opam-archives (target /home/opam/.opam/download-cache)))
+      (network host)
+      (shell  "opam depext octez-node.16.1 && opam reinstall octez-node.16.1;\
+             \n        res=$?;\
+             \n        test \"$res\" != 31 && exit \"$res\";\
+             \n        export OPAMCLI=2.0;\
+             \n        build_dir=$(opam var prefix)/.opam-switch/build;\
+             \n        failed=$(ls \"$build_dir\");\
+             \n        partial_fails=\"\";\
+             \n        for pkg in $failed; do\
+             \n          if opam show -f x-ci-accept-failures: \"$pkg\" | grep -qF \"\\\"debian-12\\\"\"; then\
+             \n            echo \"A package failed and has been disabled for CI using the 'x-ci-accept-failures' field.\";\
+             \n          fi;\
+             \n          test \"$pkg\" != 'octez-node.16.1' && partial_fails=\"$partial_fails $pkg\";\
+             \n        done;\
+             \n        test \"${partial_fails}\" != \"\" && echo \"opam-repo-ci detected dependencies failing: ${partial_fails}\";\
+             \n        exit 1"))
+ (run (network host)
+      (shell "(opam depext --with-test octez-node.16.1 && opam reinstall --with-test octez-node.16.1) || true"))
+ (run (shell  "opam depext --with-test octez-node.16.1 && opam reinstall --with-test --verbose octez-node.16.1;\
+             \n        res=$?;\
+             \n        test \"$res\" != 31 && exit \"$res\";\
+             \n        export OPAMCLI=2.0;\
+             \n        build_dir=$(opam var prefix)/.opam-switch/build;\
+             \n        failed=$(ls \"$build_dir\");\
+             \n        partial_fails=\"\";\
+             \n        for pkg in $failed; do\
+             \n          if opam show -f x-ci-accept-failures: \"$pkg\" | grep -qF \"\\\"debian-12\\\"\"; then\
+             \n            echo \"A package failed and has been disabled for CI using the 'x-ci-accept-failures' field.\";\
+             \n          fi;\
+             \n          test \"$pkg\" != 'octez-node.16.1' && partial_fails=\"$partial_fails $pkg\";\
+             \n        done;\
+             \n        test \"${partial_fails}\" != \"\" && echo \"opam-repo-ci detected dependencies failing: ${partial_fails}\";\
+             \n        exit 1"))
+)
+
+2024-08-20 09:30.56: Waiting for resource in pool OCluster
+2024-08-20 18:07.56: Waiting for worker…
+2024-08-20 18:14.00: Got resource from pool OCluster
+Building on x86-bm-c18.sw.ocaml.org
+All commits already cached
+Updating files:  36% (11783/31972)Updating files:  37% (11830/31972)Updating files:  38% (12150/31972)Updating files:  39% (12470/31972)Updating files:  40% (12789/31972)Updating files:  41% (13109/31972)Updating files:  42% (13429/31972)Updating files:  43% (13748/31972)Updating files:  44% (14068/31972)Updating files:  45% (14388/31972)Updating files:  46% (14708/31972)Updating files:  47% (15027/31972)Updating files:  48% (15347/31972)Updating files:  49% (15667/31972)Updating files:  50% (15986/31972)Updating files:  51% (16306/31972)Updating files:  52% (16626/31972)Updating files:  53% (16946/31972)Updating files:  54% (17265/31972)Updating files:  55% (17585/31972)Updating files:  56% (17905/31972)Updating files:  57% (18225/31972)Updating files:  58% (18544/31972)Updating files:  59% (18864/31972)Updating files:  60% (19184/31972)Updating files:  61% (19503/31972)Updating files:  62% (19823/31972)Updating files:  63% (20143/31972)Updating files:  64% (20463/31972)Updating files:  65% (20782/31972)Updating files:  66% (21102/31972)Updating files:  67% (21422/31972)Updating files:  68% (21741/31972)Updating files:  69% (22061/31972)Updating files:  70% (22381/31972)Updating files:  71% (22701/31972)Updating files:  72% (23020/31972)Updating files:  73% (23340/31972)Updating files:  74% (23660/31972)Updating files:  74% (23722/31972)Updating files:  75% (23979/31972)Updating files:  76% (24299/31972)Updating files:  77% (24619/31972)Updating files:  78% (24939/31972)Updating files:  79% (25258/31972)Updating files:  80% (25578/31972)Updating files:  81% (25898/31972)Updating files:  82% (26218/31972)Updating files:  83% (26537/31972)Updating files:  84% (26857/31972)Updating files:  85% (27177/31972)Updating files:  86% (27496/31972)Updating files:  87% (27816/31972)Updating files:  88% (28136/31972)Updating files:  89% (28456/31972)Updating files:  90% (28775/31972)Updating files:  91% (29095/31972)Updating files:  92% (29415/31972)Updating files:  93% (29734/31972)Updating files:  94% (30054/31972)Updating files:  95% (30374/31972)Updating files:  96% (30694/31972)Updating files:  97% (31013/31972)Updating files:  98% (31333/31972)Updating files:  99% (31653/31972)Updating files: 100% (31972/31972)Updating files: 100% (31972/31972), done.
+HEAD is now at 0f2e2e7a59 Merge pull request #26366 from jchavarri/release-melange-json-1.2.0
+Updating 0f2e2e7a59..cd59661bc8
+Fast-forward
+ packages/albatross/albatross.1.5.6/opam                 | 4 ++--
+ packages/albatross/albatross.2.0.0/opam                 | 4 ++--
+ packages/albatross/albatross.2.1.0/opam                 | 4 ++--
+ packages/aws-s3-lwt/aws-s3-lwt.2.0.0/opam               | 2 +-
+ packages/azure-cosmos-db/azure-cosmos-db.0.1.5/opam     | 2 +-
+ packages/azure-cosmos-db/azure-cosmos-db.0.1.6/opam     | 2 +-
+ packages/calculon/calculon.0.1/opam                     | 2 +-
+ packages/calculon/calculon.0.2/opam                     | 2 +-
+ packages/calculon/calculon.0.3/opam                     | 2 +-
+ packages/calculon/calculon.0.4/opam                     | 2 +-
+ packages/capnp-rpc-lwt/capnp-rpc-lwt.0.3.1/opam         | 2 +-
+ packages/capnp-rpc-lwt/capnp-rpc-lwt.0.3.2/opam         | 2 +-
+ packages/capnp-rpc-lwt/capnp-rpc-lwt.0.3.3/opam         | 2 +-
+ packages/capnp-rpc-lwt/capnp-rpc-lwt.0.4.0/opam         | 2 +-
+ packages/capnp-rpc-mirage/capnp-rpc-mirage.0.6.0/opam   | 2 +-
+ packages/capnp-rpc-mirage/capnp-rpc-mirage.0.7.0/opam   | 2 +-
+ packages/capnp-rpc-mirage/capnp-rpc-mirage.0.8.0/opam   | 2 +-
+ packages/capnp-rpc-mirage/capnp-rpc-mirage.0.9.0/opam   | 2 +-
+ packages/capnp-rpc-mirage/capnp-rpc-mirage.1.0/opam     | 2 +-
+ packages/capnp-rpc-mirage/capnp-rpc-mirage.1.2.1/opam   | 2 +-
+ packages/capnp-rpc-mirage/capnp-rpc-mirage.1.2.2/opam   | 2 +-
+ packages/capnp-rpc-mirage/capnp-rpc-mirage.1.2.3/opam   | 2 +-
+ packages/capnp-rpc-net/capnp-rpc-net.0.5.0/opam         | 2 +-
+ packages/capnp-rpc-net/capnp-rpc-net.0.6.0/opam         | 4 ++--
+ packages/capnp-rpc-net/capnp-rpc-net.0.7.0/opam         | 4 ++--
+ packages/capnp-rpc-net/capnp-rpc-net.0.8.0/opam         | 4 ++--
+ packages/capnp-rpc-net/capnp-rpc-net.0.9.0/opam         | 4 ++--
+ packages/capnp-rpc-net/capnp-rpc-net.1.0/opam           | 4 ++--
+ packages/capnp-rpc-net/capnp-rpc-net.1.1/opam           | 2 +-
+ packages/capnp-rpc-net/capnp-rpc-net.1.2.1/opam         | 4 ++--
+ packages/capnp-rpc-net/capnp-rpc-net.1.2.2/opam         | 4 ++--
+ packages/capnp-rpc-net/capnp-rpc-net.1.2.3/opam         | 4 ++--
+ packages/capnp-rpc-net/capnp-rpc-net.1.2/opam           | 2 +-
+ packages/caqti-mirage/caqti-mirage.2.1.1/opam           | 4 ++--
+ packages/caqti-tls/caqti-tls.2.1.1/opam                 | 2 +-
+ packages/caqti/caqti.2.1.1/opam                         | 2 +-
+ packages/carbon/carbon.0.1.0/opam                       | 2 +-
+ packages/cohttp-eio/cohttp-eio.6.0.0~beta2/opam         | 2 +-
+ packages/comby/comby.1.2.2/opam                         | 2 +-
+ packages/comby/comby.1.3.0/opam                         | 4 ++--
+ packages/comby/comby.1.4.0/opam                         | 2 +-
+ packages/comby/comby.1.4.1/opam                         | 2 +-
+ packages/conduit-lwt-unix/conduit-lwt-unix.6.2.0/opam   | 1 +
+ packages/conduit-lwt-unix/conduit-lwt-unix.6.2.1/opam   | 1 +
+ packages/conduit-lwt-unix/conduit-lwt-unix.6.2.2/opam   | 1 +
+ packages/conduit-lwt-unix/conduit-lwt-unix.6.2.3/opam   | 1 +
+ packages/conduit-mirage/conduit-mirage.2.1.0/opam       | 2 +-
+ packages/conduit-mirage/conduit-mirage.2.2.0/opam       | 4 ++--
+ packages/conduit-mirage/conduit-mirage.4.0.2/opam       | 4 ++--
+ packages/conduit-mirage/conduit-mirage.5.0.0/opam       | 4 ++--
+ packages/conduit-mirage/conduit-mirage.5.1.0/opam       | 4 ++--
+ packages/conduit-mirage/conduit-mirage.5.1.1/opam       | 4 ++--
+ packages/conduit-mirage/conduit-mirage.6.0.0/opam       | 4 ++--
+ packages/conduit-mirage/conduit-mirage.6.0.1/opam       | 4 ++--
+ packages/conduit-mirage/conduit-mirage.6.1.0/opam       | 4 ++--
+ packages/conduit-mirage/conduit-mirage.6.2.0/opam       | 2 +-
+ packages/conduit-mirage/conduit-mirage.6.2.1/opam       | 4 ++--
+ packages/conduit-mirage/conduit-mirage.6.2.2/opam       | 4 ++--
+ packages/conduit-mirage/conduit-mirage.6.2.3/opam       | 4 ++--
+ packages/conduit/conduit.0.10.0/opam                    | 2 +-
+ packages/conduit/conduit.0.11.0/opam                    | 3 ++-
+ packages/conduit/conduit.0.12.0/opam                    | 3 ++-
+ packages/conduit/conduit.0.13.0/opam                    | 3 ++-
+ packages/conduit/conduit.0.14.0/opam                    | 3 ++-
+ packages/conduit/conduit.0.14.1/opam                    | 3 ++-
+ packages/conduit/conduit.0.14.2/opam                    | 1 +
+ packages/conduit/conduit.0.14.3/opam                    | 1 +
+ packages/conduit/conduit.0.14.4/opam                    | 1 +
+ packages/conduit/conduit.0.14.5/opam                    | 1 +
+ packages/conduit/conduit.0.15.0/opam                    | 3 ++-
+ packages/conduit/conduit.0.15.1/opam                    | 3 ++-
+ packages/conduit/conduit.0.15.2/opam                    | 3 ++-
+ packages/conduit/conduit.0.15.3/opam                    | 3 ++-
+ packages/conduit/conduit.0.15.4/opam                    | 3 ++-
+ packages/conduit/conduit.0.9.0/opam                     | 3 ++-
+ packages/current_github/current_github.0.1/opam         | 2 +-
+ packages/current_github/current_github.0.2/opam         | 2 +-
+ packages/current_github/current_github.0.3/opam         | 2 +-
+ packages/current_github/current_github.0.4/opam         | 2 +-
+ packages/current_github/current_github.0.5/opam         | 2 +-
+ packages/current_github/current_github.0.6.1/opam       | 2 +-
+ packages/current_github/current_github.0.6.2/opam       | 2 +-
+ packages/current_github/current_github.0.6.4/opam       | 2 +-
+ packages/current_github/current_github.0.6.6/opam       | 2 +-
+ packages/current_github/current_github.0.6/opam         | 2 +-
+ packages/current_slack/current_slack.0.1/opam           | 2 +-
+ packages/current_slack/current_slack.0.2/opam           | 2 +-
+ packages/current_slack/current_slack.0.3/opam           | 2 +-
+ packages/current_slack/current_slack.0.4/opam           | 2 +-
+ packages/current_slack/current_slack.0.5/opam           | 2 +-
+ packages/current_slack/current_slack.0.6.1/opam         | 2 +-
+ packages/current_slack/current_slack.0.6.2/opam         | 2 +-
+ packages/current_slack/current_slack.0.6.4/opam         | 2 +-
+ packages/current_slack/current_slack.0.6.6/opam         | 2 +-
+ packages/current_slack/current_slack.0.6/opam           | 2 +-
+ packages/datakit-ci/datakit-ci.0.12.1/opam              | 2 +-
+ packages/datakit-ci/datakit-ci.0.12.2/opam              | 2 +-
+ packages/datakit-ci/datakit-ci.0.12.3/opam              | 2 +-
+ packages/datakit-ci/datakit-ci.0.12.4/opam              | 2 +-
+ packages/datakit-ci/datakit-ci.1.0.0/opam               | 2 +-
+ packages/dkim-bin/dkim-bin.0.6.0/opam                   | 2 +-
+ packages/dns-certify/dns-certify.4.0.0/opam             | 2 +-
+ packages/dns-certify/dns-certify.4.1.0/opam             | 2 +-
+ packages/dns-certify/dns-certify.4.2.0/opam             | 2 +-
+ packages/dns-certify/dns-certify.4.3.0/opam             | 2 +-
+ packages/dns-certify/dns-certify.4.3.1/opam             | 2 +-
+ packages/dns-client-lwt/dns-client-lwt.7.0.0/opam       | 2 +-
+ packages/dns-client-lwt/dns-client-lwt.7.0.1/opam       | 2 +-
+ packages/dns-client-lwt/dns-client-lwt.7.0.2/opam       | 2 +-
+ packages/dns-client-lwt/dns-client-lwt.7.0.3/opam       | 2 +-
+ packages/dns-client-lwt/dns-client-lwt.8.0.0/opam       | 2 +-
+ packages/dns-client-mirage/dns-client-mirage.7.0.0/opam | 2 +-
+ packages/dns-client-mirage/dns-client-mirage.7.0.1/opam | 2 +-
+ packages/dns-client-mirage/dns-client-mirage.7.0.2/opam | 2 +-
+ packages/dns-client-mirage/dns-client-mirage.7.0.3/opam | 2 +-
+ packages/dns-client-mirage/dns-client-mirage.8.0.0/opam | 2 +-
+ packages/dns-client/dns-client.6.0.0/opam               | 2 +-
+ packages/dns-client/dns-client.6.0.1/opam               | 2 +-
+ packages/dns-client/dns-client.6.0.2/opam               | 2 +-
+ packages/dns-client/dns-client.6.1.0/opam               | 2 +-
+ packages/dns-client/dns-client.6.1.1/opam               | 2 +-
+ packages/dns-client/dns-client.6.1.2/opam               | 2 +-
+ packages/dns-client/dns-client.6.1.3/opam               | 2 +-
+ packages/dns-client/dns-client.6.1.4/opam               | 2 +-
+ packages/dns-client/dns-client.6.2.0/opam               | 2 +-
+ packages/dns-client/dns-client.6.2.1/opam               | 2 +-
+ packages/dns-client/dns-client.6.2.2/opam               | 2 +-
+ packages/dns-client/dns-client.6.3.0/opam               | 2 +-
+ packages/dns-client/dns-client.6.4.0/opam               | 2 +-
+ packages/dns-client/dns-client.6.4.1/opam               | 2 +-
+ packages/dns-resolver/dns-resolver.6.0.0/opam           | 2 +-
+ packages/dns-resolver/dns-resolver.6.0.1/opam           | 2 +-
+ packages/dns-resolver/dns-resolver.6.0.2/opam           | 2 +-
+ packages/dns-resolver/dns-resolver.6.1.0/opam           | 2 +-
+ packages/dns-resolver/dns-resolver.6.1.1/opam           | 2 +-
+ packages/dns-resolver/dns-resolver.6.1.2/opam           | 2 +-
+ packages/dns-resolver/dns-resolver.6.1.3/opam           | 2 +-
+ packages/dns-resolver/dns-resolver.6.1.4/opam           | 2 +-
+ packages/dns-resolver/dns-resolver.6.2.0/opam           | 2 +-
+ packages/dns-resolver/dns-resolver.6.2.1/opam           | 2 +-
+ packages/dns-resolver/dns-resolver.6.2.2/opam           | 2 +-
+ packages/dns-resolver/dns-resolver.6.3.0/opam           | 2 +-
+ packages/dns-resolver/dns-resolver.6.4.0/opam           | 2 +-
+ packages/dns-resolver/dns-resolver.6.4.1/opam           | 2 +-
+ packages/dns-resolver/dns-resolver.7.0.0/opam           | 2 +-
+ packages/dns-resolver/dns-resolver.7.0.1/opam           | 2 +-
+ packages/dns-resolver/dns-resolver.7.0.2/opam           | 2 +-
+ packages/dns-resolver/dns-resolver.7.0.3/opam           | 2 +-
+ packages/dns-resolver/dns-resolver.8.0.0/opam           | 2 +-
+ packages/doculib/doculib.1.3.1/opam                     | 2 +-
+ packages/doculib/doculib.1.3.2/opam                     | 2 +-
+ packages/doculib/doculib.1.3.3/opam                     | 2 +-
+ packages/doculib/doculib.1.3.4/opam                     | 2 +-
+ packages/doculib/doculib.1.3.5/opam                     | 2 +-
+ packages/doi2bib/doi2bib.0.1.4/opam                     | 2 +-
+ packages/doi2bib/doi2bib.0.2.1/opam                     | 2 +-
+ packages/doi2bib/doi2bib.0.3.0/opam                     | 2 +-
+ packages/doi2bib/doi2bib.0.3.1/opam                     | 2 +-
+ packages/doi2bib/doi2bib.0.4.0/opam                     | 2 +-
+ packages/doi2bib/doi2bib.0.5.1/opam                     | 2 +-
+ packages/doi2bib/doi2bib.0.5.2/opam                     | 2 +-
+ packages/doi2bib/doi2bib.0.6.0/opam                     | 2 +-
+ packages/doi2bib/doi2bib.0.6.1/opam                     | 2 +-
+ packages/doi2bib/doi2bib.0.6.2/opam                     | 2 +-
+ packages/dropbox/dropbox.0.2/opam                       | 2 +-
+ packages/ez_api/ez_api.0.1.0/opam                       | 1 +
+ packages/ez_api/ez_api.1.0.0/opam                       | 1 +
+ packages/ez_api/ez_api.1.1.1/opam                       | 1 +
+ packages/ez_api/ez_api.1.2.0/opam                       | 1 +
+ packages/ez_api/ez_api.2.0.0/opam                       | 1 +
+ packages/ez_api/ez_api.2.1.0/opam                       | 1 +
+ packages/git-mirage/git-mirage.2.0.0/opam               | 2 +-
+ packages/git-mirage/git-mirage.2.1.0/opam               | 2 +-
+ packages/git-mirage/git-mirage.2.1.1/opam               | 2 +-
+ packages/git-mirage/git-mirage.2.1.2/opam               | 2 +-
+ packages/git-mirage/git-mirage.2.1.3/opam               | 2 +-
+ packages/git-mirage/git-mirage.3.10.0/opam              | 4 ++--
+ packages/git-mirage/git-mirage.3.10.1/opam              | 4 ++--
+ packages/git-mirage/git-mirage.3.11.0/opam              | 4 ++--
+ packages/git-mirage/git-mirage.3.12.0/opam              | 4 ++--
+ packages/git-mirage/git-mirage.3.13.0/opam              | 4 ++--
+ packages/git-mirage/git-mirage.3.14.0/opam              | 4 ++--
+ packages/git-mirage/git-mirage.3.15.0/opam              | 4 ++--
+ packages/git-mirage/git-mirage.3.16.0/opam              | 4 ++--
+ packages/git-mirage/git-mirage.3.16.1/opam              | 4 ++--
+ packages/git-mirage/git-mirage.3.6.0/opam               | 2 +-
+ packages/git-mirage/git-mirage.3.7.0/opam               | 4 ++--
+ packages/git-mirage/git-mirage.3.7.1/opam               | 4 ++--
+ packages/git-mirage/git-mirage.3.8.0/opam               | 4 ++--
+ packages/git-mirage/git-mirage.3.8.1/opam               | 4 ++--
+ packages/git-mirage/git-mirage.3.9.0/opam               | 4 ++--
+ packages/git-mirage/git-mirage.3.9.1/opam               | 4 ++--
+ packages/git-paf/git-paf.3.10.0/opam                    | 4 ++--
+ packages/git-paf/git-paf.3.10.1/opam                    | 4 ++--
+ packages/git-paf/git-paf.3.11.0/opam                    | 4 ++--
+ packages/git-paf/git-paf.3.12.0/opam                    | 4 ++--
+ packages/git-paf/git-paf.3.13.0/opam                    | 4 ++--
+ packages/git-paf/git-paf.3.14.0/opam                    | 4 ++--
+ packages/git-paf/git-paf.3.15.0/opam                    | 4 ++--
+ packages/git-paf/git-paf.3.16.0/opam                    | 4 ++--
+ packages/git-paf/git-paf.3.16.1/opam                    | 4 ++--
+ packages/git-paf/git-paf.3.5.0/opam                     | 4 ++--
+ packages/git-paf/git-paf.3.6.0/opam                     | 4 ++--
+ packages/git-paf/git-paf.3.7.0/opam                     | 4 ++--
+ packages/git-paf/git-paf.3.7.1/opam                     | 4 ++--
+ packages/git-paf/git-paf.3.8.0/opam                     | 4 ++--
+ packages/git-paf/git-paf.3.8.1/opam                     | 4 ++--
+ packages/git-paf/git-paf.3.9.0/opam                     | 4 ++--
+ packages/git-paf/git-paf.3.9.1/opam                     | 4 ++--
+ packages/git-unix/git-unix.2.0.0/opam                   | 2 +-
+ packages/git-unix/git-unix.2.1.1/opam                   | 2 +-
+ packages/git-unix/git-unix.2.1.2/opam                   | 2 +-
+ packages/git-unix/git-unix.2.1.3/opam                   | 2 +-
+ packages/git-unix/git-unix.3.10.0/opam                  | 4 ++--
+ packages/git-unix/git-unix.3.10.1/opam                  | 4 ++--
+ packages/git-unix/git-unix.3.11.0/opam                  | 4 ++--
+ packages/git-unix/git-unix.3.12.0/opam                  | 4 ++--
+ packages/git-unix/git-unix.3.13.0/opam                  | 4 ++--
+ packages/git-unix/git-unix.3.14.0/opam                  | 4 ++--
+ packages/git-unix/git-unix.3.15.0/opam                  | 4 ++--
+ packages/git-unix/git-unix.3.16.0/opam                  | 2 +-
+ packages/git-unix/git-unix.3.16.1/opam                  | 2 +-
+ packages/git-unix/git-unix.3.5.0/opam                   | 4 ++--
+ packages/git-unix/git-unix.3.6.0/opam                   | 4 ++--
+ packages/git-unix/git-unix.3.7.0/opam                   | 4 ++--
+ packages/git-unix/git-unix.3.7.1/opam                   | 4 ++--
+ packages/git-unix/git-unix.3.8.0/opam                   | 4 ++--
+ packages/git-unix/git-unix.3.8.1/opam                   | 4 ++--
+ packages/git-unix/git-unix.3.9.0/opam                   | 4 ++--
+ packages/git-unix/git-unix.3.9.1/opam                   | 4 ++--
+ packages/git/git.2.0.0/opam                             | 2 +-
+ packages/git/git.2.1.0/opam                             | 2 +-
+ packages/git/git.2.1.1/opam                             | 2 +-
+ packages/git/git.2.1.2/opam                             | 2 +-
+ packages/git/git.2.1.3/opam                             | 2 +-
+ packages/github-unix/github-unix.3.0.0/opam             | 2 +-
+ packages/github-unix/github-unix.3.0.1/opam             | 2 +-
+ packages/github/github.2.0.0/opam                       | 2 +-
+ packages/github/github.2.0.1/opam                       | 2 +-
+ packages/github/github.2.0.2/opam                       | 2 +-
+ packages/github/github.2.0.3/opam                       | 2 +-
+ packages/github/github.2.1.0/opam                       | 2 +-
+ packages/github/github.2.2.0/opam                       | 2 +-
+ packages/github/github.2.3.0/opam                       | 2 +-
+ packages/gitlab-unix/gitlab-unix.0.1.0/opam             | 2 +-
+ packages/gitlab-unix/gitlab-unix.0.1.1/opam             | 2 +-
+ packages/gitlab-unix/gitlab-unix.0.1.2/opam             | 2 +-
+ packages/gitlab-unix/gitlab-unix.0.1.3/opam             | 2 +-
+ packages/gitlab-unix/gitlab-unix.0.1.4/opam             | 2 +-
+ packages/gitlab-unix/gitlab-unix.0.1.5/opam             | 2 +-
+ packages/gitlab-unix/gitlab-unix.0.1.6/opam             | 2 +-
+ packages/gitlab-unix/gitlab-unix.0.1.7/opam             | 2 +-
+ packages/gitlab-unix/gitlab-unix.0.1.8/opam             | 2 +-
+ packages/gluten-async/gluten-async.0.3.0/opam           | 3 +++
+ packages/gluten-async/gluten-async.0.4.0/opam           | 3 +++
+ packages/gluten-async/gluten-async.0.4.1/opam           | 3 +++
+ packages/gluten-async/gluten-async.0.5.0/opam           | 3 +++
+ packages/gluten-async/gluten-async.0.5.1/opam           | 3 +++
+ packages/gluten-lwt-unix/gluten-lwt-unix.0.4.1/opam     | 3 +++
+ packages/gluten-lwt-unix/gluten-lwt-unix.0.5.0/opam     | 3 +++
+ packages/gluten-lwt-unix/gluten-lwt-unix.0.5.1/opam     | 3 +++
+ packages/grpc-examples/grpc-examples.0.2.0/opam         | 2 +-
+ packages/h2-async/h2-async.0.10.0/opam                  | 3 +++
+ packages/h2-async/h2-async.0.11.0/opam                  | 3 +++
+ packages/h2-async/h2-async.0.12.0/opam                  | 3 +++
+ packages/h2-lwt-unix/h2-lwt-unix.0.10.0/opam            | 3 +++
+ packages/h2-lwt-unix/h2-lwt-unix.0.11.0/opam            | 3 +++
+ packages/h2-lwt-unix/h2-lwt-unix.0.12.0/opam            | 3 +++
+ packages/h2-lwt-unix/h2-lwt-unix.0.6.0/opam             | 3 +++
+ packages/h2-lwt-unix/h2-lwt-unix.0.6.1/opam             | 3 +++
+ packages/h2-lwt-unix/h2-lwt-unix.0.8.0/opam             | 3 +++
+ packages/h2-lwt-unix/h2-lwt-unix.0.9.0/opam             | 3 +++
+ packages/http-lwt-client/http-lwt-client.0.2.2/opam     | 4 ++--
+ packages/http-lwt-client/http-lwt-client.0.2.3/opam     | 4 ++--
+ packages/http-lwt-client/http-lwt-client.0.2.4/opam     | 4 ++--
+ packages/http-lwt-client/http-lwt-client.0.2.5/opam     | 4 ++--
+ packages/http-lwt-client/http-lwt-client.0.2.6/opam     | 4 ++--
+ packages/imaplet-lwt/imaplet-lwt.0.1.14/opam            | 2 +-
+ packages/imaplet-lwt/imaplet-lwt.0.1.15/opam            | 2 +-
+ packages/imaplet-lwt/imaplet-lwt.0.1.8/opam             | 2 +-
+ packages/imaplet-lwt/imaplet-lwt.0.1.9/opam             | 2 +-
+ packages/ip2locationio/ip2locationio.1.0.0/opam         | 2 +-
+ packages/ip2whois/ip2whois.1.0.0/opam                   | 2 +-
+ packages/irc-client-tls/irc-client-tls.0.6.0/opam       | 2 +-
+ packages/irc-client-tls/irc-client-tls.0.6.1/opam       | 2 +-
+ packages/irc-client-tls/irc-client-tls.0.6.2/opam       | 2 +-
+ packages/irc-client-tls/irc-client-tls.0.7.1/opam       | 2 +-
+ packages/ldp_tls/ldp_tls.0.1.0/opam                     | 4 ++--
+ packages/ldp_tls/ldp_tls.0.2.0/opam                     | 4 ++--
+ packages/letters/letters.0.3.3/opam                     | 4 ++--
+ packages/links/links.0.9.6/opam                         | 2 +-
+ packages/links/links.0.9.7/opam                         | 2 +-
+ packages/links/links.0.9.8/opam                         | 2 +-
+ packages/logs-syslog/logs-syslog.0.3.0/opam             | 1 +
+ packages/logs-syslog/logs-syslog.0.3.1/opam             | 1 +
+ packages/logs-syslog/logs-syslog.0.3.2/opam             | 2 ++
+ packages/logs-syslog/logs-syslog.0.4.0/opam             | 2 ++
+ packages/mehari-eio/mehari-eio.0.1/opam                 | 4 ++--
+ packages/mehari-eio/mehari-eio.0.2/opam                 | 4 ++--
+ packages/mehari-eio/mehari-eio.0.3/opam                 | 4 ++--
+ packages/mehari-eio/mehari-eio.0.4/opam                 | 4 ++--
+ packages/mehari-mirage/mehari-mirage.0.1/opam           | 2 +-
+ packages/mehari-mirage/mehari-mirage.0.2/opam           | 4 ++--
+ packages/mehari-mirage/mehari-mirage.0.3/opam           | 4 ++--
+ packages/mehari-mirage/mehari-mirage.0.4/opam           | 4 ++--
+ packages/mehari/mehari.0.3/opam                         | 2 +-
+ packages/mehari/mehari.0.4/opam                         | 2 +-
+ packages/mirror/mirror.0.0.1/opam                       | 2 +-
+ packages/mqtt/mqtt.0.2.2/opam                           | 4 ++--
+ packages/octez-node/octez-node.15.0/opam                | 2 +-
+ packages/octez-node/octez-node.15.1/opam                | 2 +-
+ packages/octez-node/octez-node.16.0/opam                | 2 +-
+ packages/octez-node/octez-node.16.1/opam                | 2 +-
+ packages/octez-node/octez-node.17.1/opam                | 2 +-
+ packages/octez-node/octez-node.17.2/opam                | 2 +-
+ packages/octez-node/octez-node.17.3/opam                | 2 +-
+ packages/octez-node/octez-node.18.0/opam                | 2 +-
+ packages/octez-node/octez-node.18.1/opam                | 2 +-
+ packages/octez-node/octez-node.19.0/opam                | 2 +-
+ packages/octez-node/octez-node.19.1/opam                | 2 +-
+ packages/octez-node/octez-node.20.1/opam                | 2 +-
+ packages/opam-publish/opam-publish.0.3.5/opam           | 2 +-
+ packages/opam-publish/opam-publish.2.0.0/opam           | 2 +-
+ packages/opam-publish/opam-publish.2.0.0~beta/opam      | 2 +-
+ packages/opam-publish/opam-publish.2.0.1/opam           | 2 +-
+ packages/opam-publish/opam-publish.2.0.2/opam           | 2 +-
+ packages/opam-publish/opam-publish.2.0.3/opam           | 2 +-
+ packages/paf-le/paf-le.0.0.4/opam                       | 2 +-
+ packages/paf-le/paf-le.0.0.5/opam                       | 2 +-
+ packages/paf-le/paf-le.0.0.6/opam                       | 2 +-
+ packages/paf-le/paf-le.0.0.7/opam                       | 2 +-
+ packages/paf-le/paf-le.0.0.8-1/opam                     | 2 +-
+ packages/paf-le/paf-le.0.0.8/opam                       | 2 +-
+ packages/paf-le/paf-le.0.0.9/opam                       | 2 +-
+ packages/paf-le/paf-le.0.1.0/opam                       | 2 +-
+ packages/paf-le/paf-le.0.2.0/opam                       | 2 +-
+ packages/paf-le/paf-le.0.3.0/opam                       | 2 +-
+ packages/paf-le/paf-le.0.4.0/opam                       | 2 +-
+ packages/paf/paf.0.0.2/opam                             | 4 ++--
+ packages/paf/paf.0.0.3/opam                             | 2 +-
+ packages/paf/paf.0.0.4/opam                             | 2 +-
+ packages/paf/paf.0.0.6/opam                             | 4 ++--
+ packages/paf/paf.0.0.7/opam                             | 4 ++--
+ packages/paf/paf.0.0.8-1/opam                           | 4 ++--
+ packages/paf/paf.0.0.8/opam                             | 4 ++--
+ packages/paf/paf.0.0.9/opam                             | 4 ++--
+ packages/paf/paf.0.1.0/opam                             | 4 ++--
+ packages/paf/paf.0.2.0/opam                             | 4 ++--
+ packages/paf/paf.0.3.0/opam                             | 4 ++--
+ packages/paf/paf.0.4.0/opam                             | 4 ++--
+ packages/paf/paf.0.5.0/opam                             | 4 ++--
+ packages/paf/paf.0.6.0/opam                             | 4 ++--
+ packages/quests/quests.0.1.3/opam                       | 2 +-
+ packages/sendmail-lwt/sendmail-lwt.0.8.0/opam           | 4 ++--
+ packages/sendmail-lwt/sendmail-lwt.0.8.1/opam           | 4 ++--
+ packages/sendmail/sendmail.0.8.1/opam                   | 2 +-
+ packages/sihl-core/sihl-core.0.2.0/opam                 | 2 +-
+ packages/sihl-core/sihl-core.0.2.1/opam                 | 2 +-
+ packages/sihl-core/sihl-core.0.2.2/opam                 | 2 +-
+ packages/sihl-core/sihl-core.0.3.0~rc1/opam             | 2 +-
+ packages/sihl/sihl.0.0.56/opam                          | 2 +-
+ packages/sihl/sihl.0.1.0/opam                           | 2 +-
+ packages/sihl/sihl.0.1.1/opam                           | 2 +-
+ packages/sihl/sihl.0.1.2/opam                           | 2 +-
+ packages/sihl/sihl.0.1.3/opam                           | 2 +-
+ packages/sihl/sihl.0.1.4/opam                           | 2 +-
+ packages/sihl/sihl.0.1.5/opam                           | 2 +-
+ packages/sihl/sihl.0.3.0/opam                           | 2 +-
+ packages/sihl/sihl.0.3.0~rc2/opam                       | 2 +-
+ packages/sihl/sihl.0.4.0/opam                           | 2 +-
+ packages/sihl/sihl.0.4.1/opam                           | 2 +-
+ packages/sihl/sihl.0.5.0/opam                           | 2 +-
+ packages/sihl/sihl.0.6.0~rc1/opam                       | 2 +-
+ packages/sihl/sihl.1.0.0/opam                           | 2 +-
+ packages/sihl/sihl.1.0.0~rc1/opam                       | 2 +-
+ packages/sihl/sihl.1.0.0~rc2/opam                       | 2 +-
+ packages/sihl/sihl.1.0.0~rc3/opam                       | 2 +-
+ packages/sihl/sihl.1.0.1/opam                           | 2 +-
+ packages/sihl/sihl.2.0.0/opam                           | 2 +-
+ packages/sihl/sihl.2.0.1/opam                           | 2 +-
+ packages/sihl/sihl.3.0.0/opam                           | 2 +-
+ packages/sihl/sihl.3.0.1/opam                           | 2 +-
+ packages/sihl/sihl.3.0.2/opam                           | 2 +-
+ packages/sihl/sihl.3.0.3/opam                           | 2 +-
+ packages/sihl/sihl.3.0.4/opam                           | 2 +-
+ packages/sihl/sihl.3.0.5/opam                           | 2 +-
+ packages/slacko/slacko.0.13.0/opam                      | 2 +-
+ packages/slacko/slacko.0.14.1/opam                      | 2 +-
+ packages/slacko/slacko.0.15.0/opam                      | 2 +-
+ packages/starred_ml/starred_ml.0.0.2/opam               | 2 +-
+ packages/starred_ml/starred_ml.0.0.3/opam               | 2 +-
+ packages/starred_ml/starred_ml.0.0.4/opam               | 2 +-
+ packages/starred_ml/starred_ml.0.0.5/opam               | 2 +-
+ packages/syndic/syndic.1.5.1/opam                       | 2 +-
+ packages/syndic/syndic.1.5.2/opam                       | 2 +-
+ packages/syndic/syndic.1.5.3/opam                       | 2 +-
+ packages/syndic/syndic.1.5/opam                         | 2 +-
+ packages/tezos-node/tezos-node.10.2/opam                | 2 +-
+ packages/tezos-node/tezos-node.11.0/opam                | 2 +-
+ packages/tezos-node/tezos-node.11.1/opam                | 2 +-
+ packages/tezos-node/tezos-node.12.0/opam                | 2 +-
+ packages/tezos-node/tezos-node.12.3/opam                | 2 +-
+ packages/tezos-node/tezos-node.13.0/opam                | 2 +-
+ packages/tezos-node/tezos-node.14.0/opam                | 2 +-
+ packages/tezos-node/tezos-node.7.0/opam                 | 2 +-
+ packages/tezos-node/tezos-node.7.1/opam                 | 2 +-
+ packages/tezos-node/tezos-node.7.2/opam                 | 2 +-
+ packages/tezos-node/tezos-node.7.3/opam                 | 2 +-
+ packages/tezos-node/tezos-node.7.4/opam                 | 2 +-
+ packages/tezos-node/tezos-node.8.0/opam                 | 2 +-
+ packages/tezos-node/tezos-node.8.1/opam                 | 2 +-
+ packages/tezos-node/tezos-node.8.2/opam                 | 2 +-
+ packages/tezos-node/tezos-node.8.3/opam                 | 2 +-
+ packages/tezos-node/tezos-node.9.1/opam                 | 2 +-
+ packages/tezos-node/tezos-node.9.2/opam                 | 2 +-
+ packages/tezos-node/tezos-node.9.3/opam                 | 2 +-
+ packages/tezos-node/tezos-node.9.4/opam                 | 2 +-
+ packages/tezos-node/tezos-node.9.7/opam                 | 2 +-
+ packages/tls-liquidsoap/tls-liquidsoap.1/opam           | 2 +-
+ packages/tlstunnel/tlstunnel.0.1.3/opam                 | 2 +-
+ packages/tlstunnel/tlstunnel.0.2.0/opam                 | 2 +-
+ packages/wcs-api/wcs-api.2017-05-26.02/opam             | 2 +-
+ 422 files changed, 572 insertions(+), 487 deletions(-)
+
+[01;34m(from ocaml/opam:debian-12-ocaml-4.14@sha256:69ef0774f5cbddd472ab7b4ed241ca72bff5d63eddde00603b6501d0e4e60b3f)[0m
+[01;2m[01;35m2024-08-20 18:14.04 ---> using "3b0157ebb129531d5cf79767d1ddda107d4a5cf477561a94cf78dbb40f9e3848" from cache[0m
+
+[01;34m/: (user (uid 1000) (gid 1000))[0m
+
+[01;34m/: (workdir /home/opam)[0m
+
+[01;34m/home/opam: (run (shell "sudo ln -f /usr/bin/opam-2.0 /usr/bin/opam"))[0m
+[01;2m[01;35m2024-08-20 18:14.04 ---> using "79c106300ca6dfa1929b1395bc8544eff3246041b4dbf8629ffc85f910209138" from cache[0m
+
+[01;34m/home/opam: (run (network host)
+                 (shell "opam init --reinit --config .opamrc-sandbox -ni"))[0m
+[NOTE] Will configure from /home/opam/.opamrc-sandbox, then /home/opam/.opamrc, and finally from built-in defaults.
+Checking for available remotes: rsync and local, git.
+  - you won't be able to use mercurial repositories unless you install the hg command on your system.
+  - you won't be able to use darcs repositories unless you install the darcs command on your system.
+
+[WARNING] Recommended dependencies -- most packages rely on these:
+  - m4
+
+<><> Updating repositories ><><><><><><><><><><><><><><><><><><><><><><><><><><>
+[default] synchronised from file:///home/opam/opam-repository
+default (at file:///home/opam/opam-repository): 
+    [INFO] opam 2.1 and 2.2 include many performance improvements over 2.0; please consider upgrading (https://opam.ocaml.org/doc/Install.html)
+
+[01;2m[01;35m2024-08-20 18:14.04 ---> using "7ee0fe244cb0395ed58fbd56293e42b12173e454d525f3371e3a3ed64e61ec52" from cache[0m
+
+[01;34m/home/opam: (run (shell "uname -rs && opam exec -- ocaml -version && opam --version"))[0m
+Linux 5.15.0-116-generic
+The OCaml toplevel, version 4.14.2
+2.0.10
+[01;2m[01;35m2024-08-20 18:14.04 ---> using "ce4f82d3be04e0d3b2ef786ad6bc8eacf1a34a1b7010e945d4a0e4c802e44466" from cache[0m
+
+[01;34m/home/opam: (env OPAMDOWNLOADJOBS 1)[0m
+
+[01;34m/home/opam: (env OPAMERRLOGLEN 0)[0m
+
+[01;34m/home/opam: (env OPAMSOLVERTIMEOUT 500)[0m
+
+[01;34m/home/opam: (env OPAMPRECISETRACKING 1)[0m
+
+[01;34m/home/opam: (env CI true)[0m
+
+[01;34m/home/opam: (env OPAM_REPO_CI true)[0m
+
+[01;34m/home/opam: (run (shell "rm -rf opam-repository/"))[0m
+[01;2m[01;35m2024-08-20 18:14.04 ---> using "41e61e4a57f987064a5d96ea088982e86ea5bb4b8ddc367a38a8ab0015b171ee" from cache[0m
+
+[01;34m/home/opam: (copy (src .) (dst opam-repository/))[0m
+[01;2m[01;35m2024-08-20 18:14.06 ---> using "c028356d66cb730eeba9b312bd34d3ac88b4839177738aa6b1b00819823407e7" from cache[0m
+
+[01;34m/home/opam: (run (shell "opam repository set-url --strict default opam-repository/"))[0m
+[default] Initialised
+default (at file:///home/opam/opam-repository): 
+    [INFO] opam 2.1 and 2.2 include many performance improvements over 2.0; please consider upgrading (https://opam.ocaml.org/doc/Install.html)
+
+[01;2m[01;35m2024-08-20 18:14.06 ---> using "b8c6cab480e0c53ec7511a5f1468f40cb49e3f49270ed86ecd8d90d5e28bc79f" from cache[0m
+
+[01;34m/home/opam: (run (network host)
+                 (shell "opam depext -u || true"))[0m
+# Detecting depexts using vars: arch=x86_64, os=linux, os-distribution=debian, os-family=debian
+# No extra OS packages requirements found.
+# All required OS packages found.
+The following command needs to be run through "sudo":
+    apt-get update
+Hit:1 http://deb.debian.org/debian bookworm InRelease
+Get:2 http://deb.debian.org/debian bookworm-updates InRelease [55.4 kB]
+Get:3 http://deb.debian.org/debian-security bookworm-security InRelease [48.0 kB]
+Get:4 http://deb.debian.org/debian-security bookworm-security/main amd64 Packages [170 kB]
+Fetched 273 kB in 0s (1116 kB/s)
+Reading package lists...
+# OS package update successful
+[01;2m[01;35m2024-08-20 18:14.06 ---> using "7a4bc3e2f9ccb0c14890d7e8d4347aba0a4130e06cc5a1b482d99bef9326a472" from cache[0m
+
+[01;34m/home/opam: (run (shell "opam pin add -k version -yn octez-node.16.1 16.1"))[0m
+octez-node is now pinned to version 16.1
+[01;2m[01;35m2024-08-20 18:14.06 ---> using "c56fce2ec4a683d1f6db78aacfb613e5b9f46b5dbc87f7da57f5123471bdd59e" from cache[0m
+
+[01;34m/home/opam: (run (cache (opam-archives (target /home/opam/.opam/download-cache)))
+                 (network host)
+                 (shell  "opam depext octez-node.16.1 && opam reinstall octez-node.16.1;\
+                        \n        res=$?;\
+                        \n        test \"$res\" != 31 && exit \"$res\";\
+                        \n        export OPAMCLI=2.0;\
+                        \n        build_dir=$(opam var prefix)/.opam-switch/build;\
+                        \n        failed=$(ls \"$build_dir\");\
+                        \n        partial_fails=\"\";\
+                        \n        for pkg in $failed; do\
+                        \n          if opam show -f x-ci-accept-failures: \"$pkg\" | grep -qF \"\\\"debian-12\\\"\"; then\
+                        \n            echo \"A package failed and has been disabled for CI using the 'x-ci-accept-failures' field.\";\
+                        \n          fi;\
+                        \n          test \"$pkg\" != 'octez-node.16.1' && partial_fails=\"$partial_fails $pkg\";\
+                        \n        done;\
+                        \n        test \"${partial_fails}\" != \"\" && echo \"opam-repo-ci detected dependencies failing: ${partial_fails}\";\
+                        \n        exit 1"))[0m
+# Detecting depexts using vars: arch=x86_64, os=linux, os-distribution=debian, os-family=debian
+# The following system packages are needed:
+cargo
+cmake
+debianutils
+g++
+libev-dev
+libgmp-dev
+pkg-config
+zlib1g-dev
+The following command needs to be run through "sudo":
+    apt-get install -qq -yy cargo cmake debianutils g++ libev-dev libgmp-dev pkg-config zlib1g-dev
+debconf: delaying package configuration, since apt-utils is not installed
+Selecting previously unselected package libpipeline1:amd64.
+(Reading database ... (Reading database ... 5%(Reading database ... 10%(Reading database ... 15%(Reading database ... 20%(Reading database ... 25%(Reading database ... 30%(Reading database ... 35%(Reading database ... 40%(Reading database ... 45%(Reading database ... 50%(Reading database ... 55%(Reading database ... 60%(Reading database ... 65%(Reading database ... 70%(Reading database ... 75%(Reading database ... 80%(Reading database ... 85%(Reading database ... 90%(Reading database ... 95%(Reading database ... 100%(Reading database ... 18734 files and directories currently installed.)
+Preparing to unpack .../libpipeline1_1.5.7-1_amd64.deb ...
+Unpacking libpipeline1:amd64 (1.5.7-1) ...
+Selecting previously unselected package binfmt-support.
+Preparing to unpack .../binfmt-support_2.2.2-2_amd64.deb ...
+Unpacking binfmt-support (2.2.2-2) ...
+Selecting previously unselected package libpython3.11-minimal:amd64.
+Preparing to unpack .../libpython3.11-minimal_3.11.2-6+deb12u2_amd64.deb ...
+Unpacking libpython3.11-minimal:amd64 (3.11.2-6+deb12u2) ...
+Selecting previously unselected package python3.11-minimal.
+Preparing to unpack .../python3.11-minimal_3.11.2-6+deb12u2_amd64.deb ...
+Unpacking python3.11-minimal (3.11.2-6+deb12u2) ...
+Setting up libpython3.11-minimal:amd64 (3.11.2-6+deb12u2) ...
+Setting up python3.11-minimal (3.11.2-6+deb12u2) ...
+Selecting previously unselected package python3-minimal.
+(Reading database ... (Reading database ... 5%(Reading database ... 10%(Reading database ... 15%(Reading database ... 20%(Reading database ... 25%(Reading database ... 30%(Reading database ... 35%(Reading database ... 40%(Reading database ... 45%(Reading database ... 50%(Reading database ... 55%(Reading database ... 60%(Reading database ... 65%(Reading database ... 70%(Reading database ... 75%(Reading database ... 80%(Reading database ... 85%(Reading database ... 90%(Reading database ... 95%(Reading database ... 100%(Reading database ... 19063 files and directories currently installed.)
+Preparing to unpack .../python3-minimal_3.11.2-1+b1_amd64.deb ...
+Unpacking python3-minimal (3.11.2-1+b1) ...
+Selecting previously unselected package media-types.
+Preparing to unpack .../media-types_10.0.0_all.deb ...
+Unpacking media-types (10.0.0) ...
+Selecting previously unselected package libpython3.11-stdlib:amd64.
+Preparing to unpack .../libpython3.11-stdlib_3.11.2-6+deb12u2_amd64.deb ...
+Unpacking libpython3.11-stdlib:amd64 (3.11.2-6+deb12u2) ...
+Selecting previously unselected package python3.11.
+Preparing to unpack .../python3.11_3.11.2-6+deb12u2_amd64.deb ...
+Unpacking python3.11 (3.11.2-6+deb12u2) ...
+Selecting previously unselected package libpython3-stdlib:amd64.
+Preparing to unpack .../libpython3-stdlib_3.11.2-1+b1_amd64.deb ...
+Unpacking libpython3-stdlib:amd64 (3.11.2-1+b1) ...
+Setting up python3-minimal (3.11.2-1+b1) ...
+Selecting previously unselected package python3.
+(Reading database ... (Reading database ... 5%(Reading database ... 10%(Reading database ... 15%(Reading database ... 20%(Reading database ... 25%(Reading database ... 30%(Reading database ... 35%(Reading database ... 40%(Reading database ... 45%(Reading database ... 50%(Reading database ... 55%(Reading database ... 60%(Reading database ... 65%(Reading database ... 70%(Reading database ... 75%(Reading database ... 80%(Reading database ... 85%(Reading database ... 90%(Reading database ... 95%(Reading database ... 100%(Reading database ... 19473 files and directories currently installed.)
+Preparing to unpack .../00-python3_3.11.2-1+b1_amd64.deb ...
+Unpacking python3 (3.11.2-1+b1) ...
+Selecting previously unselected package libhttp-parser2.9:amd64.
+Preparing to unpack .../01-libhttp-parser2.9_2.9.4-5_amd64.deb ...
+Unpacking libhttp-parser2.9:amd64 (2.9.4-5) ...
+Selecting previously unselected package libmbedcrypto7:amd64.
+Preparing to unpack .../02-libmbedcrypto7_2.28.3-1_amd64.deb ...
+Unpacking libmbedcrypto7:amd64 (2.28.3-1) ...
+Selecting previously unselected package libmbedx509-1:amd64.
+Preparing to unpack .../03-libmbedx509-1_2.28.3-1_amd64.deb ...
+Unpacking libmbedx509-1:amd64 (2.28.3-1) ...
+Selecting previously unselected package libmbedtls14:amd64.
+Preparing to unpack .../04-libmbedtls14_2.28.3-1_amd64.deb ...
+Unpacking libmbedtls14:amd64 (2.28.3-1) ...
+Selecting previously unselected package libgit2-1.5:amd64.
+Preparing to unpack .../05-libgit2-1.5_1.5.1+ds-1+deb12u1_amd64.deb ...
+Unpacking libgit2-1.5:amd64 (1.5.1+ds-1+deb12u1) ...
+Selecting previously unselected package libicu72:amd64.
+Preparing to unpack .../06-libicu72_72.1-3_amd64.deb ...
+Unpacking libicu72:amd64 (72.1-3) ...
+Selecting previously unselected package libxml2:amd64.
+Preparing to unpack .../07-libxml2_2.9.14+dfsg-1.3~deb12u1_amd64.deb ...
+Unpacking libxml2:amd64 (2.9.14+dfsg-1.3~deb12u1) ...
+Selecting previously unselected package libz3-4:amd64.
+Preparing to unpack .../08-libz3-4_4.8.12-3.1_amd64.deb ...
+Unpacking libz3-4:amd64 (4.8.12-3.1) ...
+Selecting previously unselected package libllvm14:amd64.
+Preparing to unpack .../09-libllvm14_1%3a14.0.6-12_amd64.deb ...
+Unpacking libllvm14:amd64 (1:14.0.6-12) ...
+Selecting previously unselected package libstd-rust-1.63:amd64.
+Preparing to unpack .../10-libstd-rust-1.63_1.63.0+dfsg1-2_amd64.deb ...
+Unpacking libstd-rust-1.63:amd64 (1.63.0+dfsg1-2) ...
+Selecting previously unselected package libstd-rust-dev:amd64.
+Preparing to unpack .../11-libstd-rust-dev_1.63.0+dfsg1-2_amd64.deb ...
+Unpacking libstd-rust-dev:amd64 (1.63.0+dfsg1-2) ...
+Selecting previously unselected package rustc.
+Preparing to unpack .../12-rustc_1.63.0+dfsg1-2_amd64.deb ...
+Unpacking rustc (1.63.0+dfsg1-2) ...
+Selecting previously unselected package cargo.
+Preparing to unpack .../13-cargo_0.66.0+ds1-1_amd64.deb ...
+Unpacking cargo (0.66.0+ds1-1) ...
+Selecting previously unselected package libarchive13:amd64.
+Preparing to unpack .../14-libarchive13_3.6.2-1+deb12u1_amd64.deb ...
+Unpacking libarchive13:amd64 (3.6.2-1+deb12u1) ...
+Selecting previously unselected package libjsoncpp25:amd64.
+Preparing to unpack .../15-libjsoncpp25_1.9.5-4_amd64.deb ...
+Unpacking libjsoncpp25:amd64 (1.9.5-4) ...
+Selecting previously unselected package librhash0:amd64.
+Preparing to unpack .../16-librhash0_1.4.3-3_amd64.deb ...
+Unpacking librhash0:amd64 (1.4.3-3) ...
+Selecting previously unselected package libuv1:amd64.
+Preparing to unpack .../17-libuv1_1.44.2-1+deb12u1_amd64.deb ...
+Unpacking libuv1:amd64 (1.44.2-1+deb12u1) ...
+Selecting previously unselected package cmake-data.
+Preparing to unpack .../18-cmake-data_3.25.1-1_all.deb ...
+Unpacking cmake-data (3.25.1-1) ...
+Selecting previously unselected package cmake.
+Preparing to unpack .../19-cmake_3.25.1-1_amd64.deb ...
+Unpacking cmake (3.25.1-1) ...
+Selecting previously unselected package icu-devtools.
+Preparing to unpack .../20-icu-devtools_72.1-3_amd64.deb ...
+Unpacking icu-devtools (72.1-3) ...
+Selecting previously unselected package libclang-cpp14.
+Preparing to unpack .../21-libclang-cpp14_1%3a14.0.6-12_amd64.deb ...
+Unpacking libclang-cpp14 (1:14.0.6-12) ...
+Selecting previously unselected package libnspr4:amd64.
+Preparing to unpack .../22-libnspr4_2%3a4.35-1_amd64.deb ...
+Unpacking libnspr4:amd64 (2:4.35-1) ...
+Selecting previously unselected package libnss3:amd64.
+Preparing to unpack .../23-libnss3_2%3a3.87.1-1_amd64.deb ...
+Unpacking libnss3:amd64 (2:3.87.1-1) ...
+Selecting previously unselected package nss-plugin-pem:amd64.
+Preparing to unpack .../24-nss-plugin-pem_1.0.8+1-1_amd64.deb ...
+Unpacking nss-plugin-pem:amd64 (1.0.8+1-1) ...
+Selecting previously unselected package libcurl3-nss:amd64.
+Preparing to unpack .../25-libcurl3-nss_7.88.1-10+deb12u6_amd64.deb ...
+Unpacking libcurl3-nss:amd64 (7.88.1-10+deb12u6) ...
+Selecting previously unselected package libev4:amd64.
+Preparing to unpack .../26-libev4_1%3a4.33-1_amd64.deb ...
+Unpacking libev4:amd64 (1:4.33-1) ...
+Selecting previously unselected package libev-dev:amd64.
+Preparing to unpack .../27-libev-dev_1%3a4.33-1_amd64.deb ...
+Unpacking libev-dev:amd64 (1:4.33-1) ...
+Selecting previously unselected package libffi-dev:amd64.
+Preparing to unpack .../28-libffi-dev_3.4.4-1_amd64.deb ...
+Unpacking libffi-dev:amd64 (3.4.4-1) ...
+Selecting previously unselected package libgmpxx4ldbl:amd64.
+Preparing to unpack .../29-libgmpxx4ldbl_2%3a6.2.1+dfsg1-1.1_amd64.deb ...
+Unpacking libgmpxx4ldbl:amd64 (2:6.2.1+dfsg1-1.1) ...
+Selecting previously unselected package libgmp-dev:amd64.
+Preparing to unpack .../30-libgmp-dev_2%3a6.2.1+dfsg1-1.1_amd64.deb ...
+Unpacking libgmp-dev:amd64 (2:6.2.1+dfsg1-1.1) ...
+Selecting previously unselected package libicu-dev:amd64.
+Preparing to unpack .../31-libicu-dev_72.1-3_amd64.deb ...
+Unpacking libicu-dev:amd64 (72.1-3) ...
+Selecting previously unselected package libncurses6:amd64.
+Preparing to unpack .../32-libncurses6_6.4-4_amd64.deb ...
+Unpacking libncurses6:amd64 (6.4-4) ...
+Selecting previously unselected package libncurses-dev:amd64.
+Preparing to unpack .../33-libncurses-dev_6.4-4_amd64.deb ...
+Unpacking libncurses-dev:amd64 (6.4-4) ...
+Selecting previously unselected package libpfm4:amd64.
+Preparing to unpack .../34-libpfm4_4.13.0-1_amd64.deb ...
+Unpacking libpfm4:amd64 (4.13.0-1) ...
+Selecting previously unselected package libpkgconf3:amd64.
+Preparing to unpack .../35-libpkgconf3_1.8.1-1_amd64.deb ...
+Unpacking libpkgconf3:amd64 (1.8.1-1) ...
+Selecting previously unselected package libtinfo-dev:amd64.
+Preparing to unpack .../36-libtinfo-dev_6.4-4_amd64.deb ...
+Unpacking libtinfo-dev:amd64 (6.4-4) ...
+Selecting previously unselected package libxml2-dev:amd64.
+Preparing to unpack .../37-libxml2-dev_2.9.14+dfsg-1.3~deb12u1_amd64.deb ...
+Unpacking libxml2-dev:amd64 (2.9.14+dfsg-1.3~deb12u1) ...
+Selecting previously unselected package libyaml-0-2:amd64.
+Preparing to unpack .../38-libyaml-0-2_0.2.5-1_amd64.deb ...
+Unpacking libyaml-0-2:amd64 (0.2.5-1) ...
+Selecting previously unselected package libz3-dev:amd64.
+Preparing to unpack .../39-libz3-dev_4.8.12-3.1_amd64.deb ...
+Unpacking libz3-dev:amd64 (4.8.12-3.1) ...
+Selecting previously unselected package llvm-14-runtime.
+Preparing to unpack .../40-llvm-14-runtime_1%3a14.0.6-12_amd64.deb ...
+Unpacking llvm-14-runtime (1:14.0.6-12) ...
+Selecting previously unselected package llvm-14-linker-tools.
+Preparing to unpack .../41-llvm-14-linker-tools_1%3a14.0.6-12_amd64.deb ...
+Unpacking llvm-14-linker-tools (1:14.0.6-12) ...
+Selecting previously unselected package llvm-14.
+Preparing to unpack .../42-llvm-14_1%3a14.0.6-12_amd64.deb ...
+Unpacking llvm-14 (1:14.0.6-12) ...
+Selecting previously unselected package python3-pkg-resources.
+Preparing to unpack .../43-python3-pkg-resources_66.1.1-1_all.deb ...
+Unpacking python3-pkg-resources (66.1.1-1) ...
+Selecting previously unselected package python3-pygments.
+Preparing to unpack .../44-python3-pygments_2.14.0+dfsg-1_all.deb ...
+Unpacking python3-pygments (2.14.0+dfsg-1) ...
+Selecting previously unselected package python3-yaml.
+Preparing to unpack .../45-python3-yaml_6.0-3+b2_amd64.deb ...
+Unpacking python3-yaml (6.0-3+b2) ...
+Selecting previously unselected package llvm-14-tools.
+Preparing to unpack .../46-llvm-14-tools_1%3a14.0.6-12_amd64.deb ...
+Unpacking llvm-14-tools (1:14.0.6-12) ...
+Selecting previously unselected package llvm-14-dev.
+Preparing to unpack .../47-llvm-14-dev_1%3a14.0.6-12_amd64.deb ...
+Unpacking llvm-14-dev (1:14.0.6-12) ...
+Selecting previously unselected package pkgconf-bin.
+Preparing to unpack .../48-pkgconf-bin_1.8.1-1_amd64.deb ...
+Unpacking pkgconf-bin (1.8.1-1) ...
+Selecting previously unselected package pkgconf:amd64.
+Preparing to unpack .../49-pkgconf_1.8.1-1_amd64.deb ...
+Unpacking pkgconf:amd64 (1.8.1-1) ...
+Selecting previously unselected package pkg-config:amd64.
+Preparing to unpack .../50-pkg-config_1.8.1-1_amd64.deb ...
+Unpacking pkg-config:amd64 (1.8.1-1) ...
+Selecting previously unselected package zlib1g-dev:amd64.
+Preparing to unpack .../51-zlib1g-dev_1%3a1.2.13.dfsg-1_amd64.deb ...
+Unpacking zlib1g-dev:amd64 (1:1.2.13.dfsg-1) ...
+Setting up media-types (10.0.0) ...
+Setting up libpipeline1:amd64 (1.5.7-1) ...
+Setting up libicu72:amd64 (72.1-3) ...
+Setting up libyaml-0-2:amd64 (0.2.5-1) ...
+Setting up libev4:amd64 (1:4.33-1) ...
+Setting up libpython3.11-stdlib:amd64 (3.11.2-6+deb12u2) ...
+Setting up libffi-dev:amd64 (3.4.4-1) ...
+Setting up libz3-4:amd64 (4.8.12-3.1) ...
+Setting up libpkgconf3:amd64 (1.8.1-1) ...
+Setting up libgmpxx4ldbl:amd64 (2:6.2.1+dfsg1-1.1) ...
+Setting up libuv1:amd64 (1.44.2-1+deb12u1) ...
+Setting up libpfm4:amd64 (4.13.0-1) ...
+Setting up libmbedcrypto7:amd64 (2.28.3-1) ...
+Setting up libnspr4:amd64 (2:4.35-1) ...
+Setting up libncurses6:amd64 (6.4-4) ...
+Setting up binfmt-support (2.2.2-2) ...
+invoke-rc.d: could not determine current runlevel
+invoke-rc.d: policy-rc.d denied execution of start.
+Setting up libjsoncpp25:amd64 (1.9.5-4) ...
+Setting up icu-devtools (72.1-3) ...
+Setting up pkgconf-bin (1.8.1-1) ...
+Setting up zlib1g-dev:amd64 (1:1.2.13.dfsg-1) ...
+Setting up librhash0:amd64 (1.4.3-3) ...
+Setting up cmake-data (3.25.1-1) ...
+Setting up libev-dev:amd64 (1:4.33-1) ...
+Setting up libicu-dev:amd64 (72.1-3) ...
+Setting up libxml2:amd64 (2.9.14+dfsg-1.3~deb12u1) ...
+Setting up libhttp-parser2.9:amd64 (2.9.4-5) ...
+Setting up libpython3-stdlib:amd64 (3.11.2-1+b1) ...
+Setting up libz3-dev:amd64 (4.8.12-3.1) ...
+Setting up python3.11 (3.11.2-6+deb12u2) ...
+Setting up libncurses-dev:amd64 (6.4-4) ...
+Setting up libgmp-dev:amd64 (2:6.2.1+dfsg1-1.1) ...
+Setting up libmbedx509-1:amd64 (2.28.3-1) ...
+Setting up libmbedtls14:amd64 (2.28.3-1) ...
+Setting up libarchive13:amd64 (3.6.2-1+deb12u1) ...
+Setting up python3 (3.11.2-1+b1) ...
+running python rtupdate hooks for python3.11...
+running python post-rtupdate hooks for python3.11...
+Setting up libnss3:amd64 (2:3.87.1-1) ...
+Setting up pkgconf:amd64 (1.8.1-1) ...
+Setting up libxml2-dev:amd64 (2.9.14+dfsg-1.3~deb12u1) ...
+Setting up pkg-config:amd64 (1.8.1-1) ...
+Setting up libllvm14:amd64 (1:14.0.6-12) ...
+Setting up cmake (3.25.1-1) ...
+Setting up llvm-14-linker-tools (1:14.0.6-12) ...
+Setting up libgit2-1.5:amd64 (1.5.1+ds-1+deb12u1) ...
+Setting up python3-pkg-resources (66.1.1-1) ...
+Setting up libtinfo-dev:amd64 (6.4-4) ...
+Setting up libstd-rust-1.63:amd64 (1.63.0+dfsg1-2) ...
+Setting up nss-plugin-pem:amd64 (1.0.8+1-1) ...
+Setting up python3-yaml (6.0-3+b2) ...
+Setting up libstd-rust-dev:amd64 (1.63.0+dfsg1-2) ...
+Setting up python3-pygments (2.14.0+dfsg-1) ...
+Setting up llvm-14-runtime (1:14.0.6-12) ...
+Setting up libclang-cpp14 (1:14.0.6-12) ...
+Setting up rustc (1.63.0+dfsg1-2) ...
+Setting up libcurl3-nss:amd64 (7.88.1-10+deb12u6) ...
+Setting up llvm-14 (1:14.0.6-12) ...
+Setting up llvm-14-tools (1:14.0.6-12) ...
+Setting up cargo (0.66.0+ds1-1) ...
+Setting up llvm-14-dev (1:14.0.6-12) ...
+Processing triggers for libc-bin (2.36-9+deb12u7) ...
+# OS packages installation successful
+octez-node.16.1 is not installed. Install it? [Y/n] y
+[ERROR] Sorry, resolution of the request timed out.
+        Try to specify a simpler request, use a different solver, or increase the allowed time by setting OPAMSOLVERTIMEOUT to a bigger value (currently, it is set to 500.0 seconds).
+"/usr/bin/env" "bash" "-c" "opam depext octez-node.16.1 && opam reinstall octez-node.16.1;
+        res=$?;
+        test "$res" != 31 && exit "$res";
+        export OPAMCLI=2.0;
+        build_dir=$(opam var prefix)/.opam-switch/build;
+        failed=$(ls "$build_dir");
+        partial_fails="";
+        for pkg in $failed; do
+          if opam show -f x-ci-accept-failures: "$pkg" | grep -qF "\"debian-12\""; then
+            echo "A package failed and has been disabled for CI using the 'x-ci-accept-failures' field.";
+          fi;
+          test "$pkg" != 'octez-node.16.1' && partial_fails="$partial_fails $pkg";
+        done;
+        test "${partial_fails}" != "" && echo "opam-repo-ci detected dependencies failing: ${partial_fails}";
+        exit 1" failed with exit status 60
+2024-08-20 18:22.37: Job failed: Failed: Build failed
+2024-08-20 18:22.37: Log analysis:
+2024-08-20 18:22.37: >>> 
+[ERROR] Sorry, resolution of the request timed out.
+ (score = 20)
+2024-08-20 18:22.37: Sorry, resolution of the request timed out.

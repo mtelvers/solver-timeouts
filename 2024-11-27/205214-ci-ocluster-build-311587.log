@@ -1,0 +1,276 @@
+2024-11-27 20:52.14: New job: build tls-liquidsoap.1, using opam 2.0
+                              from https://github.com/ocaml/opam-repository.git#refs/pull/26968/head (4a01f4de33aee0db17c2ee046d9f06a02e900222)
+                              on debian-12-ocaml-4.14/amd64
+
+To reproduce locally:
+
+cd $(mktemp -d)
+git clone --recursive "https://github.com/ocaml/opam-repository.git" && cd "opam-repository" && git fetch origin "refs/pull/26968/head" && git reset --hard 4a01f4de
+git fetch origin master
+git merge --no-edit 9d42b7886a5a13809be454300e69a8851f4223a7
+cat > ../Dockerfile <<'END-OF-DOCKERFILE'
+[34mFROM ocaml/opam:debian-12-ocaml-4.14@sha256:3d8c0b0f03f66f82249744d1031a567caf3309d9cefdda98d07610eab53bb6ef
+USER 1000:1000
+WORKDIR /home/opam
+RUN sudo ln -f /usr/bin/opam-2.0 /usr/bin/opam
+RUN opam init --reinit -ni
+RUN uname -rs && opam exec -- ocaml -version && opam --version
+ENV OPAMDOWNLOADJOBS="1"
+ENV OPAMERRLOGLEN="0"
+ENV OPAMSOLVERTIMEOUT="1000"
+ENV OPAMPRECISETRACKING="1"
+ENV CI="true"
+ENV OPAM_REPO_CI="true"
+RUN rm -rf opam-repository/
+COPY --chown=1000:1000 . opam-repository/
+RUN opam repository set-url --strict default opam-repository/
+RUN opam depext -u || true
+RUN opam pin add -k version -yn tls-liquidsoap.1 1
+RUN opam depext tls-liquidsoap.1 && opam reinstall tls-liquidsoap.1; \
+    res=$?; \
+    test "$res" != 31 && exit "$res"; \
+    export OPAMCLI=2.0; \
+    build_dir=$(opam var prefix)/.opam-switch/build; \
+    failed=$(ls "$build_dir"); \
+    partial_fails=""; \
+    for pkg in $failed; do \
+    if opam show -f x-ci-accept-failures: "$pkg" | grep -qF "\"debian-12\""; then \
+    echo "A package failed and has been disabled for CI using the 'x-ci-accept-failures' field."; \
+    fi; \
+    test "$pkg" != 'tls-liquidsoap.1' && partial_fails="$partial_fails $pkg"; \
+    done; \
+    test "${partial_fails}" != "" && echo "opam-repo-ci detected dependencies failing: ${partial_fails}"; \
+    exit 1
+[0m
+END-OF-DOCKERFILE
+docker build -f ../Dockerfile .
+
+2024-11-27 20:52.14: Using cache hint "ocaml/opam:debian-12-ocaml-4.14@sha256:3d8c0b0f03f66f82249744d1031a567caf3309d9cefdda98d07610eab53bb6ef-tls-liquidsoap.1-4a01f4de33aee0db17c2ee046d9f06a02e900222"
+2024-11-27 20:52.14: Using OBuilder spec:
+((from ocaml/opam:debian-12-ocaml-4.14@sha256:3d8c0b0f03f66f82249744d1031a567caf3309d9cefdda98d07610eab53bb6ef)
+ (user (uid 1000) (gid 1000))
+ (workdir /home/opam)
+ (run (shell "sudo ln -f /usr/bin/opam-2.0 /usr/bin/opam"))
+ (run (network host)
+      (shell "opam init --reinit --config .opamrc-sandbox -ni"))
+ (run (shell "uname -rs && opam exec -- ocaml -version && opam --version"))
+ (env OPAMDOWNLOADJOBS 1)
+ (env OPAMERRLOGLEN 0)
+ (env OPAMSOLVERTIMEOUT 1000)
+ (env OPAMPRECISETRACKING 1)
+ (env CI true)
+ (env OPAM_REPO_CI true)
+ (run (shell "rm -rf opam-repository/"))
+ (copy (src .) (dst opam-repository/))
+ (run (shell "opam repository set-url --strict default opam-repository/"))
+ (run (network host)
+      (shell "opam depext -u || true"))
+ (run (shell "opam pin add -k version -yn tls-liquidsoap.1 1"))
+ (run (cache (opam-archives (target /home/opam/.opam/download-cache)))
+      (network host)
+      (shell  "opam depext tls-liquidsoap.1 && opam reinstall tls-liquidsoap.1;\
+             \n        res=$?;\
+             \n        test \"$res\" != 31 && exit \"$res\";\
+             \n        export OPAMCLI=2.0;\
+             \n        build_dir=$(opam var prefix)/.opam-switch/build;\
+             \n        failed=$(ls \"$build_dir\");\
+             \n        partial_fails=\"\";\
+             \n        for pkg in $failed; do\
+             \n          if opam show -f x-ci-accept-failures: \"$pkg\" | grep -qF \"\\\"debian-12\\\"\"; then\
+             \n            echo \"A package failed and has been disabled for CI using the 'x-ci-accept-failures' field.\";\
+             \n          fi;\
+             \n          test \"$pkg\" != 'tls-liquidsoap.1' && partial_fails=\"$partial_fails $pkg\";\
+             \n        done;\
+             \n        test \"${partial_fails}\" != \"\" && echo \"opam-repo-ci detected dependencies failing: ${partial_fails}\";\
+             \n        exit 1"))
+)
+
+2024-11-27 20:52.14: Waiting for resource in pool OCluster
+2024-11-27 21:35.11: Waiting for worker…
+2024-11-27 21:37.48: Got resource from pool OCluster
+Building on doris.caelum.ci.dev
+All commits already cached
+Updating files:  63% (20774/32753)Updating files:  64% (20962/32753)Updating files:  65% (21290/32753)Updating files:  66% (21617/32753)Updating files:  67% (21945/32753)Updating files:  68% (22273/32753)Updating files:  69% (22600/32753)Updating files:  70% (22928/32753)Updating files:  71% (23255/32753)Updating files:  72% (23583/32753)Updating files:  73% (23910/32753)Updating files:  74% (24238/32753)Updating files:  75% (24565/32753)Updating files:  76% (24893/32753)Updating files:  77% (25220/32753)Updating files:  78% (25548/32753)Updating files:  79% (25875/32753)Updating files:  80% (26203/32753)Updating files:  81% (26530/32753)Updating files:  82% (26858/32753)Updating files:  83% (27185/32753)Updating files:  84% (27513/32753)Updating files:  85% (27841/32753)Updating files:  86% (28168/32753)Updating files:  87% (28496/32753)Updating files:  88% (28823/32753)Updating files:  89% (29151/32753)Updating files:  90% (29478/32753)Updating files:  91% (29806/32753)Updating files:  92% (30133/32753)Updating files:  93% (30461/32753)Updating files:  94% (30788/32753)Updating files:  95% (31116/32753)Updating files:  96% (31443/32753)Updating files:  97% (31771/32753)Updating files:  98% (32098/32753)Updating files:  99% (32426/32753)Updating files: 100% (32753/32753)Updating files: 100% (32753/32753), done.
+HEAD is now at 9d42b7886a Merge pull request #26964 from mmottl/release-postgresql-5.1.1
+Merge made by the 'ort' strategy.
+ .../liquidsoap-core/liquidsoap-core.2.3.0/opam     | 135 +++++++++++++++++++++
+ packages/liquidsoap-js/liquidsoap-js.2.3.0/opam    |  43 +++++++
+ .../liquidsoap-lang/liquidsoap-lang.2.3.0/opam     |  44 +++++++
+ .../liquidsoap-libs-extra.2.3.0/opam               |  38 ++++++
+ .../liquidsoap-libs/liquidsoap-libs.2.3.0/opam     |  37 ++++++
+ .../liquidsoap-mode/liquidsoap-mode.2.3.0/opam     |  45 +++++++
+ packages/liquidsoap/liquidsoap.2.3.0/opam          |  68 +++++++++++
+ packages/tls-liquidsoap/tls-liquidsoap.1/opam      |   8 +-
+ 8 files changed, 415 insertions(+), 3 deletions(-)
+ create mode 100644 packages/liquidsoap-core/liquidsoap-core.2.3.0/opam
+ create mode 100644 packages/liquidsoap-js/liquidsoap-js.2.3.0/opam
+ create mode 100644 packages/liquidsoap-lang/liquidsoap-lang.2.3.0/opam
+ create mode 100644 packages/liquidsoap-libs-extra/liquidsoap-libs-extra.2.3.0/opam
+ create mode 100644 packages/liquidsoap-libs/liquidsoap-libs.2.3.0/opam
+ create mode 100644 packages/liquidsoap-mode/liquidsoap-mode.2.3.0/opam
+ create mode 100644 packages/liquidsoap/liquidsoap.2.3.0/opam
+
+[01;34m(from ocaml/opam:debian-12-ocaml-4.14@sha256:3d8c0b0f03f66f82249744d1031a567caf3309d9cefdda98d07610eab53bb6ef)[0m
+Unable to find image 'ocaml/opam:debian-12-ocaml-4.14@sha256:3d8c0b0f03f66f82249744d1031a567caf3309d9cefdda98d07610eab53bb6ef' locally
+docker.io/ocaml/opam@sha256:3d8c0b0f03f66f82249744d1031a567caf3309d9cefdda98d07610eab53bb6ef: Pulling from ocaml/opam
+c6d1bbea6d8c: Pulling fs layer
+c6d1bbea6d8c: Verifying Checksum
+c6d1bbea6d8c: Download complete
+c6d1bbea6d8c: Pull complete
+Digest: sha256:3d8c0b0f03f66f82249744d1031a567caf3309d9cefdda98d07610eab53bb6ef
+Status: Downloaded newer image for ocaml/opam@sha256:3d8c0b0f03f66f82249744d1031a567caf3309d9cefdda98d07610eab53bb6ef
+[01;2m[01;35m2024-11-27 21:38.16 ---> using "c91705407132f13d405758e65a4dba1d21e88f189c241c012b87f03590df56b4" from cache[0m
+
+[01;34m/: (user (uid 1000) (gid 1000))[0m
+
+[01;34m/: (workdir /home/opam)[0m
+
+[01;34m/home/opam: (run (shell "sudo ln -f /usr/bin/opam-2.0 /usr/bin/opam"))[0m
+[01;2m[01;35m2024-11-27 21:38.16 ---> using "0db5374acee6bb09a2d6b90b74dd4390834f51df4fa0d5ba335a14df5032a706" from cache[0m
+
+[01;34m/home/opam: (run (network host)
+                 (shell "opam init --reinit --config .opamrc-sandbox -ni"))[0m
+[NOTE] Will configure from /home/opam/.opamrc-sandbox, then /home/opam/.opamrc, and finally from built-in defaults.
+Checking for available remotes: rsync and local, git.
+  - you won't be able to use mercurial repositories unless you install the hg command on your system.
+  - you won't be able to use darcs repositories unless you install the darcs command on your system.
+
+[WARNING] Recommended dependencies -- most packages rely on these:
+  - m4
+
+<><> Updating repositories ><><><><><><><><><><><><><><><><><><><><><><><><><><>
+[default] synchronised from file:///home/opam/opam-repository
+default (at file:///home/opam/opam-repository): 
+    [INFO] opam 2.1 and 2.2 include many performance and security improvements over 2.0; please consider upgrading (https://opam.ocaml.org/doc/Install.html)
+
+[01;2m[01;35m2024-11-27 21:38.16 ---> using "53a81eed7378fd642c13ba150fa661f289ef24c31d2b9edf577f05e179d1e11c" from cache[0m
+
+[01;34m/home/opam: (run (shell "uname -rs && opam exec -- ocaml -version && opam --version"))[0m
+Linux 5.15.0-126-generic
+The OCaml toplevel, version 4.14.2
+2.0.10
+[01;2m[01;35m2024-11-27 21:38.16 ---> using "4e3730c5f2a2dde4a635cbbd0923a10ba46a3d9007fa7b2b728ad1431f8f3ada" from cache[0m
+
+[01;34m/home/opam: (env OPAMDOWNLOADJOBS 1)[0m
+
+[01;34m/home/opam: (env OPAMERRLOGLEN 0)[0m
+
+[01;34m/home/opam: (env OPAMSOLVERTIMEOUT 1000)[0m
+
+[01;34m/home/opam: (env OPAMPRECISETRACKING 1)[0m
+
+[01;34m/home/opam: (env CI true)[0m
+
+[01;34m/home/opam: (env OPAM_REPO_CI true)[0m
+
+[01;34m/home/opam: (run (shell "rm -rf opam-repository/"))[0m
+[01;2m[01;35m2024-11-27 21:38.16 ---> using "6ee6cc45f77d4334a958e40433206dfcc4811a7e1abe756c15e464d8031df7d1" from cache[0m
+
+[01;34m/home/opam: (copy (src .) (dst opam-repository/))[0m
+[01;2m[01;35m2024-11-27 21:38.31 ---> saved as "459bb2461432c39e7a1649619b7e1c3e6b6460bbc300406eaadbcf13bc72ad3f"[0m
+
+[01;34m/home/opam: (run (shell "opam repository set-url --strict default opam-repository/"))[0m
+[default] Initialised
+default (at file:///home/opam/opam-repository): 
+    [INFO] opam 2.1 and 2.2 include many performance and security improvements over 2.0; please consider upgrading (https://opam.ocaml.org/doc/Install.html)
+
+[01;2m[01;35m2024-11-27 21:39.03 ---> saved as "b618729d92d114cf08b354e3ac0216acafdfdef92f3177e629a62f85be4de4a4"[0m
+
+[01;34m/home/opam: (run (network host)
+                 (shell "opam depext -u || true"))[0m
+# Detecting depexts using vars: arch=x86_64, os=linux, os-distribution=debian, os-family=debian
+# No extra OS packages requirements found.
+# All required OS packages found.
+The following command needs to be run through "sudo":
+    apt-get update
+Hit:1 http://deb.debian.org/debian bookworm InRelease
+Get:2 http://deb.debian.org/debian bookworm-updates InRelease [55.4 kB]
+Get:3 http://deb.debian.org/debian-security bookworm-security InRelease [48.0 kB]
+Get:4 http://deb.debian.org/debian bookworm-updates/main amd64 Packages.diff/Index [12.8 kB]
+Get:5 http://deb.debian.org/debian bookworm-updates/main amd64 Packages T-2024-11-27-1405.46-F-2024-11-27-1405.46.pdiff [435 B]
+Get:5 http://deb.debian.org/debian bookworm-updates/main amd64 Packages T-2024-11-27-1405.46-F-2024-11-27-1405.46.pdiff [435 B]
+Get:6 http://deb.debian.org/debian-security bookworm-security/main amd64 Packages [206 kB]
+Fetched 322 kB in 0s (1028 kB/s)
+Reading package lists...
+# OS package update successful
+[01;2m[01;35m2024-11-27 21:39.05 ---> saved as "92ef31df3600450d98b85d5ef2eec10141299a66261929d187699b34024fe457"[0m
+
+[01;34m/home/opam: (run (shell "opam pin add -k version -yn tls-liquidsoap.1 1"))[0m
+tls-liquidsoap is now pinned to version 1
+[01;2m[01;35m2024-11-27 21:39.06 ---> saved as "5ebe7efec7dcd5a3745845e1d03ded41e7036e55368a89b32aa7c0b651f8db35"[0m
+
+[01;34m/home/opam: (run (cache (opam-archives (target /home/opam/.opam/download-cache)))
+                 (network host)
+                 (shell  "opam depext tls-liquidsoap.1 && opam reinstall tls-liquidsoap.1;\
+                        \n        res=$?;\
+                        \n        test \"$res\" != 31 && exit \"$res\";\
+                        \n        export OPAMCLI=2.0;\
+                        \n        build_dir=$(opam var prefix)/.opam-switch/build;\
+                        \n        failed=$(ls \"$build_dir\");\
+                        \n        partial_fails=\"\";\
+                        \n        for pkg in $failed; do\
+                        \n          if opam show -f x-ci-accept-failures: \"$pkg\" | grep -qF \"\\\"debian-12\\\"\"; then\
+                        \n            echo \"A package failed and has been disabled for CI using the 'x-ci-accept-failures' field.\";\
+                        \n          fi;\
+                        \n          test \"$pkg\" != 'tls-liquidsoap.1' && partial_fails=\"$partial_fails $pkg\";\
+                        \n        done;\
+                        \n        test \"${partial_fails}\" != \"\" && echo \"opam-repo-ci detected dependencies failing: ${partial_fails}\";\
+                        \n        exit 1"))[0m
+# Detecting depexts using vars: arch=x86_64, os=linux, os-distribution=debian, os-family=debian
+# The following system packages are needed:
+libgmp-dev
+pkg-config
+The following command needs to be run through "sudo":
+    apt-get install -qq -yy libgmp-dev pkg-config
+debconf: delaying package configuration, since apt-utils is not installed
+Selecting previously unselected package libgmpxx4ldbl:amd64.
+(Reading database ... (Reading database ... 5%(Reading database ... 10%(Reading database ... 15%(Reading database ... 20%(Reading database ... 25%(Reading database ... 30%(Reading database ... 35%(Reading database ... 40%(Reading database ... 45%(Reading database ... 50%(Reading database ... 55%(Reading database ... 60%(Reading database ... 65%(Reading database ... 70%(Reading database ... 75%(Reading database ... 80%(Reading database ... 85%(Reading database ... 90%(Reading database ... 95%(Reading database ... 100%(Reading database ... 18745 files and directories currently installed.)
+Preparing to unpack .../0-libgmpxx4ldbl_2%3a6.2.1+dfsg1-1.1_amd64.deb ...
+Unpacking libgmpxx4ldbl:amd64 (2:6.2.1+dfsg1-1.1) ...
+Selecting previously unselected package libgmp-dev:amd64.
+Preparing to unpack .../1-libgmp-dev_2%3a6.2.1+dfsg1-1.1_amd64.deb ...
+Unpacking libgmp-dev:amd64 (2:6.2.1+dfsg1-1.1) ...
+Selecting previously unselected package libpkgconf3:amd64.
+Preparing to unpack .../2-libpkgconf3_1.8.1-1_amd64.deb ...
+Unpacking libpkgconf3:amd64 (1.8.1-1) ...
+Selecting previously unselected package pkgconf-bin.
+Preparing to unpack .../3-pkgconf-bin_1.8.1-1_amd64.deb ...
+Unpacking pkgconf-bin (1.8.1-1) ...
+Selecting previously unselected package pkgconf:amd64.
+Preparing to unpack .../4-pkgconf_1.8.1-1_amd64.deb ...
+Unpacking pkgconf:amd64 (1.8.1-1) ...
+Selecting previously unselected package pkg-config:amd64.
+Preparing to unpack .../5-pkg-config_1.8.1-1_amd64.deb ...
+Unpacking pkg-config:amd64 (1.8.1-1) ...
+Setting up libpkgconf3:amd64 (1.8.1-1) ...
+Setting up libgmpxx4ldbl:amd64 (2:6.2.1+dfsg1-1.1) ...
+Setting up pkgconf-bin (1.8.1-1) ...
+Setting up libgmp-dev:amd64 (2:6.2.1+dfsg1-1.1) ...
+Setting up pkgconf:amd64 (1.8.1-1) ...
+Setting up pkg-config:amd64 (1.8.1-1) ...
+Processing triggers for libc-bin (2.36-9+deb12u9) ...
+# OS packages installation successful
+tls-liquidsoap.1 is not installed. Install it? [Y/n] y
+[ERROR] Sorry, resolution of the request timed out.
+        Try to specify a simpler request, use a different solver, or increase the allowed time by setting OPAMSOLVERTIMEOUT to a bigger value (currently, it is set to 1000.0 seconds).
+"/usr/bin/env" "bash" "-c" "opam depext tls-liquidsoap.1 && opam reinstall tls-liquidsoap.1;
+        res=$?;
+        test "$res" != 31 && exit "$res";
+        export OPAMCLI=2.0;
+        build_dir=$(opam var prefix)/.opam-switch/build;
+        failed=$(ls "$build_dir");
+        partial_fails="";
+        for pkg in $failed; do
+          if opam show -f x-ci-accept-failures: "$pkg" | grep -qF "\"debian-12\""; then
+            echo "A package failed and has been disabled for CI using the 'x-ci-accept-failures' field.";
+          fi;
+          test "$pkg" != 'tls-liquidsoap.1' && partial_fails="$partial_fails $pkg";
+        done;
+        test "${partial_fails}" != "" && echo "opam-repo-ci detected dependencies failing: ${partial_fails}";
+        exit 1" failed with exit status 60
+2024-11-27 21:56.18: Job failed: Failed: Build failed
+2024-11-27 21:56.18: Log analysis:
+2024-11-27 21:56.18: >>> 
+[ERROR] Sorry, resolution of the request timed out.
+ (score = 20)
+2024-11-27 21:56.18: Sorry, resolution of the request timed out.

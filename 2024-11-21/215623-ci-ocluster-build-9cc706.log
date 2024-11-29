@@ -1,0 +1,348 @@
+2024-11-21 21:56.23: New job: test cohttp-server-lwt-unix.6.0.0, using opam dev
+                              from https://github.com/ocaml/opam-repository.git#refs/pull/26925/head (5e85658ef7dec0b072e561cdfb8474c0b3651ab9)
+                              on opensuse-15.6-ocaml-5.2/amd64
+
+To reproduce locally:
+
+cd $(mktemp -d)
+git clone --recursive "https://github.com/ocaml/opam-repository.git" && cd "opam-repository" && git fetch origin "refs/pull/26925/head" && git reset --hard 5e85658e
+git fetch origin master
+git merge --no-edit 232a37e8b008dc04381f5e98c16badfc02ea6962
+cat > ../Dockerfile <<'END-OF-DOCKERFILE'
+[34mFROM ocaml/opam:opensuse-15.6-ocaml-5.2@sha256:fa0aaac3a372669175e2e182671d505d463e5536473816e29b69909e87af29eb
+USER 1000:1000
+WORKDIR /home/opam
+RUN sudo ln -f /usr/bin/opam-dev /usr/bin/opam
+RUN opam init --reinit -ni
+RUN uname -rs && opam exec -- ocaml -version && opam --version
+ENV OPAMDOWNLOADJOBS="1"
+ENV OPAMERRLOGLEN="0"
+ENV OPAMSOLVERTIMEOUT="1000"
+ENV OPAMPRECISETRACKING="1"
+ENV CI="true"
+ENV OPAM_REPO_CI="true"
+RUN rm -rf opam-repository/
+COPY --chown=1000:1000 . opam-repository/
+RUN opam repository set-url --strict default opam-repository/
+RUN opam update --depexts || true
+RUN opam pin add -k version -yn cohttp-server-lwt-unix.6.0.0 6.0.0
+RUN opam reinstall cohttp-server-lwt-unix.6.0.0; \
+    res=$?; \
+    test "$res" != 31 && exit "$res"; \
+    export OPAMCLI=2.0; \
+    build_dir=$(opam var prefix)/.opam-switch/build; \
+    failed=$(ls "$build_dir"); \
+    partial_fails=""; \
+    for pkg in $failed; do \
+    if opam show -f x-ci-accept-failures: "$pkg" | grep -qF "\"opensuse-15.6\""; then \
+    echo "A package failed and has been disabled for CI using the 'x-ci-accept-failures' field."; \
+    fi; \
+    test "$pkg" != 'cohttp-server-lwt-unix.6.0.0' && partial_fails="$partial_fails $pkg"; \
+    done; \
+    test "${partial_fails}" != "" && echo "opam-repo-ci detected dependencies failing: ${partial_fails}"; \
+    exit 1
+RUN (opam reinstall --with-test cohttp-server-lwt-unix.6.0.0) || true
+RUN opam reinstall --with-test --verbose cohttp-server-lwt-unix.6.0.0; \
+    res=$?; \
+    test "$res" != 31 && exit "$res"; \
+    export OPAMCLI=2.0; \
+    build_dir=$(opam var prefix)/.opam-switch/build; \
+    failed=$(ls "$build_dir"); \
+    partial_fails=""; \
+    for pkg in $failed; do \
+    if opam show -f x-ci-accept-failures: "$pkg" | grep -qF "\"opensuse-15.6\""; then \
+    echo "A package failed and has been disabled for CI using the 'x-ci-accept-failures' field."; \
+    fi; \
+    test "$pkg" != 'cohttp-server-lwt-unix.6.0.0' && partial_fails="$partial_fails $pkg"; \
+    done; \
+    test "${partial_fails}" != "" && echo "opam-repo-ci detected dependencies failing: ${partial_fails}"; \
+    exit 1
+[0m
+END-OF-DOCKERFILE
+docker build -f ../Dockerfile .
+
+2024-11-21 21:56.23: Using cache hint "ocaml/opam:opensuse-15.6-ocaml-5.2@sha256:fa0aaac3a372669175e2e182671d505d463e5536473816e29b69909e87af29eb-cohttp-server-lwt-unix.6.0.0-5e85658ef7dec0b072e561cdfb8474c0b3651ab9"
+2024-11-21 21:56.23: Using OBuilder spec:
+((from ocaml/opam:opensuse-15.6-ocaml-5.2@sha256:fa0aaac3a372669175e2e182671d505d463e5536473816e29b69909e87af29eb)
+ (user (uid 1000) (gid 1000))
+ (workdir /home/opam)
+ (run (shell "sudo ln -f /usr/bin/opam-dev /usr/bin/opam"))
+ (run (network host)
+      (shell "opam init --reinit --config .opamrc-sandbox -ni"))
+ (run (shell "uname -rs && opam exec -- ocaml -version && opam --version"))
+ (env OPAMDOWNLOADJOBS 1)
+ (env OPAMERRLOGLEN 0)
+ (env OPAMSOLVERTIMEOUT 1000)
+ (env OPAMPRECISETRACKING 1)
+ (env CI true)
+ (env OPAM_REPO_CI true)
+ (run (shell "rm -rf opam-repository/"))
+ (copy (src .) (dst opam-repository/))
+ (run (shell "opam repository set-url --strict default opam-repository/"))
+ (run (network host)
+      (shell "opam update --depexts || true"))
+ (run (shell "opam pin add -k version -yn cohttp-server-lwt-unix.6.0.0 6.0.0"))
+ (run (cache (opam-archives (target /home/opam/.opam/download-cache)))
+      (network host)
+      (shell  "opam reinstall cohttp-server-lwt-unix.6.0.0;\
+             \n        res=$?;\
+             \n        test \"$res\" != 31 && exit \"$res\";\
+             \n        export OPAMCLI=2.0;\
+             \n        build_dir=$(opam var prefix)/.opam-switch/build;\
+             \n        failed=$(ls \"$build_dir\");\
+             \n        partial_fails=\"\";\
+             \n        for pkg in $failed; do\
+             \n          if opam show -f x-ci-accept-failures: \"$pkg\" | grep -qF \"\\\"opensuse-15.6\\\"\"; then\
+             \n            echo \"A package failed and has been disabled for CI using the 'x-ci-accept-failures' field.\";\
+             \n          fi;\
+             \n          test \"$pkg\" != 'cohttp-server-lwt-unix.6.0.0' && partial_fails=\"$partial_fails $pkg\";\
+             \n        done;\
+             \n        test \"${partial_fails}\" != \"\" && echo \"opam-repo-ci detected dependencies failing: ${partial_fails}\";\
+             \n        exit 1"))
+ (run (network host)
+      (shell "(opam reinstall --with-test cohttp-server-lwt-unix.6.0.0) || true"))
+ (run (shell  "opam reinstall --with-test --verbose cohttp-server-lwt-unix.6.0.0;\
+             \n        res=$?;\
+             \n        test \"$res\" != 31 && exit \"$res\";\
+             \n        export OPAMCLI=2.0;\
+             \n        build_dir=$(opam var prefix)/.opam-switch/build;\
+             \n        failed=$(ls \"$build_dir\");\
+             \n        partial_fails=\"\";\
+             \n        for pkg in $failed; do\
+             \n          if opam show -f x-ci-accept-failures: \"$pkg\" | grep -qF \"\\\"opensuse-15.6\\\"\"; then\
+             \n            echo \"A package failed and has been disabled for CI using the 'x-ci-accept-failures' field.\";\
+             \n          fi;\
+             \n          test \"$pkg\" != 'cohttp-server-lwt-unix.6.0.0' && partial_fails=\"$partial_fails $pkg\";\
+             \n        done;\
+             \n        test \"${partial_fails}\" != \"\" && echo \"opam-repo-ci detected dependencies failing: ${partial_fails}\";\
+             \n        exit 1"))
+)
+
+2024-11-21 21:56.23: Waiting for resource in pool OCluster
+2024-11-21 22:03.10: Waiting for worker…
+2024-11-21 22:06.31: Got resource from pool OCluster
+Building on asteria.caelum.ci.dev
+All commits already cached
+Updating files:  60% (19833/32727)Updating files:  61% (19964/32727)Updating files:  62% (20291/32727)Updating files:  63% (20619/32727)Updating files:  64% (20946/32727)Updating files:  65% (21273/32727)Updating files:  66% (21600/32727)Updating files:  67% (21928/32727)Updating files:  68% (22255/32727)Updating files:  69% (22582/32727)Updating files:  70% (22909/32727)Updating files:  71% (23237/32727)Updating files:  72% (23564/32727)Updating files:  73% (23891/32727)Updating files:  74% (24218/32727)Updating files:  75% (24546/32727)Updating files:  76% (24873/32727)Updating files:  77% (25200/32727)Updating files:  78% (25528/32727)Updating files:  79% (25855/32727)Updating files:  80% (26182/32727)Updating files:  81% (26509/32727)Updating files:  82% (26837/32727)Updating files:  83% (27164/32727)Updating files:  84% (27491/32727)Updating files:  85% (27818/32727)Updating files:  86% (28146/32727)Updating files:  87% (28473/32727)Updating files:  88% (28800/32727)Updating files:  89% (29128/32727)Updating files:  90% (29455/32727)Updating files:  91% (29782/32727)Updating files:  92% (30109/32727)Updating files:  93% (30437/32727)Updating files:  94% (30764/32727)Updating files:  95% (31091/32727)Updating files:  96% (31418/32727)Updating files:  97% (31746/32727)Updating files:  98% (32073/32727)Updating files:  99% (32400/32727)Updating files: 100% (32727/32727)Updating files: 100% (32727/32727), done.
+HEAD is now at 232a37e8b0 Merge pull request #26922 from dkalinichenko-js/opam-publish-typerep.v0.17.1
+Updating 232a37e8b0..5e85658ef7
+Fast-forward
+ packages/cohttp-async/cohttp-async.6.0.0/opam      | 73 +++++++++++++++++++++
+ packages/cohttp-bench/cohttp-bench.6.0.0/opam      | 61 ++++++++++++++++++
+ .../cohttp-curl-async/cohttp-curl-async.6.0.0/opam | 62 ++++++++++++++++++
+ .../cohttp-curl-lwt/cohttp-curl-lwt.6.0.0/opam     | 61 ++++++++++++++++++
+ packages/cohttp-curl/cohttp-curl.6.0.0/opam        | 50 +++++++++++++++
+ packages/cohttp-eio/cohttp-eio.6.0.0/opam          | 62 ++++++++++++++++++
+ .../cohttp-lwt-jsoo/cohttp-lwt-jsoo.6.0.0/opam     | 62 ++++++++++++++++++
+ .../cohttp-lwt-unix/cohttp-lwt-unix.6.0.0/opam     | 69 ++++++++++++++++++++
+ packages/cohttp-lwt/cohttp-lwt.6.0.0/opam          | 61 ++++++++++++++++++
+ packages/cohttp-mirage/cohttp-mirage.6.0.0/opam    | 69 ++++++++++++++++++++
+ .../cohttp-server-lwt-unix.6.0.0/opam              | 56 ++++++++++++++++
+ packages/cohttp-top/cohttp-top.6.0.0/opam          | 53 ++++++++++++++++
+ packages/cohttp/cohttp.6.0.0/opam                  | 74 ++++++++++++++++++++++
+ packages/http/http.6.0.0/opam                      | 59 +++++++++++++++++
+ 14 files changed, 872 insertions(+)
+ create mode 100644 packages/cohttp-async/cohttp-async.6.0.0/opam
+ create mode 100644 packages/cohttp-bench/cohttp-bench.6.0.0/opam
+ create mode 100644 packages/cohttp-curl-async/cohttp-curl-async.6.0.0/opam
+ create mode 100644 packages/cohttp-curl-lwt/cohttp-curl-lwt.6.0.0/opam
+ create mode 100644 packages/cohttp-curl/cohttp-curl.6.0.0/opam
+ create mode 100644 packages/cohttp-eio/cohttp-eio.6.0.0/opam
+ create mode 100644 packages/cohttp-lwt-jsoo/cohttp-lwt-jsoo.6.0.0/opam
+ create mode 100644 packages/cohttp-lwt-unix/cohttp-lwt-unix.6.0.0/opam
+ create mode 100644 packages/cohttp-lwt/cohttp-lwt.6.0.0/opam
+ create mode 100644 packages/cohttp-mirage/cohttp-mirage.6.0.0/opam
+ create mode 100644 packages/cohttp-server-lwt-unix/cohttp-server-lwt-unix.6.0.0/opam
+ create mode 100644 packages/cohttp-top/cohttp-top.6.0.0/opam
+ create mode 100644 packages/cohttp/cohttp.6.0.0/opam
+ create mode 100644 packages/http/http.6.0.0/opam
+
+[01;34m(from ocaml/opam:opensuse-15.6-ocaml-5.2@sha256:fa0aaac3a372669175e2e182671d505d463e5536473816e29b69909e87af29eb)[0m
+Unable to find image 'ocaml/opam:opensuse-15.6-ocaml-5.2@sha256:fa0aaac3a372669175e2e182671d505d463e5536473816e29b69909e87af29eb' locally
+docker.io/ocaml/opam@sha256:fa0aaac3a372669175e2e182671d505d463e5536473816e29b69909e87af29eb: Pulling from ocaml/opam
+661156cd49d1: Pulling fs layer
+661156cd49d1: Verifying Checksum
+661156cd49d1: Download complete
+661156cd49d1: Pull complete
+Digest: sha256:fa0aaac3a372669175e2e182671d505d463e5536473816e29b69909e87af29eb
+Status: Downloaded newer image for ocaml/opam@sha256:fa0aaac3a372669175e2e182671d505d463e5536473816e29b69909e87af29eb
+[01;2m[01;35m2024-11-21 22:09.01 ---> using "c509c75c5dab2d418cc60ababb1b7cde567e647229100831b1657e79b60ad8a2" from cache[0m
+
+[01;34m/: (user (uid 1000) (gid 1000))[0m
+
+[01;34m/: (workdir /home/opam)[0m
+
+[01;34m/home/opam: (run (shell "sudo ln -f /usr/bin/opam-dev /usr/bin/opam"))[0m
+[01;2m[01;35m2024-11-21 22:09.01 ---> using "150bf3a25df9febd336d8384a01b258ec229606cd343c45df86374264c9f8230" from cache[0m
+
+[01;34m/home/opam: (run (network host)
+                 (shell "opam init --reinit --config .opamrc-sandbox -ni"))[0m
+Configuring from /home/opam/.opamrc-sandbox, then /home/opam/.opamrc, and finally from built-in defaults.
+Checking for available remotes: rsync and local, git.
+  - you won't be able to use mercurial repositories unless you install the hg command on your system.
+  - you won't be able to use darcs repositories unless you install the darcs command on your system.
+
+This development version of opam requires an update to the layout of /home/opam/.opam from version 2.0 to version 2.2, which can't be reverted.
+You may want to back it up before going further.
+
+Continue? [Y/n] y
+Format upgrade done.
+
+<><> Updating repositories ><><><><><><><><><><><><><><><><><><><><><><><><><><>
+[default] synchronised from file:///home/opam/opam-repository
+[01;2m[01;35m2024-11-21 22:09.01 ---> using "76159a40f7d02887692bd747e8334bf43f84e441cc1b5d8924b936756af58ce7" from cache[0m
+
+[01;34m/home/opam: (run (shell "uname -rs && opam exec -- ocaml -version && opam --version"))[0m
+Linux 5.15.0-125-generic
+The OCaml toplevel, version 5.2.1
+2.4.0~alpha1~dev
+[01;2m[01;35m2024-11-21 22:09.01 ---> using "9e64c05dc3e03720509de08d08fab11ed24214dbe9dcd39706c5ec5b4baa9411" from cache[0m
+
+[01;34m/home/opam: (env OPAMDOWNLOADJOBS 1)[0m
+
+[01;34m/home/opam: (env OPAMERRLOGLEN 0)[0m
+
+[01;34m/home/opam: (env OPAMSOLVERTIMEOUT 1000)[0m
+
+[01;34m/home/opam: (env OPAMPRECISETRACKING 1)[0m
+
+[01;34m/home/opam: (env CI true)[0m
+
+[01;34m/home/opam: (env OPAM_REPO_CI true)[0m
+
+[01;34m/home/opam: (run (shell "rm -rf opam-repository/"))[0m
+[01;2m[01;35m2024-11-21 22:09.01 ---> using "d84472d82177cbba65f9e07b089b0b7b59cc1b0523a71b144f2c9d62251e1d77" from cache[0m
+
+[01;34m/home/opam: (copy (src .) (dst opam-repository/))[0m
+[01;2m[01;35m2024-11-21 22:09.04 ---> saved as "7648fcf6685f8257460402da27679b22d3088979776809ec09dee1eed736399e"[0m
+
+[01;34m/home/opam: (run (shell "opam repository set-url --strict default opam-repository/"))[0m
+[default] Initialised
+[01;2m[01;35m2024-11-21 22:10.00 ---> saved as "9dd4a2b4df7797688aeb586928d49558925d7bf66cb1ec1509666bd5d3301d0a"[0m
+
+[01;34m/home/opam: (run (network host)
+                 (shell "opam update --depexts || true"))[0m
++ /usr/bin/sudo "zypper" "--non-interactive" "refresh"
+- Retrieving repository 'Update repository of openSUSE Backports' metadata [.......
+- ....done]
+- Building repository 'Update repository of openSUSE Backports' cache [....done]
+- Repository 'Non-OSS Repository' is up to date.
+- Repository 'Main Repository' is up to date.
+- Repository 'Update repository with updates from SUSE Linux Enterprise 15' is up to date.
+- Retrieving repository 'Main Update Repository' metadata [.
+- .
+- ...
+- ..
+- ...
+- .
+- done]
+- Building repository 'Main Update Repository' cache [....done]
+- Repository 'Update Repository (Non-Oss)' is up to date.
+- All repositories have been refreshed.
+[01;2m[01;35m2024-11-21 22:10.25 ---> saved as "14f27de0ad494bc62874d0261b2e753ded8a1f9aed479563fcee4f46699118f5"[0m
+
+[01;34m/home/opam: (run (shell "opam pin add -k version -yn cohttp-server-lwt-unix.6.0.0 6.0.0"))[0m
+cohttp-server-lwt-unix is now pinned to version 6.0.0
+[01;2m[01;35m2024-11-21 22:10.26 ---> saved as "7c51ad617e9a79e432e99aa2d5412a0b699221f1475921032ed60b7da4a4656a"[0m
+
+[01;34m/home/opam: (run (cache (opam-archives (target /home/opam/.opam/download-cache)))
+                 (network host)
+                 (shell  "opam reinstall cohttp-server-lwt-unix.6.0.0;\
+                        \n        res=$?;\
+                        \n        test \"$res\" != 31 && exit \"$res\";\
+                        \n        export OPAMCLI=2.0;\
+                        \n        build_dir=$(opam var prefix)/.opam-switch/build;\
+                        \n        failed=$(ls \"$build_dir\");\
+                        \n        partial_fails=\"\";\
+                        \n        for pkg in $failed; do\
+                        \n          if opam show -f x-ci-accept-failures: \"$pkg\" | grep -qF \"\\\"opensuse-15.6\\\"\"; then\
+                        \n            echo \"A package failed and has been disabled for CI using the 'x-ci-accept-failures' field.\";\
+                        \n          fi;\
+                        \n          test \"$pkg\" != 'cohttp-server-lwt-unix.6.0.0' && partial_fails=\"$partial_fails $pkg\";\
+                        \n        done;\
+                        \n        test \"${partial_fails}\" != \"\" && echo \"opam-repo-ci detected dependencies failing: ${partial_fails}\";\
+                        \n        exit 1"))[0m
+cohttp-server-lwt-unix.6.0.0 is not installed. Install it? [Y/n] y
+The following actions will be performed:
+=== install 10 packages
+  - install base-bytes             base           [required by ocplib-endian]
+  - install cohttp-server-lwt-unix 6.0.0 (pinned)
+  - install cppo                   1.7.0          [required by lwt]
+  - install csexp                  1.5.2          [required by dune-configurator]
+  - install dune                   3.16.1         [required by cohttp-server-lwt-unix]
+  - install dune-configurator      3.16.1         [required by lwt]
+  - install http                   6.0.0          [required by cohttp-server-lwt-unix]
+  - install lwt                    5.9.0          [required by cohttp-server-lwt-unix]
+  - install ocamlfind              1.9.6          [required by base-bytes]
+  - install ocplib-endian          1.2            [required by lwt]
+
+<><> Processing actions <><><><><><><><><><><><><><><><><><><><><><><><><><><><>
+-> retrieved cohttp-server-lwt-unix.6.0.0, http.6.0.0  (cached)
+-> retrieved cppo.1.7.0  (cached)
+-> retrieved csexp.1.5.2  (cached)
+-> retrieved dune.3.16.1, dune-configurator.3.16.1  (cached)
+-> retrieved lwt.5.9.0  (cached)
+-> retrieved ocamlfind.1.9.6  (cached)
+-> retrieved ocplib-endian.1.2  (cached)
+-> installed ocamlfind.1.9.6
+-> installed base-bytes.base
+-> installed dune.3.16.1
+-> installed csexp.1.5.2
+-> installed cppo.1.7.0
+-> installed http.6.0.0
+-> installed ocplib-endian.1.2
+-> installed dune-configurator.3.16.1
+-> installed lwt.5.9.0
+-> installed cohttp-server-lwt-unix.6.0.0
+Done.
+# To update the current shell environment, run: eval $(opam env)
+[01;2m[01;35m2024-11-21 22:11.08 ---> saved as "6295f28f85d9de54c1beb1d84dd3fbfafece24a4d36cb923c6a9e17c6d881f52"[0m
+
+[01;34m/home/opam: (run (network host)
+                 (shell "(opam reinstall --with-test cohttp-server-lwt-unix.6.0.0) || true"))[0m
+[ERROR] Sorry, resolution of the request timed out.
+        Try to specify a more precise request, use a different solver, or increase the allowed time by setting OPAMSOLVERTIMEOUT to a bigger value (currently, it is set to 1000.0 seconds).
+[01;2m[01;35m2024-11-21 22:28.01 ---> saved as "fec3750f89a424c3511fc7b53a794dc6f91d52296cef55b6cbeb6a3dc283fe2b"[0m
+
+[01;34m/home/opam: (run (shell  "opam reinstall --with-test --verbose cohttp-server-lwt-unix.6.0.0;\
+                        \n        res=$?;\
+                        \n        test \"$res\" != 31 && exit \"$res\";\
+                        \n        export OPAMCLI=2.0;\
+                        \n        build_dir=$(opam var prefix)/.opam-switch/build;\
+                        \n        failed=$(ls \"$build_dir\");\
+                        \n        partial_fails=\"\";\
+                        \n        for pkg in $failed; do\
+                        \n          if opam show -f x-ci-accept-failures: \"$pkg\" | grep -qF \"\\\"opensuse-15.6\\\"\"; then\
+                        \n            echo \"A package failed and has been disabled for CI using the 'x-ci-accept-failures' field.\";\
+                        \n          fi;\
+                        \n          test \"$pkg\" != 'cohttp-server-lwt-unix.6.0.0' && partial_fails=\"$partial_fails $pkg\";\
+                        \n        done;\
+                        \n        test \"${partial_fails}\" != \"\" && echo \"opam-repo-ci detected dependencies failing: ${partial_fails}\";\
+                        \n        exit 1"))[0m
+[ERROR] Sorry, resolution of the request timed out.
+        Try to specify a more precise request, use a different solver, or increase the allowed time by setting OPAMSOLVERTIMEOUT to a bigger value (currently, it is set to 1000.0 seconds).
+'opam reinstall --with-test --verbose cohttp-server-lwt-unix.6.0.0' failed.
+"/usr/bin/env" "bash" "-c" "opam reinstall --with-test --verbose cohttp-server-lwt-unix.6.0.0;
+        res=$?;
+        test "$res" != 31 && exit "$res";
+        export OPAMCLI=2.0;
+        build_dir=$(opam var prefix)/.opam-switch/build;
+        failed=$(ls "$build_dir");
+        partial_fails="";
+        for pkg in $failed; do
+          if opam show -f x-ci-accept-failures: "$pkg" | grep -qF "\"opensuse-15.6\""; then
+            echo "A package failed and has been disabled for CI using the 'x-ci-accept-failures' field.";
+          fi;
+          test "$pkg" != 'cohttp-server-lwt-unix.6.0.0' && partial_fails="$partial_fails $pkg";
+        done;
+        test "${partial_fails}" != "" && echo "opam-repo-ci detected dependencies failing: ${partial_fails}";
+        exit 1" failed with exit status 60
+2024-11-21 22:45.08: Job failed: Failed: Build failed
+2024-11-21 22:45.08: Log analysis:
+2024-11-21 22:45.08: >>> 
+[ERROR] Sorry, resolution of the request timed out.
+ (score = 20)
+2024-11-21 22:45.08: >>> 
+[ERROR] Sorry, resolution of the request timed out.
+ (score = 20)
+2024-11-21 22:45.08: Sorry, resolution of the request timed out.

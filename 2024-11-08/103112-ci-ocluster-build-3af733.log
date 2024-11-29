@@ -1,0 +1,254 @@
+2024-11-08 10:31.12: New job: test river.0.4, using opam dev
+                              from https://github.com/ocaml/opam-repository.git#refs/pull/26848/head (7093fa3f04df344a92714be9e421be8aa4755fc0)
+                              on debian-12-ocaml-4.10/amd64
+
+To reproduce locally:
+
+cd $(mktemp -d)
+git clone --recursive "https://github.com/ocaml/opam-repository.git" && cd "opam-repository" && git fetch origin "refs/pull/26848/head" && git reset --hard 7093fa3f
+git fetch origin master
+git merge --no-edit d8b8ceaa570cc7f665bee86876819d0144909af7
+cat > ../Dockerfile <<'END-OF-DOCKERFILE'
+[34mFROM ocaml/opam:debian-12-ocaml-4.10@sha256:ce97c0abeac7d2b44385d0363c8404cafebe11033f98e9df735ccbfa165fe225
+USER 1000:1000
+WORKDIR /home/opam
+RUN sudo ln -f /usr/bin/opam-dev /usr/bin/opam
+RUN opam init --reinit -ni
+RUN uname -rs && opam exec -- ocaml -version && opam --version
+ENV OPAMDOWNLOADJOBS="1"
+ENV OPAMERRLOGLEN="0"
+ENV OPAMSOLVERTIMEOUT="1000"
+ENV OPAMPRECISETRACKING="1"
+ENV CI="true"
+ENV OPAM_REPO_CI="true"
+RUN rm -rf opam-repository/
+COPY --chown=1000:1000 . opam-repository/
+RUN opam repository set-url --strict default opam-repository/
+RUN opam update --depexts || true
+RUN opam pin add -k version -yn river.0.4 0.4
+RUN opam reinstall river.0.4; \
+    res=$?; \
+    test "$res" != 31 && exit "$res"; \
+    export OPAMCLI=2.0; \
+    build_dir=$(opam var prefix)/.opam-switch/build; \
+    failed=$(ls "$build_dir"); \
+    partial_fails=""; \
+    for pkg in $failed; do \
+    if opam show -f x-ci-accept-failures: "$pkg" | grep -qF "\"debian-12\""; then \
+    echo "A package failed and has been disabled for CI using the 'x-ci-accept-failures' field."; \
+    fi; \
+    test "$pkg" != 'river.0.4' && partial_fails="$partial_fails $pkg"; \
+    done; \
+    test "${partial_fails}" != "" && echo "opam-repo-ci detected dependencies failing: ${partial_fails}"; \
+    exit 1
+RUN (opam reinstall --with-test river.0.4) || true
+RUN opam reinstall --with-test --verbose river.0.4; \
+    res=$?; \
+    test "$res" != 31 && exit "$res"; \
+    export OPAMCLI=2.0; \
+    build_dir=$(opam var prefix)/.opam-switch/build; \
+    failed=$(ls "$build_dir"); \
+    partial_fails=""; \
+    for pkg in $failed; do \
+    if opam show -f x-ci-accept-failures: "$pkg" | grep -qF "\"debian-12\""; then \
+    echo "A package failed and has been disabled for CI using the 'x-ci-accept-failures' field."; \
+    fi; \
+    test "$pkg" != 'river.0.4' && partial_fails="$partial_fails $pkg"; \
+    done; \
+    test "${partial_fails}" != "" && echo "opam-repo-ci detected dependencies failing: ${partial_fails}"; \
+    exit 1
+[0m
+END-OF-DOCKERFILE
+docker build -f ../Dockerfile .
+
+2024-11-08 10:31.12: Using cache hint "ocaml/opam:debian-12-ocaml-4.10@sha256:ce97c0abeac7d2b44385d0363c8404cafebe11033f98e9df735ccbfa165fe225-river.0.4-7093fa3f04df344a92714be9e421be8aa4755fc0"
+2024-11-08 10:31.12: Using OBuilder spec:
+((from ocaml/opam:debian-12-ocaml-4.10@sha256:ce97c0abeac7d2b44385d0363c8404cafebe11033f98e9df735ccbfa165fe225)
+ (user (uid 1000) (gid 1000))
+ (workdir /home/opam)
+ (run (shell "sudo ln -f /usr/bin/opam-dev /usr/bin/opam"))
+ (run (network host)
+      (shell "opam init --reinit --config .opamrc-sandbox -ni"))
+ (run (shell "uname -rs && opam exec -- ocaml -version && opam --version"))
+ (env OPAMDOWNLOADJOBS 1)
+ (env OPAMERRLOGLEN 0)
+ (env OPAMSOLVERTIMEOUT 1000)
+ (env OPAMPRECISETRACKING 1)
+ (env CI true)
+ (env OPAM_REPO_CI true)
+ (run (shell "rm -rf opam-repository/"))
+ (copy (src .) (dst opam-repository/))
+ (run (shell "opam repository set-url --strict default opam-repository/"))
+ (run (network host)
+      (shell "opam update --depexts || true"))
+ (run (shell "opam pin add -k version -yn river.0.4 0.4"))
+ (run (cache (opam-archives (target /home/opam/.opam/download-cache)))
+      (network host)
+      (shell  "opam reinstall river.0.4;\
+             \n        res=$?;\
+             \n        test \"$res\" != 31 && exit \"$res\";\
+             \n        export OPAMCLI=2.0;\
+             \n        build_dir=$(opam var prefix)/.opam-switch/build;\
+             \n        failed=$(ls \"$build_dir\");\
+             \n        partial_fails=\"\";\
+             \n        for pkg in $failed; do\
+             \n          if opam show -f x-ci-accept-failures: \"$pkg\" | grep -qF \"\\\"debian-12\\\"\"; then\
+             \n            echo \"A package failed and has been disabled for CI using the 'x-ci-accept-failures' field.\";\
+             \n          fi;\
+             \n          test \"$pkg\" != 'river.0.4' && partial_fails=\"$partial_fails $pkg\";\
+             \n        done;\
+             \n        test \"${partial_fails}\" != \"\" && echo \"opam-repo-ci detected dependencies failing: ${partial_fails}\";\
+             \n        exit 1"))
+ (run (network host)
+      (shell "(opam reinstall --with-test river.0.4) || true"))
+ (run (shell  "opam reinstall --with-test --verbose river.0.4;\
+             \n        res=$?;\
+             \n        test \"$res\" != 31 && exit \"$res\";\
+             \n        export OPAMCLI=2.0;\
+             \n        build_dir=$(opam var prefix)/.opam-switch/build;\
+             \n        failed=$(ls \"$build_dir\");\
+             \n        partial_fails=\"\";\
+             \n        for pkg in $failed; do\
+             \n          if opam show -f x-ci-accept-failures: \"$pkg\" | grep -qF \"\\\"debian-12\\\"\"; then\
+             \n            echo \"A package failed and has been disabled for CI using the 'x-ci-accept-failures' field.\";\
+             \n          fi;\
+             \n          test \"$pkg\" != 'river.0.4' && partial_fails=\"$partial_fails $pkg\";\
+             \n        done;\
+             \n        test \"${partial_fails}\" != \"\" && echo \"opam-repo-ci detected dependencies failing: ${partial_fails}\";\
+             \n        exit 1"))
+)
+
+2024-11-08 10:31.12: Waiting for resource in pool OCluster
+2024-11-08 10:31.13: Waiting for worker…
+2024-11-08 10:31.13: Got resource from pool OCluster
+Building on x86-bm-c16.sw.ocaml.org
+Updating files:  82% (26809/32636)Updating files:  83% (27088/32636)Updating files:  84% (27415/32636)Updating files:  85% (27741/32636)Updating files:  86% (28067/32636)Updating files:  87% (28394/32636)Updating files:  88% (28720/32636)Updating files:  89% (29047/32636)Updating files:  90% (29373/32636)Updating files:  91% (29699/32636)Updating files:  92% (30026/32636)Updating files:  93% (30352/32636)Updating files:  94% (30678/32636)Updating files:  95% (31005/32636)Updating files:  96% (31331/32636)Updating files:  97% (31657/32636)Updating files:  98% (31984/32636)Updating files:  99% (32310/32636)Updating files: 100% (32636/32636)Updating files: 100% (32636/32636), done.
+HEAD is now at 7abcd2b6e3 [new release] dream-encoding (0.3.0)
+HEAD is now at d8b8ceaa57 Merge pull request #26845 from gares/release-sel-v0.5.0
+Updating d8b8ceaa57..7093fa3f04
+Fast-forward
+ packages/river/river.0.4/opam | 44 +++++++++++++++++++++++++++++++++++++++++++
+ 1 file changed, 44 insertions(+)
+ create mode 100644 packages/river/river.0.4/opam
+
+[01;34m(from ocaml/opam:debian-12-ocaml-4.10@sha256:ce97c0abeac7d2b44385d0363c8404cafebe11033f98e9df735ccbfa165fe225)[0m
+Unable to find image 'ocaml/opam:debian-12-ocaml-4.10@sha256:ce97c0abeac7d2b44385d0363c8404cafebe11033f98e9df735ccbfa165fe225' locally
+docker.io/ocaml/opam@sha256:ce97c0abeac7d2b44385d0363c8404cafebe11033f98e9df735ccbfa165fe225: Pulling from ocaml/opam
+2b8fa589c287: Pulling fs layer
+2b8fa589c287: Verifying Checksum
+2b8fa589c287: Download complete
+2b8fa589c287: Pull complete
+Digest: sha256:ce97c0abeac7d2b44385d0363c8404cafebe11033f98e9df735ccbfa165fe225
+Status: Downloaded newer image for ocaml/opam@sha256:ce97c0abeac7d2b44385d0363c8404cafebe11033f98e9df735ccbfa165fe225
+[01;2m[01;35m2024-11-08 10:31.43 ---> using "907539d3eaa265546c48acb5e0cb0a3f5778b8e172e9401db57654e2e9408cb9" from cache[0m
+
+[01;34m/: (user (uid 1000) (gid 1000))[0m
+
+[01;34m/: (workdir /home/opam)[0m
+
+[01;34m/home/opam: (run (shell "sudo ln -f /usr/bin/opam-dev /usr/bin/opam"))[0m
+[01;2m[01;35m2024-11-08 10:31.43 ---> using "0bbf34045f737be481800c7f9fbcf05a0465f6b2b4312e5ba5214584b958b9b7" from cache[0m
+
+[01;34m/home/opam: (run (network host)
+                 (shell "opam init --reinit --config .opamrc-sandbox -ni"))[0m
+Configuring from /home/opam/.opamrc-sandbox, then /home/opam/.opamrc, and finally from built-in defaults.
+Checking for available remotes: rsync and local, git.
+  - you won't be able to use mercurial repositories unless you install the hg command on your system.
+  - you won't be able to use darcs repositories unless you install the darcs command on your system.
+
+This development version of opam requires an update to the layout of /home/opam/.opam from version 2.0 to version 2.2, which can't be reverted.
+You may want to back it up before going further.
+
+Continue? [y/n] y
+[NOTE] The 'jobs' option was reset, its value was 39 and its new value will vary according to the current number of cores on your machine. You can restore the fixed value using:
+           opam option jobs=39 --global
+Format upgrade done.
+
+<><> Updating repositories ><><><><><><><><><><><><><><><><><><><><><><><><><><>
+[default] synchronised from file:///home/opam/opam-repository
+[01;2m[01;35m2024-11-08 10:31.43 ---> using "7dadc6dc00415af1fb92b3910317b0baf498f33082b24b024e1fb44c9633330b" from cache[0m
+
+[01;34m/home/opam: (run (shell "uname -rs && opam exec -- ocaml -version && opam --version"))[0m
+Linux 5.15.0-122-generic
+The OCaml toplevel, version 4.10.2
+2.4.0~alpha1~dev
+[01;2m[01;35m2024-11-08 10:31.43 ---> using "4cf6980d74f4e90120acf6eed25d2377debc1be5475761e58fb96b24c7cf695b" from cache[0m
+
+[01;34m/home/opam: (env OPAMDOWNLOADJOBS 1)[0m
+
+[01;34m/home/opam: (env OPAMERRLOGLEN 0)[0m
+
+[01;34m/home/opam: (env OPAMSOLVERTIMEOUT 1000)[0m
+
+[01;34m/home/opam: (env OPAMPRECISETRACKING 1)[0m
+
+[01;34m/home/opam: (env CI true)[0m
+
+[01;34m/home/opam: (env OPAM_REPO_CI true)[0m
+
+[01;34m/home/opam: (run (shell "rm -rf opam-repository/"))[0m
+[01;2m[01;35m2024-11-08 10:31.43 ---> using "4920c08f756ae7dc04c33e120125f24f8c2304d4396195ace0e7b5a21bacd2aa" from cache[0m
+
+[01;34m/home/opam: (copy (src .) (dst opam-repository/))[0m
+[01;2m[01;35m2024-11-08 10:31.52 ---> saved as "714effae27c247b67e3a51021c3895bf3652f7caf2d85af9fa132d56ddd3b485"[0m
+
+[01;34m/home/opam: (run (shell "opam repository set-url --strict default opam-repository/"))[0m
+[default] Initialised
+[01;2m[01;35m2024-11-08 10:32.52 ---> saved as "67720b0efdb46620cb4a28e713759639c60c6c7d2f7b04643bf03604d982c9f7"[0m
+
+[01;34m/home/opam: (run (network host)
+                 (shell "opam update --depexts || true"))[0m
++ /usr/bin/sudo "apt-get" "update"
+- Hit:1 http://deb.debian.org/debian bookworm InRelease
+- Get:2 http://deb.debian.org/debian bookworm-updates InRelease [55.4 kB]
+- Get:3 http://deb.debian.org/debian-security bookworm-security InRelease [48.0 kB]
+- Get:4 http://deb.debian.org/debian-security bookworm-security/main amd64 Packages [190 kB]
+- Fetched 293 kB in 0s (1118 kB/s)
+- Reading package lists...
+[01;2m[01;35m2024-11-08 10:32.53 ---> saved as "41c7634ef6244d0bbf04b5450fd45332f2726d08dbdec0381a5ce950ef61ecd4"[0m
+
+[01;34m/home/opam: (run (shell "opam pin add -k version -yn river.0.4 0.4"))[0m
+river is now pinned to version 0.4
+[01;2m[01;35m2024-11-08 10:32.55 ---> saved as "b162ca9403eb537a5bb1a38dbdca7ee37aebb3431ef4690ba2b6d5b6a12da1b0"[0m
+
+[01;34m/home/opam: (run (cache (opam-archives (target /home/opam/.opam/download-cache)))
+                 (network host)
+                 (shell  "opam reinstall river.0.4;\
+                        \n        res=$?;\
+                        \n        test \"$res\" != 31 && exit \"$res\";\
+                        \n        export OPAMCLI=2.0;\
+                        \n        build_dir=$(opam var prefix)/.opam-switch/build;\
+                        \n        failed=$(ls \"$build_dir\");\
+                        \n        partial_fails=\"\";\
+                        \n        for pkg in $failed; do\
+                        \n          if opam show -f x-ci-accept-failures: \"$pkg\" | grep -qF \"\\\"debian-12\\\"\"; then\
+                        \n            echo \"A package failed and has been disabled for CI using the 'x-ci-accept-failures' field.\";\
+                        \n          fi;\
+                        \n          test \"$pkg\" != 'river.0.4' && partial_fails=\"$partial_fails $pkg\";\
+                        \n        done;\
+                        \n        test \"${partial_fails}\" != \"\" && echo \"opam-repo-ci detected dependencies failing: ${partial_fails}\";\
+                        \n        exit 1"))[0m
+river.0.4 is not installed. Install it? [y/n] y
+[ERROR] Sorry, resolution of the request timed out.
+        Try to specify a more precise request, use a different solver, or increase the allowed time by setting OPAMSOLVERTIMEOUT to a bigger value (currently, it is set to 1000.0 seconds).
+"/usr/bin/env" "bash" "-c" "opam reinstall river.0.4;
+        res=$?;
+        test "$res" != 31 && exit "$res";
+        export OPAMCLI=2.0;
+        build_dir=$(opam var prefix)/.opam-switch/build;
+        failed=$(ls "$build_dir");
+        partial_fails="";
+        for pkg in $failed; do
+          if opam show -f x-ci-accept-failures: "$pkg" | grep -qF "\"debian-12\""; then
+            echo "A package failed and has been disabled for CI using the 'x-ci-accept-failures' field.";
+          fi;
+          test "$pkg" != 'river.0.4' && partial_fails="$partial_fails $pkg";
+        done;
+        test "${partial_fails}" != "" && echo "opam-repo-ci detected dependencies failing: ${partial_fails}";
+        exit 1" failed with exit status 60
+2024-11-08 10:50.04: Job failed: Failed: Build failed
+2024-11-08 10:50.04: Log analysis:
+2024-11-08 10:50.04: >>> 
+[ERROR] Sorry, resolution of the request timed out.
+ (score = 20)
+2024-11-08 10:50.04: Sorry, resolution of the request timed out.

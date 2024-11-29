@@ -1,0 +1,243 @@
+2024-09-06 12:44.44: New job: test ocsigen-toolkit.4.0.0, using opam 2.1
+                              from https://github.com/ocaml/opam-repository.git#refs/pull/26467/head (9ba0111b5833b0ea3c6d95371f537c3bf56a1a20)
+                              on debian-12-ocaml-5.2/amd64
+
+To reproduce locally:
+
+cd $(mktemp -d)
+git clone --recursive "https://github.com/ocaml/opam-repository.git" && cd "opam-repository" && git fetch origin "refs/pull/26467/head" && git reset --hard 9ba0111b
+git fetch origin master
+git merge --no-edit cc623f467cc1d108557982f06195bb238b542419
+cat > ../Dockerfile <<'END-OF-DOCKERFILE'
+[34mFROM ocaml/opam:debian-12-ocaml-5.2@sha256:5ca37fe8f061d8a5c27ab8e7575cfeded45e56663ef74632865a9b66aed1a1e0
+USER 1000:1000
+WORKDIR /home/opam
+RUN sudo ln -f /usr/bin/opam-2.1 /usr/bin/opam
+RUN opam init --reinit -ni
+RUN uname -rs && opam exec -- ocaml -version && opam --version
+ENV OPAMDOWNLOADJOBS="1"
+ENV OPAMERRLOGLEN="0"
+ENV OPAMSOLVERTIMEOUT="500"
+ENV OPAMPRECISETRACKING="1"
+ENV CI="true"
+ENV OPAM_REPO_CI="true"
+RUN rm -rf opam-repository/
+COPY --chown=1000:1000 . opam-repository/
+RUN opam repository set-url --strict default opam-repository/
+RUN opam update --depexts || true
+RUN opam pin add -k version -yn ocsigen-toolkit.4.0.0 4.0.0
+RUN opam reinstall ocsigen-toolkit.4.0.0; \
+    res=$?; \
+    test "$res" != 31 && exit "$res"; \
+    export OPAMCLI=2.0; \
+    build_dir=$(opam var prefix)/.opam-switch/build; \
+    failed=$(ls "$build_dir"); \
+    partial_fails=""; \
+    for pkg in $failed; do \
+    if opam show -f x-ci-accept-failures: "$pkg" | grep -qF "\"debian-12\""; then \
+    echo "A package failed and has been disabled for CI using the 'x-ci-accept-failures' field."; \
+    fi; \
+    test "$pkg" != 'ocsigen-toolkit.4.0.0' && partial_fails="$partial_fails $pkg"; \
+    done; \
+    test "${partial_fails}" != "" && echo "opam-repo-ci detected dependencies failing: ${partial_fails}"; \
+    exit 1
+RUN (opam reinstall --with-test ocsigen-toolkit.4.0.0) || true
+RUN opam reinstall --with-test --verbose ocsigen-toolkit.4.0.0; \
+    res=$?; \
+    test "$res" != 31 && exit "$res"; \
+    export OPAMCLI=2.0; \
+    build_dir=$(opam var prefix)/.opam-switch/build; \
+    failed=$(ls "$build_dir"); \
+    partial_fails=""; \
+    for pkg in $failed; do \
+    if opam show -f x-ci-accept-failures: "$pkg" | grep -qF "\"debian-12\""; then \
+    echo "A package failed and has been disabled for CI using the 'x-ci-accept-failures' field."; \
+    fi; \
+    test "$pkg" != 'ocsigen-toolkit.4.0.0' && partial_fails="$partial_fails $pkg"; \
+    done; \
+    test "${partial_fails}" != "" && echo "opam-repo-ci detected dependencies failing: ${partial_fails}"; \
+    exit 1
+[0m
+END-OF-DOCKERFILE
+docker build -f ../Dockerfile .
+
+2024-09-06 12:44.44: Using cache hint "ocaml/opam:debian-12-ocaml-5.2@sha256:5ca37fe8f061d8a5c27ab8e7575cfeded45e56663ef74632865a9b66aed1a1e0-ocsigen-toolkit.4.0.0-9ba0111b5833b0ea3c6d95371f537c3bf56a1a20"
+2024-09-06 12:44.44: Using OBuilder spec:
+((from ocaml/opam:debian-12-ocaml-5.2@sha256:5ca37fe8f061d8a5c27ab8e7575cfeded45e56663ef74632865a9b66aed1a1e0)
+ (user (uid 1000) (gid 1000))
+ (workdir /home/opam)
+ (run (shell "sudo ln -f /usr/bin/opam-2.1 /usr/bin/opam"))
+ (run (network host)
+      (shell "opam init --reinit --config .opamrc-sandbox -ni"))
+ (run (shell "uname -rs && opam exec -- ocaml -version && opam --version"))
+ (env OPAMDOWNLOADJOBS 1)
+ (env OPAMERRLOGLEN 0)
+ (env OPAMSOLVERTIMEOUT 500)
+ (env OPAMPRECISETRACKING 1)
+ (env CI true)
+ (env OPAM_REPO_CI true)
+ (run (shell "rm -rf opam-repository/"))
+ (copy (src .) (dst opam-repository/))
+ (run (shell "opam repository set-url --strict default opam-repository/"))
+ (run (network host)
+      (shell "opam update --depexts || true"))
+ (run (shell "opam pin add -k version -yn ocsigen-toolkit.4.0.0 4.0.0"))
+ (run (cache (opam-archives (target /home/opam/.opam/download-cache)))
+      (network host)
+      (shell  "opam reinstall ocsigen-toolkit.4.0.0;\
+             \n        res=$?;\
+             \n        test \"$res\" != 31 && exit \"$res\";\
+             \n        export OPAMCLI=2.0;\
+             \n        build_dir=$(opam var prefix)/.opam-switch/build;\
+             \n        failed=$(ls \"$build_dir\");\
+             \n        partial_fails=\"\";\
+             \n        for pkg in $failed; do\
+             \n          if opam show -f x-ci-accept-failures: \"$pkg\" | grep -qF \"\\\"debian-12\\\"\"; then\
+             \n            echo \"A package failed and has been disabled for CI using the 'x-ci-accept-failures' field.\";\
+             \n          fi;\
+             \n          test \"$pkg\" != 'ocsigen-toolkit.4.0.0' && partial_fails=\"$partial_fails $pkg\";\
+             \n        done;\
+             \n        test \"${partial_fails}\" != \"\" && echo \"opam-repo-ci detected dependencies failing: ${partial_fails}\";\
+             \n        exit 1"))
+ (run (network host)
+      (shell "(opam reinstall --with-test ocsigen-toolkit.4.0.0) || true"))
+ (run (shell  "opam reinstall --with-test --verbose ocsigen-toolkit.4.0.0;\
+             \n        res=$?;\
+             \n        test \"$res\" != 31 && exit \"$res\";\
+             \n        export OPAMCLI=2.0;\
+             \n        build_dir=$(opam var prefix)/.opam-switch/build;\
+             \n        failed=$(ls \"$build_dir\");\
+             \n        partial_fails=\"\";\
+             \n        for pkg in $failed; do\
+             \n          if opam show -f x-ci-accept-failures: \"$pkg\" | grep -qF \"\\\"debian-12\\\"\"; then\
+             \n            echo \"A package failed and has been disabled for CI using the 'x-ci-accept-failures' field.\";\
+             \n          fi;\
+             \n          test \"$pkg\" != 'ocsigen-toolkit.4.0.0' && partial_fails=\"$partial_fails $pkg\";\
+             \n        done;\
+             \n        test \"${partial_fails}\" != \"\" && echo \"opam-repo-ci detected dependencies failing: ${partial_fails}\";\
+             \n        exit 1"))
+)
+
+2024-09-06 12:44.44: Waiting for resource in pool OCluster
+2024-09-06 12:44.45: Waiting for worker…
+2024-09-06 12:44.45: Got resource from pool OCluster
+Building on x86-bm-c10.sw.ocaml.org
+All commits already cached
+Updating files:  78% (25356/32156)Updating files:  79% (25404/32156)Updating files:  80% (25725/32156)Updating files:  81% (26047/32156)Updating files:  82% (26368/32156)Updating files:  83% (26690/32156)Updating files:  84% (27012/32156)Updating files:  85% (27333/32156)Updating files:  86% (27655/32156)Updating files:  87% (27976/32156)Updating files:  88% (28298/32156)Updating files:  89% (28619/32156)Updating files:  90% (28941/32156)Updating files:  91% (29262/32156)Updating files:  92% (29584/32156)Updating files:  93% (29906/32156)Updating files:  94% (30227/32156)Updating files:  95% (30549/32156)Updating files:  96% (30870/32156)Updating files:  97% (31192/32156)Updating files:  98% (31513/32156)Updating files:  99% (31835/32156)Updating files: 100% (32156/32156)Updating files: 100% (32156/32156), done.
+HEAD is now at cc623f467c Merge pull request #26503 from proux01/coqide820
+Merge made by the 'ort' strategy.
+ .../ocsigen-toolkit/ocsigen-toolkit.4.0.0/opam     | 26 ++++++++++++++++++++++
+ 1 file changed, 26 insertions(+)
+ create mode 100644 packages/ocsigen-toolkit/ocsigen-toolkit.4.0.0/opam
+
+[01;34m(from ocaml/opam:debian-12-ocaml-5.2@sha256:5ca37fe8f061d8a5c27ab8e7575cfeded45e56663ef74632865a9b66aed1a1e0)[0m
+[01;2m[01;35m2024-09-06 12:45.19 ---> using "7768eccb70fa5e54dcad8a38db1291dc49870d3064b43fdb717581d7b513bee1" from cache[0m
+
+[01;34m/: (user (uid 1000) (gid 1000))[0m
+
+[01;34m/: (workdir /home/opam)[0m
+
+[01;34m/home/opam: (run (shell "sudo ln -f /usr/bin/opam-2.1 /usr/bin/opam"))[0m
+[01;2m[01;35m2024-09-06 12:45.19 ---> using "396551520e0b9bb07bb6c840c8a1251f1654b2a2609841f990fb182e0d214994" from cache[0m
+
+[01;34m/home/opam: (run (network host)
+                 (shell "opam init --reinit --config .opamrc-sandbox -ni"))[0m
+Configuring from /home/opam/.opamrc-sandbox, then /home/opam/.opamrc, and finally from built-in defaults.
+Checking for available remotes: rsync and local, git.
+  - you won't be able to use mercurial repositories unless you install the hg command on your system.
+  - you won't be able to use darcs repositories unless you install the darcs command on your system.
+
+This development version of opam requires an update to the layout of /home/opam/.opam from version 2.0 to version 2.1, which can't be reverted.
+You may want to back it up before going further.
+
+Continue? [Y/n] y
+Format upgrade done.
+
+<><> Updating repositories ><><><><><><><><><><><><><><><><><><><><><><><><><><>
+[default] synchronised from file:///home/opam/opam-repository
+[01;2m[01;35m2024-09-06 12:45.19 ---> using "c9a73c9cacde1b5e77d201f3527331ddfb7f7af51bcf2d2137b4e66d6478f0b7" from cache[0m
+
+[01;34m/home/opam: (run (shell "uname -rs && opam exec -- ocaml -version && opam --version"))[0m
+Linux 5.15.0-119-generic
+The OCaml toplevel, version 5.2.0
+2.1.6
+[01;2m[01;35m2024-09-06 12:45.19 ---> using "63a0e2fa6ee539f0f01d88cacae7c931a90d0201331ec3672b89f22fb0490083" from cache[0m
+
+[01;34m/home/opam: (env OPAMDOWNLOADJOBS 1)[0m
+
+[01;34m/home/opam: (env OPAMERRLOGLEN 0)[0m
+
+[01;34m/home/opam: (env OPAMSOLVERTIMEOUT 500)[0m
+
+[01;34m/home/opam: (env OPAMPRECISETRACKING 1)[0m
+
+[01;34m/home/opam: (env CI true)[0m
+
+[01;34m/home/opam: (env OPAM_REPO_CI true)[0m
+
+[01;34m/home/opam: (run (shell "rm -rf opam-repository/"))[0m
+[01;2m[01;35m2024-09-06 12:45.19 ---> using "5a0d1fc642fc944b3fbaa37d0d97fbd6862cc82646c66605333da8c16a0a9198" from cache[0m
+
+[01;34m/home/opam: (copy (src .) (dst opam-repository/))[0m
+[01;2m[01;35m2024-09-06 12:45.26 ---> saved as "99bcec0da628022421d568b8a22360f299a52663b6692d534409c910697d16a2"[0m
+
+[01;34m/home/opam: (run (shell "opam repository set-url --strict default opam-repository/"))[0m
+[default] Initialised
+[01;2m[01;35m2024-09-06 12:45.47 ---> saved as "ec63e173d4cff02d70dfd7650b3d08873bf7b6c0545f7f3d806c522716b0d6aa"[0m
+
+[01;34m/home/opam: (run (network host)
+                 (shell "opam update --depexts || true"))[0m
++ /usr/bin/sudo "apt-get" "update"
+- Hit:1 http://deb.debian.org/debian bookworm InRelease
+- Get:2 http://deb.debian.org/debian bookworm-updates InRelease [55.4 kB]
+- Get:3 http://deb.debian.org/debian-security bookworm-security InRelease [48.0 kB]
+- Get:4 http://deb.debian.org/debian-security bookworm-security/main amd64 Packages [179 kB]
+- Fetched 283 kB in 0s (1064 kB/s)
+- Reading package lists...
+[01;2m[01;35m2024-09-06 12:45.48 ---> saved as "32b89aefb6fc18ffc634fac260ab3980a1f37f98348104069a51c0fecd14ff12"[0m
+
+[01;34m/home/opam: (run (shell "opam pin add -k version -yn ocsigen-toolkit.4.0.0 4.0.0"))[0m
+ocsigen-toolkit is now pinned to version 4.0.0
+[01;2m[01;35m2024-09-06 12:45.49 ---> saved as "6e7adf7d428a63257202fa51f5005fceb40bffb648e9618f565b10886290a7ab"[0m
+
+[01;34m/home/opam: (run (cache (opam-archives (target /home/opam/.opam/download-cache)))
+                 (network host)
+                 (shell  "opam reinstall ocsigen-toolkit.4.0.0;\
+                        \n        res=$?;\
+                        \n        test \"$res\" != 31 && exit \"$res\";\
+                        \n        export OPAMCLI=2.0;\
+                        \n        build_dir=$(opam var prefix)/.opam-switch/build;\
+                        \n        failed=$(ls \"$build_dir\");\
+                        \n        partial_fails=\"\";\
+                        \n        for pkg in $failed; do\
+                        \n          if opam show -f x-ci-accept-failures: \"$pkg\" | grep -qF \"\\\"debian-12\\\"\"; then\
+                        \n            echo \"A package failed and has been disabled for CI using the 'x-ci-accept-failures' field.\";\
+                        \n          fi;\
+                        \n          test \"$pkg\" != 'ocsigen-toolkit.4.0.0' && partial_fails=\"$partial_fails $pkg\";\
+                        \n        done;\
+                        \n        test \"${partial_fails}\" != \"\" && echo \"opam-repo-ci detected dependencies failing: ${partial_fails}\";\
+                        \n        exit 1"))[0m
+ocsigen-toolkit.4.0.0 is not installed. Install it? [Y/n] y
+[ERROR] Sorry, resolution of the request timed out.
+        Try to specify a more precise request, use a different solver, or increase the allowed time by setting OPAMSOLVERTIMEOUT to a bigger value (currently, it is set to 500.0 seconds).
+"/usr/bin/env" "bash" "-c" "opam reinstall ocsigen-toolkit.4.0.0;
+        res=$?;
+        test "$res" != 31 && exit "$res";
+        export OPAMCLI=2.0;
+        build_dir=$(opam var prefix)/.opam-switch/build;
+        failed=$(ls "$build_dir");
+        partial_fails="";
+        for pkg in $failed; do
+          if opam show -f x-ci-accept-failures: "$pkg" | grep -qF "\"debian-12\""; then
+            echo "A package failed and has been disabled for CI using the 'x-ci-accept-failures' field.";
+          fi;
+          test "$pkg" != 'ocsigen-toolkit.4.0.0' && partial_fails="$partial_fails $pkg";
+        done;
+        test "${partial_fails}" != "" && echo "opam-repo-ci detected dependencies failing: ${partial_fails}";
+        exit 1" failed with exit status 60
+2024-09-06 12:54.40: Job failed: Failed: Build failed
+2024-09-06 12:54.40: Log analysis:
+2024-09-06 12:54.40: >>> 
+[ERROR] Sorry, resolution of the request timed out.
+ (score = 20)
+2024-09-06 12:54.40: Sorry, resolution of the request timed out.

@@ -1,0 +1,234 @@
+2024-09-07 19:52.22: New job: build websocket.2.17, using opam 2.0
+                              from https://github.com/ocaml/opam-repository.git#refs/pull/26509/head (3f38a28f9229e51d12d85b68724b7bcabeab7398)
+                              on debian-12-ocaml-5.2/amd64
+
+To reproduce locally:
+
+cd $(mktemp -d)
+git clone --recursive "https://github.com/ocaml/opam-repository.git" && cd "opam-repository" && git fetch origin "refs/pull/26509/head" && git reset --hard 3f38a28f
+git fetch origin master
+git merge --no-edit 6fe6a740bece3d7856bce5664f49074ece940f31
+cat > ../Dockerfile <<'END-OF-DOCKERFILE'
+[34mFROM ocaml/opam:debian-12-ocaml-5.2@sha256:5ca37fe8f061d8a5c27ab8e7575cfeded45e56663ef74632865a9b66aed1a1e0
+USER 1000:1000
+WORKDIR /home/opam
+RUN sudo ln -f /usr/bin/opam-2.0 /usr/bin/opam
+RUN opam init --reinit -ni
+RUN uname -rs && opam exec -- ocaml -version && opam --version
+ENV OPAMDOWNLOADJOBS="1"
+ENV OPAMERRLOGLEN="0"
+ENV OPAMSOLVERTIMEOUT="500"
+ENV OPAMPRECISETRACKING="1"
+ENV CI="true"
+ENV OPAM_REPO_CI="true"
+RUN rm -rf opam-repository/
+COPY --chown=1000:1000 . opam-repository/
+RUN opam repository set-url --strict default opam-repository/
+RUN opam depext -u || true
+RUN opam pin add -k version -yn websocket.2.17 2.17
+RUN opam depext websocket.2.17 && opam reinstall websocket.2.17; \
+    res=$?; \
+    test "$res" != 31 && exit "$res"; \
+    export OPAMCLI=2.0; \
+    build_dir=$(opam var prefix)/.opam-switch/build; \
+    failed=$(ls "$build_dir"); \
+    partial_fails=""; \
+    for pkg in $failed; do \
+    if opam show -f x-ci-accept-failures: "$pkg" | grep -qF "\"debian-12\""; then \
+    echo "A package failed and has been disabled for CI using the 'x-ci-accept-failures' field."; \
+    fi; \
+    test "$pkg" != 'websocket.2.17' && partial_fails="$partial_fails $pkg"; \
+    done; \
+    test "${partial_fails}" != "" && echo "opam-repo-ci detected dependencies failing: ${partial_fails}"; \
+    exit 1
+[0m
+END-OF-DOCKERFILE
+docker build -f ../Dockerfile .
+
+2024-09-07 19:52.22: Using cache hint "ocaml/opam:debian-12-ocaml-5.2@sha256:5ca37fe8f061d8a5c27ab8e7575cfeded45e56663ef74632865a9b66aed1a1e0-websocket.2.17-3f38a28f9229e51d12d85b68724b7bcabeab7398"
+2024-09-07 19:52.22: Using OBuilder spec:
+((from ocaml/opam:debian-12-ocaml-5.2@sha256:5ca37fe8f061d8a5c27ab8e7575cfeded45e56663ef74632865a9b66aed1a1e0)
+ (user (uid 1000) (gid 1000))
+ (workdir /home/opam)
+ (run (shell "sudo ln -f /usr/bin/opam-2.0 /usr/bin/opam"))
+ (run (network host)
+      (shell "opam init --reinit --config .opamrc-sandbox -ni"))
+ (run (shell "uname -rs && opam exec -- ocaml -version && opam --version"))
+ (env OPAMDOWNLOADJOBS 1)
+ (env OPAMERRLOGLEN 0)
+ (env OPAMSOLVERTIMEOUT 500)
+ (env OPAMPRECISETRACKING 1)
+ (env CI true)
+ (env OPAM_REPO_CI true)
+ (run (shell "rm -rf opam-repository/"))
+ (copy (src .) (dst opam-repository/))
+ (run (shell "opam repository set-url --strict default opam-repository/"))
+ (run (network host)
+      (shell "opam depext -u || true"))
+ (run (shell "opam pin add -k version -yn websocket.2.17 2.17"))
+ (run (cache (opam-archives (target /home/opam/.opam/download-cache)))
+      (network host)
+      (shell  "opam depext websocket.2.17 && opam reinstall websocket.2.17;\
+             \n        res=$?;\
+             \n        test \"$res\" != 31 && exit \"$res\";\
+             \n        export OPAMCLI=2.0;\
+             \n        build_dir=$(opam var prefix)/.opam-switch/build;\
+             \n        failed=$(ls \"$build_dir\");\
+             \n        partial_fails=\"\";\
+             \n        for pkg in $failed; do\
+             \n          if opam show -f x-ci-accept-failures: \"$pkg\" | grep -qF \"\\\"debian-12\\\"\"; then\
+             \n            echo \"A package failed and has been disabled for CI using the 'x-ci-accept-failures' field.\";\
+             \n          fi;\
+             \n          test \"$pkg\" != 'websocket.2.17' && partial_fails=\"$partial_fails $pkg\";\
+             \n        done;\
+             \n        test \"${partial_fails}\" != \"\" && echo \"opam-repo-ci detected dependencies failing: ${partial_fails}\";\
+             \n        exit 1"))
+)
+
+2024-09-07 19:52.22: Waiting for resource in pool OCluster
+2024-09-07 19:52.23: Waiting for worker…
+2024-09-07 19:55.55: Got resource from pool OCluster
+Building on x86-bm-c5.sw.ocaml.org
+All commits already cached
+Updating files:  51% (16582/32165)Updating files:  52% (16726/32165)Updating files:  53% (17048/32165)Updating files:  54% (17370/32165)Updating files:  55% (17691/32165)Updating files:  56% (18013/32165)Updating files:  57% (18335/32165)Updating files:  58% (18656/32165)Updating files:  59% (18978/32165)Updating files:  60% (19299/32165)Updating files:  61% (19621/32165)Updating files:  62% (19943/32165)Updating files:  63% (20264/32165)Updating files:  64% (20586/32165)Updating files:  65% (20908/32165)Updating files:  66% (21229/32165)Updating files:  67% (21551/32165)Updating files:  68% (21873/32165)Updating files:  69% (22194/32165)Updating files:  70% (22516/32165)Updating files:  71% (22838/32165)Updating files:  72% (23159/32165)Updating files:  73% (23481/32165)Updating files:  74% (23803/32165)Updating files:  75% (24124/32165)Updating files:  76% (24446/32165)Updating files:  77% (24768/32165)Updating files:  78% (25089/32165)Updating files:  79% (25411/32165)Updating files:  80% (25732/32165)Updating files:  81% (26054/32165)Updating files:  82% (26376/32165)Updating files:  83% (26697/32165)Updating files:  84% (27019/32165)Updating files:  85% (27341/32165)Updating files:  86% (27662/32165)Updating files:  87% (27984/32165)Updating files:  88% (28306/32165)Updating files:  89% (28627/32165)Updating files:  90% (28949/32165)Updating files:  91% (29271/32165)Updating files:  92% (29592/32165)Updating files:  93% (29914/32165)Updating files:  94% (30236/32165)Updating files:  95% (30557/32165)Updating files:  96% (30879/32165)Updating files:  97% (31201/32165)Updating files:  98% (31522/32165)Updating files:  99% (31844/32165)Updating files: 100% (32165/32165)Updating files: 100% (32165/32165), done.
+HEAD is now at 6fe6a740be Merge pull request #26462 from zoj613/opam-publish-zarr.0.1.0
+Updating 6fe6a740be..3f38a28f92
+Fast-forward
+ packages/websocket-async/websocket-async.2.17/opam | 61 ++++++++++++++++++++++
+ .../websocket-lwt-unix.2.17/opam                   | 57 ++++++++++++++++++++
+ packages/websocket/websocket.2.17/opam             | 60 +++++++++++++++++++++
+ 3 files changed, 178 insertions(+)
+ create mode 100644 packages/websocket-async/websocket-async.2.17/opam
+ create mode 100644 packages/websocket-lwt-unix/websocket-lwt-unix.2.17/opam
+ create mode 100644 packages/websocket/websocket.2.17/opam
+
+[01;34m(from ocaml/opam:debian-12-ocaml-5.2@sha256:5ca37fe8f061d8a5c27ab8e7575cfeded45e56663ef74632865a9b66aed1a1e0)[0m
+Unable to find image 'ocaml/opam:debian-12-ocaml-5.2@sha256:5ca37fe8f061d8a5c27ab8e7575cfeded45e56663ef74632865a9b66aed1a1e0' locally
+docker.io/ocaml/opam@sha256:5ca37fe8f061d8a5c27ab8e7575cfeded45e56663ef74632865a9b66aed1a1e0: Pulling from ocaml/opam
+e28d7e65bcd4: Pulling fs layer
+e28d7e65bcd4: Verifying Checksum
+e28d7e65bcd4: Download complete
+e28d7e65bcd4: Pull complete
+Digest: sha256:5ca37fe8f061d8a5c27ab8e7575cfeded45e56663ef74632865a9b66aed1a1e0
+Status: Downloaded newer image for ocaml/opam@sha256:5ca37fe8f061d8a5c27ab8e7575cfeded45e56663ef74632865a9b66aed1a1e0
+[01;2m[01;35m2024-09-07 19:56.02 ---> using "7768eccb70fa5e54dcad8a38db1291dc49870d3064b43fdb717581d7b513bee1" from cache[0m
+
+[01;34m/: (user (uid 1000) (gid 1000))[0m
+
+[01;34m/: (workdir /home/opam)[0m
+
+[01;34m/home/opam: (run (shell "sudo ln -f /usr/bin/opam-2.0 /usr/bin/opam"))[0m
+[01;2m[01;35m2024-09-07 19:56.02 ---> saved as "149c164e5f878489516d66e2599ec8bbda1a4ac2ddb263e8057b35992ff4fa3c"[0m
+
+[01;34m/home/opam: (run (network host)
+                 (shell "opam init --reinit --config .opamrc-sandbox -ni"))[0m
+[NOTE] Will configure from /home/opam/.opamrc-sandbox, then /home/opam/.opamrc, and finally from built-in defaults.
+Checking for available remotes: rsync and local, git.
+  - you won't be able to use mercurial repositories unless you install the hg command on your system.
+  - you won't be able to use darcs repositories unless you install the darcs command on your system.
+
+[WARNING] Recommended dependencies -- most packages rely on these:
+  - m4
+
+<><> Updating repositories ><><><><><><><><><><><><><><><><><><><><><><><><><><>
+[default] synchronised from file:///home/opam/opam-repository
+default (at file:///home/opam/opam-repository): 
+    [INFO] opam 2.1 and 2.2 include many performance and security improvements over 2.0; please consider upgrading (https://opam.ocaml.org/doc/Install.html)
+
+[01;2m[01;35m2024-09-07 19:56.45 ---> saved as "db1b0933ede76d55f570f22815368db7e5264c3a05dc18b709181853ab413cc3"[0m
+
+[01;34m/home/opam: (run (shell "uname -rs && opam exec -- ocaml -version && opam --version"))[0m
+Linux 5.15.0-119-generic
+The OCaml toplevel, version 5.2.0
+2.0.10
+[01;2m[01;35m2024-09-07 19:56.46 ---> saved as "d268b0aecd1ca671badebb4b5207305e0dea8d02b5addbbc9a3412cc6c1f0fc6"[0m
+
+[01;34m/home/opam: (env OPAMDOWNLOADJOBS 1)[0m
+
+[01;34m/home/opam: (env OPAMERRLOGLEN 0)[0m
+
+[01;34m/home/opam: (env OPAMSOLVERTIMEOUT 500)[0m
+
+[01;34m/home/opam: (env OPAMPRECISETRACKING 1)[0m
+
+[01;34m/home/opam: (env CI true)[0m
+
+[01;34m/home/opam: (env OPAM_REPO_CI true)[0m
+
+[01;34m/home/opam: (run (shell "rm -rf opam-repository/"))[0m
+[01;2m[01;35m2024-09-07 19:56.53 ---> saved as "fd484acaf7aabb4150f3ecaee84b6f02948cf699ab7639ab9dedb6565243c8a3"[0m
+
+[01;34m/home/opam: (copy (src .) (dst opam-repository/))[0m
+[01;2m[01;35m2024-09-07 19:57.09 ---> saved as "6358b46d667da56c261185288ddfb3ec4f1713ddc202374ade54800d9a5cefed"[0m
+
+[01;34m/home/opam: (run (shell "opam repository set-url --strict default opam-repository/"))[0m
+[default] Initialised
+default (at file:///home/opam/opam-repository): 
+    [INFO] opam 2.1 and 2.2 include many performance and security improvements over 2.0; please consider upgrading (https://opam.ocaml.org/doc/Install.html)
+
+[01;2m[01;35m2024-09-07 19:57.46 ---> saved as "37b77e7cba69e9eeab766773b713aaac3692d8dda0a522294b8105510210492a"[0m
+
+[01;34m/home/opam: (run (network host)
+                 (shell "opam depext -u || true"))[0m
+# Detecting depexts using vars: arch=x86_64, os=linux, os-distribution=debian, os-family=debian
+# No extra OS packages requirements found.
+# All required OS packages found.
+The following command needs to be run through "sudo":
+    apt-get update
+Hit:1 http://deb.debian.org/debian bookworm InRelease
+Get:2 http://deb.debian.org/debian bookworm-updates InRelease [55.4 kB]
+Get:3 http://deb.debian.org/debian-security bookworm-security InRelease [48.0 kB]
+Get:4 http://deb.debian.org/debian-security bookworm-security/main amd64 Packages [179 kB]
+Fetched 283 kB in 0s (803 kB/s)
+Reading package lists...
+# OS package update successful
+[01;2m[01;35m2024-09-07 19:57.49 ---> saved as "42fbc908ca6cf91d67016cb3c9c96300efb8aa973e9753cd2d0ed3f2ec41714f"[0m
+
+[01;34m/home/opam: (run (shell "opam pin add -k version -yn websocket.2.17 2.17"))[0m
+websocket is now pinned to version 2.17
+[01;2m[01;35m2024-09-07 19:57.50 ---> saved as "e44cb544b6c9818f3ebc034c52f16f32695cee684c989306a30fb2a893c47eb3"[0m
+
+[01;34m/home/opam: (run (cache (opam-archives (target /home/opam/.opam/download-cache)))
+                 (network host)
+                 (shell  "opam depext websocket.2.17 && opam reinstall websocket.2.17;\
+                        \n        res=$?;\
+                        \n        test \"$res\" != 31 && exit \"$res\";\
+                        \n        export OPAMCLI=2.0;\
+                        \n        build_dir=$(opam var prefix)/.opam-switch/build;\
+                        \n        failed=$(ls \"$build_dir\");\
+                        \n        partial_fails=\"\";\
+                        \n        for pkg in $failed; do\
+                        \n          if opam show -f x-ci-accept-failures: \"$pkg\" | grep -qF \"\\\"debian-12\\\"\"; then\
+                        \n            echo \"A package failed and has been disabled for CI using the 'x-ci-accept-failures' field.\";\
+                        \n          fi;\
+                        \n          test \"$pkg\" != 'websocket.2.17' && partial_fails=\"$partial_fails $pkg\";\
+                        \n        done;\
+                        \n        test \"${partial_fails}\" != \"\" && echo \"opam-repo-ci detected dependencies failing: ${partial_fails}\";\
+                        \n        exit 1"))[0m
+# Detecting depexts using vars: arch=x86_64, os=linux, os-distribution=debian, os-family=debian
+# No extra OS packages requirements found.
+# All required OS packages found.
+websocket.2.17 is not installed. Install it? [Y/n] y
+[ERROR] Sorry, resolution of the request timed out.
+        Try to specify a simpler request, use a different solver, or increase the allowed time by setting OPAMSOLVERTIMEOUT to a bigger value (currently, it is set to 500.0 seconds).
+"/usr/bin/env" "bash" "-c" "opam depext websocket.2.17 && opam reinstall websocket.2.17;
+        res=$?;
+        test "$res" != 31 && exit "$res";
+        export OPAMCLI=2.0;
+        build_dir=$(opam var prefix)/.opam-switch/build;
+        failed=$(ls "$build_dir");
+        partial_fails="";
+        for pkg in $failed; do
+          if opam show -f x-ci-accept-failures: "$pkg" | grep -qF "\"debian-12\""; then
+            echo "A package failed and has been disabled for CI using the 'x-ci-accept-failures' field.";
+          fi;
+          test "$pkg" != 'websocket.2.17' && partial_fails="$partial_fails $pkg";
+        done;
+        test "${partial_fails}" != "" && echo "opam-repo-ci detected dependencies failing: ${partial_fails}";
+        exit 1" failed with exit status 60
+2024-09-07 20:06.32: Job failed: Failed: Build failed
+2024-09-07 20:06.32: Log analysis:
+2024-09-07 20:06.32: >>> 
+[ERROR] Sorry, resolution of the request timed out.
+ (score = 20)
+2024-09-07 20:06.32: Sorry, resolution of the request timed out.

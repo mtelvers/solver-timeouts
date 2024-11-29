@@ -1,0 +1,271 @@
+2024-08-15 20:20.09: New job: build albatross.2.1.0, using opam 2.0
+                              from https://github.com/ocaml/opam-repository.git#refs/pull/26363/head (67875ad410e6745bb7954e6de73e0104cde83af2)
+                              on debian-12-ocaml-4.14/amd64
+
+To reproduce locally:
+
+cd $(mktemp -d)
+git clone --recursive "https://github.com/ocaml/opam-repository.git" && cd "opam-repository" && git fetch origin "refs/pull/26363/head" && git reset --hard 67875ad4
+git fetch origin master
+git merge --no-edit 907d456e7c003c4c7ad1ad4945abf93cdc852874
+cat > ../Dockerfile <<'END-OF-DOCKERFILE'
+[34mFROM ocaml/opam:debian-12-ocaml-4.14@sha256:69ef0774f5cbddd472ab7b4ed241ca72bff5d63eddde00603b6501d0e4e60b3f
+USER 1000:1000
+WORKDIR /home/opam
+RUN sudo ln -f /usr/bin/opam-2.0 /usr/bin/opam
+RUN opam init --reinit -ni
+RUN uname -rs && opam exec -- ocaml -version && opam --version
+ENV OPAMDOWNLOADJOBS="1"
+ENV OPAMERRLOGLEN="0"
+ENV OPAMSOLVERTIMEOUT="500"
+ENV OPAMPRECISETRACKING="1"
+ENV CI="true"
+ENV OPAM_REPO_CI="true"
+RUN rm -rf opam-repository/
+COPY --chown=1000:1000 . opam-repository/
+RUN opam repository set-url --strict default opam-repository/
+RUN opam depext -u || true
+RUN opam pin add -k version -yn albatross.2.1.0 2.1.0
+RUN opam depext albatross.2.1.0 && opam reinstall albatross.2.1.0; \
+    res=$?; \
+    test "$res" != 31 && exit "$res"; \
+    export OPAMCLI=2.0; \
+    build_dir=$(opam var prefix)/.opam-switch/build; \
+    failed=$(ls "$build_dir"); \
+    partial_fails=""; \
+    for pkg in $failed; do \
+    if opam show -f x-ci-accept-failures: "$pkg" | grep -qF "\"debian-12\""; then \
+    echo "A package failed and has been disabled for CI using the 'x-ci-accept-failures' field."; \
+    fi; \
+    test "$pkg" != 'albatross.2.1.0' && partial_fails="$partial_fails $pkg"; \
+    done; \
+    test "${partial_fails}" != "" && echo "opam-repo-ci detected dependencies failing: ${partial_fails}"; \
+    exit 1
+[0m
+END-OF-DOCKERFILE
+docker build -f ../Dockerfile .
+
+2024-08-15 20:20.09: Using cache hint "ocaml/opam:debian-12-ocaml-4.14@sha256:69ef0774f5cbddd472ab7b4ed241ca72bff5d63eddde00603b6501d0e4e60b3f-albatross.2.1.0-67875ad410e6745bb7954e6de73e0104cde83af2"
+2024-08-15 20:20.09: Using OBuilder spec:
+((from ocaml/opam:debian-12-ocaml-4.14@sha256:69ef0774f5cbddd472ab7b4ed241ca72bff5d63eddde00603b6501d0e4e60b3f)
+ (user (uid 1000) (gid 1000))
+ (workdir /home/opam)
+ (run (shell "sudo ln -f /usr/bin/opam-2.0 /usr/bin/opam"))
+ (run (network host)
+      (shell "opam init --reinit --config .opamrc-sandbox -ni"))
+ (run (shell "uname -rs && opam exec -- ocaml -version && opam --version"))
+ (env OPAMDOWNLOADJOBS 1)
+ (env OPAMERRLOGLEN 0)
+ (env OPAMSOLVERTIMEOUT 500)
+ (env OPAMPRECISETRACKING 1)
+ (env CI true)
+ (env OPAM_REPO_CI true)
+ (run (shell "rm -rf opam-repository/"))
+ (copy (src .) (dst opam-repository/))
+ (run (shell "opam repository set-url --strict default opam-repository/"))
+ (run (network host)
+      (shell "opam depext -u || true"))
+ (run (shell "opam pin add -k version -yn albatross.2.1.0 2.1.0"))
+ (run (cache (opam-archives (target /home/opam/.opam/download-cache)))
+      (network host)
+      (shell  "opam depext albatross.2.1.0 && opam reinstall albatross.2.1.0;\
+             \n        res=$?;\
+             \n        test \"$res\" != 31 && exit \"$res\";\
+             \n        export OPAMCLI=2.0;\
+             \n        build_dir=$(opam var prefix)/.opam-switch/build;\
+             \n        failed=$(ls \"$build_dir\");\
+             \n        partial_fails=\"\";\
+             \n        for pkg in $failed; do\
+             \n          if opam show -f x-ci-accept-failures: \"$pkg\" | grep -qF \"\\\"debian-12\\\"\"; then\
+             \n            echo \"A package failed and has been disabled for CI using the 'x-ci-accept-failures' field.\";\
+             \n          fi;\
+             \n          test \"$pkg\" != 'albatross.2.1.0' && partial_fails=\"$partial_fails $pkg\";\
+             \n        done;\
+             \n        test \"${partial_fails}\" != \"\" && echo \"opam-repo-ci detected dependencies failing: ${partial_fails}\";\
+             \n        exit 1"))
+)
+
+2024-08-15 20:20.09: Waiting for resource in pool OCluster
+2024-08-15 20:20.09: Waiting for worker…
+2024-08-15 20:20.09: Got resource from pool OCluster
+Building on x86-bm-c1.sw.ocaml.org
+All commits already cached
+Updating files:  97% (31287/31954)Updating files:  98% (31315/31954)Updating files:  99% (31635/31954)Updating files: 100% (31954/31954)Updating files: 100% (31954/31954), done.
+HEAD is now at 907d456e7c Merge pull request #26357 from hannesm/release-ca-certs-nss-v3.103
+Updating 907d456e7c..67875ad410
+Fast-forward
+ packages/albatross/albatross.2.1.0/opam | 70 +++++++++++++++++++++++++++++++++
+ 1 file changed, 70 insertions(+)
+ create mode 100644 packages/albatross/albatross.2.1.0/opam
+
+[01;34m(from ocaml/opam:debian-12-ocaml-4.14@sha256:69ef0774f5cbddd472ab7b4ed241ca72bff5d63eddde00603b6501d0e4e60b3f)[0m
+[01;2m[01;35m2024-08-15 20:20.35 ---> using "3b0157ebb129531d5cf79767d1ddda107d4a5cf477561a94cf78dbb40f9e3848" from cache[0m
+
+[01;34m/: (user (uid 1000) (gid 1000))[0m
+
+[01;34m/: (workdir /home/opam)[0m
+
+[01;34m/home/opam: (run (shell "sudo ln -f /usr/bin/opam-2.0 /usr/bin/opam"))[0m
+[01;2m[01;35m2024-08-15 20:20.35 ---> saved as "79c106300ca6dfa1929b1395bc8544eff3246041b4dbf8629ffc85f910209138"[0m
+
+[01;34m/home/opam: (run (network host)
+                 (shell "opam init --reinit --config .opamrc-sandbox -ni"))[0m
+[NOTE] Will configure from /home/opam/.opamrc-sandbox, then /home/opam/.opamrc, and finally from built-in defaults.
+Checking for available remotes: rsync and local, git.
+  - you won't be able to use mercurial repositories unless you install the hg command on your system.
+  - you won't be able to use darcs repositories unless you install the darcs command on your system.
+
+[WARNING] Recommended dependencies -- most packages rely on these:
+  - m4
+
+<><> Updating repositories ><><><><><><><><><><><><><><><><><><><><><><><><><><>
+[default] synchronised from file:///home/opam/opam-repository
+default (at file:///home/opam/opam-repository): 
+    [INFO] opam 2.1 and 2.2 include many performance improvements over 2.0; please consider upgrading (https://opam.ocaml.org/doc/Install.html)
+
+[01;2m[01;35m2024-08-15 20:21.22 ---> saved as "7ee0fe244cb0395ed58fbd56293e42b12173e454d525f3371e3a3ed64e61ec52"[0m
+
+[01;34m/home/opam: (run (shell "uname -rs && opam exec -- ocaml -version && opam --version"))[0m
+Linux 5.15.0-117-generic
+The OCaml toplevel, version 4.14.2
+2.0.10
+[01;2m[01;35m2024-08-15 20:21.23 ---> saved as "ce4f82d3be04e0d3b2ef786ad6bc8eacf1a34a1b7010e945d4a0e4c802e44466"[0m
+
+[01;34m/home/opam: (env OPAMDOWNLOADJOBS 1)[0m
+
+[01;34m/home/opam: (env OPAMERRLOGLEN 0)[0m
+
+[01;34m/home/opam: (env OPAMSOLVERTIMEOUT 500)[0m
+
+[01;34m/home/opam: (env OPAMPRECISETRACKING 1)[0m
+
+[01;34m/home/opam: (env CI true)[0m
+
+[01;34m/home/opam: (env OPAM_REPO_CI true)[0m
+
+[01;34m/home/opam: (run (shell "rm -rf opam-repository/"))[0m
+[01;2m[01;35m2024-08-15 20:21.29 ---> saved as "41e61e4a57f987064a5d96ea088982e86ea5bb4b8ddc367a38a8ab0015b171ee"[0m
+
+[01;34m/home/opam: (copy (src .) (dst opam-repository/))[0m
+[01;2m[01;35m2024-08-15 20:21.37 ---> saved as "dcaecd580f8a924439a025d2e732a5c6a79ff8c73618cf09b15e9c2089d2924c"[0m
+
+[01;34m/home/opam: (run (shell "opam repository set-url --strict default opam-repository/"))[0m
+[default] Initialised
+default (at file:///home/opam/opam-repository): 
+    [INFO] opam 2.1 and 2.2 include many performance improvements over 2.0; please consider upgrading (https://opam.ocaml.org/doc/Install.html)
+
+[01;2m[01;35m2024-08-15 20:22.03 ---> saved as "3ff315ec3b4a91bdc1038643753d70f501dec769fa762ac8e2edf009ff4e59fb"[0m
+
+[01;34m/home/opam: (run (network host)
+                 (shell "opam depext -u || true"))[0m
+# Detecting depexts using vars: arch=x86_64, os=linux, os-distribution=debian, os-family=debian
+# No extra OS packages requirements found.
+# All required OS packages found.
+The following command needs to be run through "sudo":
+    apt-get update
+Hit:1 http://deb.debian.org/debian bookworm InRelease
+Get:2 http://deb.debian.org/debian bookworm-updates InRelease [55.4 kB]
+Get:3 http://deb.debian.org/debian-security bookworm-security InRelease [48.0 kB]
+Get:4 http://deb.debian.org/debian-security bookworm-security/main amd64 Packages [170 kB]
+Fetched 273 kB in 0s (763 kB/s)
+Reading package lists...
+# OS package update successful
+[01;2m[01;35m2024-08-15 20:22.05 ---> saved as "b7dc5473c2f413f7e4f0139e1aeab5a8e97c4f1920b69c84cd58ff08cbc8916c"[0m
+
+[01;34m/home/opam: (run (shell "opam pin add -k version -yn albatross.2.1.0 2.1.0"))[0m
+albatross is now pinned to version 2.1.0
+[01;2m[01;35m2024-08-15 20:22.06 ---> saved as "93b870c673c9f418a89c6b84bf824de2869b065404623dbd3bc12e33b1372831"[0m
+
+[01;34m/home/opam: (run (cache (opam-archives (target /home/opam/.opam/download-cache)))
+                 (network host)
+                 (shell  "opam depext albatross.2.1.0 && opam reinstall albatross.2.1.0;\
+                        \n        res=$?;\
+                        \n        test \"$res\" != 31 && exit \"$res\";\
+                        \n        export OPAMCLI=2.0;\
+                        \n        build_dir=$(opam var prefix)/.opam-switch/build;\
+                        \n        failed=$(ls \"$build_dir\");\
+                        \n        partial_fails=\"\";\
+                        \n        for pkg in $failed; do\
+                        \n          if opam show -f x-ci-accept-failures: \"$pkg\" | grep -qF \"\\\"debian-12\\\"\"; then\
+                        \n            echo \"A package failed and has been disabled for CI using the 'x-ci-accept-failures' field.\";\
+                        \n          fi;\
+                        \n          test \"$pkg\" != 'albatross.2.1.0' && partial_fails=\"$partial_fails $pkg\";\
+                        \n        done;\
+                        \n        test \"${partial_fails}\" != \"\" && echo \"opam-repo-ci detected dependencies failing: ${partial_fails}\";\
+                        \n        exit 1"))[0m
+# Detecting depexts using vars: arch=x86_64, os=linux, os-distribution=debian, os-family=debian
+# The following system packages are needed:
+libgmp-dev
+libnl-3-dev
+libnl-route-3-dev
+pkg-config
+The following command needs to be run through "sudo":
+    apt-get install -qq -yy libgmp-dev libnl-3-dev libnl-route-3-dev pkg-config
+debconf: delaying package configuration, since apt-utils is not installed
+Selecting previously unselected package libgmpxx4ldbl:amd64.
+(Reading database ... (Reading database ... 5%(Reading database ... 10%(Reading database ... 15%(Reading database ... 20%(Reading database ... 25%(Reading database ... 30%(Reading database ... 35%(Reading database ... 40%(Reading database ... 45%(Reading database ... 50%(Reading database ... 55%(Reading database ... 60%(Reading database ... 65%(Reading database ... 70%(Reading database ... 75%(Reading database ... 80%(Reading database ... 85%(Reading database ... 90%(Reading database ... 95%(Reading database ... 100%(Reading database ... 18734 files and directories currently installed.)
+Preparing to unpack .../0-libgmpxx4ldbl_2%3a6.2.1+dfsg1-1.1_amd64.deb ...
+Unpacking libgmpxx4ldbl:amd64 (2:6.2.1+dfsg1-1.1) ...
+Selecting previously unselected package libgmp-dev:amd64.
+Preparing to unpack .../1-libgmp-dev_2%3a6.2.1+dfsg1-1.1_amd64.deb ...
+Unpacking libgmp-dev:amd64 (2:6.2.1+dfsg1-1.1) ...
+Selecting previously unselected package libnl-3-200:amd64.
+Preparing to unpack .../2-libnl-3-200_3.7.0-0.2+b1_amd64.deb ...
+Unpacking libnl-3-200:amd64 (3.7.0-0.2+b1) ...
+Selecting previously unselected package libnl-3-dev:amd64.
+Preparing to unpack .../3-libnl-3-dev_3.7.0-0.2+b1_amd64.deb ...
+Unpacking libnl-3-dev:amd64 (3.7.0-0.2+b1) ...
+Selecting previously unselected package libnl-route-3-200:amd64.
+Preparing to unpack .../4-libnl-route-3-200_3.7.0-0.2+b1_amd64.deb ...
+Unpacking libnl-route-3-200:amd64 (3.7.0-0.2+b1) ...
+Selecting previously unselected package libnl-route-3-dev:amd64.
+Preparing to unpack .../5-libnl-route-3-dev_3.7.0-0.2+b1_amd64.deb ...
+Unpacking libnl-route-3-dev:amd64 (3.7.0-0.2+b1) ...
+Selecting previously unselected package libpkgconf3:amd64.
+Preparing to unpack .../6-libpkgconf3_1.8.1-1_amd64.deb ...
+Unpacking libpkgconf3:amd64 (1.8.1-1) ...
+Selecting previously unselected package pkgconf-bin.
+Preparing to unpack .../7-pkgconf-bin_1.8.1-1_amd64.deb ...
+Unpacking pkgconf-bin (1.8.1-1) ...
+Selecting previously unselected package pkgconf:amd64.
+Preparing to unpack .../8-pkgconf_1.8.1-1_amd64.deb ...
+Unpacking pkgconf:amd64 (1.8.1-1) ...
+Selecting previously unselected package pkg-config:amd64.
+Preparing to unpack .../9-pkg-config_1.8.1-1_amd64.deb ...
+Unpacking pkg-config:amd64 (1.8.1-1) ...
+Setting up libpkgconf3:amd64 (1.8.1-1) ...
+Setting up libgmpxx4ldbl:amd64 (2:6.2.1+dfsg1-1.1) ...
+Setting up pkgconf-bin (1.8.1-1) ...
+Setting up libnl-3-200:amd64 (3.7.0-0.2+b1) ...
+Setting up libgmp-dev:amd64 (2:6.2.1+dfsg1-1.1) ...
+Setting up pkgconf:amd64 (1.8.1-1) ...
+Setting up libnl-route-3-200:amd64 (3.7.0-0.2+b1) ...
+Setting up pkg-config:amd64 (1.8.1-1) ...
+Setting up libnl-3-dev:amd64 (3.7.0-0.2+b1) ...
+Setting up libnl-route-3-dev:amd64 (3.7.0-0.2+b1) ...
+Processing triggers for libc-bin (2.36-9+deb12u7) ...
+# OS packages installation successful
+albatross.2.1.0 is not installed. Install it? [Y/n] y
+[ERROR] Sorry, resolution of the request timed out.
+        Try to specify a simpler request, use a different solver, or increase the allowed time by setting OPAMSOLVERTIMEOUT to a bigger value (currently, it is set to 500.0 seconds).
+"/usr/bin/env" "bash" "-c" "opam depext albatross.2.1.0 && opam reinstall albatross.2.1.0;
+        res=$?;
+        test "$res" != 31 && exit "$res";
+        export OPAMCLI=2.0;
+        build_dir=$(opam var prefix)/.opam-switch/build;
+        failed=$(ls "$build_dir");
+        partial_fails="";
+        for pkg in $failed; do
+          if opam show -f x-ci-accept-failures: "$pkg" | grep -qF "\"debian-12\""; then
+            echo "A package failed and has been disabled for CI using the 'x-ci-accept-failures' field.";
+          fi;
+          test "$pkg" != 'albatross.2.1.0' && partial_fails="$partial_fails $pkg";
+        done;
+        test "${partial_fails}" != "" && echo "opam-repo-ci detected dependencies failing: ${partial_fails}";
+        exit 1" failed with exit status 60
+2024-08-15 20:31.22: Job failed: Failed: Build failed
+2024-08-15 20:31.22: Log analysis:
+2024-08-15 20:31.22: >>> 
+[ERROR] Sorry, resolution of the request timed out.
+ (score = 20)
+2024-08-15 20:31.22: Sorry, resolution of the request timed out.

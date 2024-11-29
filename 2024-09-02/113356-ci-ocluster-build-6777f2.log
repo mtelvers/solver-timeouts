@@ -1,0 +1,245 @@
+2024-09-02 11:33.56: New job: test ca-certs-nss.3.104, using opam 2.1
+                              from https://github.com/ocaml/opam-repository.git#refs/pull/26464/head (d7ea5b5b4f999296383e3973a14ccf7e9d11236a)
+                              on debian-12-ocaml-4.14/amd64
+
+To reproduce locally:
+
+cd $(mktemp -d)
+git clone --recursive "https://github.com/ocaml/opam-repository.git" && cd "opam-repository" && git fetch origin "refs/pull/26464/head" && git reset --hard d7ea5b5b
+git fetch origin master
+git merge --no-edit 8187cd8d3681d53f5042b5da316fa3f5e005a247
+cat > ../Dockerfile <<'END-OF-DOCKERFILE'
+[34mFROM ocaml/opam:debian-12-ocaml-4.14@sha256:9136ad269e9c41743c47a4e7411d6ed845fdb26fbb239da4539adb2955add8c8
+USER 1000:1000
+WORKDIR /home/opam
+RUN sudo ln -f /usr/bin/opam-2.1 /usr/bin/opam
+RUN opam init --reinit -ni
+RUN uname -rs && opam exec -- ocaml -version && opam --version
+ENV OPAMDOWNLOADJOBS="1"
+ENV OPAMERRLOGLEN="0"
+ENV OPAMSOLVERTIMEOUT="500"
+ENV OPAMPRECISETRACKING="1"
+ENV CI="true"
+ENV OPAM_REPO_CI="true"
+RUN rm -rf opam-repository/
+COPY --chown=1000:1000 . opam-repository/
+RUN opam repository set-url --strict default opam-repository/
+RUN opam update --depexts || true
+RUN opam pin add -k version -yn ca-certs-nss.3.104 3.104
+RUN opam reinstall ca-certs-nss.3.104; \
+    res=$?; \
+    test "$res" != 31 && exit "$res"; \
+    export OPAMCLI=2.0; \
+    build_dir=$(opam var prefix)/.opam-switch/build; \
+    failed=$(ls "$build_dir"); \
+    partial_fails=""; \
+    for pkg in $failed; do \
+    if opam show -f x-ci-accept-failures: "$pkg" | grep -qF "\"debian-12\""; then \
+    echo "A package failed and has been disabled for CI using the 'x-ci-accept-failures' field."; \
+    fi; \
+    test "$pkg" != 'ca-certs-nss.3.104' && partial_fails="$partial_fails $pkg"; \
+    done; \
+    test "${partial_fails}" != "" && echo "opam-repo-ci detected dependencies failing: ${partial_fails}"; \
+    exit 1
+RUN (opam reinstall --with-test ca-certs-nss.3.104) || true
+RUN opam reinstall --with-test --verbose ca-certs-nss.3.104; \
+    res=$?; \
+    test "$res" != 31 && exit "$res"; \
+    export OPAMCLI=2.0; \
+    build_dir=$(opam var prefix)/.opam-switch/build; \
+    failed=$(ls "$build_dir"); \
+    partial_fails=""; \
+    for pkg in $failed; do \
+    if opam show -f x-ci-accept-failures: "$pkg" | grep -qF "\"debian-12\""; then \
+    echo "A package failed and has been disabled for CI using the 'x-ci-accept-failures' field."; \
+    fi; \
+    test "$pkg" != 'ca-certs-nss.3.104' && partial_fails="$partial_fails $pkg"; \
+    done; \
+    test "${partial_fails}" != "" && echo "opam-repo-ci detected dependencies failing: ${partial_fails}"; \
+    exit 1
+[0m
+END-OF-DOCKERFILE
+docker build -f ../Dockerfile .
+
+2024-09-02 11:33.56: Using cache hint "ocaml/opam:debian-12-ocaml-4.14@sha256:9136ad269e9c41743c47a4e7411d6ed845fdb26fbb239da4539adb2955add8c8-ca-certs-nss.3.104-d7ea5b5b4f999296383e3973a14ccf7e9d11236a"
+2024-09-02 11:33.56: Using OBuilder spec:
+((from ocaml/opam:debian-12-ocaml-4.14@sha256:9136ad269e9c41743c47a4e7411d6ed845fdb26fbb239da4539adb2955add8c8)
+ (user (uid 1000) (gid 1000))
+ (workdir /home/opam)
+ (run (shell "sudo ln -f /usr/bin/opam-2.1 /usr/bin/opam"))
+ (run (network host)
+      (shell "opam init --reinit --config .opamrc-sandbox -ni"))
+ (run (shell "uname -rs && opam exec -- ocaml -version && opam --version"))
+ (env OPAMDOWNLOADJOBS 1)
+ (env OPAMERRLOGLEN 0)
+ (env OPAMSOLVERTIMEOUT 500)
+ (env OPAMPRECISETRACKING 1)
+ (env CI true)
+ (env OPAM_REPO_CI true)
+ (run (shell "rm -rf opam-repository/"))
+ (copy (src .) (dst opam-repository/))
+ (run (shell "opam repository set-url --strict default opam-repository/"))
+ (run (network host)
+      (shell "opam update --depexts || true"))
+ (run (shell "opam pin add -k version -yn ca-certs-nss.3.104 3.104"))
+ (run (cache (opam-archives (target /home/opam/.opam/download-cache)))
+      (network host)
+      (shell  "opam reinstall ca-certs-nss.3.104;\
+             \n        res=$?;\
+             \n        test \"$res\" != 31 && exit \"$res\";\
+             \n        export OPAMCLI=2.0;\
+             \n        build_dir=$(opam var prefix)/.opam-switch/build;\
+             \n        failed=$(ls \"$build_dir\");\
+             \n        partial_fails=\"\";\
+             \n        for pkg in $failed; do\
+             \n          if opam show -f x-ci-accept-failures: \"$pkg\" | grep -qF \"\\\"debian-12\\\"\"; then\
+             \n            echo \"A package failed and has been disabled for CI using the 'x-ci-accept-failures' field.\";\
+             \n          fi;\
+             \n          test \"$pkg\" != 'ca-certs-nss.3.104' && partial_fails=\"$partial_fails $pkg\";\
+             \n        done;\
+             \n        test \"${partial_fails}\" != \"\" && echo \"opam-repo-ci detected dependencies failing: ${partial_fails}\";\
+             \n        exit 1"))
+ (run (network host)
+      (shell "(opam reinstall --with-test ca-certs-nss.3.104) || true"))
+ (run (shell  "opam reinstall --with-test --verbose ca-certs-nss.3.104;\
+             \n        res=$?;\
+             \n        test \"$res\" != 31 && exit \"$res\";\
+             \n        export OPAMCLI=2.0;\
+             \n        build_dir=$(opam var prefix)/.opam-switch/build;\
+             \n        failed=$(ls \"$build_dir\");\
+             \n        partial_fails=\"\";\
+             \n        for pkg in $failed; do\
+             \n          if opam show -f x-ci-accept-failures: \"$pkg\" | grep -qF \"\\\"debian-12\\\"\"; then\
+             \n            echo \"A package failed and has been disabled for CI using the 'x-ci-accept-failures' field.\";\
+             \n          fi;\
+             \n          test \"$pkg\" != 'ca-certs-nss.3.104' && partial_fails=\"$partial_fails $pkg\";\
+             \n        done;\
+             \n        test \"${partial_fails}\" != \"\" && echo \"opam-repo-ci detected dependencies failing: ${partial_fails}\";\
+             \n        exit 1"))
+)
+
+2024-09-02 11:33.56: Waiting for resource in pool OCluster
+2024-09-02 11:33.56: Waiting for worker…
+2024-09-02 11:33.56: Got resource from pool OCluster
+Building on asteria.caelum.ci.dev
+All commits already cached
+Updating files:  66% (21203/32056)Updating files:  67% (21478/32056)Updating files:  68% (21799/32056)Updating files:  69% (22119/32056)Updating files:  70% (22440/32056)Updating files:  71% (22760/32056)Updating files:  72% (23081/32056)Updating files:  73% (23401/32056)Updating files:  74% (23722/32056)Updating files:  75% (24042/32056)Updating files:  76% (24363/32056)Updating files:  77% (24684/32056)Updating files:  78% (25004/32056)Updating files:  79% (25325/32056)Updating files:  80% (25645/32056)Updating files:  81% (25966/32056)Updating files:  82% (26286/32056)Updating files:  83% (26607/32056)Updating files:  84% (26928/32056)Updating files:  85% (27248/32056)Updating files:  86% (27569/32056)Updating files:  87% (27889/32056)Updating files:  88% (28210/32056)Updating files:  89% (28530/32056)Updating files:  90% (28851/32056)Updating files:  91% (29171/32056)Updating files:  92% (29492/32056)Updating files:  93% (29813/32056)Updating files:  94% (30133/32056)Updating files:  95% (30454/32056)Updating files:  96% (30774/32056)Updating files:  97% (31095/32056)Updating files:  98% (31415/32056)Updating files:  99% (31736/32056)Updating files: 100% (32056/32056)Updating files: 100% (32056/32056), done.
+HEAD is now at 8187cd8d36 Merge pull request #26463 from hannesm/conduit-bounds
+Updating 8187cd8d36..d7ea5b5b4f
+Fast-forward
+ packages/ca-certs-nss/ca-certs-nss.3.104/opam | 53 +++++++++++++++++++++++++++
+ 1 file changed, 53 insertions(+)
+ create mode 100644 packages/ca-certs-nss/ca-certs-nss.3.104/opam
+
+[01;34m(from ocaml/opam:debian-12-ocaml-4.14@sha256:9136ad269e9c41743c47a4e7411d6ed845fdb26fbb239da4539adb2955add8c8)[0m
+[01;2m[01;35m2024-09-02 11:34.14 ---> using "7fff8202a9a499965e9a603418271163cf4aeae08f9ce3e4b7d3379f6e75b4cd" from cache[0m
+
+[01;34m/: (user (uid 1000) (gid 1000))[0m
+
+[01;34m/: (workdir /home/opam)[0m
+
+[01;34m/home/opam: (run (shell "sudo ln -f /usr/bin/opam-2.1 /usr/bin/opam"))[0m
+[01;2m[01;35m2024-09-02 11:34.15 ---> saved as "b132cd23b1eb5c0eb798e9a9429bfa2bb284a7df52bdfcd0db88f6474e79f352"[0m
+
+[01;34m/home/opam: (run (network host)
+                 (shell "opam init --reinit --config .opamrc-sandbox -ni"))[0m
+Configuring from /home/opam/.opamrc-sandbox, then /home/opam/.opamrc, and finally from built-in defaults.
+Checking for available remotes: rsync and local, git.
+  - you won't be able to use mercurial repositories unless you install the hg command on your system.
+  - you won't be able to use darcs repositories unless you install the darcs command on your system.
+
+This development version of opam requires an update to the layout of /home/opam/.opam from version 2.0 to version 2.1, which can't be reverted.
+You may want to back it up before going further.
+
+Continue? [Y/n] y
+Format upgrade done.
+
+<><> Updating repositories ><><><><><><><><><><><><><><><><><><><><><><><><><><>
+[default] synchronised from file:///home/opam/opam-repository
+[01;2m[01;35m2024-09-02 11:35.25 ---> saved as "12ca198f5a5f6ddbdbf5f418d86c4ee44fc16acc1fe1e81a914b8c5876e16733"[0m
+
+[01;34m/home/opam: (run (shell "uname -rs && opam exec -- ocaml -version && opam --version"))[0m
+Linux 5.15.0-119-generic
+The OCaml toplevel, version 4.14.2
+2.1.6
+[01;2m[01;35m2024-09-02 11:35.26 ---> saved as "c9c22d86752d303c42073c55ddd5cfe5f589a5b45e4b444b81c8afcb7ba1dc4b"[0m
+
+[01;34m/home/opam: (env OPAMDOWNLOADJOBS 1)[0m
+
+[01;34m/home/opam: (env OPAMERRLOGLEN 0)[0m
+
+[01;34m/home/opam: (env OPAMSOLVERTIMEOUT 500)[0m
+
+[01;34m/home/opam: (env OPAMPRECISETRACKING 1)[0m
+
+[01;34m/home/opam: (env CI true)[0m
+
+[01;34m/home/opam: (env OPAM_REPO_CI true)[0m
+
+[01;34m/home/opam: (run (shell "rm -rf opam-repository/"))[0m
+[01;2m[01;35m2024-09-02 11:35.38 ---> saved as "64d6d25941c5ac04bc1e72a2469428362f4a1c58fd8e7261c67adc1469e172fd"[0m
+
+[01;34m/home/opam: (copy (src .) (dst opam-repository/))[0m
+[01;2m[01;35m2024-09-02 11:35.47 ---> saved as "109388b047bfb97aab1d4aa8e592d073e412be123395135daafb195037dc8be0"[0m
+
+[01;34m/home/opam: (run (shell "opam repository set-url --strict default opam-repository/"))[0m
+[default] Initialised
+[01;2m[01;35m2024-09-02 11:36.06 ---> saved as "2d957122ba62518d03933fc81bf800ff9bda2c98cceb584f83f9f10fc43ac684"[0m
+
+[01;34m/home/opam: (run (network host)
+                 (shell "opam update --depexts || true"))[0m
++ /usr/bin/sudo "apt-get" "update"
+- Get:1 http://deb.debian.org/debian bookworm InRelease [151 kB]
+- Get:2 http://deb.debian.org/debian bookworm-updates InRelease [55.4 kB]
+- Get:3 http://deb.debian.org/debian-security bookworm-security InRelease [48.0 kB]
+- Get:4 http://deb.debian.org/debian bookworm/main amd64 Packages [8787 kB]
+- Get:5 http://deb.debian.org/debian-security bookworm-security/main amd64 Packages [179 kB]
+- Fetched 9221 kB in 1s (7151 kB/s)
+- Reading package lists...
+[01;2m[01;35m2024-09-02 11:36.08 ---> saved as "349f47b701bfce9fc5e417efb461aa24f26bb88d63d0bd186a5bcc0ce9e3d7f6"[0m
+
+[01;34m/home/opam: (run (shell "opam pin add -k version -yn ca-certs-nss.3.104 3.104"))[0m
+ca-certs-nss is now pinned to version 3.104
+[01;2m[01;35m2024-09-02 11:36.09 ---> saved as "71c59f16201cea9dad1715fd315c6d0c988b41c8e13fb11645456cceaa1d0be9"[0m
+
+[01;34m/home/opam: (run (cache (opam-archives (target /home/opam/.opam/download-cache)))
+                 (network host)
+                 (shell  "opam reinstall ca-certs-nss.3.104;\
+                        \n        res=$?;\
+                        \n        test \"$res\" != 31 && exit \"$res\";\
+                        \n        export OPAMCLI=2.0;\
+                        \n        build_dir=$(opam var prefix)/.opam-switch/build;\
+                        \n        failed=$(ls \"$build_dir\");\
+                        \n        partial_fails=\"\";\
+                        \n        for pkg in $failed; do\
+                        \n          if opam show -f x-ci-accept-failures: \"$pkg\" | grep -qF \"\\\"debian-12\\\"\"; then\
+                        \n            echo \"A package failed and has been disabled for CI using the 'x-ci-accept-failures' field.\";\
+                        \n          fi;\
+                        \n          test \"$pkg\" != 'ca-certs-nss.3.104' && partial_fails=\"$partial_fails $pkg\";\
+                        \n        done;\
+                        \n        test \"${partial_fails}\" != \"\" && echo \"opam-repo-ci detected dependencies failing: ${partial_fails}\";\
+                        \n        exit 1"))[0m
+ca-certs-nss.3.104 is not installed. Install it? [Y/n] y
+[ERROR] Sorry, resolution of the request timed out.
+        Try to specify a more precise request, use a different solver, or increase the allowed time by setting OPAMSOLVERTIMEOUT to a bigger value (currently, it is set to 500.0 seconds).
+"/usr/bin/env" "bash" "-c" "opam reinstall ca-certs-nss.3.104;
+        res=$?;
+        test "$res" != 31 && exit "$res";
+        export OPAMCLI=2.0;
+        build_dir=$(opam var prefix)/.opam-switch/build;
+        failed=$(ls "$build_dir");
+        partial_fails="";
+        for pkg in $failed; do
+          if opam show -f x-ci-accept-failures: "$pkg" | grep -qF "\"debian-12\""; then
+            echo "A package failed and has been disabled for CI using the 'x-ci-accept-failures' field.";
+          fi;
+          test "$pkg" != 'ca-certs-nss.3.104' && partial_fails="$partial_fails $pkg";
+        done;
+        test "${partial_fails}" != "" && echo "opam-repo-ci detected dependencies failing: ${partial_fails}";
+        exit 1" failed with exit status 60
+2024-09-02 11:44.55: Job failed: Failed: Build failed
+2024-09-02 11:44.55: Log analysis:
+2024-09-02 11:44.55: >>> 
+[ERROR] Sorry, resolution of the request timed out.
+ (score = 20)
+2024-09-02 11:44.55: Sorry, resolution of the request timed out.

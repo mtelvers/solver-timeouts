@@ -1,0 +1,257 @@
+2024-08-18 20:36.28: New job: test ezjsonm-encoding-dev.2.1.0, using opam 2.0
+                              from https://github.com/ocaml/opam-repository.git#refs/pull/26374/head (0e8c1ec0dc20a3bc15fc450c4fba39ddb6509c66)
+                              on debian-12-ocaml-4.14/amd64
+
+To reproduce locally:
+
+cd $(mktemp -d)
+git clone --recursive "https://github.com/ocaml/opam-repository.git" && cd "opam-repository" && git fetch origin "refs/pull/26374/head" && git reset --hard 0e8c1ec0
+git fetch origin master
+git merge --no-edit 0f2e2e7a59bb6529f1cf8ec039da401833b24cdf
+cat > ../Dockerfile <<'END-OF-DOCKERFILE'
+[34mFROM ocaml/opam:debian-12-ocaml-4.14@sha256:69ef0774f5cbddd472ab7b4ed241ca72bff5d63eddde00603b6501d0e4e60b3f
+USER 1000:1000
+WORKDIR /home/opam
+RUN sudo ln -f /usr/bin/opam-2.0 /usr/bin/opam
+RUN opam init --reinit -ni
+RUN uname -rs && opam exec -- ocaml -version && opam --version
+ENV OPAMDOWNLOADJOBS="1"
+ENV OPAMERRLOGLEN="0"
+ENV OPAMSOLVERTIMEOUT="500"
+ENV OPAMPRECISETRACKING="1"
+ENV CI="true"
+ENV OPAM_REPO_CI="true"
+RUN rm -rf opam-repository/
+COPY --chown=1000:1000 . opam-repository/
+RUN opam repository set-url --strict default opam-repository/
+RUN opam depext -u || true
+RUN opam pin add -k version -yn ezjsonm-encoding-dev.2.1.0 2.1.0
+RUN opam depext ezjsonm-encoding-dev.2.1.0 && opam reinstall ezjsonm-encoding-dev.2.1.0; \
+    res=$?; \
+    test "$res" != 31 && exit "$res"; \
+    export OPAMCLI=2.0; \
+    build_dir=$(opam var prefix)/.opam-switch/build; \
+    failed=$(ls "$build_dir"); \
+    partial_fails=""; \
+    for pkg in $failed; do \
+    if opam show -f x-ci-accept-failures: "$pkg" | grep -qF "\"debian-12\""; then \
+    echo "A package failed and has been disabled for CI using the 'x-ci-accept-failures' field."; \
+    fi; \
+    test "$pkg" != 'ezjsonm-encoding-dev.2.1.0' && partial_fails="$partial_fails $pkg"; \
+    done; \
+    test "${partial_fails}" != "" && echo "opam-repo-ci detected dependencies failing: ${partial_fails}"; \
+    exit 1
+RUN (opam depext --with-test ezjsonm-encoding-dev.2.1.0 && opam reinstall --with-test ezjsonm-encoding-dev.2.1.0) || true
+RUN opam depext --with-test ezjsonm-encoding-dev.2.1.0 && opam reinstall --with-test --verbose ezjsonm-encoding-dev.2.1.0; \
+    res=$?; \
+    test "$res" != 31 && exit "$res"; \
+    export OPAMCLI=2.0; \
+    build_dir=$(opam var prefix)/.opam-switch/build; \
+    failed=$(ls "$build_dir"); \
+    partial_fails=""; \
+    for pkg in $failed; do \
+    if opam show -f x-ci-accept-failures: "$pkg" | grep -qF "\"debian-12\""; then \
+    echo "A package failed and has been disabled for CI using the 'x-ci-accept-failures' field."; \
+    fi; \
+    test "$pkg" != 'ezjsonm-encoding-dev.2.1.0' && partial_fails="$partial_fails $pkg"; \
+    done; \
+    test "${partial_fails}" != "" && echo "opam-repo-ci detected dependencies failing: ${partial_fails}"; \
+    exit 1
+[0m
+END-OF-DOCKERFILE
+docker build -f ../Dockerfile .
+
+2024-08-18 20:36.28: Using cache hint "ocaml/opam:debian-12-ocaml-4.14@sha256:69ef0774f5cbddd472ab7b4ed241ca72bff5d63eddde00603b6501d0e4e60b3f-ezjsonm-encoding-dev.2.1.0-0e8c1ec0dc20a3bc15fc450c4fba39ddb6509c66"
+2024-08-18 20:36.28: Using OBuilder spec:
+((from ocaml/opam:debian-12-ocaml-4.14@sha256:69ef0774f5cbddd472ab7b4ed241ca72bff5d63eddde00603b6501d0e4e60b3f)
+ (user (uid 1000) (gid 1000))
+ (workdir /home/opam)
+ (run (shell "sudo ln -f /usr/bin/opam-2.0 /usr/bin/opam"))
+ (run (network host)
+      (shell "opam init --reinit --config .opamrc-sandbox -ni"))
+ (run (shell "uname -rs && opam exec -- ocaml -version && opam --version"))
+ (env OPAMDOWNLOADJOBS 1)
+ (env OPAMERRLOGLEN 0)
+ (env OPAMSOLVERTIMEOUT 500)
+ (env OPAMPRECISETRACKING 1)
+ (env CI true)
+ (env OPAM_REPO_CI true)
+ (run (shell "rm -rf opam-repository/"))
+ (copy (src .) (dst opam-repository/))
+ (run (shell "opam repository set-url --strict default opam-repository/"))
+ (run (network host)
+      (shell "opam depext -u || true"))
+ (run (shell "opam pin add -k version -yn ezjsonm-encoding-dev.2.1.0 2.1.0"))
+ (run (cache (opam-archives (target /home/opam/.opam/download-cache)))
+      (network host)
+      (shell  "opam depext ezjsonm-encoding-dev.2.1.0 && opam reinstall ezjsonm-encoding-dev.2.1.0;\
+             \n        res=$?;\
+             \n        test \"$res\" != 31 && exit \"$res\";\
+             \n        export OPAMCLI=2.0;\
+             \n        build_dir=$(opam var prefix)/.opam-switch/build;\
+             \n        failed=$(ls \"$build_dir\");\
+             \n        partial_fails=\"\";\
+             \n        for pkg in $failed; do\
+             \n          if opam show -f x-ci-accept-failures: \"$pkg\" | grep -qF \"\\\"debian-12\\\"\"; then\
+             \n            echo \"A package failed and has been disabled for CI using the 'x-ci-accept-failures' field.\";\
+             \n          fi;\
+             \n          test \"$pkg\" != 'ezjsonm-encoding-dev.2.1.0' && partial_fails=\"$partial_fails $pkg\";\
+             \n        done;\
+             \n        test \"${partial_fails}\" != \"\" && echo \"opam-repo-ci detected dependencies failing: ${partial_fails}\";\
+             \n        exit 1"))
+ (run (network host)
+      (shell "(opam depext --with-test ezjsonm-encoding-dev.2.1.0 && opam reinstall --with-test ezjsonm-encoding-dev.2.1.0) || true"))
+ (run (shell  "opam depext --with-test ezjsonm-encoding-dev.2.1.0 && opam reinstall --with-test --verbose ezjsonm-encoding-dev.2.1.0;\
+             \n        res=$?;\
+             \n        test \"$res\" != 31 && exit \"$res\";\
+             \n        export OPAMCLI=2.0;\
+             \n        build_dir=$(opam var prefix)/.opam-switch/build;\
+             \n        failed=$(ls \"$build_dir\");\
+             \n        partial_fails=\"\";\
+             \n        for pkg in $failed; do\
+             \n          if opam show -f x-ci-accept-failures: \"$pkg\" | grep -qF \"\\\"debian-12\\\"\"; then\
+             \n            echo \"A package failed and has been disabled for CI using the 'x-ci-accept-failures' field.\";\
+             \n          fi;\
+             \n          test \"$pkg\" != 'ezjsonm-encoding-dev.2.1.0' && partial_fails=\"$partial_fails $pkg\";\
+             \n        done;\
+             \n        test \"${partial_fails}\" != \"\" && echo \"opam-repo-ci detected dependencies failing: ${partial_fails}\";\
+             \n        exit 1"))
+)
+
+2024-08-18 20:36.28: Waiting for resource in pool OCluster
+2024-08-18 20:36.29: Waiting for worker…
+2024-08-18 20:39.24: Got resource from pool OCluster
+Building on x86-bm-c3.sw.ocaml.org
+All commits already cached
+Updating files:  67% (21706/31974)Updating files:  68% (21743/31974)Updating files:  69% (22063/31974)Updating files:  70% (22382/31974)Updating files:  71% (22702/31974)Updating files:  72% (23022/31974)Updating files:  73% (23342/31974)Updating files:  74% (23661/31974)Updating files:  75% (23981/31974)Updating files:  76% (24301/31974)Updating files:  77% (24620/31974)Updating files:  78% (24940/31974)Updating files:  79% (25260/31974)Updating files:  80% (25580/31974)Updating files:  81% (25899/31974)Updating files:  82% (26219/31974)Updating files:  83% (26539/31974)Updating files:  84% (26859/31974)Updating files:  85% (27178/31974)Updating files:  86% (27498/31974)Updating files:  87% (27818/31974)Updating files:  88% (28138/31974)Updating files:  89% (28457/31974)Updating files:  90% (28777/31974)Updating files:  91% (29097/31974)Updating files:  92% (29417/31974)Updating files:  93% (29736/31974)Updating files:  94% (30056/31974)Updating files:  95% (30376/31974)Updating files:  96% (30696/31974)Updating files:  97% (31015/31974)Updating files:  98% (31335/31974)Updating files:  99% (31655/31974)Updating files: 100% (31974/31974)Updating files: 100% (31974/31974), done.
+HEAD is now at 0f2e2e7a59 Merge pull request #26366 from jchavarri/release-melange-json-1.2.0
+Updating 0f2e2e7a59..0e8c1ec0dc
+Fast-forward
+ .../ezjsonm-encoding-dev.2.1.0/opam                | 40 ++++++++++++++++++++++
+ .../ezjsonm-encoding/ezjsonm-encoding.2.1.0/opam   | 37 ++++++++++++++++++++
+ 2 files changed, 77 insertions(+)
+ create mode 100644 packages/ezjsonm-encoding-dev/ezjsonm-encoding-dev.2.1.0/opam
+ create mode 100644 packages/ezjsonm-encoding/ezjsonm-encoding.2.1.0/opam
+
+[01;34m(from ocaml/opam:debian-12-ocaml-4.14@sha256:69ef0774f5cbddd472ab7b4ed241ca72bff5d63eddde00603b6501d0e4e60b3f)[0m
+[01;2m[01;35m2024-08-18 20:39.27 ---> using "3b0157ebb129531d5cf79767d1ddda107d4a5cf477561a94cf78dbb40f9e3848" from cache[0m
+
+[01;34m/: (user (uid 1000) (gid 1000))[0m
+
+[01;34m/: (workdir /home/opam)[0m
+
+[01;34m/home/opam: (run (shell "sudo ln -f /usr/bin/opam-2.0 /usr/bin/opam"))[0m
+[01;2m[01;35m2024-08-18 20:39.27 ---> using "79c106300ca6dfa1929b1395bc8544eff3246041b4dbf8629ffc85f910209138" from cache[0m
+
+[01;34m/home/opam: (run (network host)
+                 (shell "opam init --reinit --config .opamrc-sandbox -ni"))[0m
+[NOTE] Will configure from /home/opam/.opamrc-sandbox, then /home/opam/.opamrc, and finally from built-in defaults.
+Checking for available remotes: rsync and local, git.
+  - you won't be able to use mercurial repositories unless you install the hg command on your system.
+  - you won't be able to use darcs repositories unless you install the darcs command on your system.
+
+[WARNING] Recommended dependencies -- most packages rely on these:
+  - m4
+
+<><> Updating repositories ><><><><><><><><><><><><><><><><><><><><><><><><><><>
+[default] synchronised from file:///home/opam/opam-repository
+default (at file:///home/opam/opam-repository): 
+    [INFO] opam 2.1 and 2.2 include many performance improvements over 2.0; please consider upgrading (https://opam.ocaml.org/doc/Install.html)
+
+[01;2m[01;35m2024-08-18 20:40.04 ---> saved as "7ee0fe244cb0395ed58fbd56293e42b12173e454d525f3371e3a3ed64e61ec52"[0m
+
+[01;34m/home/opam: (run (shell "uname -rs && opam exec -- ocaml -version && opam --version"))[0m
+Linux 5.15.0-117-generic
+The OCaml toplevel, version 4.14.2
+2.0.10
+[01;2m[01;35m2024-08-18 20:40.05 ---> saved as "ce4f82d3be04e0d3b2ef786ad6bc8eacf1a34a1b7010e945d4a0e4c802e44466"[0m
+
+[01;34m/home/opam: (env OPAMDOWNLOADJOBS 1)[0m
+
+[01;34m/home/opam: (env OPAMERRLOGLEN 0)[0m
+
+[01;34m/home/opam: (env OPAMSOLVERTIMEOUT 500)[0m
+
+[01;34m/home/opam: (env OPAMPRECISETRACKING 1)[0m
+
+[01;34m/home/opam: (env CI true)[0m
+
+[01;34m/home/opam: (env OPAM_REPO_CI true)[0m
+
+[01;34m/home/opam: (run (shell "rm -rf opam-repository/"))[0m
+[01;2m[01;35m2024-08-18 20:40.16 ---> saved as "41e61e4a57f987064a5d96ea088982e86ea5bb4b8ddc367a38a8ab0015b171ee"[0m
+
+[01;34m/home/opam: (copy (src .) (dst opam-repository/))[0m
+[01;2m[01;35m2024-08-18 20:40.25 ---> saved as "133cd337efbd5e4cd4af47d60230f34574803d4403b390ea1c933ea40103d2f2"[0m
+
+[01;34m/home/opam: (run (shell "opam repository set-url --strict default opam-repository/"))[0m
+[default] Initialised
+default (at file:///home/opam/opam-repository): 
+    [INFO] opam 2.1 and 2.2 include many performance improvements over 2.0; please consider upgrading (https://opam.ocaml.org/doc/Install.html)
+
+[01;2m[01;35m2024-08-18 20:40.51 ---> saved as "3ca6d337abc4f87d5dd0daa24d77bd5e0c07b21bf2fc4dd169399c15943f971b"[0m
+
+[01;34m/home/opam: (run (network host)
+                 (shell "opam depext -u || true"))[0m
+# Detecting depexts using vars: arch=x86_64, os=linux, os-distribution=debian, os-family=debian
+# No extra OS packages requirements found.
+# All required OS packages found.
+The following command needs to be run through "sudo":
+    apt-get update
+Hit:1 http://deb.debian.org/debian bookworm InRelease
+Get:2 http://deb.debian.org/debian bookworm-updates InRelease [55.4 kB]
+Get:3 http://deb.debian.org/debian-security bookworm-security InRelease [48.0 kB]
+Get:4 http://deb.debian.org/debian-security bookworm-security/main amd64 Packages [170 kB]
+Fetched 273 kB in 0s (1043 kB/s)
+Reading package lists...
+# OS package update successful
+[01;2m[01;35m2024-08-18 20:40.53 ---> saved as "31c39a06c3f8e1010722dcec8de036796c43ac00dfdb34fe9bb321b268b23379"[0m
+
+[01;34m/home/opam: (run (shell "opam pin add -k version -yn ezjsonm-encoding-dev.2.1.0 2.1.0"))[0m
+ezjsonm-encoding-dev is now pinned to version 2.1.0
+[01;2m[01;35m2024-08-18 20:40.54 ---> saved as "9099f9507e99d7303e589313fde20ab3e0e934fb1c12ad2ffd7c5e87c5cf11ce"[0m
+
+[01;34m/home/opam: (run (cache (opam-archives (target /home/opam/.opam/download-cache)))
+                 (network host)
+                 (shell  "opam depext ezjsonm-encoding-dev.2.1.0 && opam reinstall ezjsonm-encoding-dev.2.1.0;\
+                        \n        res=$?;\
+                        \n        test \"$res\" != 31 && exit \"$res\";\
+                        \n        export OPAMCLI=2.0;\
+                        \n        build_dir=$(opam var prefix)/.opam-switch/build;\
+                        \n        failed=$(ls \"$build_dir\");\
+                        \n        partial_fails=\"\";\
+                        \n        for pkg in $failed; do\
+                        \n          if opam show -f x-ci-accept-failures: \"$pkg\" | grep -qF \"\\\"debian-12\\\"\"; then\
+                        \n            echo \"A package failed and has been disabled for CI using the 'x-ci-accept-failures' field.\";\
+                        \n          fi;\
+                        \n          test \"$pkg\" != 'ezjsonm-encoding-dev.2.1.0' && partial_fails=\"$partial_fails $pkg\";\
+                        \n        done;\
+                        \n        test \"${partial_fails}\" != \"\" && echo \"opam-repo-ci detected dependencies failing: ${partial_fails}\";\
+                        \n        exit 1"))[0m
+# Detecting depexts using vars: arch=x86_64, os=linux, os-distribution=debian, os-family=debian
+# No extra OS packages requirements found.
+# All required OS packages found.
+ezjsonm-encoding-dev.2.1.0 is not installed. Install it? [Y/n] y
+[ERROR] Sorry, resolution of the request timed out.
+        Try to specify a simpler request, use a different solver, or increase the allowed time by setting OPAMSOLVERTIMEOUT to a bigger value (currently, it is set to 500.0 seconds).
+"/usr/bin/env" "bash" "-c" "opam depext ezjsonm-encoding-dev.2.1.0 && opam reinstall ezjsonm-encoding-dev.2.1.0;
+        res=$?;
+        test "$res" != 31 && exit "$res";
+        export OPAMCLI=2.0;
+        build_dir=$(opam var prefix)/.opam-switch/build;
+        failed=$(ls "$build_dir");
+        partial_fails="";
+        for pkg in $failed; do
+          if opam show -f x-ci-accept-failures: "$pkg" | grep -qF "\"debian-12\""; then
+            echo "A package failed and has been disabled for CI using the 'x-ci-accept-failures' field.";
+          fi;
+          test "$pkg" != 'ezjsonm-encoding-dev.2.1.0' && partial_fails="$partial_fails $pkg";
+        done;
+        test "${partial_fails}" != "" && echo "opam-repo-ci detected dependencies failing: ${partial_fails}";
+        exit 1" failed with exit status 60
+2024-08-18 20:49.45: Job failed: Failed: Build failed
+2024-08-18 20:49.45: Log analysis:
+2024-08-18 20:49.45: >>> 
+[ERROR] Sorry, resolution of the request timed out.
+ (score = 20)
+2024-08-18 20:49.45: Sorry, resolution of the request timed out.

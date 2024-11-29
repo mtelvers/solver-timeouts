@@ -1,0 +1,629 @@
+2024-10-29 14:48.03: New job: test git-kv.0.1.0, using opam dev
+                              from https://github.com/ocaml/opam-repository.git#refs/pull/26802/head (863a3e3f9c4085f5213aa68c4a7534de5835a070)
+                              on ubuntu-24.04-ocaml-4.14/riscv64
+
+To reproduce locally:
+
+cd $(mktemp -d)
+git clone --recursive "https://github.com/ocaml/opam-repository.git" && cd "opam-repository" && git fetch origin "refs/pull/26802/head" && git reset --hard 863a3e3f
+git fetch origin master
+git merge --no-edit 3a66e3f442bf88118269b1017182f9f1c08fd068
+cat > ../Dockerfile <<'END-OF-DOCKERFILE'
+[34mFROM ocaml/opam:ubuntu-24.04-ocaml-4.14@sha256:ab7dfe24e91aa87cf7a6fe145e3ddc91e1a0ac29aad04217bbc7aca5b92686f1
+USER 1000:1000
+WORKDIR /home/opam
+RUN sudo ln -f /usr/bin/opam-dev /usr/bin/opam
+RUN opam init --reinit -ni
+RUN uname -rs && opam exec -- ocaml -version && opam --version
+ENV OPAMDOWNLOADJOBS="1"
+ENV OPAMERRLOGLEN="0"
+ENV OPAMSOLVERTIMEOUT="1000"
+ENV OPAMPRECISETRACKING="1"
+ENV CI="true"
+ENV OPAM_REPO_CI="true"
+RUN rm -rf opam-repository/
+COPY --chown=1000:1000 . opam-repository/
+RUN opam repository set-url --strict default opam-repository/
+RUN opam update --depexts || true
+RUN opam pin add -k version -yn git-kv.0.1.0 0.1.0
+RUN opam reinstall git-kv.0.1.0; \
+    res=$?; \
+    test "$res" != 31 && exit "$res"; \
+    export OPAMCLI=2.0; \
+    build_dir=$(opam var prefix)/.opam-switch/build; \
+    failed=$(ls "$build_dir"); \
+    partial_fails=""; \
+    for pkg in $failed; do \
+    if opam show -f x-ci-accept-failures: "$pkg" | grep -qF "\"ubuntu-24.04\""; then \
+    echo "A package failed and has been disabled for CI using the 'x-ci-accept-failures' field."; \
+    fi; \
+    test "$pkg" != 'git-kv.0.1.0' && partial_fails="$partial_fails $pkg"; \
+    done; \
+    test "${partial_fails}" != "" && echo "opam-repo-ci detected dependencies failing: ${partial_fails}"; \
+    exit 1
+RUN (opam reinstall --with-test git-kv.0.1.0) || true
+RUN opam reinstall --with-test --verbose git-kv.0.1.0; \
+    res=$?; \
+    test "$res" != 31 && exit "$res"; \
+    export OPAMCLI=2.0; \
+    build_dir=$(opam var prefix)/.opam-switch/build; \
+    failed=$(ls "$build_dir"); \
+    partial_fails=""; \
+    for pkg in $failed; do \
+    if opam show -f x-ci-accept-failures: "$pkg" | grep -qF "\"ubuntu-24.04\""; then \
+    echo "A package failed and has been disabled for CI using the 'x-ci-accept-failures' field."; \
+    fi; \
+    test "$pkg" != 'git-kv.0.1.0' && partial_fails="$partial_fails $pkg"; \
+    done; \
+    test "${partial_fails}" != "" && echo "opam-repo-ci detected dependencies failing: ${partial_fails}"; \
+    exit 1
+[0m
+END-OF-DOCKERFILE
+docker build -f ../Dockerfile .
+
+2024-10-29 14:48.03: Using cache hint "ocaml/opam:ubuntu-24.04-ocaml-4.14@sha256:ab7dfe24e91aa87cf7a6fe145e3ddc91e1a0ac29aad04217bbc7aca5b92686f1-git-kv.0.1.0-863a3e3f9c4085f5213aa68c4a7534de5835a070"
+2024-10-29 14:48.03: Using OBuilder spec:
+((from ocaml/opam:ubuntu-24.04-ocaml-4.14@sha256:ab7dfe24e91aa87cf7a6fe145e3ddc91e1a0ac29aad04217bbc7aca5b92686f1)
+ (user (uid 1000) (gid 1000))
+ (workdir /home/opam)
+ (run (shell "sudo ln -f /usr/bin/opam-dev /usr/bin/opam"))
+ (run (network host)
+      (shell "opam init --reinit --config .opamrc-sandbox -ni"))
+ (run (shell "uname -rs && opam exec -- ocaml -version && opam --version"))
+ (env OPAMDOWNLOADJOBS 1)
+ (env OPAMERRLOGLEN 0)
+ (env OPAMSOLVERTIMEOUT 1000)
+ (env OPAMPRECISETRACKING 1)
+ (env CI true)
+ (env OPAM_REPO_CI true)
+ (run (shell "rm -rf opam-repository/"))
+ (copy (src .) (dst opam-repository/))
+ (run (shell "opam repository set-url --strict default opam-repository/"))
+ (run (network host)
+      (shell "opam update --depexts || true"))
+ (run (shell "opam pin add -k version -yn git-kv.0.1.0 0.1.0"))
+ (run (cache (opam-archives (target /home/opam/.opam/download-cache)))
+      (network host)
+      (shell  "opam reinstall git-kv.0.1.0;\
+             \n        res=$?;\
+             \n        test \"$res\" != 31 && exit \"$res\";\
+             \n        export OPAMCLI=2.0;\
+             \n        build_dir=$(opam var prefix)/.opam-switch/build;\
+             \n        failed=$(ls \"$build_dir\");\
+             \n        partial_fails=\"\";\
+             \n        for pkg in $failed; do\
+             \n          if opam show -f x-ci-accept-failures: \"$pkg\" | grep -qF \"\\\"ubuntu-24.04\\\"\"; then\
+             \n            echo \"A package failed and has been disabled for CI using the 'x-ci-accept-failures' field.\";\
+             \n          fi;\
+             \n          test \"$pkg\" != 'git-kv.0.1.0' && partial_fails=\"$partial_fails $pkg\";\
+             \n        done;\
+             \n        test \"${partial_fails}\" != \"\" && echo \"opam-repo-ci detected dependencies failing: ${partial_fails}\";\
+             \n        exit 1"))
+ (run (network host)
+      (shell "(opam reinstall --with-test git-kv.0.1.0) || true"))
+ (run (shell  "opam reinstall --with-test --verbose git-kv.0.1.0;\
+             \n        res=$?;\
+             \n        test \"$res\" != 31 && exit \"$res\";\
+             \n        export OPAMCLI=2.0;\
+             \n        build_dir=$(opam var prefix)/.opam-switch/build;\
+             \n        failed=$(ls \"$build_dir\");\
+             \n        partial_fails=\"\";\
+             \n        for pkg in $failed; do\
+             \n          if opam show -f x-ci-accept-failures: \"$pkg\" | grep -qF \"\\\"ubuntu-24.04\\\"\"; then\
+             \n            echo \"A package failed and has been disabled for CI using the 'x-ci-accept-failures' field.\";\
+             \n          fi;\
+             \n          test \"$pkg\" != 'git-kv.0.1.0' && partial_fails=\"$partial_fails $pkg\";\
+             \n        done;\
+             \n        test \"${partial_fails}\" != \"\" && echo \"opam-repo-ci detected dependencies failing: ${partial_fails}\";\
+             \n        exit 1"))
+)
+
+2024-10-29 14:48.03: Waiting for resource in pool OCluster
+2024-10-29 14:48.03: Waiting for worker…
+2024-10-29 15:21.23: Got resource from pool OCluster
+Building on riscv-worker-02.caelum.ci.dev
+All commits already cached
+Updating files:   2% (856/32552)Updating files:   3% (977/32552)Updating files:   4% (1303/32552)Updating files:   5% (1628/32552)Updating files:   5% (1861/32552)Updating files:   6% (1954/32552)Updating files:   7% (2279/32552)Updating files:   8% (2605/32552)Updating files:   9% (2930/32552)Updating files:  10% (3256/32552)Updating files:  11% (3581/32552)Updating files:  11% (3816/32552)Updating files:  12% (3907/32552)Updating files:  13% (4232/32552)Updating files:  14% (4558/32552)Updating files:  14% (4824/32552)Updating files:  15% (4883/32552)Updating files:  16% (5209/32552)Updating files:  17% (5534/32552)Updating files:  17% (5611/32552)Updating files:  18% (5860/32552)Updating files:  19% (6185/32552)Updating files:  20% (6511/32552)Updating files:  20% (6609/32552)Updating files:  21% (6836/32552)Updating files:  22% (7162/32552)Updating files:  23% (7487/32552)Updating files:  23% (7621/32552)Updating files:  24% (7813/32552)Updating files:  25% (8138/32552)Updating files:  26% (8464/32552)Updating files:  26% (8697/32552)Updating files:  27% (8790/32552)Updating files:  28% (9115/32552)Updating files:  29% (9441/32552)Updating files:  29% (9523/32552)Updating files:  30% (9766/32552)Updating files:  31% (10092/32552)Updating files:  32% (10417/32552)Updating files:  32% (10487/32552)Updating files:  33% (10743/32552)Updating files:  34% (11068/32552)Updating files:  34% (11390/32552)Updating files:  35% (11394/32552)Updating files:  36% (11719/32552)Updating files:  37% (12045/32552)Updating files:  37% (12328/32552)Updating files:  38% (12370/32552)Updating files:  39% (12696/32552)Updating files:  40% (13021/32552)Updating files:  41% (13347/32552)Updating files:  41% (13376/32552)Updating files:  42% (13672/32552)Updating files:  43% (13998/32552)Updating files:  43% (14275/32552)Updating files:  44% (14323/32552)Updating files:  45% (14649/32552)Updating files:  46% (14974/32552)Updating files:  46% (15290/32552)Updating files:  47% (15300/32552)Updating files:  48% (15625/32552)Updating files:  49% (15951/32552)Updating files:  49% (16247/32552)Updating files:  50% (16276/32552)Updating files:  51% (16602/32552)Updating files:  52% (16928/32552)Updating files:  52% (17172/32552)Updating files:  53% (17253/32552)Updating files:  54% (17579/32552)Updating files:  55% (17904/32552)Updating files:  55% (18195/32552)Updating files:  56% (18230/32552)Updating files:  57% (18555/32552)Updating files:  57% (18877/32552)Updating files:  58% (18881/32552)Updating files:  59% (19206/32552)Updating files:  60% (19532/32552)Updating files:  61% (19857/32552)Updating files:  61% (19875/32552)Updating files:  62% (20183/32552)Updating files:  63% (20508/32552)Updating files:  64% (20834/32552)Updating files:  64% (20919/32552)Updating files:  65% (21159/32552)Updating files:  66% (21485/32552)Updating files:  67% (21810/32552)Updating files:  67% (21879/32552)Updating files:  68% (22136/32552)Updating files:  69% (22461/32552)Updating files:  70% (22787/32552)Updating files:  70% (22818/32552)Updating files:  71% (23112/32552)Updating files:  72% (23438/32552)Updating files:  72% (23735/32552)Updating files:  73% (23763/32552)Updating files:  74% (24089/32552)Updating files:  75% (24414/32552)Updating files:  76% (24740/32552)Updating files:  76% (24771/32552)Updating files:  77% (25066/32552)Updating files:  78% (25391/32552)Updating files:  78% (25672/32552)Updating files:  79% (25717/32552)Updating files:  80% (26042/32552)Updating files:  81% (26368/32552)Updating files:  81% (26586/32552)Updating files:  82% (26693/32552)Updating files:  83% (27019/32552)Updating files:  84% (27344/32552)Updating files:  85% (27670/32552)Updating files:  85% (27728/32552)Updating files:  86% (27995/32552)Updating files:  87% (28321/32552)Updating files:  88% (28646/32552)Updating files:  88% (28699/32552)Updating files:  89% (28972/32552)Updating files:  90% (29297/32552)Updating files:  91% (29623/32552)Updating files:  91% (29872/32552)Updating files:  92% (29948/32552)Updating files:  93% (30274/32552)Updating files:  94% (30599/32552)Updating files:  94% (30808/32552)Updating files:  95% (30925/32552)Updating files:  96% (31250/32552)Updating files:  97% (31576/32552)Updating files:  97% (31771/32552)Updating files:  98% (31901/32552)Updating files:  99% (32227/32552)Updating files: 100% (32552/32552)Updating files: 100% (32552/32552), done.
+HEAD is now at 3a66e3f442 Merge pull request #26803 from ocaml/mseri-patch-1
+Merge made by the 'ort' strategy.
+ packages/git-kv/git-kv.0.1.0/opam | 41 +++++++++++++++++++++++++++++++++++++++
+ 1 file changed, 41 insertions(+)
+ create mode 100644 packages/git-kv/git-kv.0.1.0/opam
+
+[01;34m(from ocaml/opam:ubuntu-24.04-ocaml-4.14@sha256:ab7dfe24e91aa87cf7a6fe145e3ddc91e1a0ac29aad04217bbc7aca5b92686f1)[0m
+Unable to find image 'ocaml/opam:ubuntu-24.04-ocaml-4.14@sha256:ab7dfe24e91aa87cf7a6fe145e3ddc91e1a0ac29aad04217bbc7aca5b92686f1' locally
+docker.io/ocaml/opam@sha256:ab7dfe24e91aa87cf7a6fe145e3ddc91e1a0ac29aad04217bbc7aca5b92686f1: Pulling from ocaml/opam
+53300d777b1a: Pulling fs layer
+30f6af454cf2: Pulling fs layer
+78a3c2b88593: Pulling fs layer
+3810fb2ecad2: Pulling fs layer
+c09cdc9d75f7: Pulling fs layer
+64caf50b479f: Pulling fs layer
+c39b29d7a0b3: Pulling fs layer
+958a9823e45a: Pulling fs layer
+4d05b8c03693: Pulling fs layer
+1f448514346d: Pulling fs layer
+ad32c9580592: Pulling fs layer
+55aa6eb3f387: Pulling fs layer
+c5a40a4a4ba6: Pulling fs layer
+d06bd8b83912: Pulling fs layer
+d2612550e6b3: Pulling fs layer
+0bcd7274bcc9: Pulling fs layer
+97ea89713493: Pulling fs layer
+59d5d142958e: Pulling fs layer
+4f4fb700ef54: Pulling fs layer
+d48beac69360: Pulling fs layer
+c809529facc0: Pulling fs layer
+afc7cdca1c71: Pulling fs layer
+d414efe7fdc9: Pulling fs layer
+64caf50b479f: Waiting
+e1ad9e2e3627: Pulling fs layer
+6afcd9569c16: Pulling fs layer
+ede62d34f34c: Pulling fs layer
+01ab4a3c681d: Pulling fs layer
+2c61b2fdc7ee: Pulling fs layer
+5c6568b24246: Pulling fs layer
+d2e64aae9b5a: Pulling fs layer
+b61d2cd2d9c4: Pulling fs layer
+094be6b3d53b: Pulling fs layer
+32aa6dbc19a5: Pulling fs layer
+65eb26c8bbd3: Pulling fs layer
+c625f3cf0df9: Pulling fs layer
+9b0c890c04da: Pulling fs layer
+9cd442775eac: Pulling fs layer
+3810fb2ecad2: Waiting
+c39b29d7a0b3: Waiting
+936feeb34639: Pulling fs layer
+04c052c9cf8f: Pulling fs layer
+958a9823e45a: Waiting
+47634dfefaa1: Pulling fs layer
+1f448514346d: Waiting
+4d05b8c03693: Waiting
+ad32c9580592: Waiting
+55aa6eb3f387: Waiting
+e1ad9e2e3627: Waiting
+c5a40a4a4ba6: Waiting
+6afcd9569c16: Waiting
+d06bd8b83912: Waiting
+32aa6dbc19a5: Waiting
+ede62d34f34c: Waiting
+65eb26c8bbd3: Waiting
+01ab4a3c681d: Waiting
+c625f3cf0df9: Waiting
+d2612550e6b3: Waiting
+2c61b2fdc7ee: Waiting
+5c6568b24246: Waiting
+0bcd7274bcc9: Waiting
+9b0c890c04da: Waiting
+d2e64aae9b5a: Waiting
+97ea89713493: Waiting
+9cd442775eac: Waiting
+936feeb34639: Waiting
+59d5d142958e: Waiting
+04c052c9cf8f: Waiting
+4f4fb700ef54: Waiting
+47634dfefaa1: Waiting
+d48beac69360: Waiting
+c809529facc0: Waiting
+afc7cdca1c71: Waiting
+d414efe7fdc9: Waiting
+c09cdc9d75f7: Waiting
+094be6b3d53b: Waiting
+b61d2cd2d9c4: Waiting
+30f6af454cf2: Verifying Checksum
+78a3c2b88593: Download complete
+30f6af454cf2: Download complete
+c09cdc9d75f7: Verifying Checksum
+c09cdc9d75f7: Download complete
+3810fb2ecad2: Verifying Checksum
+3810fb2ecad2: Download complete
+53300d777b1a: Verifying Checksum
+53300d777b1a: Download complete
+958a9823e45a: Verifying Checksum
+958a9823e45a: Download complete
+c39b29d7a0b3: Verifying Checksum
+c39b29d7a0b3: Download complete
+4d05b8c03693: Verifying Checksum
+4d05b8c03693: Download complete
+1f448514346d: Verifying Checksum
+1f448514346d: Download complete
+55aa6eb3f387: Verifying Checksum
+ad32c9580592: Verifying Checksum
+ad32c9580592: Download complete
+c5a40a4a4ba6: Verifying Checksum
+c5a40a4a4ba6: Download complete
+d06bd8b83912: Verifying Checksum
+d06bd8b83912: Download complete
+d2612550e6b3: Verifying Checksum
+d2612550e6b3: Download complete
+0bcd7274bcc9: Download complete
+59d5d142958e: Download complete
+4f4fb700ef54: Download complete
+d48beac69360: Verifying Checksum
+d48beac69360: Download complete
+c809529facc0: Verifying Checksum
+c809529facc0: Download complete
+d414efe7fdc9: Verifying Checksum
+d414efe7fdc9: Download complete
+afc7cdca1c71: Verifying Checksum
+afc7cdca1c71: Download complete
+e1ad9e2e3627: Verifying Checksum
+e1ad9e2e3627: Download complete
+6afcd9569c16: Verifying Checksum
+6afcd9569c16: Download complete
+01ab4a3c681d: Verifying Checksum
+01ab4a3c681d: Download complete
+ede62d34f34c: Verifying Checksum
+ede62d34f34c: Download complete
+2c61b2fdc7ee: Verifying Checksum
+2c61b2fdc7ee: Download complete
+5c6568b24246: Download complete
+d2e64aae9b5a: Verifying Checksum
+d2e64aae9b5a: Download complete
+b61d2cd2d9c4: Verifying Checksum
+b61d2cd2d9c4: Download complete
+32aa6dbc19a5: Download complete
+64caf50b479f: Verifying Checksum
+64caf50b479f: Download complete
+c625f3cf0df9: Download complete
+9b0c890c04da: Verifying Checksum
+9b0c890c04da: Download complete
+53300d777b1a: Pull complete
+30f6af454cf2: Pull complete
+78a3c2b88593: Pull complete
+3810fb2ecad2: Pull complete
+c09cdc9d75f7: Pull complete
+65eb26c8bbd3: Verifying Checksum
+65eb26c8bbd3: Download complete
+936feeb34639: Verifying Checksum
+936feeb34639: Download complete
+04c052c9cf8f: Verifying Checksum
+04c052c9cf8f: Download complete
+47634dfefaa1: Download complete
+9cd442775eac: Verifying Checksum
+9cd442775eac: Download complete
+094be6b3d53b: Verifying Checksum
+094be6b3d53b: Download complete
+64caf50b479f: Pull complete
+c39b29d7a0b3: Pull complete
+958a9823e45a: Pull complete
+4d05b8c03693: Pull complete
+1f448514346d: Pull complete
+ad32c9580592: Pull complete
+55aa6eb3f387: Pull complete
+c5a40a4a4ba6: Pull complete
+d06bd8b83912: Pull complete
+d2612550e6b3: Pull complete
+0bcd7274bcc9: Pull complete
+97ea89713493: Pull complete
+59d5d142958e: Pull complete
+4f4fb700ef54: Pull complete
+d48beac69360: Pull complete
+c809529facc0: Pull complete
+afc7cdca1c71: Pull complete
+d414efe7fdc9: Pull complete
+e1ad9e2e3627: Pull complete
+6afcd9569c16: Pull complete
+ede62d34f34c: Pull complete
+01ab4a3c681d: Pull complete
+2c61b2fdc7ee: Pull complete
+5c6568b24246: Pull complete
+d2e64aae9b5a: Pull complete
+b61d2cd2d9c4: Pull complete
+094be6b3d53b: Pull complete
+32aa6dbc19a5: Pull complete
+65eb26c8bbd3: Pull complete
+c625f3cf0df9: Pull complete
+9b0c890c04da: Pull complete
+9cd442775eac: Pull complete
+936feeb34639: Pull complete
+04c052c9cf8f: Pull complete
+47634dfefaa1: Pull complete
+Digest: sha256:ab7dfe24e91aa87cf7a6fe145e3ddc91e1a0ac29aad04217bbc7aca5b92686f1
+Status: Downloaded newer image for ocaml/opam@sha256:ab7dfe24e91aa87cf7a6fe145e3ddc91e1a0ac29aad04217bbc7aca5b92686f1
+[01;2m[01;35m2024-10-29 15:22.23 ---> using "187e7994305ab41b7d5c6fddca929c68ae406754d4f39c97129b21b0522edb58" from cache[0m
+
+[01;34m/: (user (uid 1000) (gid 1000))[0m
+
+[01;34m/: (workdir /home/opam)[0m
+
+[01;34m/home/opam: (run (shell "sudo ln -f /usr/bin/opam-dev /usr/bin/opam"))[0m
+[01;2m[01;35m2024-10-29 15:22.23 ---> using "58fc866d620803d9fd83ad34315816bab7e5a6b3edb2fddd204a1bf4da582f8c" from cache[0m
+
+[01;34m/home/opam: (run (network host)
+                 (shell "opam init --reinit --config .opamrc-sandbox -ni"))[0m
+Configuring from /home/opam/.opamrc-sandbox, then /home/opam/.opamrc, and finally from built-in defaults.
+Checking for available remotes: rsync and local, git.
+  - you won't be able to use mercurial repositories unless you install the hg command on your system.
+  - you won't be able to use darcs repositories unless you install the darcs command on your system.
+
+This development version of opam requires an update to the layout of /home/opam/.opam from version 2.0 to version 2.2, which can't be reverted.
+You may want to back it up before going further.
+
+Continue? [y/n] y
+Format upgrade done.
+
+<><> Updating repositories ><><><><><><><><><><><><><><><><><><><><><><><><><><>
+[default] synchronised from file:///home/opam/opam-repository
+[01;2m[01;35m2024-10-29 15:22.23 ---> using "cd6991aebaff25a2486775c76f256232b83ba0abb61c8bedf0767254d87e372c" from cache[0m
+
+[01;34m/home/opam: (run (shell "uname -rs && opam exec -- ocaml -version && opam --version"))[0m
+Linux 6.8.0-44-generic
+The OCaml toplevel, version 4.14.2
+2.4.0~alpha1~dev
+[01;2m[01;35m2024-10-29 15:22.23 ---> using "d07ec7db4f100a5ddcbe33d9e5ee3b8aa826bc0e6bf0dcb2d52cd38826e9e64b" from cache[0m
+
+[01;34m/home/opam: (env OPAMDOWNLOADJOBS 1)[0m
+
+[01;34m/home/opam: (env OPAMERRLOGLEN 0)[0m
+
+[01;34m/home/opam: (env OPAMSOLVERTIMEOUT 1000)[0m
+
+[01;34m/home/opam: (env OPAMPRECISETRACKING 1)[0m
+
+[01;34m/home/opam: (env CI true)[0m
+
+[01;34m/home/opam: (env OPAM_REPO_CI true)[0m
+
+[01;34m/home/opam: (run (shell "rm -rf opam-repository/"))[0m
+[01;2m[01;35m2024-10-29 15:22.23 ---> using "6fc76b298ba0d4ff5ac6dac3fafbafdc46db88b590e43fc4760158791a9ab2aa" from cache[0m
+
+[01;34m/home/opam: (copy (src .) (dst opam-repository/))[0m
+[01;2m[01;35m2024-10-29 15:22.42 ---> using "e26a258f628f57907e9ba3ce02d0d34e03a0d4db1509e702966f320cac63985b" from cache[0m
+
+[01;34m/home/opam: (run (shell "opam repository set-url --strict default opam-repository/"))[0m
+[default] Initialised
+[01;2m[01;35m2024-10-29 15:22.42 ---> using "df317d671d626b55feef9b19a0fc7118aed5fec33744ddfd6eeafe2830419da6" from cache[0m
+
+[01;34m/home/opam: (run (network host)
+                 (shell "opam update --depexts || true"))[0m
++ /usr/bin/sudo "apt-get" "update"
+- Hit:1 http://ports.ubuntu.com/ubuntu-ports noble InRelease
+- Get:2 http://ports.ubuntu.com/ubuntu-ports noble-updates InRelease [126 kB]
+- Get:3 http://ports.ubuntu.com/ubuntu-ports noble-backports InRelease [126 kB]
+- Get:4 http://ports.ubuntu.com/ubuntu-ports noble-security InRelease [126 kB]
+- Get:5 http://ports.ubuntu.com/ubuntu-ports noble-updates/restricted riscv64 Packages [3193 B]
+- Get:6 http://ports.ubuntu.com/ubuntu-ports noble-updates/universe riscv64 Packages [772 kB]
+- Get:7 http://ports.ubuntu.com/ubuntu-ports noble-updates/main riscv64 Packages [504 kB]
+- Get:8 http://ports.ubuntu.com/ubuntu-ports noble-updates/multiverse riscv64 Packages [1289 B]
+- Get:9 http://ports.ubuntu.com/ubuntu-ports noble-security/multiverse riscv64 Packages [882 B]
+- Get:10 http://ports.ubuntu.com/ubuntu-ports noble-security/main riscv64 Packages [291 kB]
+- Get:11 http://ports.ubuntu.com/ubuntu-ports noble-security/restricted riscv64 Packages [3193 B]
+- Get:12 http://ports.ubuntu.com/ubuntu-ports noble-security/universe riscv64 Packages [588 kB]
+- Fetched 2542 kB in 11s (231 kB/s)
+- Reading package lists...
+- 
+[01;2m[01;35m2024-10-29 15:22.42 ---> using "3e73ce55b0c2de69b306fea8238c4254f05dc08fdb94c4b69bf20f00eb566f71" from cache[0m
+
+[01;34m/home/opam: (run (shell "opam pin add -k version -yn git-kv.0.1.0 0.1.0"))[0m
+git-kv is now pinned to version 0.1.0
+[01;2m[01;35m2024-10-29 15:22.42 ---> using "71f7663cac7342e3dc3777187e629244d37482b747ce25a1981d49468f903b2c" from cache[0m
+
+[01;34m/home/opam: (run (cache (opam-archives (target /home/opam/.opam/download-cache)))
+                 (network host)
+                 (shell  "opam reinstall git-kv.0.1.0;\
+                        \n        res=$?;\
+                        \n        test \"$res\" != 31 && exit \"$res\";\
+                        \n        export OPAMCLI=2.0;\
+                        \n        build_dir=$(opam var prefix)/.opam-switch/build;\
+                        \n        failed=$(ls \"$build_dir\");\
+                        \n        partial_fails=\"\";\
+                        \n        for pkg in $failed; do\
+                        \n          if opam show -f x-ci-accept-failures: \"$pkg\" | grep -qF \"\\\"ubuntu-24.04\\\"\"; then\
+                        \n            echo \"A package failed and has been disabled for CI using the 'x-ci-accept-failures' field.\";\
+                        \n          fi;\
+                        \n          test \"$pkg\" != 'git-kv.0.1.0' && partial_fails=\"$partial_fails $pkg\";\
+                        \n        done;\
+                        \n        test \"${partial_fails}\" != \"\" && echo \"opam-repo-ci detected dependencies failing: ${partial_fails}\";\
+                        \n        exit 1"))[0m
+git-kv.0.1.0 is not installed. Install it? [y/n] y
+The following actions will be performed:
+=== install 53 packages
+  - install angstrom           0.16.1         [required by git]
+  - install astring            0.8.5          [required by git]
+  - install base-bytes         base           [required by ocplib-endian]
+  - install base64             3.5.1          [required by git]
+  - install bigstringaf        0.10.0         [required by carton-lwt, carton, git]
+  - install bos                0.2.1          [required by carton]
+  - install carton             0.7.2          [required by git-kv]
+  - install carton-git         0.7.2          [required by git]
+  - install carton-lwt         0.7.2          [required by git-kv]
+  - install checkseum          0.5.2          [required by carton, git]
+  - install cmdliner           1.3.0          [required by carton]
+  - install cppo               1.7.0          [required by lwt]
+  - install csexp              1.5.2          [required by dune-configurator]
+  - install cstruct            6.2.0          [required by carton, git]
+  - install decompress         1.5.3          [required by carton-lwt, carton, git]
+  - install digestif           1.2.0          [required by carton, git]
+  - install domain-name        0.4.0          [required by git]
+  - install duff               0.5            [required by carton]
+  - install dune               3.16.0         [required by git-kv]
+  - install dune-configurator  3.16.0         [required by checkseum, bigstringaf, hxd]
+  - install emile              1.1            [required by git]
+  - install encore             0.8            [required by git]
+  - install eqaf               0.10           [required by digestif]
+  - install fmt                0.9.0          [required by git-kv]
+  - install fpath              0.7.3          [required by carton, git]
+  - install git                3.17.0         [required by git-kv]
+  - install git-kv             0.1.0 (pinned)
+  - install hxd                0.3.2          [required by carton, git]
+  - install ipaddr             5.6.0          [required by git]
+  - install ke                 0.6            [required by carton, git]
+  - install logs               0.7.0          [required by carton, git]
+  - install lwt                5.8.0          [required by git, carton-lwt, mirage-kv]
+  - install macaddr            5.6.0          [required by ipaddr]
+  - install mimic              0.0.9          [required by git]
+  - install mirage-clock       4.2.0          [required by git-kv]
+  - install mirage-flow        4.0.2          [required by git]
+  - install mirage-kv          6.1.1          [required by git-kv]
+  - install ocaml-syntax-shims 1.0.0          [required by angstrom]
+  - install ocamlbuild         0.15.0         [required by bos, ptime]
+  - install ocamlfind          1.9.6          [required by bos, ptime]
+  - install ocamlgraph         2.1.0          [required by git]
+  - install ocplib-endian      1.2            [required by lwt]
+  - install optint             0.3.0          [required by git, carton, carton-lwt, mirage-kv]
+  - install pecu               0.7            [required by emile]
+  - install psq                0.2.1          [required by carton, git]
+  - install ptime              1.2.0          [required by git-kv]
+  - install rresult            0.7.0          [required by git]
+  - install seq                base           [required by psq]
+  - install stdlib-shims       0.3.0          [required by ocamlgraph]
+  - install stringext          1.6.0          [required by uri]
+  - install topkg              1.0.7          [required by bos, ptime]
+  - install uri                4.4.0          [required by git]
+  - install uutf               1.0.3          [required by emile]
+
+<><> Processing actions <><><><><><><><><><><><><><><><><><><><><><><><><><><><>
+-> retrieved angstrom.0.16.1  (cached)
+-> retrieved astring.0.8.5  (cached)
+-> retrieved base64.3.5.1  (cached)
+-> retrieved bigstringaf.0.10.0  (cached)
+-> retrieved bos.0.2.1  (cached)
+-> retrieved carton.0.7.2, carton-git.0.7.2, carton-lwt.0.7.2  (cached)
+-> retrieved checkseum.0.5.2  (cached)
+-> retrieved cmdliner.1.3.0  (cached)
+-> retrieved cppo.1.7.0  (cached)
+-> retrieved csexp.1.5.2  (cached)
+-> retrieved cstruct.6.2.0  (cached)
+-> retrieved decompress.1.5.3  (cached)
+-> retrieved digestif.1.2.0  (cached)
+-> retrieved domain-name.0.4.0  (cached)
+-> retrieved duff.0.5  (cached)
+-> retrieved dune.3.16.0, dune-configurator.3.16.0  (cached)
+-> retrieved emile.1.1  (cached)
+-> retrieved encore.0.8  (cached)
+-> retrieved eqaf.0.10  (cached)
+-> retrieved fmt.0.9.0  (cached)
+-> retrieved fpath.0.7.3  (cached)
+-> retrieved git.3.17.0  (cached)
+-> installed cmdliner.1.3.0
+-> retrieved git-kv.0.1.0  (https://github.com/robur-coop/git-kv/releases/download/v0.1.0/git-kv-0.1.0.tbz)
+-> retrieved hxd.0.3.2  (cached)
+-> retrieved ipaddr.5.6.0, macaddr.5.6.0  (cached)
+-> retrieved ke.0.6  (cached)
+-> retrieved logs.0.7.0  (cached)
+-> retrieved lwt.5.8.0  (cached)
+-> retrieved mimic.0.0.9  (cached)
+-> retrieved mirage-clock.4.2.0  (cached)
+-> retrieved mirage-flow.4.0.2  (cached)
+-> retrieved mirage-kv.6.1.1  (cached)
+-> retrieved ocaml-syntax-shims.1.0.0  (cached)
+-> retrieved ocamlbuild.0.15.0  (cached)
+-> retrieved ocamlfind.1.9.6  (cached)
+-> retrieved ocamlgraph.2.1.0  (cached)
+-> retrieved ocplib-endian.1.2  (cached)
+-> retrieved optint.0.3.0  (cached)
+-> retrieved pecu.0.7  (cached)
+-> retrieved psq.0.2.1  (cached)
+-> retrieved ptime.1.2.0  (cached)
+-> retrieved rresult.0.7.0  (cached)
+-> retrieved seq.base  (cached)
+-> installed seq.base
+-> retrieved stdlib-shims.0.3.0  (cached)
+-> retrieved stringext.1.6.0  (cached)
+-> retrieved topkg.1.0.7  (cached)
+-> retrieved uri.4.4.0  (cached)
+-> retrieved uutf.1.0.3  (cached)
+-> installed ocamlfind.1.9.6
+-> installed base-bytes.base
+-> installed ocamlbuild.0.15.0
+-> installed topkg.1.0.7
+-> installed rresult.0.7.0
+-> installed uutf.1.0.3
+-> installed fmt.0.9.0
+-> installed ptime.1.2.0
+-> installed astring.0.8.5
+-> installed fpath.0.7.3
+-> installed dune.3.16.0
+-> installed csexp.1.5.2
+-> installed domain-name.0.4.0
+-> installed base64.3.5.1
+-> installed cstruct.6.2.0
+-> installed duff.0.5
+-> installed eqaf.0.10
+-> installed ke.0.6
+-> installed mirage-clock.4.2.0
+-> installed cppo.1.7.0
+-> installed macaddr.5.6.0
+-> installed optint.0.3.0
+-> installed pecu.0.7
+-> installed psq.0.2.1
+-> installed ocplib-endian.1.2
+-> installed stdlib-shims.0.3.0
+-> installed ocaml-syntax-shims.1.0.0
+-> installed stringext.1.6.0
+-> installed ipaddr.5.6.0
+-> installed dune-configurator.3.16.0
+-> installed digestif.1.2.0
+-> installed bigstringaf.0.10.0
+-> installed checkseum.0.5.2
+-> installed angstrom.0.16.1
+-> installed ocamlgraph.2.1.0
+-> installed encore.0.8
+-> installed emile.1.1
+-> installed decompress.1.5.3
+-> installed uri.4.4.0
+-> installed lwt.5.8.0
+-> installed mirage-flow.4.0.2
+-> installed mirage-kv.6.1.1
+-> installed hxd.0.3.2
+-> installed logs.0.7.0
+-> installed mimic.0.0.9
+-> installed bos.0.2.1
+-> installed carton.0.7.2
+-> installed carton-lwt.0.7.2
+-> installed carton-git.0.7.2
+-> installed git.3.17.0
+-> installed git-kv.0.1.0
+Done.
+# To update the current shell environment, run: eval $(opam env)
+[01;2m[01;35m2024-10-29 15:22.42 ---> using "b07cc9f6a093e463c0726e4caad16f08a792659f99fbd90782b6902ee410efff" from cache[0m
+
+[01;34m/home/opam: (run (network host)
+                 (shell "(opam reinstall --with-test git-kv.0.1.0) || true"))[0m
+[ERROR] Sorry, resolution of the request timed out.
+        Try to specify a more precise request, use a different solver, or increase the allowed time by setting OPAMSOLVERTIMEOUT to a bigger value (currently, it is set to 1000.0 seconds).
+[01;2m[01;35m2024-10-29 15:41.44 ---> saved as "9ff2e5c0a7a9eb16c8fb0be659cfc25e595a0b2fe485095379ccd0b55063ec44"[0m
+
+[01;34m/home/opam: (run (shell  "opam reinstall --with-test --verbose git-kv.0.1.0;\
+                        \n        res=$?;\
+                        \n        test \"$res\" != 31 && exit \"$res\";\
+                        \n        export OPAMCLI=2.0;\
+                        \n        build_dir=$(opam var prefix)/.opam-switch/build;\
+                        \n        failed=$(ls \"$build_dir\");\
+                        \n        partial_fails=\"\";\
+                        \n        for pkg in $failed; do\
+                        \n          if opam show -f x-ci-accept-failures: \"$pkg\" | grep -qF \"\\\"ubuntu-24.04\\\"\"; then\
+                        \n            echo \"A package failed and has been disabled for CI using the 'x-ci-accept-failures' field.\";\
+                        \n          fi;\
+                        \n          test \"$pkg\" != 'git-kv.0.1.0' && partial_fails=\"$partial_fails $pkg\";\
+                        \n        done;\
+                        \n        test \"${partial_fails}\" != \"\" && echo \"opam-repo-ci detected dependencies failing: ${partial_fails}\";\
+                        \n        exit 1"))[0m
+[ERROR] Sorry, resolution of the request timed out.
+        Try to specify a more precise request, use a different solver, or increase the allowed time by setting OPAMSOLVERTIMEOUT to a bigger value (currently, it is set to 1000.0 seconds).
+'opam reinstall --with-test --verbose git-kv.0.1.0' failed.
+"/usr/bin/env" "bash" "-c" "opam reinstall --with-test --verbose git-kv.0.1.0;
+        res=$?;
+        test "$res" != 31 && exit "$res";
+        export OPAMCLI=2.0;
+        build_dir=$(opam var prefix)/.opam-switch/build;
+        failed=$(ls "$build_dir");
+        partial_fails="";
+        for pkg in $failed; do
+          if opam show -f x-ci-accept-failures: "$pkg" | grep -qF "\"ubuntu-24.04\""; then
+            echo "A package failed and has been disabled for CI using the 'x-ci-accept-failures' field.";
+          fi;
+          test "$pkg" != 'git-kv.0.1.0' && partial_fails="$partial_fails $pkg";
+        done;
+        test "${partial_fails}" != "" && echo "opam-repo-ci detected dependencies failing: ${partial_fails}";
+        exit 1" failed with exit status 60
+2024-10-29 16:02.23: Job failed: Failed: Build failed
+2024-10-29 16:02.23: Log analysis:
+2024-10-29 16:02.23: >>> 
+[ERROR] Sorry, resolution of the request timed out.
+ (score = 20)
+2024-10-29 16:02.23: >>> 
+[ERROR] Sorry, resolution of the request timed out.
+ (score = 20)
+2024-10-29 16:02.23: Sorry, resolution of the request timed out.

@@ -1,0 +1,406 @@
+2024-11-22 13:30.35: New job: test graphql-cohttp.0.14.0, using opam dev
+                              from https://github.com/ocaml/opam-repository.git#refs/pull/26930/head (bda4dbaf190cd69474e65e5368931bb6005b0605)
+                              on debian-12-ocaml-4.11/amd64
+
+To reproduce locally:
+
+cd $(mktemp -d)
+git clone --recursive "https://github.com/ocaml/opam-repository.git" && cd "opam-repository" && git fetch origin "refs/pull/26930/head" && git reset --hard bda4dbaf
+git fetch origin master
+git merge --no-edit 9e5cf6f9f01138196c65e4d32ab556c8f375185d
+cat > ../Dockerfile <<'END-OF-DOCKERFILE'
+[34mFROM ocaml/opam:debian-12-ocaml-4.11@sha256:40974e0742776255b849b96a14423b4d9b386033b30c2cc4631e4889f6201d34
+USER 1000:1000
+WORKDIR /home/opam
+RUN sudo ln -f /usr/bin/opam-dev /usr/bin/opam
+RUN opam init --reinit -ni
+RUN uname -rs && opam exec -- ocaml -version && opam --version
+ENV OPAMDOWNLOADJOBS="1"
+ENV OPAMERRLOGLEN="0"
+ENV OPAMSOLVERTIMEOUT="1000"
+ENV OPAMPRECISETRACKING="1"
+ENV CI="true"
+ENV OPAM_REPO_CI="true"
+RUN rm -rf opam-repository/
+COPY --chown=1000:1000 . opam-repository/
+RUN opam repository set-url --strict default opam-repository/
+RUN opam update --depexts || true
+RUN opam pin add -k version -yn graphql-cohttp.0.14.0 0.14.0
+RUN opam reinstall graphql-cohttp.0.14.0; \
+    res=$?; \
+    test "$res" != 31 && exit "$res"; \
+    export OPAMCLI=2.0; \
+    build_dir=$(opam var prefix)/.opam-switch/build; \
+    failed=$(ls "$build_dir"); \
+    partial_fails=""; \
+    for pkg in $failed; do \
+    if opam show -f x-ci-accept-failures: "$pkg" | grep -qF "\"debian-12\""; then \
+    echo "A package failed and has been disabled for CI using the 'x-ci-accept-failures' field."; \
+    fi; \
+    test "$pkg" != 'graphql-cohttp.0.14.0' && partial_fails="$partial_fails $pkg"; \
+    done; \
+    test "${partial_fails}" != "" && echo "opam-repo-ci detected dependencies failing: ${partial_fails}"; \
+    exit 1
+RUN (opam reinstall --with-test graphql-cohttp.0.14.0) || true
+RUN opam reinstall --with-test --verbose graphql-cohttp.0.14.0; \
+    res=$?; \
+    test "$res" != 31 && exit "$res"; \
+    export OPAMCLI=2.0; \
+    build_dir=$(opam var prefix)/.opam-switch/build; \
+    failed=$(ls "$build_dir"); \
+    partial_fails=""; \
+    for pkg in $failed; do \
+    if opam show -f x-ci-accept-failures: "$pkg" | grep -qF "\"debian-12\""; then \
+    echo "A package failed and has been disabled for CI using the 'x-ci-accept-failures' field."; \
+    fi; \
+    test "$pkg" != 'graphql-cohttp.0.14.0' && partial_fails="$partial_fails $pkg"; \
+    done; \
+    test "${partial_fails}" != "" && echo "opam-repo-ci detected dependencies failing: ${partial_fails}"; \
+    exit 1
+[0m
+END-OF-DOCKERFILE
+docker build -f ../Dockerfile .
+
+2024-11-22 13:30.35: Using cache hint "ocaml/opam:debian-12-ocaml-4.11@sha256:40974e0742776255b849b96a14423b4d9b386033b30c2cc4631e4889f6201d34-graphql-cohttp.0.14.0-bda4dbaf190cd69474e65e5368931bb6005b0605"
+2024-11-22 13:30.35: Using OBuilder spec:
+((from ocaml/opam:debian-12-ocaml-4.11@sha256:40974e0742776255b849b96a14423b4d9b386033b30c2cc4631e4889f6201d34)
+ (user (uid 1000) (gid 1000))
+ (workdir /home/opam)
+ (run (shell "sudo ln -f /usr/bin/opam-dev /usr/bin/opam"))
+ (run (network host)
+      (shell "opam init --reinit --config .opamrc-sandbox -ni"))
+ (run (shell "uname -rs && opam exec -- ocaml -version && opam --version"))
+ (env OPAMDOWNLOADJOBS 1)
+ (env OPAMERRLOGLEN 0)
+ (env OPAMSOLVERTIMEOUT 1000)
+ (env OPAMPRECISETRACKING 1)
+ (env CI true)
+ (env OPAM_REPO_CI true)
+ (run (shell "rm -rf opam-repository/"))
+ (copy (src .) (dst opam-repository/))
+ (run (shell "opam repository set-url --strict default opam-repository/"))
+ (run (network host)
+      (shell "opam update --depexts || true"))
+ (run (shell "opam pin add -k version -yn graphql-cohttp.0.14.0 0.14.0"))
+ (run (cache (opam-archives (target /home/opam/.opam/download-cache)))
+      (network host)
+      (shell  "opam reinstall graphql-cohttp.0.14.0;\
+             \n        res=$?;\
+             \n        test \"$res\" != 31 && exit \"$res\";\
+             \n        export OPAMCLI=2.0;\
+             \n        build_dir=$(opam var prefix)/.opam-switch/build;\
+             \n        failed=$(ls \"$build_dir\");\
+             \n        partial_fails=\"\";\
+             \n        for pkg in $failed; do\
+             \n          if opam show -f x-ci-accept-failures: \"$pkg\" | grep -qF \"\\\"debian-12\\\"\"; then\
+             \n            echo \"A package failed and has been disabled for CI using the 'x-ci-accept-failures' field.\";\
+             \n          fi;\
+             \n          test \"$pkg\" != 'graphql-cohttp.0.14.0' && partial_fails=\"$partial_fails $pkg\";\
+             \n        done;\
+             \n        test \"${partial_fails}\" != \"\" && echo \"opam-repo-ci detected dependencies failing: ${partial_fails}\";\
+             \n        exit 1"))
+ (run (network host)
+      (shell "(opam reinstall --with-test graphql-cohttp.0.14.0) || true"))
+ (run (shell  "opam reinstall --with-test --verbose graphql-cohttp.0.14.0;\
+             \n        res=$?;\
+             \n        test \"$res\" != 31 && exit \"$res\";\
+             \n        export OPAMCLI=2.0;\
+             \n        build_dir=$(opam var prefix)/.opam-switch/build;\
+             \n        failed=$(ls \"$build_dir\");\
+             \n        partial_fails=\"\";\
+             \n        for pkg in $failed; do\
+             \n          if opam show -f x-ci-accept-failures: \"$pkg\" | grep -qF \"\\\"debian-12\\\"\"; then\
+             \n            echo \"A package failed and has been disabled for CI using the 'x-ci-accept-failures' field.\";\
+             \n          fi;\
+             \n          test \"$pkg\" != 'graphql-cohttp.0.14.0' && partial_fails=\"$partial_fails $pkg\";\
+             \n        done;\
+             \n        test \"${partial_fails}\" != \"\" && echo \"opam-repo-ci detected dependencies failing: ${partial_fails}\";\
+             \n        exit 1"))
+)
+
+2024-11-22 13:30.35: Waiting for resource in pool OCluster
+2024-11-22 13:36.28: Waiting for worker…
+2024-11-22 13:42.07: Got resource from pool OCluster
+Building on x86-bm-c16.sw.ocaml.org
+All commits already cached
+Updating files:  75% (24629/32714)Updating files:  76% (24863/32714)Updating files:  77% (25190/32714)Updating files:  78% (25517/32714)Updating files:  79% (25845/32714)Updating files:  80% (26172/32714)Updating files:  81% (26499/32714)Updating files:  82% (26826/32714)Updating files:  83% (27153/32714)Updating files:  84% (27480/32714)Updating files:  85% (27807/32714)Updating files:  86% (28135/32714)Updating files:  87% (28462/32714)Updating files:  88% (28789/32714)Updating files:  89% (29116/32714)Updating files:  90% (29443/32714)Updating files:  91% (29770/32714)Updating files:  92% (30097/32714)Updating files:  93% (30425/32714)Updating files:  94% (30752/32714)Updating files:  95% (31079/32714)Updating files:  96% (31406/32714)Updating files:  97% (31733/32714)Updating files:  98% (32060/32714)Updating files:  99% (32387/32714)Updating files: 100% (32714/32714)Updating files: 100% (32714/32714), done.
+HEAD is now at 9e5cf6f9f0 Merge pull request #26924 from dkalinichenko-js/opam-publish-torch.v0.17.1
+Updating 9e5cf6f9f0..bda4dbaf19
+Fast-forward
+ packages/graphql-cohttp/graphql-cohttp.0.10.0/opam | 4 ++--
+ packages/graphql-cohttp/graphql-cohttp.0.12.0/opam | 2 +-
+ packages/graphql-cohttp/graphql-cohttp.0.12.1/opam | 2 +-
+ packages/graphql-cohttp/graphql-cohttp.0.13.0/opam | 2 +-
+ packages/graphql-cohttp/graphql-cohttp.0.14.0/opam | 2 +-
+ 5 files changed, 6 insertions(+), 6 deletions(-)
+
+[01;34m(from ocaml/opam:debian-12-ocaml-4.11@sha256:40974e0742776255b849b96a14423b4d9b386033b30c2cc4631e4889f6201d34)[0m
+[01;2m[01;35m2024-11-22 13:42.10 ---> using "5c49f1326f90ed4c8e820712e22ecd28d518a2008cfdc4492960cae72c95b9d2" from cache[0m
+
+[01;34m/: (user (uid 1000) (gid 1000))[0m
+
+[01;34m/: (workdir /home/opam)[0m
+
+[01;34m/home/opam: (run (shell "sudo ln -f /usr/bin/opam-dev /usr/bin/opam"))[0m
+[01;2m[01;35m2024-11-22 13:42.10 ---> using "3293e0a44d9aec1ef00a3eeb46cdc97bdee2676ac9bd1d5f5c684fc50842ca68" from cache[0m
+
+[01;34m/home/opam: (run (network host)
+                 (shell "opam init --reinit --config .opamrc-sandbox -ni"))[0m
+Configuring from /home/opam/.opamrc-sandbox, then /home/opam/.opamrc, and finally from built-in defaults.
+Checking for available remotes: rsync and local, git.
+  - you won't be able to use mercurial repositories unless you install the hg command on your system.
+  - you won't be able to use darcs repositories unless you install the darcs command on your system.
+
+This development version of opam requires an update to the layout of /home/opam/.opam from version 2.0 to version 2.2, which can't be reverted.
+You may want to back it up before going further.
+
+Continue? [Y/n] y
+[NOTE] The 'jobs' option was reset, its value was 39 and its new value will vary according to the current number of cores on your machine. You can restore the fixed value using:
+           opam option jobs=39 --global
+Format upgrade done.
+
+<><> Updating repositories ><><><><><><><><><><><><><><><><><><><><><><><><><><>
+[default] synchronised from file:///home/opam/opam-repository
+[01;2m[01;35m2024-11-22 13:42.10 ---> using "e6c6de4bf81a27c8f05938475cc22ba81783500823e1594e59ab5cd0523d6445" from cache[0m
+
+[01;34m/home/opam: (run (shell "uname -rs && opam exec -- ocaml -version && opam --version"))[0m
+Linux 5.15.0-125-generic
+The OCaml toplevel, version 4.11.2
+2.4.0~alpha1~dev
+[01;2m[01;35m2024-11-22 13:42.10 ---> using "a6625bb04600100f3d2cc4c9c3a337f9f4da9134df0e658ad38df9dab3d7dfa5" from cache[0m
+
+[01;34m/home/opam: (env OPAMDOWNLOADJOBS 1)[0m
+
+[01;34m/home/opam: (env OPAMERRLOGLEN 0)[0m
+
+[01;34m/home/opam: (env OPAMSOLVERTIMEOUT 1000)[0m
+
+[01;34m/home/opam: (env OPAMPRECISETRACKING 1)[0m
+
+[01;34m/home/opam: (env CI true)[0m
+
+[01;34m/home/opam: (env OPAM_REPO_CI true)[0m
+
+[01;34m/home/opam: (run (shell "rm -rf opam-repository/"))[0m
+[01;2m[01;35m2024-11-22 13:42.10 ---> using "cb1dac23de7de9ec763d404857ddf5861fe314ae9bb2121b8565482011879583" from cache[0m
+
+[01;34m/home/opam: (copy (src .) (dst opam-repository/))[0m
+[01;2m[01;35m2024-11-22 13:42.12 ---> using "a702d8b0aa8e58c5de074619e21a8bc08afeace32cf0fd5828d5fef89a48c066" from cache[0m
+
+[01;34m/home/opam: (run (shell "opam repository set-url --strict default opam-repository/"))[0m
+[default] Initialised
+[01;2m[01;35m2024-11-22 13:42.12 ---> using "a54d2d8fbfe907885e4f047f8f01da68fcf2d1ff309fae7d4f088a772eed37d8" from cache[0m
+
+[01;34m/home/opam: (run (network host)
+                 (shell "opam update --depexts || true"))[0m
++ /usr/bin/sudo "apt-get" "update"
+- Hit:1 http://deb.debian.org/debian bookworm InRelease
+- Get:2 http://deb.debian.org/debian bookworm-updates InRelease [55.4 kB]
+- Get:3 http://deb.debian.org/debian-security bookworm-security InRelease [48.0 kB]
+- Get:4 http://deb.debian.org/debian-security bookworm-security/main amd64 Packages [204 kB]
+- Fetched 308 kB in 0s (1395 kB/s)
+- Reading package lists...
+[01;2m[01;35m2024-11-22 13:42.12 ---> using "486bd17e417127da9baaf0f7442a105a80e4a62603c5359757475915bc47d850" from cache[0m
+
+[01;34m/home/opam: (run (shell "opam pin add -k version -yn graphql-cohttp.0.14.0 0.14.0"))[0m
+graphql-cohttp is now pinned to version 0.14.0
+[01;2m[01;35m2024-11-22 13:42.12 ---> using "821d48dc449b0aba137847b1b969fbf68a5695c8e59a56fee85c796920993d8d" from cache[0m
+
+[01;34m/home/opam: (run (cache (opam-archives (target /home/opam/.opam/download-cache)))
+                 (network host)
+                 (shell  "opam reinstall graphql-cohttp.0.14.0;\
+                        \n        res=$?;\
+                        \n        test \"$res\" != 31 && exit \"$res\";\
+                        \n        export OPAMCLI=2.0;\
+                        \n        build_dir=$(opam var prefix)/.opam-switch/build;\
+                        \n        failed=$(ls \"$build_dir\");\
+                        \n        partial_fails=\"\";\
+                        \n        for pkg in $failed; do\
+                        \n          if opam show -f x-ci-accept-failures: \"$pkg\" | grep -qF \"\\\"debian-12\\\"\"; then\
+                        \n            echo \"A package failed and has been disabled for CI using the 'x-ci-accept-failures' field.\";\
+                        \n          fi;\
+                        \n          test \"$pkg\" != 'graphql-cohttp.0.14.0' && partial_fails=\"$partial_fails $pkg\";\
+                        \n        done;\
+                        \n        test \"${partial_fails}\" != \"\" && echo \"opam-repo-ci detected dependencies failing: ${partial_fails}\";\
+                        \n        exit 1"))[0m
+graphql-cohttp.0.14.0 is not installed. Install it? [Y/n] y
+The following actions will be performed:
+=== install 44 packages
+  - install angstrom            0.16.1          [required by uri]
+  - install astring             0.8.5           [required by graphql-cohttp]
+  - install base                v0.15.1         [required by ppx_sexp_conv]
+  - install base-bytes          base            [required by cohttp, ocplib-endian]
+  - install base64              3.5.1           [required by graphql-cohttp]
+  - install bigstringaf         0.10.0          [required by angstrom]
+  - install cmdliner            1.3.0           [required by crunch]
+  - install cohttp              5.3.1           [required by graphql-cohttp]
+  - install cppo                1.7.0           [required by ocplib-endian]
+  - install crunch              3.3.1           [required by graphql-cohttp]
+  - install csexp               1.5.2           [required by dune-configurator]
+  - install digestif            1.2.0           [required by graphql-cohttp]
+  - install dune                3.16.1          [required by graphql-cohttp]
+  - install dune-configurator   3.16.1          [required by base]
+  - install eqaf                0.10            [required by digestif]
+  - install fmt                 0.9.0           [required by graphql_parser]
+  - install graphql             0.14.0          [required by graphql-cohttp]
+  - install graphql-cohttp      0.14.0 (pinned)
+  - install graphql_parser      0.14.0          [required by graphql]
+  - install jsonm               1.0.2           [required by cohttp]
+  - install menhir              20240715        [required by graphql_parser]
+  - install menhirCST           20240715        [required by menhir]
+  - install menhirLib           20240715        [required by menhir]
+  - install menhirSdk           20240715        [required by menhir]
+  - install ocaml-compiler-libs v0.12.4         [required by ppxlib]
+  - install ocaml-syntax-shims  1.0.0           [required by angstrom]
+  - install ocamlbuild          0.15.0          [required by astring]
+  - install ocamlfind           1.9.6           [required by astring]
+  - install ocplib-endian       1.2             [required by graphql-cohttp]
+  - install ppx_derivers        1.2.1           [required by ppxlib]
+  - install ppx_sexp_conv       v0.15.1         [required by cohttp]
+  - install ppxlib              0.33.0          [required by ppx_sexp_conv]
+  - install ptime               1.2.0           [required by crunch]
+  - install re                  1.11.0          [required by cohttp]
+  - install rresult             0.7.0           [required by graphql]
+  - install seq                 base            [required by graphql]
+  - install sexplib0            v0.15.1         [required by cohttp]
+  - install stdlib-shims        0.3.0           [required by ppxlib]
+  - install stringext           1.6.0           [required by cohttp]
+  - install topkg               1.0.7           [required by astring]
+  - install uri                 4.4.0           [required by cohttp]
+  - install uri-sexp            4.4.0           [required by cohttp]
+  - install uutf                1.0.3           [required by jsonm]
+  - install yojson              2.2.2           [required by graphql-cohttp]
+
+<><> Processing actions <><><><><><><><><><><><><><><><><><><><><><><><><><><><>
+-> retrieved angstrom.0.16.1  (cached)
+-> retrieved astring.0.8.5  (cached)
+-> retrieved base.v0.15.1  (cached)
+-> retrieved base64.3.5.1  (cached)
+-> retrieved bigstringaf.0.10.0  (cached)
+-> retrieved cmdliner.1.3.0  (cached)
+-> retrieved cohttp.5.3.1  (cached)
+-> retrieved cppo.1.7.0  (cached)
+-> retrieved crunch.3.3.1  (cached)
+-> retrieved csexp.1.5.2  (cached)
+-> retrieved digestif.1.2.0  (cached)
+-> retrieved dune.3.16.1, dune-configurator.3.16.1  (cached)
+-> retrieved eqaf.0.10  (cached)
+-> retrieved fmt.0.9.0  (cached)
+-> retrieved graphql.0.14.0, graphql-cohttp.0.14.0, graphql_parser.0.14.0  (cached)
+-> retrieved jsonm.1.0.2  (cached)
+-> installed cmdliner.1.3.0
+-> retrieved menhir.20240715, menhirCST.20240715, menhirLib.20240715, menhirSdk.20240715  (cached)
+-> retrieved ocaml-compiler-libs.v0.12.4  (cached)
+-> retrieved ocaml-syntax-shims.1.0.0  (cached)
+-> retrieved ocamlbuild.0.15.0  (cached)
+-> retrieved ocamlfind.1.9.6  (cached)
+-> retrieved ocplib-endian.1.2  (cached)
+-> retrieved ppx_derivers.1.2.1  (cached)
+-> retrieved ppx_sexp_conv.v0.15.1  (cached)
+-> retrieved ppxlib.0.33.0  (cached)
+-> retrieved ptime.1.2.0  (cached)
+-> retrieved re.1.11.0  (cached)
+-> retrieved rresult.0.7.0  (cached)
+-> retrieved seq.base  (cached)
+-> installed seq.base
+-> retrieved sexplib0.v0.15.1  (cached)
+-> retrieved stdlib-shims.0.3.0  (cached)
+-> retrieved stringext.1.6.0  (cached)
+-> retrieved topkg.1.0.7  (cached)
+-> retrieved uri.4.4.0, uri-sexp.4.4.0  (cached)
+-> retrieved uutf.1.0.3  (cached)
+-> retrieved yojson.2.2.2  (cached)
+-> installed ocamlfind.1.9.6
+-> installed base-bytes.base
+-> installed ocamlbuild.0.15.0
+-> installed topkg.1.0.7
+-> installed rresult.0.7.0
+-> installed uutf.1.0.3
+-> installed fmt.0.9.0
+-> installed ptime.1.2.0
+-> installed astring.0.8.5
+-> installed jsonm.1.0.2
+-> installed dune.3.16.1
+-> installed csexp.1.5.2
+-> installed base64.3.5.1
+-> installed crunch.3.3.1
+-> installed eqaf.0.10
+-> installed menhirCST.20240715
+-> installed menhirLib.20240715
+-> installed menhirSdk.20240715
+-> installed ocaml-syntax-shims.1.0.0
+-> installed ocaml-compiler-libs.v0.12.4
+-> installed ppx_derivers.1.2.1
+-> installed re.1.11.0
+-> installed cppo.1.7.0
+-> installed sexplib0.v0.15.1
+-> installed stdlib-shims.0.3.0
+-> installed stringext.1.6.0
+-> installed ocplib-endian.1.2
+-> installed yojson.2.2.2
+-> installed digestif.1.2.0
+-> installed dune-configurator.3.16.1
+-> installed bigstringaf.0.10.0
+-> installed angstrom.0.16.1
+-> installed uri.4.4.0
+-> installed base.v0.15.1
+-> installed menhir.20240715
+-> installed graphql_parser.0.14.0
+-> installed graphql.0.14.0
+-> installed ppxlib.0.33.0
+-> installed ppx_sexp_conv.v0.15.1
+-> installed uri-sexp.4.4.0
+-> installed cohttp.5.3.1
+-> installed graphql-cohttp.0.14.0
+Done.
+# To update the current shell environment, run: eval $(opam env)
+[01;2m[01;35m2024-11-22 13:43.03 ---> saved as "456ad2179cb63973396dfb3f1131f02387be281d94dae3a5d2f93cbf28c43f71"[0m
+
+[01;34m/home/opam: (run (network host)
+                 (shell "(opam reinstall --with-test graphql-cohttp.0.14.0) || true"))[0m
+[ERROR] Sorry, resolution of the request timed out.
+        Try to specify a more precise request, use a different solver, or increase the allowed time by setting OPAMSOLVERTIMEOUT to a bigger value (currently, it is set to 1000.0 seconds).
+[01;2m[01;35m2024-11-22 14:00.07 ---> saved as "03c08c1f2f28a8ffddcc1ee88090c676536eb57dd9f9c2b813d09b4373f68400"[0m
+
+[01;34m/home/opam: (run (shell  "opam reinstall --with-test --verbose graphql-cohttp.0.14.0;\
+                        \n        res=$?;\
+                        \n        test \"$res\" != 31 && exit \"$res\";\
+                        \n        export OPAMCLI=2.0;\
+                        \n        build_dir=$(opam var prefix)/.opam-switch/build;\
+                        \n        failed=$(ls \"$build_dir\");\
+                        \n        partial_fails=\"\";\
+                        \n        for pkg in $failed; do\
+                        \n          if opam show -f x-ci-accept-failures: \"$pkg\" | grep -qF \"\\\"debian-12\\\"\"; then\
+                        \n            echo \"A package failed and has been disabled for CI using the 'x-ci-accept-failures' field.\";\
+                        \n          fi;\
+                        \n          test \"$pkg\" != 'graphql-cohttp.0.14.0' && partial_fails=\"$partial_fails $pkg\";\
+                        \n        done;\
+                        \n        test \"${partial_fails}\" != \"\" && echo \"opam-repo-ci detected dependencies failing: ${partial_fails}\";\
+                        \n        exit 1"))[0m
+[ERROR] Sorry, resolution of the request timed out.
+        Try to specify a more precise request, use a different solver, or increase the allowed time by setting OPAMSOLVERTIMEOUT to a bigger value (currently, it is set to 1000.0 seconds).
+'opam reinstall --with-test --verbose graphql-cohttp.0.14.0' failed.
+"/usr/bin/env" "bash" "-c" "opam reinstall --with-test --verbose graphql-cohttp.0.14.0;
+        res=$?;
+        test "$res" != 31 && exit "$res";
+        export OPAMCLI=2.0;
+        build_dir=$(opam var prefix)/.opam-switch/build;
+        failed=$(ls "$build_dir");
+        partial_fails="";
+        for pkg in $failed; do
+          if opam show -f x-ci-accept-failures: "$pkg" | grep -qF "\"debian-12\""; then
+            echo "A package failed and has been disabled for CI using the 'x-ci-accept-failures' field.";
+          fi;
+          test "$pkg" != 'graphql-cohttp.0.14.0' && partial_fails="$partial_fails $pkg";
+        done;
+        test "${partial_fails}" != "" && echo "opam-repo-ci detected dependencies failing: ${partial_fails}";
+        exit 1" failed with exit status 60
+2024-11-22 14:17.14: Job failed: Failed: Build failed
+2024-11-22 14:17.14: Log analysis:
+2024-11-22 14:17.14: >>> 
+[ERROR] Sorry, resolution of the request timed out.
+ (score = 20)
+2024-11-22 14:17.14: >>> 
+[ERROR] Sorry, resolution of the request timed out.
+ (score = 20)
+2024-11-22 14:17.14: Sorry, resolution of the request timed out.

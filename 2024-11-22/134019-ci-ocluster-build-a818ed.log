@@ -1,0 +1,262 @@
+2024-11-22 13:40.19: New job: test opentelemetry-cohttp-lwt.0.4, using opam 2.0
+                              from https://github.com/ocaml/opam-repository.git#refs/pull/26931/head (20f599cfccee25f3c00a287a0187432bb0ed07ad)
+                              on debian-12-ocaml-4.14/amd64
+
+To reproduce locally:
+
+cd $(mktemp -d)
+git clone --recursive "https://github.com/ocaml/opam-repository.git" && cd "opam-repository" && git fetch origin "refs/pull/26931/head" && git reset --hard 20f599cf
+git fetch origin master
+git merge --no-edit 9e5cf6f9f01138196c65e4d32ab556c8f375185d
+cat > ../Dockerfile <<'END-OF-DOCKERFILE'
+[34mFROM ocaml/opam:debian-12-ocaml-4.14@sha256:3b83406bd3604cbe91e1a7499b0a6b18dd710d949d68282fb558bf3d301d3e97
+USER 1000:1000
+WORKDIR /home/opam
+RUN sudo ln -f /usr/bin/opam-2.0 /usr/bin/opam
+RUN opam init --reinit -ni
+RUN uname -rs && opam exec -- ocaml -version && opam --version
+ENV OPAMDOWNLOADJOBS="1"
+ENV OPAMERRLOGLEN="0"
+ENV OPAMSOLVERTIMEOUT="1000"
+ENV OPAMPRECISETRACKING="1"
+ENV CI="true"
+ENV OPAM_REPO_CI="true"
+RUN rm -rf opam-repository/
+COPY --chown=1000:1000 . opam-repository/
+RUN opam repository set-url --strict default opam-repository/
+RUN opam depext -u || true
+RUN opam pin add -k version -yn opentelemetry-cohttp-lwt.0.4 0.4
+RUN opam depext opentelemetry-cohttp-lwt.0.4 && opam reinstall opentelemetry-cohttp-lwt.0.4; \
+    res=$?; \
+    test "$res" != 31 && exit "$res"; \
+    export OPAMCLI=2.0; \
+    build_dir=$(opam var prefix)/.opam-switch/build; \
+    failed=$(ls "$build_dir"); \
+    partial_fails=""; \
+    for pkg in $failed; do \
+    if opam show -f x-ci-accept-failures: "$pkg" | grep -qF "\"debian-12\""; then \
+    echo "A package failed and has been disabled for CI using the 'x-ci-accept-failures' field."; \
+    fi; \
+    test "$pkg" != 'opentelemetry-cohttp-lwt.0.4' && partial_fails="$partial_fails $pkg"; \
+    done; \
+    test "${partial_fails}" != "" && echo "opam-repo-ci detected dependencies failing: ${partial_fails}"; \
+    exit 1
+RUN (opam depext --with-test opentelemetry-cohttp-lwt.0.4 && opam reinstall --with-test opentelemetry-cohttp-lwt.0.4) || true
+RUN opam depext --with-test opentelemetry-cohttp-lwt.0.4 && opam reinstall --with-test --verbose opentelemetry-cohttp-lwt.0.4; \
+    res=$?; \
+    test "$res" != 31 && exit "$res"; \
+    export OPAMCLI=2.0; \
+    build_dir=$(opam var prefix)/.opam-switch/build; \
+    failed=$(ls "$build_dir"); \
+    partial_fails=""; \
+    for pkg in $failed; do \
+    if opam show -f x-ci-accept-failures: "$pkg" | grep -qF "\"debian-12\""; then \
+    echo "A package failed and has been disabled for CI using the 'x-ci-accept-failures' field."; \
+    fi; \
+    test "$pkg" != 'opentelemetry-cohttp-lwt.0.4' && partial_fails="$partial_fails $pkg"; \
+    done; \
+    test "${partial_fails}" != "" && echo "opam-repo-ci detected dependencies failing: ${partial_fails}"; \
+    exit 1
+[0m
+END-OF-DOCKERFILE
+docker build -f ../Dockerfile .
+
+2024-11-22 13:40.19: Using cache hint "ocaml/opam:debian-12-ocaml-4.14@sha256:3b83406bd3604cbe91e1a7499b0a6b18dd710d949d68282fb558bf3d301d3e97-opentelemetry-cohttp-lwt.0.4-20f599cfccee25f3c00a287a0187432bb0ed07ad"
+2024-11-22 13:40.19: Using OBuilder spec:
+((from ocaml/opam:debian-12-ocaml-4.14@sha256:3b83406bd3604cbe91e1a7499b0a6b18dd710d949d68282fb558bf3d301d3e97)
+ (user (uid 1000) (gid 1000))
+ (workdir /home/opam)
+ (run (shell "sudo ln -f /usr/bin/opam-2.0 /usr/bin/opam"))
+ (run (network host)
+      (shell "opam init --reinit --config .opamrc-sandbox -ni"))
+ (run (shell "uname -rs && opam exec -- ocaml -version && opam --version"))
+ (env OPAMDOWNLOADJOBS 1)
+ (env OPAMERRLOGLEN 0)
+ (env OPAMSOLVERTIMEOUT 1000)
+ (env OPAMPRECISETRACKING 1)
+ (env CI true)
+ (env OPAM_REPO_CI true)
+ (run (shell "rm -rf opam-repository/"))
+ (copy (src .) (dst opam-repository/))
+ (run (shell "opam repository set-url --strict default opam-repository/"))
+ (run (network host)
+      (shell "opam depext -u || true"))
+ (run (shell "opam pin add -k version -yn opentelemetry-cohttp-lwt.0.4 0.4"))
+ (run (cache (opam-archives (target /home/opam/.opam/download-cache)))
+      (network host)
+      (shell  "opam depext opentelemetry-cohttp-lwt.0.4 && opam reinstall opentelemetry-cohttp-lwt.0.4;\
+             \n        res=$?;\
+             \n        test \"$res\" != 31 && exit \"$res\";\
+             \n        export OPAMCLI=2.0;\
+             \n        build_dir=$(opam var prefix)/.opam-switch/build;\
+             \n        failed=$(ls \"$build_dir\");\
+             \n        partial_fails=\"\";\
+             \n        for pkg in $failed; do\
+             \n          if opam show -f x-ci-accept-failures: \"$pkg\" | grep -qF \"\\\"debian-12\\\"\"; then\
+             \n            echo \"A package failed and has been disabled for CI using the 'x-ci-accept-failures' field.\";\
+             \n          fi;\
+             \n          test \"$pkg\" != 'opentelemetry-cohttp-lwt.0.4' && partial_fails=\"$partial_fails $pkg\";\
+             \n        done;\
+             \n        test \"${partial_fails}\" != \"\" && echo \"opam-repo-ci detected dependencies failing: ${partial_fails}\";\
+             \n        exit 1"))
+ (run (network host)
+      (shell "(opam depext --with-test opentelemetry-cohttp-lwt.0.4 && opam reinstall --with-test opentelemetry-cohttp-lwt.0.4) || true"))
+ (run (shell  "opam depext --with-test opentelemetry-cohttp-lwt.0.4 && opam reinstall --with-test --verbose opentelemetry-cohttp-lwt.0.4;\
+             \n        res=$?;\
+             \n        test \"$res\" != 31 && exit \"$res\";\
+             \n        export OPAMCLI=2.0;\
+             \n        build_dir=$(opam var prefix)/.opam-switch/build;\
+             \n        failed=$(ls \"$build_dir\");\
+             \n        partial_fails=\"\";\
+             \n        for pkg in $failed; do\
+             \n          if opam show -f x-ci-accept-failures: \"$pkg\" | grep -qF \"\\\"debian-12\\\"\"; then\
+             \n            echo \"A package failed and has been disabled for CI using the 'x-ci-accept-failures' field.\";\
+             \n          fi;\
+             \n          test \"$pkg\" != 'opentelemetry-cohttp-lwt.0.4' && partial_fails=\"$partial_fails $pkg\";\
+             \n        done;\
+             \n        test \"${partial_fails}\" != \"\" && echo \"opam-repo-ci detected dependencies failing: ${partial_fails}\";\
+             \n        exit 1"))
+)
+
+2024-11-22 13:40.19: Waiting for resource in pool OCluster
+2024-11-22 21:38.58: Waiting for worker…
+2024-11-22 21:41.23: Got resource from pool OCluster
+Building on x86-bm-c16.sw.ocaml.org
+All commits already cached
+Updating files:  64% (20953/32714)Updating files:  65% (21265/32714)Updating files:  66% (21592/32714)Updating files:  67% (21919/32714)Updating files:  68% (22246/32714)Updating files:  69% (22573/32714)Updating files:  70% (22900/32714)Updating files:  71% (23227/32714)Updating files:  72% (23555/32714)Updating files:  73% (23882/32714)Updating files:  74% (24209/32714)Updating files:  75% (24536/32714)Updating files:  76% (24863/32714)Updating files:  77% (25190/32714)Updating files:  78% (25517/32714)Updating files:  79% (25845/32714)Updating files:  80% (26172/32714)Updating files:  81% (26499/32714)Updating files:  82% (26826/32714)Updating files:  83% (27153/32714)Updating files:  84% (27480/32714)Updating files:  85% (27807/32714)Updating files:  86% (28135/32714)Updating files:  87% (28462/32714)Updating files:  88% (28789/32714)Updating files:  89% (29116/32714)Updating files:  90% (29443/32714)Updating files:  91% (29770/32714)Updating files:  92% (30097/32714)Updating files:  93% (30425/32714)Updating files:  94% (30752/32714)Updating files:  95% (31079/32714)Updating files:  96% (31406/32714)Updating files:  97% (31733/32714)Updating files:  98% (32060/32714)Updating files:  99% (32387/32714)Updating files: 100% (32714/32714)Updating files: 100% (32714/32714), done.
+HEAD is now at 9e5cf6f9f0 Merge pull request #26924 from dkalinichenko-js/opam-publish-torch.v0.17.1
+Updating 9e5cf6f9f0..20f599cfcc
+Fast-forward
+ packages/opentelemetry-cohttp-lwt/opentelemetry-cohttp-lwt.0.10/opam | 2 +-
+ packages/opentelemetry-cohttp-lwt/opentelemetry-cohttp-lwt.0.2/opam  | 2 +-
+ packages/opentelemetry-cohttp-lwt/opentelemetry-cohttp-lwt.0.3/opam  | 2 +-
+ packages/opentelemetry-cohttp-lwt/opentelemetry-cohttp-lwt.0.4/opam  | 2 +-
+ packages/opentelemetry-cohttp-lwt/opentelemetry-cohttp-lwt.0.5/opam  | 2 +-
+ packages/opentelemetry-cohttp-lwt/opentelemetry-cohttp-lwt.0.6/opam  | 2 +-
+ packages/opentelemetry-cohttp-lwt/opentelemetry-cohttp-lwt.0.7/opam  | 2 +-
+ packages/opentelemetry-cohttp-lwt/opentelemetry-cohttp-lwt.0.8/opam  | 2 +-
+ packages/opentelemetry-cohttp-lwt/opentelemetry-cohttp-lwt.0.9/opam  | 2 +-
+ 9 files changed, 9 insertions(+), 9 deletions(-)
+
+[01;34m(from ocaml/opam:debian-12-ocaml-4.14@sha256:3b83406bd3604cbe91e1a7499b0a6b18dd710d949d68282fb558bf3d301d3e97)[0m
+[01;2m[01;35m2024-11-22 21:41.26 ---> using "16c9fc8fd763c524ae1606da9019c341fc2748b0a1d360269689e19099d4c66f" from cache[0m
+
+[01;34m/: (user (uid 1000) (gid 1000))[0m
+
+[01;34m/: (workdir /home/opam)[0m
+
+[01;34m/home/opam: (run (shell "sudo ln -f /usr/bin/opam-2.0 /usr/bin/opam"))[0m
+[01;2m[01;35m2024-11-22 21:41.26 ---> using "c9751d6168a449c964f7d2a72bb394b7fb2b86ef5ee4c87fac375639addbbef0" from cache[0m
+
+[01;34m/home/opam: (run (network host)
+                 (shell "opam init --reinit --config .opamrc-sandbox -ni"))[0m
+[NOTE] Will configure from /home/opam/.opamrc-sandbox, then /home/opam/.opamrc, and finally from built-in defaults.
+Checking for available remotes: rsync and local, git.
+  - you won't be able to use mercurial repositories unless you install the hg command on your system.
+  - you won't be able to use darcs repositories unless you install the darcs command on your system.
+
+[WARNING] Recommended dependencies -- most packages rely on these:
+  - m4
+
+<><> Updating repositories ><><><><><><><><><><><><><><><><><><><><><><><><><><>
+[default] synchronised from file:///home/opam/opam-repository
+default (at file:///home/opam/opam-repository): 
+    [INFO] opam 2.1 and 2.2 include many performance and security improvements over 2.0; please consider upgrading (https://opam.ocaml.org/doc/Install.html)
+
+[01;2m[01;35m2024-11-22 21:41.26 ---> using "7b219d9ed35957cee6f80536e189ba75b7967b00b5978bb8bbf2a554616835f3" from cache[0m
+
+[01;34m/home/opam: (run (shell "uname -rs && opam exec -- ocaml -version && opam --version"))[0m
+Linux 5.15.0-125-generic
+The OCaml toplevel, version 4.14.2
+2.0.10
+[01;2m[01;35m2024-11-22 21:41.26 ---> using "d4cc26a99dfddbbb92e5ae3cd74e92b2378d66193fd025bb2111dc7fe8a66c42" from cache[0m
+
+[01;34m/home/opam: (env OPAMDOWNLOADJOBS 1)[0m
+
+[01;34m/home/opam: (env OPAMERRLOGLEN 0)[0m
+
+[01;34m/home/opam: (env OPAMSOLVERTIMEOUT 1000)[0m
+
+[01;34m/home/opam: (env OPAMPRECISETRACKING 1)[0m
+
+[01;34m/home/opam: (env CI true)[0m
+
+[01;34m/home/opam: (env OPAM_REPO_CI true)[0m
+
+[01;34m/home/opam: (run (shell "rm -rf opam-repository/"))[0m
+[01;2m[01;35m2024-11-22 21:41.26 ---> using "60ce59b7d3850e46463edcfe63b7ddcf2f4a8b8c2cc9b2cea10fcef9147715bd" from cache[0m
+
+[01;34m/home/opam: (copy (src .) (dst opam-repository/))[0m
+[01;2m[01;35m2024-11-22 21:41.28 ---> using "353b72f4c79d268551194b612cd905a480cefb6fffc90f978dc8f0ba8f58f3ac" from cache[0m
+
+[01;34m/home/opam: (run (shell "opam repository set-url --strict default opam-repository/"))[0m
+[default] Initialised
+default (at file:///home/opam/opam-repository): 
+    [INFO] opam 2.1 and 2.2 include many performance and security improvements over 2.0; please consider upgrading (https://opam.ocaml.org/doc/Install.html)
+
+[01;2m[01;35m2024-11-22 21:41.47 ---> saved as "0d5769bb8004f6df7d4f58afcb64029f1de45623244bf1e40526d02701775482"[0m
+
+[01;34m/home/opam: (run (network host)
+                 (shell "opam depext -u || true"))[0m
+# Detecting depexts using vars: arch=x86_64, os=linux, os-distribution=debian, os-family=debian
+# No extra OS packages requirements found.
+# All required OS packages found.
+The following command needs to be run through "sudo":
+    apt-get update
+Hit:1 http://deb.debian.org/debian bookworm InRelease
+Get:2 http://deb.debian.org/debian bookworm-updates InRelease [55.4 kB]
+Get:3 http://deb.debian.org/debian-security bookworm-security InRelease [48.0 kB]
+Get:4 http://deb.debian.org/debian-security bookworm-security/main amd64 Packages [204 kB]
+Fetched 308 kB in 0s (828 kB/s)
+Reading package lists...
+# OS package update successful
+[01;2m[01;35m2024-11-22 21:41.49 ---> saved as "612cc1e349132ae12dd76516035ecac23310ce9163881cfbd24d27fa3805602e"[0m
+
+[01;34m/home/opam: (run (shell "opam pin add -k version -yn opentelemetry-cohttp-lwt.0.4 0.4"))[0m
+opentelemetry-cohttp-lwt is now pinned to version 0.4
+[01;2m[01;35m2024-11-22 21:41.50 ---> saved as "423e376491a62f8dcf4bd8c3c79a9ea78903b948df191cdf74a6e59d02711807"[0m
+
+[01;34m/home/opam: (run (cache (opam-archives (target /home/opam/.opam/download-cache)))
+                 (network host)
+                 (shell  "opam depext opentelemetry-cohttp-lwt.0.4 && opam reinstall opentelemetry-cohttp-lwt.0.4;\
+                        \n        res=$?;\
+                        \n        test \"$res\" != 31 && exit \"$res\";\
+                        \n        export OPAMCLI=2.0;\
+                        \n        build_dir=$(opam var prefix)/.opam-switch/build;\
+                        \n        failed=$(ls \"$build_dir\");\
+                        \n        partial_fails=\"\";\
+                        \n        for pkg in $failed; do\
+                        \n          if opam show -f x-ci-accept-failures: \"$pkg\" | grep -qF \"\\\"debian-12\\\"\"; then\
+                        \n            echo \"A package failed and has been disabled for CI using the 'x-ci-accept-failures' field.\";\
+                        \n          fi;\
+                        \n          test \"$pkg\" != 'opentelemetry-cohttp-lwt.0.4' && partial_fails=\"$partial_fails $pkg\";\
+                        \n        done;\
+                        \n        test \"${partial_fails}\" != \"\" && echo \"opam-repo-ci detected dependencies failing: ${partial_fails}\";\
+                        \n        exit 1"))[0m
+# Detecting depexts using vars: arch=x86_64, os=linux, os-distribution=debian, os-family=debian
+# No extra OS packages requirements found.
+# All required OS packages found.
+opentelemetry-cohttp-lwt.0.4 is not installed. Install it? [Y/n] y
+[ERROR] Sorry, resolution of the request timed out.
+        Try to specify a simpler request, use a different solver, or increase the allowed time by setting OPAMSOLVERTIMEOUT to a bigger value (currently, it is set to 1000.0 seconds).
+"/usr/bin/env" "bash" "-c" "opam depext opentelemetry-cohttp-lwt.0.4 && opam reinstall opentelemetry-cohttp-lwt.0.4;
+        res=$?;
+        test "$res" != 31 && exit "$res";
+        export OPAMCLI=2.0;
+        build_dir=$(opam var prefix)/.opam-switch/build;
+        failed=$(ls "$build_dir");
+        partial_fails="";
+        for pkg in $failed; do
+          if opam show -f x-ci-accept-failures: "$pkg" | grep -qF "\"debian-12\""; then
+            echo "A package failed and has been disabled for CI using the 'x-ci-accept-failures' field.";
+          fi;
+          test "$pkg" != 'opentelemetry-cohttp-lwt.0.4' && partial_fails="$partial_fails $pkg";
+        done;
+        test "${partial_fails}" != "" && echo "opam-repo-ci detected dependencies failing: ${partial_fails}";
+        exit 1" failed with exit status 60
+2024-11-22 21:58.58: Job failed: Failed: Build failed
+2024-11-22 21:58.58: Log analysis:
+2024-11-22 21:58.58: >>> 
+[ERROR] Sorry, resolution of the request timed out.
+ (score = 20)
+2024-11-22 21:58.58: Sorry, resolution of the request timed out.

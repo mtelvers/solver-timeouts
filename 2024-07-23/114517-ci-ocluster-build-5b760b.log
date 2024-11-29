@@ -1,0 +1,219 @@
+2024-07-23 11:45.17: New job: build spotify_ml.push, using opam 2.1
+                              from https://github.com/ocaml/opam-repository.git#refs/pull/26274/head (a91f412a419dca5ce36318e0b7a35107fe3348b2)
+                              on debian-12-ocaml-5.2/amd64
+
+To reproduce locally:
+
+cd $(mktemp -d)
+git clone --recursive "https://github.com/ocaml/opam-repository.git" && cd "opam-repository" && git fetch origin "refs/pull/26274/head" && git reset --hard a91f412a
+git fetch origin master
+git merge --no-edit 7f205907c31707d377676a852c1c0b2d0a44f3c5
+cat > ../Dockerfile <<'END-OF-DOCKERFILE'
+[34mFROM ocaml/opam:debian-12-ocaml-5.2@sha256:c2c314346d00249c3beb5eb90881fba3db651faf127456c62c1474e32358d21b
+USER 1000:1000
+WORKDIR /home/opam
+RUN sudo ln -f /usr/bin/opam-2.1 /usr/bin/opam
+RUN opam init --reinit -ni
+RUN uname -rs && opam exec -- ocaml -version && opam --version
+ENV OPAMDOWNLOADJOBS="1"
+ENV OPAMERRLOGLEN="0"
+ENV OPAMSOLVERTIMEOUT="500"
+ENV OPAMPRECISETRACKING="1"
+ENV CI="true"
+ENV OPAM_REPO_CI="true"
+RUN rm -rf opam-repository/
+COPY --chown=1000:1000 . opam-repository/
+RUN opam repository set-url --strict default opam-repository/
+RUN opam update --depexts || true
+RUN opam pin add -k version -yn spotify_ml.push push
+RUN opam reinstall spotify_ml.push; \
+    res=$?; \
+    test "$res" != 31 && exit "$res"; \
+    export OPAMCLI=2.0; \
+    build_dir=$(opam var prefix)/.opam-switch/build; \
+    failed=$(ls "$build_dir"); \
+    partial_fails=""; \
+    for pkg in $failed; do \
+    if opam show -f x-ci-accept-failures: "$pkg" | grep -qF "\"debian-12\""; then \
+    echo "A package failed and has been disabled for CI using the 'x-ci-accept-failures' field."; \
+    fi; \
+    test "$pkg" != 'spotify_ml.push' && partial_fails="$partial_fails $pkg"; \
+    done; \
+    test "${partial_fails}" != "" && echo "opam-repo-ci detected dependencies failing: ${partial_fails}"; \
+    exit 1
+[0m
+END-OF-DOCKERFILE
+docker build -f ../Dockerfile .
+
+2024-07-23 11:45.17: Using cache hint "ocaml/opam:debian-12-ocaml-5.2@sha256:c2c314346d00249c3beb5eb90881fba3db651faf127456c62c1474e32358d21b-spotify_ml.push-a91f412a419dca5ce36318e0b7a35107fe3348b2"
+2024-07-23 11:45.17: Using OBuilder spec:
+((from ocaml/opam:debian-12-ocaml-5.2@sha256:c2c314346d00249c3beb5eb90881fba3db651faf127456c62c1474e32358d21b)
+ (user (uid 1000) (gid 1000))
+ (workdir /home/opam)
+ (run (shell "sudo ln -f /usr/bin/opam-2.1 /usr/bin/opam"))
+ (run (network host)
+      (shell "opam init --reinit --config .opamrc-sandbox -ni"))
+ (run (shell "uname -rs && opam exec -- ocaml -version && opam --version"))
+ (env OPAMDOWNLOADJOBS 1)
+ (env OPAMERRLOGLEN 0)
+ (env OPAMSOLVERTIMEOUT 500)
+ (env OPAMPRECISETRACKING 1)
+ (env CI true)
+ (env OPAM_REPO_CI true)
+ (run (shell "rm -rf opam-repository/"))
+ (copy (src .) (dst opam-repository/))
+ (run (shell "opam repository set-url --strict default opam-repository/"))
+ (run (network host)
+      (shell "opam update --depexts || true"))
+ (run (shell "opam pin add -k version -yn spotify_ml.push push"))
+ (run (cache (opam-archives (target /home/opam/.opam/download-cache)))
+      (network host)
+      (shell  "opam reinstall spotify_ml.push;\
+             \n        res=$?;\
+             \n        test \"$res\" != 31 && exit \"$res\";\
+             \n        export OPAMCLI=2.0;\
+             \n        build_dir=$(opam var prefix)/.opam-switch/build;\
+             \n        failed=$(ls \"$build_dir\");\
+             \n        partial_fails=\"\";\
+             \n        for pkg in $failed; do\
+             \n          if opam show -f x-ci-accept-failures: \"$pkg\" | grep -qF \"\\\"debian-12\\\"\"; then\
+             \n            echo \"A package failed and has been disabled for CI using the 'x-ci-accept-failures' field.\";\
+             \n          fi;\
+             \n          test \"$pkg\" != 'spotify_ml.push' && partial_fails=\"$partial_fails $pkg\";\
+             \n        done;\
+             \n        test \"${partial_fails}\" != \"\" && echo \"opam-repo-ci detected dependencies failing: ${partial_fails}\";\
+             \n        exit 1"))
+)
+
+2024-07-23 11:45.17: Waiting for resource in pool OCluster
+2024-07-23 11:45.18: Waiting for worker…
+2024-07-23 11:45.18: Got resource from pool OCluster
+Building on x86-bm-c10.sw.ocaml.org
+All commits already cached
+Updating files:  44% (14292/31860)Updating files:  45% (14337/31860)Updating files:  46% (14656/31860)Updating files:  47% (14975/31860)Updating files:  48% (15293/31860)Updating files:  49% (15612/31860)Updating files:  50% (15930/31860)Updating files:  51% (16249/31860)Updating files:  52% (16568/31860)Updating files:  53% (16886/31860)Updating files:  54% (17205/31860)Updating files:  55% (17523/31860)Updating files:  56% (17842/31860)Updating files:  57% (18161/31860)Updating files:  58% (18479/31860)Updating files:  59% (18798/31860)Updating files:  60% (19116/31860)Updating files:  61% (19435/31860)Updating files:  62% (19754/31860)Updating files:  63% (20072/31860)Updating files:  64% (20391/31860)Updating files:  65% (20709/31860)Updating files:  66% (21028/31860)Updating files:  67% (21347/31860)Updating files:  68% (21665/31860)Updating files:  69% (21984/31860)Updating files:  70% (22302/31860)Updating files:  71% (22621/31860)Updating files:  72% (22940/31860)Updating files:  73% (23258/31860)Updating files:  74% (23577/31860)Updating files:  75% (23895/31860)Updating files:  76% (24214/31860)Updating files:  77% (24533/31860)Updating files:  78% (24851/31860)Updating files:  79% (25170/31860)Updating files:  80% (25488/31860)Updating files:  81% (25807/31860)Updating files:  82% (26126/31860)Updating files:  83% (26444/31860)Updating files:  84% (26763/31860)Updating files:  85% (27081/31860)Updating files:  86% (27400/31860)Updating files:  87% (27719/31860)Updating files:  88% (28037/31860)Updating files:  89% (28356/31860)Updating files:  90% (28674/31860)Updating files:  91% (28993/31860)Updating files:  92% (29312/31860)Updating files:  93% (29630/31860)Updating files:  94% (29949/31860)Updating files:  94% (29959/31860)Updating files:  95% (30267/31860)Updating files:  96% (30586/31860)Updating files:  97% (30905/31860)Updating files:  98% (31223/31860)Updating files:  99% (31542/31860)Updating files: 100% (31860/31860)Updating files: 100% (31860/31860), done.
+HEAD is now at 7f205907c3 Merge pull request #26263 from avsm/ocaml-lsp-upper-5.2
+Updating 7f205907c3..a91f412a41
+Fast-forward
+ packages/spotify_ml/spotify_ml.push/opam | 44 ++++++++++++++++++++++++++++++++
+ 1 file changed, 44 insertions(+)
+ create mode 100644 packages/spotify_ml/spotify_ml.push/opam
+
+[01;34m(from ocaml/opam:debian-12-ocaml-5.2@sha256:c2c314346d00249c3beb5eb90881fba3db651faf127456c62c1474e32358d21b)[0m
+Unable to find image 'ocaml/opam:debian-12-ocaml-5.2@sha256:c2c314346d00249c3beb5eb90881fba3db651faf127456c62c1474e32358d21b' locally
+docker.io/ocaml/opam@sha256:c2c314346d00249c3beb5eb90881fba3db651faf127456c62c1474e32358d21b: Pulling from ocaml/opam
+a31d6ba683d3: Pulling fs layer
+a31d6ba683d3: Download complete
+a31d6ba683d3: Pull complete
+Digest: sha256:c2c314346d00249c3beb5eb90881fba3db651faf127456c62c1474e32358d21b
+Status: Downloaded newer image for ocaml/opam@sha256:c2c314346d00249c3beb5eb90881fba3db651faf127456c62c1474e32358d21b
+[01;2m[01;35m2024-07-23 11:45.51 ---> using "8ffd21b26d3e7a70d08f7ad2dfe8365dd11d916fe426237b721b129939daf5d3" from cache[0m
+
+[01;34m/: (user (uid 1000) (gid 1000))[0m
+
+[01;34m/: (workdir /home/opam)[0m
+
+[01;34m/home/opam: (run (shell "sudo ln -f /usr/bin/opam-2.1 /usr/bin/opam"))[0m
+[01;2m[01;35m2024-07-23 11:45.51 ---> using "3d7be35da4c173b6b874617a6bbd279fe316179e8370e4f7419fc76b5fe59587" from cache[0m
+
+[01;34m/home/opam: (run (network host)
+                 (shell "opam init --reinit --config .opamrc-sandbox -ni"))[0m
+Configuring from /home/opam/.opamrc-sandbox, then /home/opam/.opamrc, and finally from built-in defaults.
+Checking for available remotes: rsync and local, git.
+  - you won't be able to use mercurial repositories unless you install the hg command on your system.
+  - you won't be able to use darcs repositories unless you install the darcs command on your system.
+
+This development version of opam requires an update to the layout of /home/opam/.opam from version 2.0 to version 2.1, which can't be reverted.
+You may want to back it up before going further.
+
+Continue? [Y/n] y
+Format upgrade done.
+
+<><> Updating repositories ><><><><><><><><><><><><><><><><><><><><><><><><><><>
+[default] synchronised from file:///home/opam/opam-repository
+[01;2m[01;35m2024-07-23 11:45.51 ---> using "7f71ef82dba88145f55d15579d856fbececdce995a251e6a8a2e4a6dfca7274d" from cache[0m
+
+[01;34m/home/opam: (run (shell "uname -rs && opam exec -- ocaml -version && opam --version"))[0m
+Linux 5.15.0-116-generic
+The OCaml toplevel, version 5.2.0
+2.1.6
+[01;2m[01;35m2024-07-23 11:45.51 ---> using "93e9ba1b1e8dbf6afe7972c514df90a6e9ab4359f8a2bed76bcca22fc17fa253" from cache[0m
+
+[01;34m/home/opam: (env OPAMDOWNLOADJOBS 1)[0m
+
+[01;34m/home/opam: (env OPAMERRLOGLEN 0)[0m
+
+[01;34m/home/opam: (env OPAMSOLVERTIMEOUT 500)[0m
+
+[01;34m/home/opam: (env OPAMPRECISETRACKING 1)[0m
+
+[01;34m/home/opam: (env CI true)[0m
+
+[01;34m/home/opam: (env OPAM_REPO_CI true)[0m
+
+[01;34m/home/opam: (run (shell "rm -rf opam-repository/"))[0m
+[01;2m[01;35m2024-07-23 11:45.51 ---> using "c7b657a8a580cc73ec26e4821436b9b5d7dbd10cdac14ed14d71ba4e2cca427e" from cache[0m
+
+[01;34m/home/opam: (copy (src .) (dst opam-repository/))[0m
+[01;2m[01;35m2024-07-23 11:45.59 ---> saved as "caa9d6d42eb3ee95083a40328b967c061c41fc19a6d5e386943a763fc2bdbd3f"[0m
+
+[01;34m/home/opam: (run (shell "opam repository set-url --strict default opam-repository/"))[0m
+[default] Initialised
+[01;2m[01;35m2024-07-23 11:46.20 ---> saved as "86df97a93de95cb5a9e2dd5bc4379ca6dbe54ca447968e8a5d97bdf103d9de51"[0m
+
+[01;34m/home/opam: (run (network host)
+                 (shell "opam update --depexts || true"))[0m
++ /usr/bin/sudo "apt-get" "update"
+- Hit:1 http://deb.debian.org/debian bookworm InRelease
+- Get:2 http://deb.debian.org/debian bookworm-updates InRelease [55.4 kB]
+- Get:3 http://deb.debian.org/debian-security bookworm-security InRelease [48.0 kB]
+- Get:4 http://deb.debian.org/debian-security bookworm-security/main amd64 Packages [169 kB]
+- Fetched 272 kB in 0s (825 kB/s)
+- Reading package lists...
+- 
+[01;2m[01;35m2024-07-23 11:46.21 ---> saved as "70c0dce641530abf1a25870d5ec309dc96226de302f496dbcf34b19310754ed7"[0m
+
+[01;34m/home/opam: (run (shell "opam pin add -k version -yn spotify_ml.push push"))[0m
+spotify_ml is now pinned to version push
+[01;2m[01;35m2024-07-23 11:46.22 ---> saved as "efb99f27f9c107c680c0c2e6a86dd04e4e20714a2fdd89cee3dfb25c97f38ff9"[0m
+
+[01;34m/home/opam: (run (cache (opam-archives (target /home/opam/.opam/download-cache)))
+                 (network host)
+                 (shell  "opam reinstall spotify_ml.push;\
+                        \n        res=$?;\
+                        \n        test \"$res\" != 31 && exit \"$res\";\
+                        \n        export OPAMCLI=2.0;\
+                        \n        build_dir=$(opam var prefix)/.opam-switch/build;\
+                        \n        failed=$(ls \"$build_dir\");\
+                        \n        partial_fails=\"\";\
+                        \n        for pkg in $failed; do\
+                        \n          if opam show -f x-ci-accept-failures: \"$pkg\" | grep -qF \"\\\"debian-12\\\"\"; then\
+                        \n            echo \"A package failed and has been disabled for CI using the 'x-ci-accept-failures' field.\";\
+                        \n          fi;\
+                        \n          test \"$pkg\" != 'spotify_ml.push' && partial_fails=\"$partial_fails $pkg\";\
+                        \n        done;\
+                        \n        test \"${partial_fails}\" != \"\" && echo \"opam-repo-ci detected dependencies failing: ${partial_fails}\";\
+                        \n        exit 1"))[0m
+spotify_ml.push is not installed. Install it? [Y/n] y
+[ERROR] Sorry, resolution of the request timed out.
+        Try to specify a more precise request, use a different solver, or increase the allowed time by setting OPAMSOLVERTIMEOUT to a bigger value (currently, it is set to 500.0 seconds).
+"/usr/bin/env" "bash" "-c" "opam reinstall spotify_ml.push;
+        res=$?;
+        test "$res" != 31 && exit "$res";
+        export OPAMCLI=2.0;
+        build_dir=$(opam var prefix)/.opam-switch/build;
+        failed=$(ls "$build_dir");
+        partial_fails="";
+        for pkg in $failed; do
+          if opam show -f x-ci-accept-failures: "$pkg" | grep -qF "\"debian-12\""; then
+            echo "A package failed and has been disabled for CI using the 'x-ci-accept-failures' field.";
+          fi;
+          test "$pkg" != 'spotify_ml.push' && partial_fails="$partial_fails $pkg";
+        done;
+        test "${partial_fails}" != "" && echo "opam-repo-ci detected dependencies failing: ${partial_fails}";
+        exit 1" failed with exit status 60
+2024-07-23 11:55.26: Job failed: Failed: Build failed
+2024-07-23 11:55.26: Log analysis:
+2024-07-23 11:55.26: >>> 
+[ERROR] Sorry, resolution of the request timed out.
+ (score = 20)
+2024-07-23 11:55.26: Sorry, resolution of the request timed out.

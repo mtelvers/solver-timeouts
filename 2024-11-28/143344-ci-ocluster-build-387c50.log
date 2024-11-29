@@ -1,0 +1,355 @@
+2024-11-28 14:33.44: New job: test mariadb.1.2.0, using opam dev
+                              from https://github.com/ocaml/opam-repository.git#refs/pull/26984/head (cfc3b0e4fb799597976fdc21db8e646ba429fe96)
+                              on debian-12-ocaml-4.09/amd64
+
+To reproduce locally:
+
+cd $(mktemp -d)
+git clone --recursive "https://github.com/ocaml/opam-repository.git" && cd "opam-repository" && git fetch origin "refs/pull/26984/head" && git reset --hard cfc3b0e4
+git fetch origin master
+git merge --no-edit 8dd353813f879e7f171c4721a88278553cb09870
+cat > ../Dockerfile <<'END-OF-DOCKERFILE'
+[34mFROM ocaml/opam:debian-12-ocaml-4.09@sha256:55c6a7e5f6e1385c4ee0348178c4f2004215d99a815d9fcd7b59827038b90384
+USER 1000:1000
+WORKDIR /home/opam
+RUN sudo ln -f /usr/bin/opam-dev /usr/bin/opam
+RUN opam init --reinit -ni
+RUN uname -rs && opam exec -- ocaml -version && opam --version
+ENV OPAMDOWNLOADJOBS="1"
+ENV OPAMERRLOGLEN="0"
+ENV OPAMSOLVERTIMEOUT="1000"
+ENV OPAMPRECISETRACKING="1"
+ENV CI="true"
+ENV OPAM_REPO_CI="true"
+RUN rm -rf opam-repository/
+COPY --chown=1000:1000 . opam-repository/
+RUN opam repository set-url --strict default opam-repository/
+RUN opam update --depexts || true
+RUN opam pin add -k version -yn mariadb.1.2.0 1.2.0
+RUN opam reinstall mariadb.1.2.0; \
+    res=$?; \
+    test "$res" != 31 && exit "$res"; \
+    export OPAMCLI=2.0; \
+    build_dir=$(opam var prefix)/.opam-switch/build; \
+    failed=$(ls "$build_dir"); \
+    partial_fails=""; \
+    for pkg in $failed; do \
+    if opam show -f x-ci-accept-failures: "$pkg" | grep -qF "\"debian-12\""; then \
+    echo "A package failed and has been disabled for CI using the 'x-ci-accept-failures' field."; \
+    fi; \
+    test "$pkg" != 'mariadb.1.2.0' && partial_fails="$partial_fails $pkg"; \
+    done; \
+    test "${partial_fails}" != "" && echo "opam-repo-ci detected dependencies failing: ${partial_fails}"; \
+    exit 1
+RUN (opam reinstall --with-test mariadb.1.2.0) || true
+RUN opam reinstall --with-test --verbose mariadb.1.2.0; \
+    res=$?; \
+    test "$res" != 31 && exit "$res"; \
+    export OPAMCLI=2.0; \
+    build_dir=$(opam var prefix)/.opam-switch/build; \
+    failed=$(ls "$build_dir"); \
+    partial_fails=""; \
+    for pkg in $failed; do \
+    if opam show -f x-ci-accept-failures: "$pkg" | grep -qF "\"debian-12\""; then \
+    echo "A package failed and has been disabled for CI using the 'x-ci-accept-failures' field."; \
+    fi; \
+    test "$pkg" != 'mariadb.1.2.0' && partial_fails="$partial_fails $pkg"; \
+    done; \
+    test "${partial_fails}" != "" && echo "opam-repo-ci detected dependencies failing: ${partial_fails}"; \
+    exit 1
+[0m
+END-OF-DOCKERFILE
+docker build -f ../Dockerfile .
+
+2024-11-28 14:33.44: Using cache hint "ocaml/opam:debian-12-ocaml-4.09@sha256:55c6a7e5f6e1385c4ee0348178c4f2004215d99a815d9fcd7b59827038b90384-mariadb.1.2.0-cfc3b0e4fb799597976fdc21db8e646ba429fe96"
+2024-11-28 14:33.44: Using OBuilder spec:
+((from ocaml/opam:debian-12-ocaml-4.09@sha256:55c6a7e5f6e1385c4ee0348178c4f2004215d99a815d9fcd7b59827038b90384)
+ (user (uid 1000) (gid 1000))
+ (workdir /home/opam)
+ (run (shell "sudo ln -f /usr/bin/opam-dev /usr/bin/opam"))
+ (run (network host)
+      (shell "opam init --reinit --config .opamrc-sandbox -ni"))
+ (run (shell "uname -rs && opam exec -- ocaml -version && opam --version"))
+ (env OPAMDOWNLOADJOBS 1)
+ (env OPAMERRLOGLEN 0)
+ (env OPAMSOLVERTIMEOUT 1000)
+ (env OPAMPRECISETRACKING 1)
+ (env CI true)
+ (env OPAM_REPO_CI true)
+ (run (shell "rm -rf opam-repository/"))
+ (copy (src .) (dst opam-repository/))
+ (run (shell "opam repository set-url --strict default opam-repository/"))
+ (run (network host)
+      (shell "opam update --depexts || true"))
+ (run (shell "opam pin add -k version -yn mariadb.1.2.0 1.2.0"))
+ (run (cache (opam-archives (target /home/opam/.opam/download-cache)))
+      (network host)
+      (shell  "opam reinstall mariadb.1.2.0;\
+             \n        res=$?;\
+             \n        test \"$res\" != 31 && exit \"$res\";\
+             \n        export OPAMCLI=2.0;\
+             \n        build_dir=$(opam var prefix)/.opam-switch/build;\
+             \n        failed=$(ls \"$build_dir\");\
+             \n        partial_fails=\"\";\
+             \n        for pkg in $failed; do\
+             \n          if opam show -f x-ci-accept-failures: \"$pkg\" | grep -qF \"\\\"debian-12\\\"\"; then\
+             \n            echo \"A package failed and has been disabled for CI using the 'x-ci-accept-failures' field.\";\
+             \n          fi;\
+             \n          test \"$pkg\" != 'mariadb.1.2.0' && partial_fails=\"$partial_fails $pkg\";\
+             \n        done;\
+             \n        test \"${partial_fails}\" != \"\" && echo \"opam-repo-ci detected dependencies failing: ${partial_fails}\";\
+             \n        exit 1"))
+ (run (network host)
+      (shell "(opam reinstall --with-test mariadb.1.2.0) || true"))
+ (run (shell  "opam reinstall --with-test --verbose mariadb.1.2.0;\
+             \n        res=$?;\
+             \n        test \"$res\" != 31 && exit \"$res\";\
+             \n        export OPAMCLI=2.0;\
+             \n        build_dir=$(opam var prefix)/.opam-switch/build;\
+             \n        failed=$(ls \"$build_dir\");\
+             \n        partial_fails=\"\";\
+             \n        for pkg in $failed; do\
+             \n          if opam show -f x-ci-accept-failures: \"$pkg\" | grep -qF \"\\\"debian-12\\\"\"; then\
+             \n            echo \"A package failed and has been disabled for CI using the 'x-ci-accept-failures' field.\";\
+             \n          fi;\
+             \n          test \"$pkg\" != 'mariadb.1.2.0' && partial_fails=\"$partial_fails $pkg\";\
+             \n        done;\
+             \n        test \"${partial_fails}\" != \"\" && echo \"opam-repo-ci detected dependencies failing: ${partial_fails}\";\
+             \n        exit 1"))
+)
+
+2024-11-28 14:33.44: Waiting for resource in pool OCluster
+2024-11-28 15:04.22: Waiting for worker…
+2024-11-28 15:08.53: Got resource from pool OCluster
+Building on x86-bm-c6.sw.ocaml.org
+All commits already cached
+Updating files:  65% (21573/32765)Updating files:  66% (21625/32765)Updating files:  67% (21953/32765)Updating files:  68% (22281/32765)Updating files:  69% (22608/32765)Updating files:  70% (22936/32765)Updating files:  71% (23264/32765)Updating files:  72% (23591/32765)Updating files:  73% (23919/32765)Updating files:  74% (24247/32765)Updating files:  75% (24574/32765)Updating files:  76% (24902/32765)Updating files:  77% (25230/32765)Updating files:  78% (25557/32765)Updating files:  79% (25885/32765)Updating files:  80% (26212/32765)Updating files:  81% (26540/32765)Updating files:  82% (26868/32765)Updating files:  83% (27195/32765)Updating files:  84% (27523/32765)Updating files:  85% (27851/32765)Updating files:  86% (28178/32765)Updating files:  87% (28506/32765)Updating files:  88% (28834/32765)Updating files:  89% (29161/32765)Updating files:  90% (29489/32765)Updating files:  91% (29817/32765)Updating files:  92% (30144/32765)Updating files:  93% (30472/32765)Updating files:  94% (30800/32765)Updating files:  95% (31127/32765)Updating files:  96% (31455/32765)Updating files:  97% (31783/32765)Updating files:  98% (32110/32765)Updating files:  99% (32438/32765)Updating files: 100% (32765/32765)Updating files: 100% (32765/32765), done.
+HEAD is now at 8dd353813f Merge pull request #26977 from fpottier/opam-publish-monolith.20241126
+Updating 8dd353813f..cfc3b0e4fb
+Fast-forward
+ packages/mariadb/mariadb.1.2.0/opam | 37 +++++++++++++++++++++++++++++++++++++
+ 1 file changed, 37 insertions(+)
+ create mode 100644 packages/mariadb/mariadb.1.2.0/opam
+
+[01;34m(from ocaml/opam:debian-12-ocaml-4.09@sha256:55c6a7e5f6e1385c4ee0348178c4f2004215d99a815d9fcd7b59827038b90384)[0m
+Unable to find image 'ocaml/opam:debian-12-ocaml-4.09@sha256:55c6a7e5f6e1385c4ee0348178c4f2004215d99a815d9fcd7b59827038b90384' locally
+docker.io/ocaml/opam@sha256:55c6a7e5f6e1385c4ee0348178c4f2004215d99a815d9fcd7b59827038b90384: Pulling from ocaml/opam
+7b12cb43bf20: Pulling fs layer
+7b12cb43bf20: Verifying Checksum
+7b12cb43bf20: Download complete
+7b12cb43bf20: Pull complete
+Digest: sha256:55c6a7e5f6e1385c4ee0348178c4f2004215d99a815d9fcd7b59827038b90384
+Status: Downloaded newer image for ocaml/opam@sha256:55c6a7e5f6e1385c4ee0348178c4f2004215d99a815d9fcd7b59827038b90384
+[01;2m[01;35m2024-11-28 15:08.59 ---> using "cc5475bdd71f5a7151ffa28c866652e157b523d11e56264dccb646b9e7ac0700" from cache[0m
+
+[01;34m/: (user (uid 1000) (gid 1000))[0m
+
+[01;34m/: (workdir /home/opam)[0m
+
+[01;34m/home/opam: (run (shell "sudo ln -f /usr/bin/opam-dev /usr/bin/opam"))[0m
+[01;2m[01;35m2024-11-28 15:08.59 ---> using "4fe9d93de99d02dd94917180e5382b7f3ff313901bfa50c26ab14c070747318f" from cache[0m
+
+[01;34m/home/opam: (run (network host)
+                 (shell "opam init --reinit --config .opamrc-sandbox -ni"))[0m
+Configuring from /home/opam/.opamrc-sandbox, then /home/opam/.opamrc, and finally from built-in defaults.
+Checking for available remotes: rsync and local, git.
+  - you won't be able to use mercurial repositories unless you install the hg command on your system.
+  - you won't be able to use darcs repositories unless you install the darcs command on your system.
+
+This development version of opam requires an update to the layout of /home/opam/.opam from version 2.0 to version 2.2, which can't be reverted.
+You may want to back it up before going further.
+
+Continue? [Y/n] y
+[NOTE] The 'jobs' option was reset, its value was 39 and its new value will vary according to the current number of cores on your machine. You can restore the fixed value using:
+           opam option jobs=39 --global
+Format upgrade done.
+
+<><> Updating repositories ><><><><><><><><><><><><><><><><><><><><><><><><><><>
+[default] synchronised from file:///home/opam/opam-repository
+[01;2m[01;35m2024-11-28 15:08.59 ---> using "d67cc0a742d1be6e508e5bd770faa96283244388805e3e6d5ba6ad95b4be161b" from cache[0m
+
+[01;34m/home/opam: (run (shell "uname -rs && opam exec -- ocaml -version && opam --version"))[0m
+Linux 5.15.0-126-generic
+The OCaml toplevel, version 4.09.1
+2.4.0~alpha1~dev
+[01;2m[01;35m2024-11-28 15:08.59 ---> using "1181c351ca8f3b90211b4aa949ad007b07abd8b1fada61833bc9b414668bbc0a" from cache[0m
+
+[01;34m/home/opam: (env OPAMDOWNLOADJOBS 1)[0m
+
+[01;34m/home/opam: (env OPAMERRLOGLEN 0)[0m
+
+[01;34m/home/opam: (env OPAMSOLVERTIMEOUT 1000)[0m
+
+[01;34m/home/opam: (env OPAMPRECISETRACKING 1)[0m
+
+[01;34m/home/opam: (env CI true)[0m
+
+[01;34m/home/opam: (env OPAM_REPO_CI true)[0m
+
+[01;34m/home/opam: (run (shell "rm -rf opam-repository/"))[0m
+[01;2m[01;35m2024-11-28 15:08.59 ---> using "4a0488576379011d5d3a282a46a36ca6f667a6b360dd686c95b7485798a0a740" from cache[0m
+
+[01;34m/home/opam: (copy (src .) (dst opam-repository/))[0m
+[01;2m[01;35m2024-11-28 15:09.01 ---> using "e821daa2e3361882e623f1cd9e68de6d42df19d9d0c2146260275e66330419b5" from cache[0m
+
+[01;34m/home/opam: (run (shell "opam repository set-url --strict default opam-repository/"))[0m
+[default] Initialised
+[01;2m[01;35m2024-11-28 15:09.01 ---> using "9f495b4a65e81a75c7ed910fc7c75518fc723e2e182458af062cfb3141194bfb" from cache[0m
+
+[01;34m/home/opam: (run (network host)
+                 (shell "opam update --depexts || true"))[0m
++ /usr/bin/sudo "apt-get" "update"
+- Hit:1 http://deb.debian.org/debian bookworm InRelease
+- Get:2 http://deb.debian.org/debian bookworm-updates InRelease [55.4 kB]
+- Get:3 http://deb.debian.org/debian-security bookworm-security InRelease [48.0 kB]
+- Get:4 http://deb.debian.org/debian bookworm-updates/main amd64 Packages.diff/Index [12.8 kB]
+- Get:5 http://deb.debian.org/debian bookworm-updates/main amd64 Packages T-2024-11-27-1405.46-F-2024-11-27-1405.46.pdiff [435 B]
+- Get:5 http://deb.debian.org/debian bookworm-updates/main amd64 Packages T-2024-11-27-1405.46-F-2024-11-27-1405.46.pdiff [435 B]
+- Get:6 http://deb.debian.org/debian-security bookworm-security/main amd64 Packages [206 kB]
+- Fetched 322 kB in 0s (1064 kB/s)
+- Reading package lists...
+- 
+[01;2m[01;35m2024-11-28 15:09.01 ---> using "143230f4a5635c70a31bca051adeaaf3b2ce79c7f9617747d1638afc77d2989b" from cache[0m
+
+[01;34m/home/opam: (run (shell "opam pin add -k version -yn mariadb.1.2.0 1.2.0"))[0m
+mariadb is now pinned to version 1.2.0
+[01;2m[01;35m2024-11-28 15:09.01 ---> using "c5362fc674a19f686b31aafa8837eb8c108ae032354bf698f8ee15ec2c5882fd" from cache[0m
+
+[01;34m/home/opam: (run (cache (opam-archives (target /home/opam/.opam/download-cache)))
+                 (network host)
+                 (shell  "opam reinstall mariadb.1.2.0;\
+                        \n        res=$?;\
+                        \n        test \"$res\" != 31 && exit \"$res\";\
+                        \n        export OPAMCLI=2.0;\
+                        \n        build_dir=$(opam var prefix)/.opam-switch/build;\
+                        \n        failed=$(ls \"$build_dir\");\
+                        \n        partial_fails=\"\";\
+                        \n        for pkg in $failed; do\
+                        \n          if opam show -f x-ci-accept-failures: \"$pkg\" | grep -qF \"\\\"debian-12\\\"\"; then\
+                        \n            echo \"A package failed and has been disabled for CI using the 'x-ci-accept-failures' field.\";\
+                        \n          fi;\
+                        \n          test \"$pkg\" != 'mariadb.1.2.0' && partial_fails=\"$partial_fails $pkg\";\
+                        \n        done;\
+                        \n        test \"${partial_fails}\" != \"\" && echo \"opam-repo-ci detected dependencies failing: ${partial_fails}\";\
+                        \n        exit 1"))[0m
+mariadb.1.2.0 is not installed. Install it? [Y/n] y
+The following actions will be performed:
+=== install 11 packages
+  - install bigarray-compat   1.1.0          [required by ctypes]
+  - install conf-gcc          1.0            [required by mariadb]
+  - install conf-mariadb      2              [required by mariadb]
+  - install conf-pkg-config   3              [required by conf-mariadb]
+  - install csexp             1.5.2          [required by dune-configurator]
+  - install ctypes            0.23.0         [required by mariadb]
+  - install dune              3.16.1         [required by mariadb]
+  - install dune-configurator 3.16.1         [required by mariadb]
+  - install integers          0.7.0          [required by ctypes]
+  - install mariadb           1.2.0 (pinned)
+  - install stdlib-shims      0.3.0          [required by integers]
+
+The following system packages will first need to be installed:
+    libmariadb-dev pkg-config
+
+<><> Handling external dependencies <><><><><><><><><><><><><><><><><><><><><><>
+
+opam believes some required external dependencies are missing. opam can:
+> 1. Run apt-get to install them (may need root/sudo access)
+  2. Display the recommended apt-get command and wait while you run it manually (e.g. in another terminal)
+  3. Continue anyway, and, upon success, permanently register that this external dependency is present, but not detectable
+  4. Abort the installation
+
+[1/2/3/4] 1
+
++ /usr/bin/sudo "apt-get" "install" "-qq" "-yy" "libmariadb-dev" "pkg-config"
+- debconf: delaying package configuration, since apt-utils is not installed
+- Selecting previously unselected package mysql-common.
+- (Reading database ... (Reading database ... 5%(Reading database ... 10%(Reading database ... 15%(Reading database ... 20%(Reading database ... 25%(Reading database ... 30%(Reading database ... 35%(Reading database ... 40%(Reading database ... 45%(Reading database ... 50%(Reading database ... 55%(Reading database ... 60%(Reading database ... 65%(Reading database ... 70%(Reading database ... 75%(Reading database ... 80%(Reading database ... 85%(Reading database ... 90%(Reading database ... 95%(Reading database ... 100%(Reading database ... 18745 files and directories currently installed.)
+- Preparing to unpack .../0-mysql-common_5.8+1.1.0_all.deb ...
+- Unpacking mysql-common (5.8+1.1.0) ...
+- Selecting previously unselected package mariadb-common.
+- Preparing to unpack .../1-mariadb-common_1%3a10.11.6-0+deb12u1_all.deb ...
+- Unpacking mariadb-common (1:10.11.6-0+deb12u1) ...
+- Selecting previously unselected package libmariadb3:amd64.
+- Preparing to unpack .../2-libmariadb3_1%3a10.11.6-0+deb12u1_amd64.deb ...
+- Unpacking libmariadb3:amd64 (1:10.11.6-0+deb12u1) ...
+- Selecting previously unselected package libssl-dev:amd64.
+- Preparing to unpack .../3-libssl-dev_3.0.15-1~deb12u1_amd64.deb ...
+- Unpacking libssl-dev:amd64 (3.0.15-1~deb12u1) ...
+- Selecting previously unselected package zlib1g-dev:amd64.
+- Preparing to unpack .../4-zlib1g-dev_1%3a1.2.13.dfsg-1_amd64.deb ...
+- Unpacking zlib1g-dev:amd64 (1:1.2.13.dfsg-1) ...
+- Selecting previously unselected package libmariadb-dev.
+- Preparing to unpack .../5-libmariadb-dev_1%3a10.11.6-0+deb12u1_amd64.deb ...
+- Unpacking libmariadb-dev (1:10.11.6-0+deb12u1) ...
+- Selecting previously unselected package libpkgconf3:amd64.
+- Preparing to unpack .../6-libpkgconf3_1.8.1-1_amd64.deb ...
+- Unpacking libpkgconf3:amd64 (1.8.1-1) ...
+- Selecting previously unselected package pkgconf-bin.
+- Preparing to unpack .../7-pkgconf-bin_1.8.1-1_amd64.deb ...
+- Unpacking pkgconf-bin (1.8.1-1) ...
+- Selecting previously unselected package pkgconf:amd64.
+- Preparing to unpack .../8-pkgconf_1.8.1-1_amd64.deb ...
+- Unpacking pkgconf:amd64 (1.8.1-1) ...
+- Selecting previously unselected package pkg-config:amd64.
+- Preparing to unpack .../9-pkg-config_1.8.1-1_amd64.deb ...
+- Unpacking pkg-config:amd64 (1.8.1-1) ...
+- Setting up mysql-common (5.8+1.1.0) ...
+- update-alternatives: using /etc/mysql/my.cnf.fallback to provide /etc/mysql/my.cnf (my.cnf) in auto mode
+- Setting up mariadb-common (1:10.11.6-0+deb12u1) ...
+- update-alternatives: using /etc/mysql/mariadb.cnf to provide /etc/mysql/my.cnf (my.cnf) in auto mode
+- Setting up libpkgconf3:amd64 (1.8.1-1) ...
+- Setting up libssl-dev:amd64 (3.0.15-1~deb12u1) ...
+- Setting up libmariadb3:amd64 (1:10.11.6-0+deb12u1) ...
+- Setting up pkgconf-bin (1.8.1-1) ...
+- Setting up zlib1g-dev:amd64 (1:1.2.13.dfsg-1) ...
+- Setting up pkgconf:amd64 (1.8.1-1) ...
+- Setting up pkg-config:amd64 (1.8.1-1) ...
+- Setting up libmariadb-dev (1:10.11.6-0+deb12u1) ...
+- Processing triggers for libc-bin (2.36-9+deb12u9) ...
+
+<><> Processing actions <><><><><><><><><><><><><><><><><><><><><><><><><><><><>
+-> retrieved bigarray-compat.1.1.0  (cached)
+-> retrieved csexp.1.5.2  (cached)
+-> retrieved ctypes.0.23.0  (cached)
+-> installed conf-gcc.1.0
+-> installed conf-pkg-config.3
+-> installed conf-mariadb.2
+-> retrieved dune.3.16.1, dune-configurator.3.16.1  (cached)
+-> retrieved integers.0.7.0  (cached)
+-> retrieved mariadb.1.2.0  (https://github.com/ocaml-community/ocaml-mariadb/releases/download/1.2.0/mariadb-1.2.0.tbz)
+-> retrieved stdlib-shims.0.3.0  (cached)
+-> installed dune.3.16.1
+-> installed csexp.1.5.2
+-> installed bigarray-compat.1.1.0
+-> installed stdlib-shims.0.3.0
+-> installed integers.0.7.0
+-> installed dune-configurator.3.16.1
+-> installed ctypes.0.23.0
+-> installed mariadb.1.2.0
+Done.
+# To update the current shell environment, run: eval $(opam env)
+[01;2m[01;35m2024-11-28 15:09.07 ---> saved as "0f96c506b9d5f8331e57a8ba6d5e404cbf0f3d878af0ee3782abdeaf3cf6ab04"[0m
+
+[01;34m/home/opam: (run (network host)
+                 (shell "(opam reinstall --with-test mariadb.1.2.0) || true"))[0m
+[ERROR] Sorry, resolution of the request timed out.
+        Try to specify a more precise request, use a different solver, or increase the allowed time by setting OPAMSOLVERTIMEOUT to a bigger value (currently, it is set to 1000.0 seconds).
+[01;2m[01;35m2024-11-28 15:26.01 ---> saved as "799702828cc6288d8f573b5c2a60a901654184f4e94901c994f77f54f517f4cf"[0m
+
+[01;34m/home/opam: (run (shell  "opam reinstall --with-test --verbose mariadb.1.2.0;\
+                        \n        res=$?;\
+                        \n        test \"$res\" != 31 && exit \"$res\";\
+                        \n        export OPAMCLI=2.0;\
+                        \n        build_dir=$(opam var prefix)/.opam-switch/build;\
+                        \n        failed=$(ls \"$build_dir\");\
+                        \n        partial_fails=\"\";\
+                        \n        for pkg in $failed; do\
+                        \n          if opam show -f x-ci-accept-failures: \"$pkg\" | grep -qF \"\\\"debian-12\\\"\"; then\
+                        \n            echo \"A package failed and has been disabled for CI using the 'x-ci-accept-failures' field.\";\
+                        \n          fi;\
+                        \n          test \"$pkg\" != 'mariadb.1.2.0' && partial_fails=\"$partial_fails $pkg\";\
+                        \n        done;\
+                        \n        test \"${partial_fails}\" != \"\" && echo \"opam-repo-ci detected dependencies failing: ${partial_fails}\";\
+                        \n        exit 1"))[0m
+2024-11-28 15:30.26: Cancelling: Auto-cancelling job because it is no longer needed
+Job cancelled

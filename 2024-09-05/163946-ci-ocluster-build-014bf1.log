@@ -1,0 +1,276 @@
+2024-09-05 16:39.46: New job: test conan.0.0.5, using opam dev
+                              from https://github.com/ocaml/opam-repository.git#refs/pull/26502/head (23e1d6bfb884a2096579646827130fc14f608503)
+                              on freebsd-ocaml-5.2/amd64
+
+To reproduce locally:
+
+cd $(mktemp -d)
+git clone --recursive "https://github.com/ocaml/opam-repository.git" && cd "opam-repository" && git fetch origin "refs/pull/26502/head" && git reset --hard 23e1d6bf
+git fetch origin master
+git merge --no-edit 7cdc6607e7dbdffad037d5fa675859fc5c094158
+cat > ../Dockerfile <<'END-OF-DOCKERFILE'
+[34mFROM freebsd-ocaml-5.2
+USER 1000:1000
+WORKDIR /home/opam
+RUN sudo ln -f /usr/local/bin/opam-dev /usr/local/bin/opam
+RUN opam init --reinit -ni
+RUN uname -rs && opam exec -- ocaml -version && opam --version
+ENV OPAMDOWNLOADJOBS="1"
+ENV OPAMERRLOGLEN="0"
+ENV OPAMSOLVERTIMEOUT="500"
+ENV OPAMPRECISETRACKING="1"
+ENV CI="true"
+ENV OPAM_REPO_CI="true"
+RUN rm -rf opam-repository/
+COPY --chown=1000:1000 . opam-repository/
+RUN opam repository set-url --strict default opam-repository/
+RUN opam update --depexts || true
+RUN opam pin add -k version -yn conan.0.0.5 0.0.5
+RUN opam reinstall conan.0.0.5; \
+    res=$?; \
+    test "$res" != 31 && exit "$res"; \
+    export OPAMCLI=2.0; \
+    build_dir=$(opam var prefix)/.opam-switch/build; \
+    failed=$(ls "$build_dir"); \
+    partial_fails=""; \
+    for pkg in $failed; do \
+    if opam show -f x-ci-accept-failures: "$pkg" | grep -qF "\"freebsd\""; then \
+    echo "A package failed and has been disabled for CI using the 'x-ci-accept-failures' field."; \
+    fi; \
+    test "$pkg" != 'conan.0.0.5' && partial_fails="$partial_fails $pkg"; \
+    done; \
+    test "${partial_fails}" != "" && echo "opam-repo-ci detected dependencies failing: ${partial_fails}"; \
+    exit 1
+RUN (opam reinstall --with-test conan.0.0.5) || true
+RUN opam reinstall --with-test --verbose conan.0.0.5; \
+    res=$?; \
+    test "$res" != 31 && exit "$res"; \
+    export OPAMCLI=2.0; \
+    build_dir=$(opam var prefix)/.opam-switch/build; \
+    failed=$(ls "$build_dir"); \
+    partial_fails=""; \
+    for pkg in $failed; do \
+    if opam show -f x-ci-accept-failures: "$pkg" | grep -qF "\"freebsd\""; then \
+    echo "A package failed and has been disabled for CI using the 'x-ci-accept-failures' field."; \
+    fi; \
+    test "$pkg" != 'conan.0.0.5' && partial_fails="$partial_fails $pkg"; \
+    done; \
+    test "${partial_fails}" != "" && echo "opam-repo-ci detected dependencies failing: ${partial_fails}"; \
+    exit 1
+[0m
+END-OF-DOCKERFILE
+docker build -f ../Dockerfile .
+
+2024-09-05 16:39.46: Using cache hint "freebsd-ocaml-5.2-conan.0.0.5-23e1d6bfb884a2096579646827130fc14f608503"
+2024-09-05 16:39.46: Using OBuilder spec:
+((from freebsd-ocaml-5.2)
+ (user (uid 1000) (gid 1000))
+ (workdir /home/opam)
+ (run (shell "sudo ln -f /usr/local/bin/opam-dev /usr/local/bin/opam"))
+ (run (network host)
+      (shell "opam init --reinit -ni"))
+ (run (shell "uname -rs && opam exec -- ocaml -version && opam --version"))
+ (env OPAMDOWNLOADJOBS 1)
+ (env OPAMERRLOGLEN 0)
+ (env OPAMSOLVERTIMEOUT 500)
+ (env OPAMPRECISETRACKING 1)
+ (env CI true)
+ (env OPAM_REPO_CI true)
+ (run (shell "rm -rf opam-repository/"))
+ (copy (src .) (dst opam-repository/))
+ (run (shell "opam repository set-url --strict default opam-repository/"))
+ (run (network host)
+      (shell "opam update --depexts || true"))
+ (run (shell "opam pin add -k version -yn conan.0.0.5 0.0.5"))
+ (run (cache (opam-archives (target /home/opam/.opam/download-cache)))
+      (network host)
+      (shell  "opam reinstall conan.0.0.5;\
+             \n        res=$?;\
+             \n        test \"$res\" != 31 && exit \"$res\";\
+             \n        export OPAMCLI=2.0;\
+             \n        build_dir=$(opam var prefix)/.opam-switch/build;\
+             \n        failed=$(ls \"$build_dir\");\
+             \n        partial_fails=\"\";\
+             \n        for pkg in $failed; do\
+             \n          if opam show -f x-ci-accept-failures: \"$pkg\" | grep -qF \"\\\"freebsd\\\"\"; then\
+             \n            echo \"A package failed and has been disabled for CI using the 'x-ci-accept-failures' field.\";\
+             \n          fi;\
+             \n          test \"$pkg\" != 'conan.0.0.5' && partial_fails=\"$partial_fails $pkg\";\
+             \n        done;\
+             \n        test \"${partial_fails}\" != \"\" && echo \"opam-repo-ci detected dependencies failing: ${partial_fails}\";\
+             \n        exit 1"))
+ (run (network host)
+      (shell "(opam reinstall --with-test conan.0.0.5) || true"))
+ (run (shell  "opam reinstall --with-test --verbose conan.0.0.5;\
+             \n        res=$?;\
+             \n        test \"$res\" != 31 && exit \"$res\";\
+             \n        export OPAMCLI=2.0;\
+             \n        build_dir=$(opam var prefix)/.opam-switch/build;\
+             \n        failed=$(ls \"$build_dir\");\
+             \n        partial_fails=\"\";\
+             \n        for pkg in $failed; do\
+             \n          if opam show -f x-ci-accept-failures: \"$pkg\" | grep -qF \"\\\"freebsd\\\"\"; then\
+             \n            echo \"A package failed and has been disabled for CI using the 'x-ci-accept-failures' field.\";\
+             \n          fi;\
+             \n          test \"$pkg\" != 'conan.0.0.5' && partial_fails=\"$partial_fails $pkg\";\
+             \n        done;\
+             \n        test \"${partial_fails}\" != \"\" && echo \"opam-repo-ci detected dependencies failing: ${partial_fails}\";\
+             \n        exit 1"))
+)
+
+2024-09-05 16:39.46: Waiting for resource in pool OCluster
+2024-09-05 16:39.46: Waiting for worker…
+2024-09-05 16:39.46: Got resource from pool OCluster
+Building on spring
+All commits already cached
+Updating files: 100% (32135/32135), done.
+HEAD is now at 7cdc6607e7 Merge pull request #26498 from anmonteiro/anmonteiro/h2-revdeps
+Updating 7cdc6607e7..23e1d6bfb8
+Fast-forward
+ packages/conan/conan.0.0.5/opam | 2 +-
+ 1 file changed, 1 insertion(+), 1 deletion(-)
+
+[01;34m(from freebsd-ocaml-5.2)[0m
+[01;2m[01;35m2024-09-05 16:31.00 ---> using "3515bf58445883216685df527c06fc8b9b7799700694ffa335d1401da4433261" from cache[0m
+
+[01;34m/: (user (uid 1000) (gid 1000))[0m
+
+[01;34m/: (workdir /home/opam)[0m
+
+[01;34m/home/opam: (run (shell "sudo ln -f /usr/local/bin/opam-dev /usr/local/bin/opam"))[0m
+[01;2m[01;35m2024-09-05 16:31.01 ---> using "48364e1fb8dbbd4caee612726b7c964e49452f03ec1f9b0526466ab1c963a289" from cache[0m
+
+[01;34m/home/opam: (run (network host)
+                 (shell "opam init --reinit -ni"))[0m
+No configuration file found, using built-in defaults.
+Checking for available remotes: rsync and local, git.
+  - you won't be able to use mercurial repositories unless you install the hg command on your system.
+  - you won't be able to use darcs repositories unless you install the darcs command on your system.
+
+This version of opam requires an update to the layout of /home/opam/.opam from version 2.1 to version 2.2, which can't be reverted.
+You may want to back it up before going further.
+
+Continue? [y/n] y
+[NOTE] The 'jobs' option was reset, its value was 1 and its new value will vary according to the current number of cores on your machine. You can restore the fixed value using:
+           opam option jobs=1 --global
+Format upgrade done.
+
+<><> Updating repositories ><><><><><><><><><><><><><><><><><><><><><><><><><><>
+[default] no changes from git+file:///home/opam/opam-repository
+[01;2m[01;35m2024-09-05 16:31.01 ---> using "c9405311363be335bd03604ec044c083a65810c936d9b87d54c115ba23ec633d" from cache[0m
+
+[01;34m/home/opam: (run (shell "uname -rs && opam exec -- ocaml -version && opam --version"))[0m
+FreeBSD 14.0-RELEASE-p6
+The OCaml toplevel, version 5.2.0
+2.2.0
+[01;2m[01;35m2024-09-05 16:31.01 ---> using "75c557dc5616766214d486bbd9740aad9cf3f41b1975f9eaa3f67179722364a2" from cache[0m
+
+[01;34m/home/opam: (env OPAMDOWNLOADJOBS 1)[0m
+
+[01;34m/home/opam: (env OPAMERRLOGLEN 0)[0m
+
+[01;34m/home/opam: (env OPAMSOLVERTIMEOUT 500)[0m
+
+[01;34m/home/opam: (env OPAMPRECISETRACKING 1)[0m
+
+[01;34m/home/opam: (env CI true)[0m
+
+[01;34m/home/opam: (env OPAM_REPO_CI true)[0m
+
+[01;34m/home/opam: (run (shell "rm -rf opam-repository/"))[0m
+[01;2m[01;35m2024-09-05 16:31.01 ---> using "cbc2e10d76c1dbf788aac3e149e4dbab717b3947a8dc92bf0a2b302e4cb3073c" from cache[0m
+
+[01;34m/home/opam: (copy (src .) (dst opam-repository/))[0m
+[01;2m[01;35m2024-09-05 16:31.11 ---> saved as "aa14ec9f67f8898f419d3f21f0bc7f20e272050753d0733711535eadab573150"[0m
+
+[01;34m/home/opam: (run (shell "opam repository set-url --strict default opam-repository/"))[0m
+[default] Initialised
+default (at file:///home/opam/opam-repository): 
+    [WARNING] opam is out-of-date. Please consider updating it (https://opam.ocaml.org/doc/Install.html)
+
+[01;2m[01;35m2024-09-05 16:31.36 ---> saved as "1a978a7520cb2223e4955123e8a134c29aa3ffcb1f2207ca3248344077fe1f22"[0m
+
+[01;34m/home/opam: (run (network host)
+                 (shell "opam update --depexts || true"))[0m
+[WARNING] Unknown update command for bsd, skipping system update
+[01;2m[01;35m2024-09-05 16:31.37 ---> saved as "7800c345c4546f64870ca9fbdbdc07028d19c11c480e90055003a4cd9c153fcf"[0m
+
+[01;34m/home/opam: (run (shell "opam pin add -k version -yn conan.0.0.5 0.0.5"))[0m
+conan is now pinned to version 0.0.5
+[01;2m[01;35m2024-09-05 16:31.38 ---> saved as "f96ba9063f568b6bbc08de28c8d1effbca9a665bb09bacc7260958d39e71dd83"[0m
+
+[01;34m/home/opam: (run (cache (opam-archives (target /home/opam/.opam/download-cache)))
+                 (network host)
+                 (shell  "opam reinstall conan.0.0.5;\
+                        \n        res=$?;\
+                        \n        test \"$res\" != 31 && exit \"$res\";\
+                        \n        export OPAMCLI=2.0;\
+                        \n        build_dir=$(opam var prefix)/.opam-switch/build;\
+                        \n        failed=$(ls \"$build_dir\");\
+                        \n        partial_fails=\"\";\
+                        \n        for pkg in $failed; do\
+                        \n          if opam show -f x-ci-accept-failures: \"$pkg\" | grep -qF \"\\\"freebsd\\\"\"; then\
+                        \n            echo \"A package failed and has been disabled for CI using the 'x-ci-accept-failures' field.\";\
+                        \n          fi;\
+                        \n          test \"$pkg\" != 'conan.0.0.5' && partial_fails=\"$partial_fails $pkg\";\
+                        \n        done;\
+                        \n        test \"${partial_fails}\" != \"\" && echo \"opam-repo-ci detected dependencies failing: ${partial_fails}\";\
+                        \n        exit 1"))[0m
+conan.0.0.5 is not installed. Install it? [y/n] y
+The following actions will be performed:
+=== install 9 packages
+  ∗ conan      0.0.5 (pinned)
+  ∗ dune       3.16.0         [required by conan]
+  ∗ ocamlbuild 0.15.0         [required by ptime, uutf]
+  ∗ ocamlfind  1.9.6          [required by ptime, uutf]
+  ∗ ptime      1.1.0          [required by conan]
+  ∗ re         1.11.0         [required by conan]
+  ∗ seq        base           [required by re]
+  ∗ topkg      1.0.7          [required by ptime, uutf]
+  ∗ uutf       1.0.3          [required by conan]
+
+<><> Processing actions <><><><><><><><><><><><><><><><><><><><><><><><><><><><>
+⬇ retrieved conan.0.0.5  (cached)
+⬇ retrieved dune.3.16.0  (cached)
+⬇ retrieved ocamlbuild.0.15.0  (cached)
+⬇ retrieved ocamlfind.1.9.6  (cached)
+⬇ retrieved ptime.1.1.0  (cached)
+⬇ retrieved re.1.11.0  (cached)
+⬇ retrieved seq.base  (cached)
+∗ installed seq.base
+⬇ retrieved topkg.1.0.7  (cached)
+⬇ retrieved uutf.1.0.3  (cached)
+∗ installed ocamlfind.1.9.6
+∗ installed ocamlbuild.0.15.0
+∗ installed topkg.1.0.7
+∗ installed uutf.1.0.3
+∗ installed ptime.1.1.0
+∗ installed dune.3.16.0
+∗ installed re.1.11.0
+∗ installed conan.0.0.5
+Done.
+[01;2m[01;35m2024-09-05 16:32.29 ---> saved as "312e932facf987e171c63a7bd787804cba80422712e187b0654fae37e2c8e823"[0m
+
+[01;34m/home/opam: (run (network host)
+                 (shell "(opam reinstall --with-test conan.0.0.5) || true"))[0m
+[ERROR] Sorry, resolution of the request timed out.
+        Try to specify a more precise request, use a different solver, or increase the allowed time by setting OPAMSOLVERTIMEOUT to a bigger value (currently, it is set to 500.0 seconds).
+[01;2m[01;35m2024-09-05 16:41.04 ---> saved as "7d466b80f2fa9e49753d10f725e1fca0f9c768862899bca3441e6b3fa414878a"[0m
+
+[01;34m/home/opam: (run (shell  "opam reinstall --with-test --verbose conan.0.0.5;\
+                        \n        res=$?;\
+                        \n        test \"$res\" != 31 && exit \"$res\";\
+                        \n        export OPAMCLI=2.0;\
+                        \n        build_dir=$(opam var prefix)/.opam-switch/build;\
+                        \n        failed=$(ls \"$build_dir\");\
+                        \n        partial_fails=\"\";\
+                        \n        for pkg in $failed; do\
+                        \n          if opam show -f x-ci-accept-failures: \"$pkg\" | grep -qF \"\\\"freebsd\\\"\"; then\
+                        \n            echo \"A package failed and has been disabled for CI using the 'x-ci-accept-failures' field.\";\
+                        \n          fi;\
+                        \n          test \"$pkg\" != 'conan.0.0.5' && partial_fails=\"$partial_fails $pkg\";\
+                        \n        done;\
+                        \n        test \"${partial_fails}\" != \"\" && echo \"opam-repo-ci detected dependencies failing: ${partial_fails}\";\
+                        \n        exit 1"))[0m
+2024-09-05 16:50.11: Cancelling: Auto-cancelling job because it is no longer needed
+Job cancelled

@@ -1,0 +1,358 @@
+2024-08-13 13:33.51: New job: test opentelemetry-lwt.0.10, using opam dev
+                              from https://github.com/ocaml/opam-repository.git#refs/pull/26356/head (4e089defbaaf25297f77c6bd0cb00b822d366b10)
+                              on freebsd-ocaml-4.14/amd64
+
+To reproduce locally:
+
+cd $(mktemp -d)
+git clone --recursive "https://github.com/ocaml/opam-repository.git" && cd "opam-repository" && git fetch origin "refs/pull/26356/head" && git reset --hard 4e089def
+git fetch origin master
+git merge --no-edit 47c192ba656a7b302c16bde355fbbe34e0dbf937
+cat > ../Dockerfile <<'END-OF-DOCKERFILE'
+[34mFROM freebsd-ocaml-4.14
+USER 1000:1000
+WORKDIR /home/opam
+RUN sudo ln -f /usr/local/bin/opam-dev /usr/local/bin/opam
+RUN opam init --reinit -ni
+RUN uname -rs && opam exec -- ocaml -version && opam --version
+ENV OPAMDOWNLOADJOBS="1"
+ENV OPAMERRLOGLEN="0"
+ENV OPAMSOLVERTIMEOUT="500"
+ENV OPAMPRECISETRACKING="1"
+ENV CI="true"
+ENV OPAM_REPO_CI="true"
+RUN rm -rf opam-repository/
+COPY --chown=1000:1000 . opam-repository/
+RUN opam repository set-url --strict default opam-repository/
+RUN opam update --depexts || true
+RUN opam pin add -k version -yn opentelemetry-lwt.0.10 0.10
+RUN opam reinstall opentelemetry-lwt.0.10; \
+    res=$?; \
+    test "$res" != 31 && exit "$res"; \
+    export OPAMCLI=2.0; \
+    build_dir=$(opam var prefix)/.opam-switch/build; \
+    failed=$(ls "$build_dir"); \
+    partial_fails=""; \
+    for pkg in $failed; do \
+    if opam show -f x-ci-accept-failures: "$pkg" | grep -qF "\"freebsd\""; then \
+    echo "A package failed and has been disabled for CI using the 'x-ci-accept-failures' field."; \
+    fi; \
+    test "$pkg" != 'opentelemetry-lwt.0.10' && partial_fails="$partial_fails $pkg"; \
+    done; \
+    test "${partial_fails}" != "" && echo "opam-repo-ci detected dependencies failing: ${partial_fails}"; \
+    exit 1
+RUN (opam reinstall --with-test opentelemetry-lwt.0.10) || true
+RUN opam reinstall --with-test --verbose opentelemetry-lwt.0.10; \
+    res=$?; \
+    test "$res" != 31 && exit "$res"; \
+    export OPAMCLI=2.0; \
+    build_dir=$(opam var prefix)/.opam-switch/build; \
+    failed=$(ls "$build_dir"); \
+    partial_fails=""; \
+    for pkg in $failed; do \
+    if opam show -f x-ci-accept-failures: "$pkg" | grep -qF "\"freebsd\""; then \
+    echo "A package failed and has been disabled for CI using the 'x-ci-accept-failures' field."; \
+    fi; \
+    test "$pkg" != 'opentelemetry-lwt.0.10' && partial_fails="$partial_fails $pkg"; \
+    done; \
+    test "${partial_fails}" != "" && echo "opam-repo-ci detected dependencies failing: ${partial_fails}"; \
+    exit 1
+[0m
+END-OF-DOCKERFILE
+docker build -f ../Dockerfile .
+
+2024-08-13 13:33.51: Using cache hint "freebsd-ocaml-4.14-opentelemetry-lwt.0.10-4e089defbaaf25297f77c6bd0cb00b822d366b10"
+2024-08-13 13:33.51: Using OBuilder spec:
+((from freebsd-ocaml-4.14)
+ (user (uid 1000) (gid 1000))
+ (workdir /home/opam)
+ (run (shell "sudo ln -f /usr/local/bin/opam-dev /usr/local/bin/opam"))
+ (run (network host)
+      (shell "opam init --reinit -ni"))
+ (run (shell "uname -rs && opam exec -- ocaml -version && opam --version"))
+ (env OPAMDOWNLOADJOBS 1)
+ (env OPAMERRLOGLEN 0)
+ (env OPAMSOLVERTIMEOUT 500)
+ (env OPAMPRECISETRACKING 1)
+ (env CI true)
+ (env OPAM_REPO_CI true)
+ (run (shell "rm -rf opam-repository/"))
+ (copy (src .) (dst opam-repository/))
+ (run (shell "opam repository set-url --strict default opam-repository/"))
+ (run (network host)
+      (shell "opam update --depexts || true"))
+ (run (shell "opam pin add -k version -yn opentelemetry-lwt.0.10 0.10"))
+ (run (cache (opam-archives (target /home/opam/.opam/download-cache)))
+      (network host)
+      (shell  "opam reinstall opentelemetry-lwt.0.10;\
+             \n        res=$?;\
+             \n        test \"$res\" != 31 && exit \"$res\";\
+             \n        export OPAMCLI=2.0;\
+             \n        build_dir=$(opam var prefix)/.opam-switch/build;\
+             \n        failed=$(ls \"$build_dir\");\
+             \n        partial_fails=\"\";\
+             \n        for pkg in $failed; do\
+             \n          if opam show -f x-ci-accept-failures: \"$pkg\" | grep -qF \"\\\"freebsd\\\"\"; then\
+             \n            echo \"A package failed and has been disabled for CI using the 'x-ci-accept-failures' field.\";\
+             \n          fi;\
+             \n          test \"$pkg\" != 'opentelemetry-lwt.0.10' && partial_fails=\"$partial_fails $pkg\";\
+             \n        done;\
+             \n        test \"${partial_fails}\" != \"\" && echo \"opam-repo-ci detected dependencies failing: ${partial_fails}\";\
+             \n        exit 1"))
+ (run (network host)
+      (shell "(opam reinstall --with-test opentelemetry-lwt.0.10) || true"))
+ (run (shell  "opam reinstall --with-test --verbose opentelemetry-lwt.0.10;\
+             \n        res=$?;\
+             \n        test \"$res\" != 31 && exit \"$res\";\
+             \n        export OPAMCLI=2.0;\
+             \n        build_dir=$(opam var prefix)/.opam-switch/build;\
+             \n        failed=$(ls \"$build_dir\");\
+             \n        partial_fails=\"\";\
+             \n        for pkg in $failed; do\
+             \n          if opam show -f x-ci-accept-failures: \"$pkg\" | grep -qF \"\\\"freebsd\\\"\"; then\
+             \n            echo \"A package failed and has been disabled for CI using the 'x-ci-accept-failures' field.\";\
+             \n          fi;\
+             \n          test \"$pkg\" != 'opentelemetry-lwt.0.10' && partial_fails=\"$partial_fails $pkg\";\
+             \n        done;\
+             \n        test \"${partial_fails}\" != \"\" && echo \"opam-repo-ci detected dependencies failing: ${partial_fails}\";\
+             \n        exit 1"))
+)
+
+2024-08-13 13:33.51: Waiting for resource in pool OCluster
+2024-08-13 13:33.52: Waiting for worker…
+2024-08-13 13:33.52: Got resource from pool OCluster
+Building on spring
+All commits already cached
+Updating files: 100% (31957/31957), done.
+HEAD is now at 47c192ba65 Merge pull request #26350 from palainp/release-mirage-qubes-v0.11.0
+Updating 47c192ba65..4e089defba
+Fast-forward
+ .../opentelemetry-client-cohttp-lwt.0.10/opam      | 49 ++++++++++++++++++++
+ .../opentelemetry-client-ocurl.0.10/opam           | 47 +++++++++++++++++++
+ .../opentelemetry-cohttp-lwt.0.10/opam             | 47 +++++++++++++++++++
+ .../opentelemetry-lwt/opentelemetry-lwt.0.10/opam  | 49 ++++++++++++++++++++
+ packages/opentelemetry/opentelemetry.0.10/opam     | 54 ++++++++++++++++++++++
+ 5 files changed, 246 insertions(+)
+ create mode 100644 packages/opentelemetry-client-cohttp-lwt/opentelemetry-client-cohttp-lwt.0.10/opam
+ create mode 100644 packages/opentelemetry-client-ocurl/opentelemetry-client-ocurl.0.10/opam
+ create mode 100644 packages/opentelemetry-cohttp-lwt/opentelemetry-cohttp-lwt.0.10/opam
+ create mode 100644 packages/opentelemetry-lwt/opentelemetry-lwt.0.10/opam
+ create mode 100644 packages/opentelemetry/opentelemetry.0.10/opam
+
+[01;34m(from freebsd-ocaml-4.14)[0m
+[01;2m[01;35m2024-08-13 13:26.29 ---> using "57eeeabfec88366322a66f228a693df277d348dc99f1cc2a63749102c5e1e405" from cache[0m
+
+[01;34m/: (user (uid 1000) (gid 1000))[0m
+
+[01;34m/: (workdir /home/opam)[0m
+
+[01;34m/home/opam: (run (shell "sudo ln -f /usr/local/bin/opam-dev /usr/local/bin/opam"))[0m
+[01;2m[01;35m2024-08-13 13:26.29 ---> using "85d5eb985f2262919a26a9cdcf048ce0967ef341a4c5d41a4d1a47b077ffa8eb" from cache[0m
+
+[01;34m/home/opam: (run (network host)
+                 (shell "opam init --reinit -ni"))[0m
+No configuration file found, using built-in defaults.
+Checking for available remotes: rsync and local, git.
+  - you won't be able to use mercurial repositories unless you install the hg command on your system.
+  - you won't be able to use darcs repositories unless you install the darcs command on your system.
+
+This version of opam requires an update to the layout of /home/opam/.opam from version 2.1 to version 2.2, which can't be reverted.
+You may want to back it up before going further.
+
+Continue? [y/n] y
+[NOTE] The 'jobs' option was reset, its value was 1 and its new value will vary according to the current number of cores on your machine. You can restore the fixed value using:
+           opam option jobs=1 --global
+Format upgrade done.
+
+<><> Updating repositories ><><><><><><><><><><><><><><><><><><><><><><><><><><>
+[default] no changes from git+file:///home/opam/opam-repository
+[01;2m[01;35m2024-08-13 13:26.29 ---> using "08e4174ad8cc33ff0dffef40dd5755acd4c7df1ee65b0d98f918f8851b0422be" from cache[0m
+
+[01;34m/home/opam: (run (shell "uname -rs && opam exec -- ocaml -version && opam --version"))[0m
+FreeBSD 14.0-RELEASE-p6
+The OCaml toplevel, version 4.14.2
+2.2.0
+[01;2m[01;35m2024-08-13 13:26.30 ---> using "a624c9a56a657e8f7944ca7b5e274913c647764382db65f778e1fb6ea0cbf8b9" from cache[0m
+
+[01;34m/home/opam: (env OPAMDOWNLOADJOBS 1)[0m
+
+[01;34m/home/opam: (env OPAMERRLOGLEN 0)[0m
+
+[01;34m/home/opam: (env OPAMSOLVERTIMEOUT 500)[0m
+
+[01;34m/home/opam: (env OPAMPRECISETRACKING 1)[0m
+
+[01;34m/home/opam: (env CI true)[0m
+
+[01;34m/home/opam: (env OPAM_REPO_CI true)[0m
+
+[01;34m/home/opam: (run (shell "rm -rf opam-repository/"))[0m
+[01;2m[01;35m2024-08-13 13:26.30 ---> using "7664227bcddc9f07a15b72213897bcf0575250f735d1bc45966bada674a472ca" from cache[0m
+
+[01;34m/home/opam: (copy (src .) (dst opam-repository/))[0m
+[01;2m[01;35m2024-08-13 13:26.55 ---> saved as "32d3d669bf9912e27c39f3dc494821b4a46513df5c6b81077f7e38089b000714"[0m
+
+[01;34m/home/opam: (run (shell "opam repository set-url --strict default opam-repository/"))[0m
+[default] Initialised
+[01;2m[01;35m2024-08-13 13:27.21 ---> saved as "a9f28d6da3d9b2601a697745337dec9153df348b7ed711434a901575002f17ee"[0m
+
+[01;34m/home/opam: (run (network host)
+                 (shell "opam update --depexts || true"))[0m
+[WARNING] Unknown update command for bsd, skipping system update
+[01;2m[01;35m2024-08-13 13:27.21 ---> saved as "4277bca08daf14ac539b282d2bcdf91387dff9886570a48eb5a743f1117c6c23"[0m
+
+[01;34m/home/opam: (run (shell "opam pin add -k version -yn opentelemetry-lwt.0.10 0.10"))[0m
+opentelemetry-lwt is now pinned to version 0.10
+[01;2m[01;35m2024-08-13 13:27.23 ---> saved as "8e0d13eefa427087fede86017c3fe43d92c8b6f7111fd7b1d638ec1c423c62ef"[0m
+
+[01;34m/home/opam: (run (cache (opam-archives (target /home/opam/.opam/download-cache)))
+                 (network host)
+                 (shell  "opam reinstall opentelemetry-lwt.0.10;\
+                        \n        res=$?;\
+                        \n        test \"$res\" != 31 && exit \"$res\";\
+                        \n        export OPAMCLI=2.0;\
+                        \n        build_dir=$(opam var prefix)/.opam-switch/build;\
+                        \n        failed=$(ls \"$build_dir\");\
+                        \n        partial_fails=\"\";\
+                        \n        for pkg in $failed; do\
+                        \n          if opam show -f x-ci-accept-failures: \"$pkg\" | grep -qF \"\\\"freebsd\\\"\"; then\
+                        \n            echo \"A package failed and has been disabled for CI using the 'x-ci-accept-failures' field.\";\
+                        \n          fi;\
+                        \n          test \"$pkg\" != 'opentelemetry-lwt.0.10' && partial_fails=\"$partial_fails $pkg\";\
+                        \n        done;\
+                        \n        test \"${partial_fails}\" != \"\" && echo \"opam-repo-ci detected dependencies failing: ${partial_fails}\";\
+                        \n        exit 1"))[0m
+opentelemetry-lwt.0.10 is not installed. Install it? [y/n] y
+The following actions will be performed:
+=== install 22 packages
+  ∗ ambient-context     0.1.0         [required by opentelemetry-lwt]
+  ∗ base-bytes          base          [required by ocplib-endian]
+  ∗ cppo                1.6.9         [required by lwt]
+  ∗ csexp               1.5.2         [required by dune-configurator]
+  ∗ dune                3.16.0        [required by opentelemetry-lwt]
+  ∗ dune-configurator   3.16.0        [required by lwt]
+  ∗ hmap                0.8.1         [required by ambient-context, opentelemetry]
+  ∗ lwt                 5.7.0         [required by opentelemetry-lwt]
+  ∗ lwt_ppx             2.1.0         [required by opentelemetry-lwt]
+  ∗ ocaml-compiler-libs v0.12.4       [required by ppxlib]
+  ∗ ocamlbuild          0.15.0        [required by hmap, ptime]
+  ∗ ocamlfind           1.9.6         [required by hmap, ptime]
+  ∗ ocplib-endian       1.2           [required by lwt]
+  ∗ opentelemetry       0.10          [required by opentelemetry-lwt]
+  ∗ opentelemetry-lwt   0.10 (pinned)
+  ∗ pbrt                3.1.1         [required by opentelemetry]
+  ∗ ppx_derivers        1.2.1         [required by ppxlib]
+  ∗ ppxlib              0.33.0        [required by lwt_ppx]
+  ∗ ptime               1.1.0         [required by opentelemetry]
+  ∗ sexplib0            v0.17.0       [required by ppxlib]
+  ∗ stdlib-shims        0.3.0         [required by ppxlib, pbrt]
+  ∗ topkg               1.0.7         [required by hmap, ptime]
+
+<><> Processing actions <><><><><><><><><><><><><><><><><><><><><><><><><><><><>
+⬇ retrieved ambient-context.0.1.0  (cached)
+⬇ retrieved cppo.1.6.9  (cached)
+⬇ retrieved csexp.1.5.2  (cached)
+⬇ retrieved dune.3.16.0, dune-configurator.3.16.0  (cached)
+⬇ retrieved hmap.0.8.1  (cached)
+⬇ retrieved lwt.5.7.0  (cached)
+⬇ retrieved lwt_ppx.2.1.0  (cached)
+⬇ retrieved ocaml-compiler-libs.v0.12.4  (cached)
+⬇ retrieved ocamlbuild.0.15.0  (cached)
+⬇ retrieved ocamlfind.1.9.6  (cached)
+⬇ retrieved ocplib-endian.1.2  (cached)
+⬇ retrieved opentelemetry.0.10, opentelemetry-lwt.0.10  (https://github.com/imandra-ai/ocaml-opentelemetry/releases/download/v0.10/opentelemetry-0.10.tbz)
+⬇ retrieved pbrt.3.1.1  (cached)
+⬇ retrieved ppx_derivers.1.2.1  (cached)
+⬇ retrieved ppxlib.0.33.0  (cached)
+⬇ retrieved ptime.1.1.0  (cached)
+⬇ retrieved sexplib0.v0.17.0  (cached)
+⬇ retrieved stdlib-shims.0.3.0  (cached)
+⬇ retrieved topkg.1.0.7  (cached)
+∗ installed ocamlfind.1.9.6
+∗ installed base-bytes.base
+∗ installed ocamlbuild.0.15.0
+∗ installed topkg.1.0.7
+∗ installed hmap.0.8.1
+∗ installed ptime.1.1.0
+∗ installed dune.3.16.0
+∗ installed ppx_derivers.1.2.1
+∗ installed stdlib-shims.0.3.0
+∗ installed csexp.1.5.2
+∗ installed sexplib0.v0.17.0
+∗ installed ocaml-compiler-libs.v0.12.4
+∗ installed pbrt.3.1.1
+∗ installed cppo.1.6.9
+∗ installed ambient-context.0.1.0
+∗ installed ocplib-endian.1.2
+∗ installed dune-configurator.3.16.0
+∗ installed opentelemetry.0.10
+∗ installed lwt.5.7.0
+∗ installed ppxlib.0.33.0
+∗ installed lwt_ppx.2.1.0
+∗ installed opentelemetry-lwt.0.10
+Done.
+[01;2m[01;35m2024-08-13 13:29.55 ---> saved as "f0ab79acfac568e70a1b957599dd4805d3f55ecb39b03d7009a4f43c1bdf1e77"[0m
+
+[01;34m/home/opam: (run (network host)
+                 (shell "(opam reinstall --with-test opentelemetry-lwt.0.10) || true"))[0m
+[ERROR] Sorry, resolution of the request timed out.
+        Try to specify a more precise request, use a different solver, or increase the allowed time by setting OPAMSOLVERTIMEOUT to a bigger value (currently, it is set to 500.0 seconds).
+[01;2m[01;35m2024-08-13 13:38.33 ---> saved as "929bb7e72d7937397c38c97f465c9149bb99b5eebdf08f9e25ba1ee2b29d0ffe"[0m
+
+[01;34m/home/opam: (run (shell  "opam reinstall --with-test --verbose opentelemetry-lwt.0.10;\
+                        \n        res=$?;\
+                        \n        test \"$res\" != 31 && exit \"$res\";\
+                        \n        export OPAMCLI=2.0;\
+                        \n        build_dir=$(opam var prefix)/.opam-switch/build;\
+                        \n        failed=$(ls \"$build_dir\");\
+                        \n        partial_fails=\"\";\
+                        \n        for pkg in $failed; do\
+                        \n          if opam show -f x-ci-accept-failures: \"$pkg\" | grep -qF \"\\\"freebsd\\\"\"; then\
+                        \n            echo \"A package failed and has been disabled for CI using the 'x-ci-accept-failures' field.\";\
+                        \n          fi;\
+                        \n          test \"$pkg\" != 'opentelemetry-lwt.0.10' && partial_fails=\"$partial_fails $pkg\";\
+                        \n        done;\
+                        \n        test \"${partial_fails}\" != \"\" && echo \"opam-repo-ci detected dependencies failing: ${partial_fails}\";\
+                        \n        exit 1"))[0m
+[ERROR] Sorry, resolution of the request timed out.
+        Try to specify a more precise request, use a different solver, or increase the allowed time by setting OPAMSOLVERTIMEOUT to a bigger value (currently, it is set to 500.0 seconds).
+'opam reinstall --with-test --verbose opentelemetry-lwt.0.10' failed.
+jail: /usr/bin/su -l opam -c cd '/home/opam' && env OPAM_REPO_CI='true' CI='true' OPAMPRECISETRACKING='1' OPAMSOLVERTIMEOUT='500' OPAMERRLOGLEN='0' OPAMDOWNLOADJOBS='1' '/usr/bin/env' 'bash' '-c' 'opam reinstall --with-test --verbose opentelemetry-lwt.0.10;
+        res=$?;
+        test "$res" != 31 && exit "$res";
+        export OPAMCLI=2.0;
+        build_dir=$(opam var prefix)/.opam-switch/build;
+        failed=$(ls "$build_dir");
+        partial_fails="";
+        for pkg in $failed; do
+          if opam show -f x-ci-accept-failures: "$pkg" | grep -qF "\"freebsd\""; then
+            echo "A package failed and has been disabled for CI using the '\''x-ci-accept-failures'\'' field.";
+          fi;
+          test "$pkg" != '\''opentelemetry-lwt.0.10'\'' && partial_fails="$partial_fails $pkg";
+        done;
+        test "${partial_fails}" != "" && echo "opam-repo-ci detected dependencies failing: ${partial_fails}";
+        exit 1': failed
+"jail" "-c" "name=obuilder_2089_6637" "mount.devfs" "path=/obuilder/result/fde0e0777efa254fcd62581aa175ee5c7beb762f1666521661db4561616fc4eb/rootfs" "vnet" "exec.start=/sbin/ifconfig lo0 127.0.0.1/8" "command=/usr/bin/su" "-l" "opam" "-c" "cd '/home/opam' && env OPAM_REPO_CI='true' CI='true' OPAMPRECISETRACKING='1' OPAMSOLVERTIMEOUT='500' OPAMERRLOGLEN='0' OPAMDOWNLOADJOBS='1' '/usr/bin/env' 'bash' '-c' 'opam reinstall --with-test --verbose opentelemetry-lwt.0.10;
+        res=$?;
+        test "$res" != 31 && exit "$res";
+        export OPAMCLI=2.0;
+        build_dir=$(opam var prefix)/.opam-switch/build;
+        failed=$(ls "$build_dir");
+        partial_fails="";
+        for pkg in $failed; do
+          if opam show -f x-ci-accept-failures: "$pkg" | grep -qF "\"freebsd\""; then
+            echo "A package failed and has been disabled for CI using the '\''x-ci-accept-failures'\'' field.";
+          fi;
+          test "$pkg" != '\''opentelemetry-lwt.0.10'\'' && partial_fails="$partial_fails $pkg";
+        done;
+        test "${partial_fails}" != "" && echo "opam-repo-ci detected dependencies failing: ${partial_fails}";
+        exit 1'" failed with exit status 1
+2024-08-13 13:55.16: Job failed: Failed: Build failed
+2024-08-13 13:55.16: Log analysis:
+2024-08-13 13:55.16: >>> 
+[ERROR] Sorry, resolution of the request timed out.
+ (score = 20)
+2024-08-13 13:55.16: >>> 
+[ERROR] Sorry, resolution of the request timed out.
+ (score = 20)
+2024-08-13 13:55.16: Sorry, resolution of the request timed out.

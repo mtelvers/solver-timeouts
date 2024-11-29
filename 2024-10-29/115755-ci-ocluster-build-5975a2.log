@@ -1,0 +1,230 @@
+2024-10-29 11:57.55: New job: build git-kv.0.1.0, using opam 2.0
+                              from https://github.com/ocaml/opam-repository.git#refs/pull/26802/head (58b65213f5ff6fc404bc9d9604f5c9dd18feaa8b)
+                              on debian-12-ocaml-4.14/amd64
+
+To reproduce locally:
+
+cd $(mktemp -d)
+git clone --recursive "https://github.com/ocaml/opam-repository.git" && cd "opam-repository" && git fetch origin "refs/pull/26802/head" && git reset --hard 58b65213
+git fetch origin master
+git merge --no-edit 56e31a3bc1fd0bfd87e5251972e806b8f78082a5
+cat > ../Dockerfile <<'END-OF-DOCKERFILE'
+[34mFROM ocaml/opam:debian-12-ocaml-4.14@sha256:a229b9d0124bf445cca28c31c3f41dd25a17eb6f0bce8ac75d735e1a8a06c801
+USER 1000:1000
+WORKDIR /home/opam
+RUN sudo ln -f /usr/bin/opam-2.0 /usr/bin/opam
+RUN opam init --reinit -ni
+RUN uname -rs && opam exec -- ocaml -version && opam --version
+ENV OPAMDOWNLOADJOBS="1"
+ENV OPAMERRLOGLEN="0"
+ENV OPAMSOLVERTIMEOUT="1000"
+ENV OPAMPRECISETRACKING="1"
+ENV CI="true"
+ENV OPAM_REPO_CI="true"
+RUN rm -rf opam-repository/
+COPY --chown=1000:1000 . opam-repository/
+RUN opam repository set-url --strict default opam-repository/
+RUN opam depext -u || true
+RUN opam pin add -k version -yn git-kv.0.1.0 0.1.0
+RUN opam depext git-kv.0.1.0 && opam reinstall git-kv.0.1.0; \
+    res=$?; \
+    test "$res" != 31 && exit "$res"; \
+    export OPAMCLI=2.0; \
+    build_dir=$(opam var prefix)/.opam-switch/build; \
+    failed=$(ls "$build_dir"); \
+    partial_fails=""; \
+    for pkg in $failed; do \
+    if opam show -f x-ci-accept-failures: "$pkg" | grep -qF "\"debian-12\""; then \
+    echo "A package failed and has been disabled for CI using the 'x-ci-accept-failures' field."; \
+    fi; \
+    test "$pkg" != 'git-kv.0.1.0' && partial_fails="$partial_fails $pkg"; \
+    done; \
+    test "${partial_fails}" != "" && echo "opam-repo-ci detected dependencies failing: ${partial_fails}"; \
+    exit 1
+[0m
+END-OF-DOCKERFILE
+docker build -f ../Dockerfile .
+
+2024-10-29 11:57.55: Using cache hint "ocaml/opam:debian-12-ocaml-4.14@sha256:a229b9d0124bf445cca28c31c3f41dd25a17eb6f0bce8ac75d735e1a8a06c801-git-kv.0.1.0-58b65213f5ff6fc404bc9d9604f5c9dd18feaa8b"
+2024-10-29 11:57.55: Using OBuilder spec:
+((from ocaml/opam:debian-12-ocaml-4.14@sha256:a229b9d0124bf445cca28c31c3f41dd25a17eb6f0bce8ac75d735e1a8a06c801)
+ (user (uid 1000) (gid 1000))
+ (workdir /home/opam)
+ (run (shell "sudo ln -f /usr/bin/opam-2.0 /usr/bin/opam"))
+ (run (network host)
+      (shell "opam init --reinit --config .opamrc-sandbox -ni"))
+ (run (shell "uname -rs && opam exec -- ocaml -version && opam --version"))
+ (env OPAMDOWNLOADJOBS 1)
+ (env OPAMERRLOGLEN 0)
+ (env OPAMSOLVERTIMEOUT 1000)
+ (env OPAMPRECISETRACKING 1)
+ (env CI true)
+ (env OPAM_REPO_CI true)
+ (run (shell "rm -rf opam-repository/"))
+ (copy (src .) (dst opam-repository/))
+ (run (shell "opam repository set-url --strict default opam-repository/"))
+ (run (network host)
+      (shell "opam depext -u || true"))
+ (run (shell "opam pin add -k version -yn git-kv.0.1.0 0.1.0"))
+ (run (cache (opam-archives (target /home/opam/.opam/download-cache)))
+      (network host)
+      (shell  "opam depext git-kv.0.1.0 && opam reinstall git-kv.0.1.0;\
+             \n        res=$?;\
+             \n        test \"$res\" != 31 && exit \"$res\";\
+             \n        export OPAMCLI=2.0;\
+             \n        build_dir=$(opam var prefix)/.opam-switch/build;\
+             \n        failed=$(ls \"$build_dir\");\
+             \n        partial_fails=\"\";\
+             \n        for pkg in $failed; do\
+             \n          if opam show -f x-ci-accept-failures: \"$pkg\" | grep -qF \"\\\"debian-12\\\"\"; then\
+             \n            echo \"A package failed and has been disabled for CI using the 'x-ci-accept-failures' field.\";\
+             \n          fi;\
+             \n          test \"$pkg\" != 'git-kv.0.1.0' && partial_fails=\"$partial_fails $pkg\";\
+             \n        done;\
+             \n        test \"${partial_fails}\" != \"\" && echo \"opam-repo-ci detected dependencies failing: ${partial_fails}\";\
+             \n        exit 1"))
+)
+
+2024-10-29 11:57.55: Waiting for resource in pool OCluster
+2024-10-29 11:57.55: Waiting for worker…
+2024-10-29 11:57.56: Got resource from pool OCluster
+Building on x86-bm-c8.sw.ocaml.org
+All commits already cached
+Updating files:  41% (13648/32541)Updating files:  42% (13668/32541)Updating files:  43% (13993/32541)Updating files:  44% (14319/32541)Updating files:  45% (14644/32541)Updating files:  46% (14969/32541)Updating files:  47% (15295/32541)Updating files:  48% (15620/32541)Updating files:  49% (15946/32541)Updating files:  50% (16271/32541)Updating files:  51% (16596/32541)Updating files:  52% (16922/32541)Updating files:  53% (17247/32541)Updating files:  54% (17573/32541)Updating files:  55% (17898/32541)Updating files:  56% (18223/32541)Updating files:  57% (18549/32541)Updating files:  58% (18874/32541)Updating files:  59% (19200/32541)Updating files:  60% (19525/32541)Updating files:  61% (19851/32541)Updating files:  62% (20176/32541)Updating files:  63% (20501/32541)Updating files:  64% (20827/32541)Updating files:  65% (21152/32541)Updating files:  66% (21478/32541)Updating files:  67% (21803/32541)Updating files:  68% (22128/32541)Updating files:  69% (22454/32541)Updating files:  70% (22779/32541)Updating files:  71% (23105/32541)Updating files:  72% (23430/32541)Updating files:  73% (23755/32541)Updating files:  74% (24081/32541)Updating files:  75% (24406/32541)Updating files:  76% (24732/32541)Updating files:  77% (25057/32541)Updating files:  78% (25382/32541)Updating files:  79% (25708/32541)Updating files:  80% (26033/32541)Updating files:  81% (26359/32541)Updating files:  82% (26684/32541)Updating files:  83% (27010/32541)Updating files:  83% (27124/32541)Updating files:  84% (27335/32541)Updating files:  85% (27660/32541)Updating files:  86% (27986/32541)Updating files:  87% (28311/32541)Updating files:  88% (28637/32541)Updating files:  89% (28962/32541)Updating files:  90% (29287/32541)Updating files:  91% (29613/32541)Updating files:  92% (29938/32541)Updating files:  93% (30264/32541)Updating files:  94% (30589/32541)Updating files:  95% (30914/32541)Updating files:  96% (31240/32541)Updating files:  97% (31565/32541)Updating files:  98% (31891/32541)Updating files:  99% (32216/32541)Updating files: 100% (32541/32541)Updating files: 100% (32541/32541), done.
+HEAD is now at 56e31a3bc1 Merge pull request #26796 from avsm/release-jekyll-format-v0.3.4
+Updating 56e31a3bc1..58b65213f5
+Fast-forward
+ packages/git-kv/git-kv.0.1.0/opam | 41 +++++++++++++++++++++++++++++++++++++++
+ 1 file changed, 41 insertions(+)
+ create mode 100644 packages/git-kv/git-kv.0.1.0/opam
+
+[01;34m(from ocaml/opam:debian-12-ocaml-4.14@sha256:a229b9d0124bf445cca28c31c3f41dd25a17eb6f0bce8ac75d735e1a8a06c801)[0m
+Unable to find image 'ocaml/opam:debian-12-ocaml-4.14@sha256:a229b9d0124bf445cca28c31c3f41dd25a17eb6f0bce8ac75d735e1a8a06c801' locally
+docker.io/ocaml/opam@sha256:a229b9d0124bf445cca28c31c3f41dd25a17eb6f0bce8ac75d735e1a8a06c801: Pulling from ocaml/opam
+3c005ff43785: Pulling fs layer
+3c005ff43785: Verifying Checksum
+3c005ff43785: Download complete
+3c005ff43785: Pull complete
+Digest: sha256:a229b9d0124bf445cca28c31c3f41dd25a17eb6f0bce8ac75d735e1a8a06c801
+Status: Downloaded newer image for ocaml/opam@sha256:a229b9d0124bf445cca28c31c3f41dd25a17eb6f0bce8ac75d735e1a8a06c801
+[01;2m[01;35m2024-10-29 11:58.25 ---> using "19402ee437863efb9e89ac540ced705d41d8dbf946ad648a774e5e4f8d55013f" from cache[0m
+
+[01;34m/: (user (uid 1000) (gid 1000))[0m
+
+[01;34m/: (workdir /home/opam)[0m
+
+[01;34m/home/opam: (run (shell "sudo ln -f /usr/bin/opam-2.0 /usr/bin/opam"))[0m
+[01;2m[01;35m2024-10-29 11:58.27 ---> saved as "6351f1981396398bc239396c872a07588aaa3121ebdab13166a3eb721670ad3e"[0m
+
+[01;34m/home/opam: (run (network host)
+                 (shell "opam init --reinit --config .opamrc-sandbox -ni"))[0m
+[NOTE] Will configure from /home/opam/.opamrc-sandbox, then /home/opam/.opamrc, and finally from built-in defaults.
+Checking for available remotes: rsync and local, git.
+  - you won't be able to use mercurial repositories unless you install the hg command on your system.
+  - you won't be able to use darcs repositories unless you install the darcs command on your system.
+
+[WARNING] Recommended dependencies -- most packages rely on these:
+  - m4
+
+<><> Updating repositories ><><><><><><><><><><><><><><><><><><><><><><><><><><>
+[default] synchronised from file:///home/opam/opam-repository
+default (at file:///home/opam/opam-repository): 
+    [INFO] opam 2.1 and 2.2 include many performance and security improvements over 2.0; please consider upgrading (https://opam.ocaml.org/doc/Install.html)
+
+[01;2m[01;35m2024-10-29 11:59.49 ---> saved as "1b0ea1383cffe91771ff7106c85ff3a6f4e9bf175612c3696e7cc41e5760b77e"[0m
+
+[01;34m/home/opam: (run (shell "uname -rs && opam exec -- ocaml -version && opam --version"))[0m
+Linux 5.15.0-122-generic
+The OCaml toplevel, version 4.14.2
+2.0.10
+[01;2m[01;35m2024-10-29 11:59.51 ---> saved as "45d90ede761ad35fb50e5546cf0c24981c7ef38f18a6eae4aab91d93af819e67"[0m
+
+[01;34m/home/opam: (env OPAMDOWNLOADJOBS 1)[0m
+
+[01;34m/home/opam: (env OPAMERRLOGLEN 0)[0m
+
+[01;34m/home/opam: (env OPAMSOLVERTIMEOUT 1000)[0m
+
+[01;34m/home/opam: (env OPAMPRECISETRACKING 1)[0m
+
+[01;34m/home/opam: (env CI true)[0m
+
+[01;34m/home/opam: (env OPAM_REPO_CI true)[0m
+
+[01;34m/home/opam: (run (shell "rm -rf opam-repository/"))[0m
+[01;2m[01;35m2024-10-29 12:00.04 ---> saved as "3dc5d74e6fac9349e9f5a9531682975a988efb3ffe008ac3477d3e16c62eeea8"[0m
+
+[01;34m/home/opam: (copy (src .) (dst opam-repository/))[0m
+[01;2m[01;35m2024-10-29 12:00.21 ---> saved as "7c607296db5e0310325afd04b9601a2db1d1b25df0da249f4b8e35cd176e6fef"[0m
+
+[01;34m/home/opam: (run (shell "opam repository set-url --strict default opam-repository/"))[0m
+[default] Initialised
+default (at file:///home/opam/opam-repository): 
+    [INFO] opam 2.1 and 2.2 include many performance and security improvements over 2.0; please consider upgrading (https://opam.ocaml.org/doc/Install.html)
+
+[01;2m[01;35m2024-10-29 12:01.10 ---> saved as "f2a875e7e0bf647fbace1d32906f8251818be5c045589bb65d73c08b0b85df0c"[0m
+
+[01;34m/home/opam: (run (network host)
+                 (shell "opam depext -u || true"))[0m
+# Detecting depexts using vars: arch=x86_64, os=linux, os-distribution=debian, os-family=debian
+# No extra OS packages requirements found.
+# All required OS packages found.
+The following command needs to be run through "sudo":
+    apt-get update
+Hit:1 http://deb.debian.org/debian bookworm InRelease
+Get:2 http://deb.debian.org/debian bookworm-updates InRelease [55.4 kB]
+Get:3 http://deb.debian.org/debian-security bookworm-security InRelease [48.0 kB]
+Get:4 http://deb.debian.org/debian-security bookworm-security/main amd64 Packages [190 kB]
+Fetched 293 kB in 1s (413 kB/s)
+Reading package lists...
+# OS package update successful
+[01;2m[01;35m2024-10-29 12:01.13 ---> saved as "77e2cac9f76b1192d01cb10402d1635750344cd17232060c8ca37d7057642bb4"[0m
+
+[01;34m/home/opam: (run (shell "opam pin add -k version -yn git-kv.0.1.0 0.1.0"))[0m
+git-kv is now pinned to version 0.1.0
+[01;2m[01;35m2024-10-29 12:01.15 ---> saved as "f6f1809ced3c0c92c365623943cc0fa7be36ea7a09cab3305b2808e0868158d9"[0m
+
+[01;34m/home/opam: (run (cache (opam-archives (target /home/opam/.opam/download-cache)))
+                 (network host)
+                 (shell  "opam depext git-kv.0.1.0 && opam reinstall git-kv.0.1.0;\
+                        \n        res=$?;\
+                        \n        test \"$res\" != 31 && exit \"$res\";\
+                        \n        export OPAMCLI=2.0;\
+                        \n        build_dir=$(opam var prefix)/.opam-switch/build;\
+                        \n        failed=$(ls \"$build_dir\");\
+                        \n        partial_fails=\"\";\
+                        \n        for pkg in $failed; do\
+                        \n          if opam show -f x-ci-accept-failures: \"$pkg\" | grep -qF \"\\\"debian-12\\\"\"; then\
+                        \n            echo \"A package failed and has been disabled for CI using the 'x-ci-accept-failures' field.\";\
+                        \n          fi;\
+                        \n          test \"$pkg\" != 'git-kv.0.1.0' && partial_fails=\"$partial_fails $pkg\";\
+                        \n        done;\
+                        \n        test \"${partial_fails}\" != \"\" && echo \"opam-repo-ci detected dependencies failing: ${partial_fails}\";\
+                        \n        exit 1"))[0m
+# Detecting depexts using vars: arch=x86_64, os=linux, os-distribution=debian, os-family=debian
+# No extra OS packages requirements found.
+# All required OS packages found.
+git-kv.0.1.0 is not installed. Install it? [Y/n] y
+[ERROR] Sorry, resolution of the request timed out.
+        Try to specify a simpler request, use a different solver, or increase the allowed time by setting OPAMSOLVERTIMEOUT to a bigger value (currently, it is set to 1000.0 seconds).
+"/usr/bin/env" "bash" "-c" "opam depext git-kv.0.1.0 && opam reinstall git-kv.0.1.0;
+        res=$?;
+        test "$res" != 31 && exit "$res";
+        export OPAMCLI=2.0;
+        build_dir=$(opam var prefix)/.opam-switch/build;
+        failed=$(ls "$build_dir");
+        partial_fails="";
+        for pkg in $failed; do
+          if opam show -f x-ci-accept-failures: "$pkg" | grep -qF "\"debian-12\""; then
+            echo "A package failed and has been disabled for CI using the 'x-ci-accept-failures' field.";
+          fi;
+          test "$pkg" != 'git-kv.0.1.0' && partial_fails="$partial_fails $pkg";
+        done;
+        test "${partial_fails}" != "" && echo "opam-repo-ci detected dependencies failing: ${partial_fails}";
+        exit 1" failed with exit status 60
+2024-10-29 12:18.38: Job failed: Failed: Build failed
+2024-10-29 12:18.38: Log analysis:
+2024-10-29 12:18.38: >>> 
+[ERROR] Sorry, resolution of the request timed out.
+ (score = 20)
+2024-10-29 12:18.38: Sorry, resolution of the request timed out.

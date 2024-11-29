@@ -1,0 +1,433 @@
+2024-11-28 14:22.44: New job: test git-kv.0.1.1, using opam dev
+                              from https://github.com/ocaml/opam-repository.git#refs/pull/26983/head (393696e862151646d6f9e8b0e8f4bd159d32b277)
+                              on macos-homebrew-ocaml-5.2/amd64
+
+To reproduce locally:
+
+cd $(mktemp -d)
+git clone --recursive "https://github.com/ocaml/opam-repository.git" && cd "opam-repository" && git fetch origin "refs/pull/26983/head" && git reset --hard 393696e8
+git fetch origin master
+git merge --no-edit 8dd353813f879e7f171c4721a88278553cb09870
+cat > ../Dockerfile <<'END-OF-DOCKERFILE'
+[34mFROM macos-homebrew-ocaml-5.2
+USER 1000:1000
+RUN ln -f ~/local/bin/opam-dev ~/local/bin/opam
+RUN opam init --reinit -ni
+RUN uname -rs && opam exec -- ocaml -version && opam --version
+ENV OPAMDOWNLOADJOBS="1"
+ENV OPAMERRLOGLEN="0"
+ENV OPAMSOLVERTIMEOUT="1000"
+ENV OPAMPRECISETRACKING="1"
+ENV CI="true"
+ENV OPAM_REPO_CI="true"
+RUN rm -rf opam-repository/
+COPY --chown=1000:1000 . opam-repository/
+RUN opam repository set-url -k local --strict default opam-repository/
+RUN opam update --depexts || true
+RUN opam pin add -k version -yn git-kv.0.1.1 0.1.1
+RUN opam reinstall git-kv.0.1.1; \
+    res=$?; \
+    test "$res" != 31 && exit "$res"; \
+    export OPAMCLI=2.0; \
+    build_dir=$(opam var prefix)/.opam-switch/build; \
+    failed=$(ls "$build_dir"); \
+    partial_fails=""; \
+    for pkg in $failed; do \
+    if opam show -f x-ci-accept-failures: "$pkg" | grep -qF "\"macos-homebrew\""; then \
+    echo "A package failed and has been disabled for CI using the 'x-ci-accept-failures' field."; \
+    fi; \
+    test "$pkg" != 'git-kv.0.1.1' && partial_fails="$partial_fails $pkg"; \
+    done; \
+    test "${partial_fails}" != "" && echo "opam-repo-ci detected dependencies failing: ${partial_fails}"; \
+    exit 1
+RUN (opam reinstall --with-test git-kv.0.1.1) || true
+RUN opam reinstall --with-test --verbose git-kv.0.1.1; \
+    res=$?; \
+    test "$res" != 31 && exit "$res"; \
+    export OPAMCLI=2.0; \
+    build_dir=$(opam var prefix)/.opam-switch/build; \
+    failed=$(ls "$build_dir"); \
+    partial_fails=""; \
+    for pkg in $failed; do \
+    if opam show -f x-ci-accept-failures: "$pkg" | grep -qF "\"macos-homebrew\""; then \
+    echo "A package failed and has been disabled for CI using the 'x-ci-accept-failures' field."; \
+    fi; \
+    test "$pkg" != 'git-kv.0.1.1' && partial_fails="$partial_fails $pkg"; \
+    done; \
+    test "${partial_fails}" != "" && echo "opam-repo-ci detected dependencies failing: ${partial_fails}"; \
+    exit 1
+[0m
+END-OF-DOCKERFILE
+docker build -f ../Dockerfile .
+
+2024-11-28 14:22.44: Using cache hint "macos-homebrew-ocaml-5.2-git-kv.0.1.1-393696e862151646d6f9e8b0e8f4bd159d32b277"
+2024-11-28 14:22.44: Using OBuilder spec:
+((from macos-homebrew-ocaml-5.2)
+ (user (uid 1000) (gid 1000))
+ (run (shell "ln -f ~/local/bin/opam-dev ~/local/bin/opam"))
+ (run (network host)
+      (shell "opam init --reinit -ni"))
+ (run (shell "uname -rs && opam exec -- ocaml -version && opam --version"))
+ (env OPAMDOWNLOADJOBS 1)
+ (env OPAMERRLOGLEN 0)
+ (env OPAMSOLVERTIMEOUT 1000)
+ (env OPAMPRECISETRACKING 1)
+ (env CI true)
+ (env OPAM_REPO_CI true)
+ (run (shell "rm -rf opam-repository/"))
+ (copy (src .) (dst opam-repository/))
+ (run (shell "opam repository set-url -k local --strict default opam-repository/"))
+ (run (network host)
+      (shell "opam update --depexts || true"))
+ (run (shell "opam pin add -k version -yn git-kv.0.1.1 0.1.1"))
+ (run (cache (opam-archives (target /Users/mac1000/.opam/download-cache)) (homebrew (target /Users/mac1000/Library/Caches/Homebrew)))
+      (network host)
+      (shell  "opam reinstall git-kv.0.1.1;\
+             \n        res=$?;\
+             \n        test \"$res\" != 31 && exit \"$res\";\
+             \n        export OPAMCLI=2.0;\
+             \n        build_dir=$(opam var prefix)/.opam-switch/build;\
+             \n        failed=$(ls \"$build_dir\");\
+             \n        partial_fails=\"\";\
+             \n        for pkg in $failed; do\
+             \n          if opam show -f x-ci-accept-failures: \"$pkg\" | grep -qF \"\\\"macos-homebrew\\\"\"; then\
+             \n            echo \"A package failed and has been disabled for CI using the 'x-ci-accept-failures' field.\";\
+             \n          fi;\
+             \n          test \"$pkg\" != 'git-kv.0.1.1' && partial_fails=\"$partial_fails $pkg\";\
+             \n        done;\
+             \n        test \"${partial_fails}\" != \"\" && echo \"opam-repo-ci detected dependencies failing: ${partial_fails}\";\
+             \n        exit 1"))
+ (run (network host)
+      (shell "(opam reinstall --with-test git-kv.0.1.1) || true"))
+ (run (shell  "opam reinstall --with-test --verbose git-kv.0.1.1;\
+             \n        res=$?;\
+             \n        test \"$res\" != 31 && exit \"$res\";\
+             \n        export OPAMCLI=2.0;\
+             \n        build_dir=$(opam var prefix)/.opam-switch/build;\
+             \n        failed=$(ls \"$build_dir\");\
+             \n        partial_fails=\"\";\
+             \n        for pkg in $failed; do\
+             \n          if opam show -f x-ci-accept-failures: \"$pkg\" | grep -qF \"\\\"macos-homebrew\\\"\"; then\
+             \n            echo \"A package failed and has been disabled for CI using the 'x-ci-accept-failures' field.\";\
+             \n          fi;\
+             \n          test \"$pkg\" != 'git-kv.0.1.1' && partial_fails=\"$partial_fails $pkg\";\
+             \n        done;\
+             \n        test \"${partial_fails}\" != \"\" && echo \"opam-repo-ci detected dependencies failing: ${partial_fails}\";\
+             \n        exit 1"))
+)
+
+2024-11-28 14:22.44: Waiting for resource in pool OCluster
+2024-11-28 14:22.44: Waiting for worker…
+2024-11-28 14:29.01: Got resource from pool OCluster
+Building on i7-worker-03
+All commits already cached
+Updating files:   0% (176/32765)Updating files:   1% (328/32765)Updating files:   1% (502/32765)Updating files:   2% (656/32765)Updating files:   3% (983/32765)Updating files:   4% (1311/32765)Updating files:   5% (1639/32765)Updating files:   6% (1966/32765)Updating files:   6% (2282/32765)Updating files:   7% (2294/32765)Updating files:   8% (2622/32765)Updating files:   9% (2949/32765)Updating files:  10% (3277/32765)Updating files:  11% (3605/32765)Updating files:  12% (3932/32765)Updating files:  13% (4260/32765)Updating files:  14% (4588/32765)Updating files:  15% (4915/32765)Updating files:  15% (4920/32765)Updating files:  16% (5243/32765)Updating files:  17% (5571/32765)Updating files:  18% (5898/32765)Updating files:  19% (6226/32765)Updating files:  20% (6553/32765)Updating files:  21% (6881/32765)Updating files:  22% (7209/32765)Updating files:  23% (7536/32765)Updating files:  24% (7864/32765)Updating files:  25% (8192/32765)Updating files:  26% (8519/32765)Updating files:  27% (8847/32765)Updating files:  27% (8873/32765)Updating files:  28% (9175/32765)Updating files:  29% (9502/32765)Updating files:  30% (9830/32765)Updating files:  31% (10158/32765)Updating files:  32% (10485/32765)Updating files:  33% (10813/32765)Updating files:  34% (11141/32765)Updating files:  35% (11468/32765)Updating files:  36% (11796/32765)Updating files:  37% (12124/32765)Updating files:  38% (12451/32765)Updating files:  38% (12481/32765)Updating files:  39% (12779/32765)Updating files:  40% (13106/32765)Updating files:  41% (13434/32765)Updating files:  42% (13762/32765)Updating files:  43% (14089/32765)Updating files:  44% (14417/32765)Updating files:  45% (14745/32765)Updating files:  45% (14987/32765)Updating files:  46% (15072/32765)Updating files:  47% (15400/32765)Updating files:  48% (15728/32765)Updating files:  49% (16055/32765)Updating files:  50% (16383/32765)Updating files:  51% (16711/32765)Updating files:  52% (17038/32765)Updating files:  53% (17366/32765)Updating files:  54% (17694/32765)Updating files:  55% (18021/32765)Updating files:  55% (18279/32765)Updating files:  56% (18349/32765)Updating files:  57% (18677/32765)Updating files:  58% (19004/32765)Updating files:  59% (19332/32765)Updating files:  60% (19659/32765)Updating files:  61% (19987/32765)Updating files:  62% (20315/32765)Updating files:  63% (20642/32765)Updating files:  63% (20950/32765)Updating files:  64% (20970/32765)Updating files:  65% (21298/32765)Updating files:  66% (21625/32765)Updating files:  67% (21953/32765)Updating files:  68% (22281/32765)Updating files:  69% (22608/32765)Updating files:  70% (22936/32765)Updating files:  71% (23264/32765)Updating files:  72% (23591/32765)Updating files:  73% (23919/32765)Updating files:  73% (24011/32765)Updating files:  74% (24247/32765)Updating files:  75% (24574/32765)Updating files:  76% (24902/32765)Updating files:  77% (25230/32765)Updating files:  78% (25557/32765)Updating files:  79% (25885/32765)Updating files:  80% (26212/32765)Updating files:  81% (26540/32765)Updating files:  82% (26868/32765)Updating files:  83% (27195/32765)Updating files:  84% (27523/32765)Updating files:  84% (27538/32765)Updating files:  85% (27851/32765)Updating files:  86% (28178/32765)Updating files:  87% (28506/32765)Updating files:  88% (28834/32765)Updating files:  89% (29161/32765)Updating files:  90% (29489/32765)Updating files:  91% (29817/32765)Updating files:  92% (30144/32765)Updating files:  93% (30472/32765)Updating files:  94% (30800/32765)Updating files:  95% (31127/32765)Updating files:  95% (31425/32765)Updating files:  96% (31455/32765)Updating files:  97% (31783/32765)Updating files:  98% (32110/32765)Updating files:  99% (32438/32765)Updating files: 100% (32765/32765)Updating files: 100% (32765/32765), done.
+HEAD is now at 8dd353813f Merge pull request #26977 from fpottier/opam-publish-monolith.20241126
+Updating 8dd353813f..393696e862
+Fast-forward
+ packages/git-kv/git-kv.0.1.1/opam | 41 +++++++++++++++++++++++++++++++++++++++
+ 1 file changed, 41 insertions(+)
+ create mode 100644 packages/git-kv/git-kv.0.1.1/opam
+
+[01;34m(from macos-homebrew-ocaml-5.2)[0m
+[01;2m[01;35m2024-11-28 14:29.18 ---> using "9b46fe3d2429f2b9195a02468cb57ac45cfa11fb4a87cb32b5e5375232223327" from cache[0m
+
+[01;34m/: (user (uid 1000) (gid 1000))[0m
+
+[01;34m/: (run (shell "ln -f ~/local/bin/opam-dev ~/local/bin/opam"))[0m
+[01;2m[01;35m2024-11-28 14:29.18 ---> using "76494d5748538bbd6acd56b9f4c44f002a942b930047010040ce7bac6fed0faa" from cache[0m
+
+[01;34m/: (run (network host)
+        (shell "opam init --reinit -ni"))[0m
+No configuration file found, using built-in defaults.
+Checking for available remotes: rsync and local, git.
+  - you won't be able to use mercurial repositories unless you install the hg command on your system.
+  - you won't be able to use darcs repositories unless you install the darcs command on your system.
+
+This version of opam requires an update to the layout of /Users/mac1000/.opam from version 2.1 to version 2.2, which can't be reverted.
+You may want to back it up before going further.
+
+Continue? [y/n] y
+[NOTE] The 'jobs' option was reset, its value was 1 and its new value will vary according to the current number of cores on your machine. You can restore the fixed value using:
+           opam option jobs=1 --global
+Format upgrade done.
+
+<><> Updating repositories ><><><><><><><><><><><><><><><><><><><><><><><><><><>
+[default] no changes from git+file:///Users/mac1000/opam-repository
+[01;2m[01;35m2024-11-28 14:29.18 ---> using "39674c71ff99accc6151f1e2dba23444b23d47c2e601e49395d207c44e38a3d0" from cache[0m
+
+[01;34m/: (run (shell "uname -rs && opam exec -- ocaml -version && opam --version"))[0m
+Darwin 23.4.0
+The OCaml toplevel, version 5.2.1
+2.3.0
+[01;2m[01;35m2024-11-28 14:29.19 ---> using "8061d430d2970675af509e9fdb286e656be2c73e642bba2a1c66e40d1ca7cc79" from cache[0m
+
+[01;34m/: (env OPAMDOWNLOADJOBS 1)[0m
+
+[01;34m/: (env OPAMERRLOGLEN 0)[0m
+
+[01;34m/: (env OPAMSOLVERTIMEOUT 1000)[0m
+
+[01;34m/: (env OPAMPRECISETRACKING 1)[0m
+
+[01;34m/: (env CI true)[0m
+
+[01;34m/: (env OPAM_REPO_CI true)[0m
+
+[01;34m/: (run (shell "rm -rf opam-repository/"))[0m
+[01;2m[01;35m2024-11-28 14:29.19 ---> using "076e6538d133f89ceb004282219d60d74c96af934d66847e136a2cead19146a2" from cache[0m
+
+[01;34m/: (copy (src .) (dst opam-repository/))[0m
+[01;2m[01;35m2024-11-28 14:29.48 ---> using "a70447eb7acb5f88e7d61a59ee8c9c13891cd88d83811b8008b2ae2d692ed491" from cache[0m
+
+[01;34m/: (run (shell "opam repository set-url -k local --strict default opam-repository/"))[0m
+[default] Initialised
+[01;2m[01;35m2024-11-28 14:29.48 ---> using "669c53864bc453ab7ba9cd27f125f7ca13d5efe21089f495a972a280daa1de3a" from cache[0m
+
+[01;34m/: (run (network host)
+        (shell "opam update --depexts || true"))[0m
++ /usr/local/bin/brew "update"
+- ==> Updating Homebrew...
+- ==> Homebrew collects anonymous analytics.
+- Read the analytics documentation (and how to opt-out) here:
+-   https://docs.brew.sh/Analytics
+- No analytics have been recorded yet (nor will be during this `brew` run).
+- 
+- ==> Homebrew is run entirely by unpaid volunteers. Please consider donating:
+-   https://github.com/Homebrew/brew#donations
+- 
+- Already up-to-date.
+[01;2m[01;35m2024-11-28 14:29.49 ---> using "b914002a5326ee1096f47acae6e088d46ec109a177e11270ace01ffc80ecc8f8" from cache[0m
+
+[01;34m/: (run (shell "opam pin add -k version -yn git-kv.0.1.1 0.1.1"))[0m
+git-kv is now pinned to version 0.1.1
+[01;2m[01;35m2024-11-28 14:29.49 ---> using "e35298d285474c6a84379c5444c7c5054d3f34937c6c3b7d60211ac76597a486" from cache[0m
+
+[01;34m/: (run (cache (opam-archives (target /Users/mac1000/.opam/download-cache)) (homebrew (target /Users/mac1000/Library/Caches/Homebrew)))
+        (network host)
+        (shell  "opam reinstall git-kv.0.1.1;\
+               \n        res=$?;\
+               \n        test \"$res\" != 31 && exit \"$res\";\
+               \n        export OPAMCLI=2.0;\
+               \n        build_dir=$(opam var prefix)/.opam-switch/build;\
+               \n        failed=$(ls \"$build_dir\");\
+               \n        partial_fails=\"\";\
+               \n        for pkg in $failed; do\
+               \n          if opam show -f x-ci-accept-failures: \"$pkg\" | grep -qF \"\\\"macos-homebrew\\\"\"; then\
+               \n            echo \"A package failed and has been disabled for CI using the 'x-ci-accept-failures' field.\";\
+               \n          fi;\
+               \n          test \"$pkg\" != 'git-kv.0.1.1' && partial_fails=\"$partial_fails $pkg\";\
+               \n        done;\
+               \n        test \"${partial_fails}\" != \"\" && echo \"opam-repo-ci detected dependencies failing: ${partial_fails}\";\
+               \n        exit 1"))[0m
+git-kv.0.1.1 is not installed. Install it? [y/n] y
+The following actions will be performed:
+=== install 53 packages
+  - install angstrom           0.16.1         [required by git]
+  - install astring            0.8.5          [required by git]
+  - install base-bytes         base           [required by ocplib-endian]
+  - install base64             3.5.1          [required by git]
+  - install bigstringaf        0.10.0         [required by carton-lwt, carton, git]
+  - install bos                0.2.1          [required by carton]
+  - install carton             0.7.2          [required by git-kv]
+  - install carton-git         0.7.2          [required by git]
+  - install carton-lwt         0.7.2          [required by git-kv]
+  - install checkseum          0.5.2          [required by carton, git]
+  - install cmdliner           1.3.0          [required by carton]
+  - install cppo               1.7.0          [required by lwt]
+  - install csexp              1.5.2          [required by dune-configurator]
+  - install cstruct            6.2.0          [required by carton, git]
+  - install decompress         1.5.3          [required by carton-lwt, carton, git]
+  - install digestif           1.2.0          [required by carton, git]
+  - install domain-name        0.4.0          [required by git]
+  - install duff               0.5            [required by carton]
+  - install dune               3.16.1         [required by git-kv]
+  - install dune-configurator  3.16.1         [required by checkseum, bigstringaf, hxd]
+  - install emile              1.1            [required by git]
+  - install encore             0.8            [required by git]
+  - install eqaf               0.10           [required by digestif]
+  - install fmt                0.9.0          [required by git-kv]
+  - install fpath              0.7.3          [required by carton, git]
+  - install git                3.17.0         [required by git-kv]
+  - install git-kv             0.1.1 (pinned)
+  - install hxd                0.3.2          [required by carton, git]
+  - install ipaddr             5.6.0          [required by git]
+  - install ke                 0.6            [required by carton, git]
+  - install logs               0.7.0          [required by carton, git]
+  - install lwt                5.9.0          [required by git, carton-lwt, mirage-kv]
+  - install macaddr            5.6.0          [required by ipaddr]
+  - install mimic              0.0.9          [required by git]
+  - install mirage-clock       4.2.0          [required by git-kv]
+  - install mirage-flow        4.0.2          [required by git]
+  - install mirage-kv          6.1.1          [required by git-kv]
+  - install ocaml-syntax-shims 1.0.0          [required by angstrom]
+  - install ocamlbuild         0.15.0         [required by bos, ptime]
+  - install ocamlfind          1.9.6          [required by bos, ptime]
+  - install ocamlgraph         2.1.0          [required by git]
+  - install ocplib-endian      1.2            [required by lwt]
+  - install optint             0.3.0          [required by git, carton, carton-lwt, mirage-kv]
+  - install pecu               0.7            [required by emile]
+  - install psq                0.2.1          [required by carton, git]
+  - install ptime              1.2.0          [required by git-kv]
+  - install rresult            0.7.0          [required by git]
+  - install seq                base           [required by psq]
+  - install stdlib-shims       0.3.0          [required by ocamlgraph]
+  - install stringext          1.6.0          [required by uri]
+  - install topkg              1.0.7          [required by bos, ptime]
+  - install uri                4.4.0          [required by git]
+  - install uutf               1.0.3          [required by emile]
+
+<><> Processing actions <><><><><><><><><><><><><><><><><><><><><><><><><><><><>
+-> retrieved angstrom.0.16.1  (cached)
+-> retrieved astring.0.8.5  (cached)
+-> retrieved base64.3.5.1  (cached)
+-> retrieved bigstringaf.0.10.0  (cached)
+-> retrieved bos.0.2.1  (cached)
+-> retrieved carton.0.7.2, carton-git.0.7.2, carton-lwt.0.7.2  (cached)
+-> retrieved checkseum.0.5.2  (cached)
+-> retrieved cmdliner.1.3.0  (cached)
+-> retrieved cppo.1.7.0  (cached)
+-> retrieved csexp.1.5.2  (cached)
+-> retrieved cstruct.6.2.0  (cached)
+-> retrieved decompress.1.5.3  (cached)
+-> retrieved digestif.1.2.0  (cached)
+-> retrieved domain-name.0.4.0  (cached)
+-> retrieved duff.0.5  (cached)
+-> retrieved dune.3.16.1, dune-configurator.3.16.1  (cached)
+-> retrieved emile.1.1  (cached)
+-> retrieved encore.0.8  (cached)
+-> retrieved eqaf.0.10  (cached)
+-> retrieved fmt.0.9.0  (cached)
+-> retrieved fpath.0.7.3  (cached)
+-> retrieved git.3.17.0  (cached)
+-> installed cmdliner.1.3.0
+-> retrieved git-kv.0.1.1  (https://github.com/robur-coop/git-kv/releases/download/v0.1.1/git-kv-0.1.1.tbz)
+-> retrieved hxd.0.3.2  (cached)
+-> retrieved ipaddr.5.6.0, macaddr.5.6.0  (cached)
+-> retrieved ke.0.6  (cached)
+-> retrieved logs.0.7.0  (cached)
+-> retrieved lwt.5.9.0  (cached)
+-> retrieved mimic.0.0.9  (cached)
+-> retrieved mirage-clock.4.2.0  (cached)
+-> retrieved mirage-flow.4.0.2  (cached)
+-> retrieved mirage-kv.6.1.1  (cached)
+-> retrieved ocaml-syntax-shims.1.0.0  (cached)
+-> retrieved ocamlbuild.0.15.0  (cached)
+-> retrieved ocamlfind.1.9.6  (cached)
+-> retrieved ocamlgraph.2.1.0  (cached)
+-> retrieved ocplib-endian.1.2  (cached)
+-> retrieved optint.0.3.0  (cached)
+-> retrieved pecu.0.7  (cached)
+-> retrieved psq.0.2.1  (cached)
+-> retrieved ptime.1.2.0  (cached)
+-> retrieved rresult.0.7.0  (cached)
+-> retrieved seq.base  (cached)
+-> installed seq.base
+-> retrieved stdlib-shims.0.3.0  (cached)
+-> retrieved stringext.1.6.0  (cached)
+-> retrieved topkg.1.0.7  (cached)
+-> retrieved uri.4.4.0  (cached)
+-> retrieved uutf.1.0.3  (cached)
+-> installed ocamlfind.1.9.6
+-> installed base-bytes.base
+-> installed ocamlbuild.0.15.0
+-> installed topkg.1.0.7
+-> installed rresult.0.7.0
+-> installed uutf.1.0.3
+-> installed dune.3.16.1
+-> installed fmt.0.9.0
+-> installed mirage-clock.4.2.0
+-> installed domain-name.0.4.0
+-> installed csexp.1.5.2
+-> installed macaddr.5.6.0
+-> installed ke.0.6
+-> installed duff.0.5
+-> installed cstruct.6.2.0
+-> installed optint.0.3.0
+-> installed ocaml-syntax-shims.1.0.0
+-> installed eqaf.0.10
+-> installed cppo.1.7.0
+-> installed base64.3.5.1
+-> installed ptime.1.2.0
+-> installed astring.0.8.5
+-> installed stdlib-shims.0.3.0
+-> installed pecu.0.7
+-> installed stringext.1.6.0
+-> installed psq.0.2.1
+-> installed ipaddr.5.6.0
+-> installed ocplib-endian.1.2
+-> installed fpath.0.7.3
+-> installed digestif.1.2.0
+-> installed dune-configurator.3.16.1
+-> installed bigstringaf.0.10.0
+-> installed checkseum.0.5.2
+-> installed ocamlgraph.2.1.0
+-> installed angstrom.0.16.1
+-> installed decompress.1.5.3
+-> installed emile.1.1
+-> installed encore.0.8
+-> installed uri.4.4.0
+-> installed lwt.5.9.0
+-> installed mirage-flow.4.0.2
+-> installed mirage-kv.6.1.1
+-> installed hxd.0.3.2
+-> installed logs.0.7.0
+-> installed mimic.0.0.9
+-> installed bos.0.2.1
+-> installed carton.0.7.2
+-> installed carton-lwt.0.7.2
+-> installed carton-git.0.7.2
+-> installed git.3.17.0
+-> installed git-kv.0.1.1
+Done.
+# To update the current shell environment, run: eval $(opam env)
+[01;2m[01;35m2024-11-28 14:29.49 ---> using "3b12b6c5b54cc213528b02b27a9acb5bba1caf0a5d415b67e7706218569180fd" from cache[0m
+
+[01;34m/: (run (network host)
+        (shell "(opam reinstall --with-test git-kv.0.1.1) || true"))[0m
+[ERROR] Sorry, resolution of the request timed out.
+        Try to specify a more precise request, use a different solver, or increase the allowed time by setting OPAMSOLVERTIMEOUT to a bigger value (currently, it is set to 1000.0 seconds).
+[01;2m[01;35m2024-11-28 14:46.48 ---> saved as "4224d557786a4611878c53306a7b2b2b8383d8f6300690f913ef8adce378091a"[0m
+
+[01;34m/: (run (shell  "opam reinstall --with-test --verbose git-kv.0.1.1;\
+               \n        res=$?;\
+               \n        test \"$res\" != 31 && exit \"$res\";\
+               \n        export OPAMCLI=2.0;\
+               \n        build_dir=$(opam var prefix)/.opam-switch/build;\
+               \n        failed=$(ls \"$build_dir\");\
+               \n        partial_fails=\"\";\
+               \n        for pkg in $failed; do\
+               \n          if opam show -f x-ci-accept-failures: \"$pkg\" | grep -qF \"\\\"macos-homebrew\\\"\"; then\
+               \n            echo \"A package failed and has been disabled for CI using the 'x-ci-accept-failures' field.\";\
+               \n          fi;\
+               \n          test \"$pkg\" != 'git-kv.0.1.1' && partial_fails=\"$partial_fails $pkg\";\
+               \n        done;\
+               \n        test \"${partial_fails}\" != \"\" && echo \"opam-repo-ci detected dependencies failing: ${partial_fails}\";\
+               \n        exit 1"))[0m
+[ERROR] Sorry, resolution of the request timed out.
+        Try to specify a more precise request, use a different solver, or increase the allowed time by setting OPAMSOLVERTIMEOUT to a bigger value (currently, it is set to 1000.0 seconds).
+'opam reinstall --with-test --verbose git-kv.0.1.1' failed.
+"/usr/bin/env" "bash" "-c" "opam reinstall --with-test --verbose git-kv.0.1.1;
+        res=$?;
+        test "$res" != 31 && exit "$res";
+        export OPAMCLI=2.0;
+        build_dir=$(opam var prefix)/.opam-switch/build;
+        failed=$(ls "$build_dir");
+        partial_fails="";
+        for pkg in $failed; do
+          if opam show -f x-ci-accept-failures: "$pkg" | grep -qF "\"macos-homebrew\""; then
+            echo "A package failed and has been disabled for CI using the 'x-ci-accept-failures' field.";
+          fi;
+          test "$pkg" != 'git-kv.0.1.1' && partial_fails="$partial_fails $pkg";
+        done;
+        test "${partial_fails}" != "" && echo "opam-repo-ci detected dependencies failing: ${partial_fails}";
+        exit 1" failed with exit status 60
+2024-11-28 15:04.27: Job failed: Failed: Build failed
+2024-11-28 15:04.27: Log analysis:
+2024-11-28 15:04.27: >>> 
+[ERROR] Sorry, resolution of the request timed out.
+ (score = 20)
+2024-11-28 15:04.27: >>> 
+[ERROR] Sorry, resolution of the request timed out.
+ (score = 20)
+2024-11-28 15:04.27: Sorry, resolution of the request timed out.

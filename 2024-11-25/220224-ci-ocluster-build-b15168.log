@@ -1,0 +1,268 @@
+2024-11-25 22:02.24: New job: test ojs-base.0.6.0, using opam 2.1
+                              from https://github.com/ocaml/opam-repository.git#refs/pull/26932/head (3ce99b724eafc607436147d4c0ef8af752a47241)
+                              on debian-12-ocaml-4.14/amd64
+
+To reproduce locally:
+
+cd $(mktemp -d)
+git clone --recursive "https://github.com/ocaml/opam-repository.git" && cd "opam-repository" && git fetch origin "refs/pull/26932/head" && git reset --hard 3ce99b72
+git fetch origin master
+git merge --no-edit e62e88dccc1d1181b3fa83b78e2bf462598afb92
+cat > ../Dockerfile <<'END-OF-DOCKERFILE'
+[34mFROM ocaml/opam:debian-12-ocaml-4.14@sha256:3b83406bd3604cbe91e1a7499b0a6b18dd710d949d68282fb558bf3d301d3e97
+USER 1000:1000
+WORKDIR /home/opam
+RUN sudo ln -f /usr/bin/opam-2.1 /usr/bin/opam
+RUN opam init --reinit -ni
+RUN uname -rs && opam exec -- ocaml -version && opam --version
+ENV OPAMDOWNLOADJOBS="1"
+ENV OPAMERRLOGLEN="0"
+ENV OPAMSOLVERTIMEOUT="1000"
+ENV OPAMPRECISETRACKING="1"
+ENV CI="true"
+ENV OPAM_REPO_CI="true"
+RUN rm -rf opam-repository/
+COPY --chown=1000:1000 . opam-repository/
+RUN opam repository set-url --strict default opam-repository/
+RUN opam update --depexts || true
+RUN opam pin add -k version -yn ojs-base.0.6.0 0.6.0
+RUN opam reinstall ojs-base.0.6.0; \
+    res=$?; \
+    test "$res" != 31 && exit "$res"; \
+    export OPAMCLI=2.0; \
+    build_dir=$(opam var prefix)/.opam-switch/build; \
+    failed=$(ls "$build_dir"); \
+    partial_fails=""; \
+    for pkg in $failed; do \
+    if opam show -f x-ci-accept-failures: "$pkg" | grep -qF "\"debian-12\""; then \
+    echo "A package failed and has been disabled for CI using the 'x-ci-accept-failures' field."; \
+    fi; \
+    test "$pkg" != 'ojs-base.0.6.0' && partial_fails="$partial_fails $pkg"; \
+    done; \
+    test "${partial_fails}" != "" && echo "opam-repo-ci detected dependencies failing: ${partial_fails}"; \
+    exit 1
+RUN (opam reinstall --with-test ojs-base.0.6.0) || true
+RUN opam reinstall --with-test --verbose ojs-base.0.6.0; \
+    res=$?; \
+    test "$res" != 31 && exit "$res"; \
+    export OPAMCLI=2.0; \
+    build_dir=$(opam var prefix)/.opam-switch/build; \
+    failed=$(ls "$build_dir"); \
+    partial_fails=""; \
+    for pkg in $failed; do \
+    if opam show -f x-ci-accept-failures: "$pkg" | grep -qF "\"debian-12\""; then \
+    echo "A package failed and has been disabled for CI using the 'x-ci-accept-failures' field."; \
+    fi; \
+    test "$pkg" != 'ojs-base.0.6.0' && partial_fails="$partial_fails $pkg"; \
+    done; \
+    test "${partial_fails}" != "" && echo "opam-repo-ci detected dependencies failing: ${partial_fails}"; \
+    exit 1
+[0m
+END-OF-DOCKERFILE
+docker build -f ../Dockerfile .
+
+2024-11-25 22:02.24: Using cache hint "ocaml/opam:debian-12-ocaml-4.14@sha256:3b83406bd3604cbe91e1a7499b0a6b18dd710d949d68282fb558bf3d301d3e97-ojs-base.0.6.0-3ce99b724eafc607436147d4c0ef8af752a47241"
+2024-11-25 22:02.24: Using OBuilder spec:
+((from ocaml/opam:debian-12-ocaml-4.14@sha256:3b83406bd3604cbe91e1a7499b0a6b18dd710d949d68282fb558bf3d301d3e97)
+ (user (uid 1000) (gid 1000))
+ (workdir /home/opam)
+ (run (shell "sudo ln -f /usr/bin/opam-2.1 /usr/bin/opam"))
+ (run (network host)
+      (shell "opam init --reinit --config .opamrc-sandbox -ni"))
+ (run (shell "uname -rs && opam exec -- ocaml -version && opam --version"))
+ (env OPAMDOWNLOADJOBS 1)
+ (env OPAMERRLOGLEN 0)
+ (env OPAMSOLVERTIMEOUT 1000)
+ (env OPAMPRECISETRACKING 1)
+ (env CI true)
+ (env OPAM_REPO_CI true)
+ (run (shell "rm -rf opam-repository/"))
+ (copy (src .) (dst opam-repository/))
+ (run (shell "opam repository set-url --strict default opam-repository/"))
+ (run (network host)
+      (shell "opam update --depexts || true"))
+ (run (shell "opam pin add -k version -yn ojs-base.0.6.0 0.6.0"))
+ (run (cache (opam-archives (target /home/opam/.opam/download-cache)))
+      (network host)
+      (shell  "opam reinstall ojs-base.0.6.0;\
+             \n        res=$?;\
+             \n        test \"$res\" != 31 && exit \"$res\";\
+             \n        export OPAMCLI=2.0;\
+             \n        build_dir=$(opam var prefix)/.opam-switch/build;\
+             \n        failed=$(ls \"$build_dir\");\
+             \n        partial_fails=\"\";\
+             \n        for pkg in $failed; do\
+             \n          if opam show -f x-ci-accept-failures: \"$pkg\" | grep -qF \"\\\"debian-12\\\"\"; then\
+             \n            echo \"A package failed and has been disabled for CI using the 'x-ci-accept-failures' field.\";\
+             \n          fi;\
+             \n          test \"$pkg\" != 'ojs-base.0.6.0' && partial_fails=\"$partial_fails $pkg\";\
+             \n        done;\
+             \n        test \"${partial_fails}\" != \"\" && echo \"opam-repo-ci detected dependencies failing: ${partial_fails}\";\
+             \n        exit 1"))
+ (run (network host)
+      (shell "(opam reinstall --with-test ojs-base.0.6.0) || true"))
+ (run (shell  "opam reinstall --with-test --verbose ojs-base.0.6.0;\
+             \n        res=$?;\
+             \n        test \"$res\" != 31 && exit \"$res\";\
+             \n        export OPAMCLI=2.0;\
+             \n        build_dir=$(opam var prefix)/.opam-switch/build;\
+             \n        failed=$(ls \"$build_dir\");\
+             \n        partial_fails=\"\";\
+             \n        for pkg in $failed; do\
+             \n          if opam show -f x-ci-accept-failures: \"$pkg\" | grep -qF \"\\\"debian-12\\\"\"; then\
+             \n            echo \"A package failed and has been disabled for CI using the 'x-ci-accept-failures' field.\";\
+             \n          fi;\
+             \n          test \"$pkg\" != 'ojs-base.0.6.0' && partial_fails=\"$partial_fails $pkg\";\
+             \n        done;\
+             \n        test \"${partial_fails}\" != \"\" && echo \"opam-repo-ci detected dependencies failing: ${partial_fails}\";\
+             \n        exit 1"))
+)
+
+2024-11-25 22:02.24: Waiting for resource in pool OCluster
+2024-11-26 00:18.09: Waiting for worker…
+2024-11-26 00:23.44: Got resource from pool OCluster
+Building on x86-bm-c17.sw.ocaml.org
+All commits already cached
+Updating files:  80% (26302/32730)Updating files:  81% (26512/32730)Updating files:  82% (26839/32730)Updating files:  83% (27166/32730)Updating files:  84% (27494/32730)Updating files:  85% (27821/32730)Updating files:  86% (28148/32730)Updating files:  87% (28476/32730)Updating files:  88% (28803/32730)Updating files:  89% (29130/32730)Updating files:  90% (29457/32730)Updating files:  91% (29785/32730)Updating files:  92% (30112/32730)Updating files:  93% (30439/32730)Updating files:  94% (30767/32730)Updating files:  95% (31094/32730)Updating files:  96% (31421/32730)Updating files:  97% (31749/32730)Updating files:  98% (32076/32730)Updating files:  99% (32403/32730)Updating files: 100% (32730/32730)Updating files: 100% (32730/32730), done.
+HEAD is now at e62e88dccc Merge pull request #26953 from shonfeder/revert-color-0.3.0
+Merge made by the 'ort' strategy.
+ .../js_of_ocaml-compiler.5.9.0/opam                | 56 ++++++++++++++++++++++
+ .../js_of_ocaml-lwt/js_of_ocaml-lwt.5.9.0/opam     | 48 +++++++++++++++++++
+ .../js_of_ocaml-ppx/js_of_ocaml-ppx.5.9.0/opam     | 45 +++++++++++++++++
+ .../js_of_ocaml-ppx_deriving_json.5.9.0/opam       | 45 +++++++++++++++++
+ .../js_of_ocaml-toplevel.5.9.0/opam                | 48 +++++++++++++++++++
+ .../js_of_ocaml-tyxml/js_of_ocaml-tyxml.5.9.0/opam | 49 +++++++++++++++++++
+ packages/js_of_ocaml/js_of_ocaml.5.9.0/opam        | 45 +++++++++++++++++
+ packages/ojs-base/ojs-base.0.1.0/opam              |  2 +-
+ packages/ojs-base/ojs-base.0.2.0/opam              |  2 +-
+ packages/ojs-base/ojs-base.0.3.0/opam              |  2 +-
+ packages/ojs-base/ojs-base.0.4.0/opam              |  2 +-
+ packages/ojs-base/ojs-base.0.5.0/opam              |  2 +-
+ packages/ojs-base/ojs-base.0.6.0/opam              |  2 +-
+ packages/picos/picos.0.1.0/opam                    |  4 +-
+ packages/picos/picos.0.2.0/opam                    |  4 +-
+ packages/picos/picos.0.3.0/opam                    |  4 +-
+ packages/picos/picos.0.4.0/opam                    |  2 +-
+ packages/picos_meta/picos_meta.0.5.0/opam          |  2 +-
+ packages/picos_meta/picos_meta.0.6.0/opam          |  2 +-
+ 19 files changed, 351 insertions(+), 15 deletions(-)
+ create mode 100644 packages/js_of_ocaml-compiler/js_of_ocaml-compiler.5.9.0/opam
+ create mode 100644 packages/js_of_ocaml-lwt/js_of_ocaml-lwt.5.9.0/opam
+ create mode 100644 packages/js_of_ocaml-ppx/js_of_ocaml-ppx.5.9.0/opam
+ create mode 100644 packages/js_of_ocaml-ppx_deriving_json/js_of_ocaml-ppx_deriving_json.5.9.0/opam
+ create mode 100644 packages/js_of_ocaml-toplevel/js_of_ocaml-toplevel.5.9.0/opam
+ create mode 100644 packages/js_of_ocaml-tyxml/js_of_ocaml-tyxml.5.9.0/opam
+ create mode 100644 packages/js_of_ocaml/js_of_ocaml.5.9.0/opam
+
+[01;34m(from ocaml/opam:debian-12-ocaml-4.14@sha256:3b83406bd3604cbe91e1a7499b0a6b18dd710d949d68282fb558bf3d301d3e97)[0m
+[01;2m[01;35m2024-11-26 00:23.49 ---> using "16c9fc8fd763c524ae1606da9019c341fc2748b0a1d360269689e19099d4c66f" from cache[0m
+
+[01;34m/: (user (uid 1000) (gid 1000))[0m
+
+[01;34m/: (workdir /home/opam)[0m
+
+[01;34m/home/opam: (run (shell "sudo ln -f /usr/bin/opam-2.1 /usr/bin/opam"))[0m
+[01;2m[01;35m2024-11-26 00:23.49 ---> using "4e1de5e52444fc11eda782b61e1fd5e2c5ed273e7e19343814b8f27f998c1fe1" from cache[0m
+
+[01;34m/home/opam: (run (network host)
+                 (shell "opam init --reinit --config .opamrc-sandbox -ni"))[0m
+Configuring from /home/opam/.opamrc-sandbox, then /home/opam/.opamrc, and finally from built-in defaults.
+Checking for available remotes: rsync and local, git.
+  - you won't be able to use mercurial repositories unless you install the hg command on your system.
+  - you won't be able to use darcs repositories unless you install the darcs command on your system.
+
+This development version of opam requires an update to the layout of /home/opam/.opam from version 2.0 to version 2.1, which can't be reverted.
+You may want to back it up before going further.
+
+Continue? [Y/n] y
+Format upgrade done.
+
+<><> Updating repositories ><><><><><><><><><><><><><><><><><><><><><><><><><><>
+[default] synchronised from file:///home/opam/opam-repository
+[01;2m[01;35m2024-11-26 00:25.10 ---> saved as "528399ebab1bbc7510c9a3fb03fab672a82f88b8f523995c24103ac9be7600fb"[0m
+
+[01;34m/home/opam: (run (shell "uname -rs && opam exec -- ocaml -version && opam --version"))[0m
+Linux 5.15.0-126-generic
+The OCaml toplevel, version 4.14.2
+2.1.6
+[01;2m[01;35m2024-11-26 00:25.11 ---> saved as "5120095ad7ce2baccacf98b35af24fbd8f92d0a48edcf264951e46461c57fe31"[0m
+
+[01;34m/home/opam: (env OPAMDOWNLOADJOBS 1)[0m
+
+[01;34m/home/opam: (env OPAMERRLOGLEN 0)[0m
+
+[01;34m/home/opam: (env OPAMSOLVERTIMEOUT 1000)[0m
+
+[01;34m/home/opam: (env OPAMPRECISETRACKING 1)[0m
+
+[01;34m/home/opam: (env CI true)[0m
+
+[01;34m/home/opam: (env OPAM_REPO_CI true)[0m
+
+[01;34m/home/opam: (run (shell "rm -rf opam-repository/"))[0m
+[01;2m[01;35m2024-11-26 00:25.19 ---> saved as "5372bb769bb6f69061a85aacd6dd2a75c6cac3e12d3df440a2ccf4cc2a1d728d"[0m
+
+[01;34m/home/opam: (copy (src .) (dst opam-repository/))[0m
+[01;2m[01;35m2024-11-26 00:25.30 ---> saved as "7a92abf0f0af9800d2d6422df67846187777ac90ecff073eb1c42409531c70d4"[0m
+
+[01;34m/home/opam: (run (shell "opam repository set-url --strict default opam-repository/"))[0m
+[default] Initialised
+[01;2m[01;35m2024-11-26 00:25.53 ---> saved as "5b3a039d39e10ea2d70498292a519561de43c689dbd22f510bf8adbfd1f79884"[0m
+
+[01;34m/home/opam: (run (network host)
+                 (shell "opam update --depexts || true"))[0m
++ /usr/bin/sudo "apt-get" "update"
+- Hit:1 http://deb.debian.org/debian bookworm InRelease
+- Get:2 http://deb.debian.org/debian bookworm-updates InRelease [55.4 kB]
+- Get:3 http://deb.debian.org/debian-security bookworm-security InRelease [48.0 kB]
+- Get:4 http://deb.debian.org/debian-security bookworm-security/main amd64 Packages [205 kB]
+- Fetched 309 kB in 0s (1162 kB/s)
+- Reading package lists...
+- 
+[01;2m[01;35m2024-11-26 00:25.54 ---> saved as "084a243b61dcdceea84c28f9fcc0b2c572a8956dbb8fc0062e60e125b944cc3b"[0m
+
+[01;34m/home/opam: (run (shell "opam pin add -k version -yn ojs-base.0.6.0 0.6.0"))[0m
+ojs-base is now pinned to version 0.6.0
+[01;2m[01;35m2024-11-26 00:25.55 ---> saved as "3cd704ed8ef50f1681023bd6249027df13c62a133569dbe6b30b9bae17d7f0bd"[0m
+
+[01;34m/home/opam: (run (cache (opam-archives (target /home/opam/.opam/download-cache)))
+                 (network host)
+                 (shell  "opam reinstall ojs-base.0.6.0;\
+                        \n        res=$?;\
+                        \n        test \"$res\" != 31 && exit \"$res\";\
+                        \n        export OPAMCLI=2.0;\
+                        \n        build_dir=$(opam var prefix)/.opam-switch/build;\
+                        \n        failed=$(ls \"$build_dir\");\
+                        \n        partial_fails=\"\";\
+                        \n        for pkg in $failed; do\
+                        \n          if opam show -f x-ci-accept-failures: \"$pkg\" | grep -qF \"\\\"debian-12\\\"\"; then\
+                        \n            echo \"A package failed and has been disabled for CI using the 'x-ci-accept-failures' field.\";\
+                        \n          fi;\
+                        \n          test \"$pkg\" != 'ojs-base.0.6.0' && partial_fails=\"$partial_fails $pkg\";\
+                        \n        done;\
+                        \n        test \"${partial_fails}\" != \"\" && echo \"opam-repo-ci detected dependencies failing: ${partial_fails}\";\
+                        \n        exit 1"))[0m
+ojs-base.0.6.0 is not installed. Install it? [Y/n] y
+[ERROR] Sorry, resolution of the request timed out.
+        Try to specify a more precise request, use a different solver, or increase the allowed time by setting OPAMSOLVERTIMEOUT to a bigger value (currently, it is set to 1000.0 seconds).
+"/usr/bin/env" "bash" "-c" "opam reinstall ojs-base.0.6.0;
+        res=$?;
+        test "$res" != 31 && exit "$res";
+        export OPAMCLI=2.0;
+        build_dir=$(opam var prefix)/.opam-switch/build;
+        failed=$(ls "$build_dir");
+        partial_fails="";
+        for pkg in $failed; do
+          if opam show -f x-ci-accept-failures: "$pkg" | grep -qF "\"debian-12\""; then
+            echo "A package failed and has been disabled for CI using the 'x-ci-accept-failures' field.";
+          fi;
+          test "$pkg" != 'ojs-base.0.6.0' && partial_fails="$partial_fails $pkg";
+        done;
+        test "${partial_fails}" != "" && echo "opam-repo-ci detected dependencies failing: ${partial_fails}";
+        exit 1" failed with exit status 60
+2024-11-26 00:43.07: Job failed: Failed: Build failed
+2024-11-26 00:43.07: Log analysis:
+2024-11-26 00:43.07: >>> 
+[ERROR] Sorry, resolution of the request timed out.
+ (score = 20)
+2024-11-26 00:43.07: Sorry, resolution of the request timed out.

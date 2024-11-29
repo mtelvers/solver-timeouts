@@ -1,0 +1,332 @@
+2024-08-28 10:47.29: New job: test melange-json.1.3.0, using opam dev
+                              from https://github.com/ocaml/opam-repository.git#refs/pull/26442/head (80e343a8e70a4ab0849ec278604a854c2ed539ac)
+                              on freebsd-ocaml-4.14/amd64
+
+To reproduce locally:
+
+cd $(mktemp -d)
+git clone --recursive "https://github.com/ocaml/opam-repository.git" && cd "opam-repository" && git fetch origin "refs/pull/26442/head" && git reset --hard 80e343a8
+git fetch origin master
+git merge --no-edit c7fcd25a10a06ad633cc075d08f1590a69f9432d
+cat > ../Dockerfile <<'END-OF-DOCKERFILE'
+[34mFROM freebsd-ocaml-4.14
+USER 1000:1000
+WORKDIR /home/opam
+RUN sudo ln -f /usr/local/bin/opam-dev /usr/local/bin/opam
+RUN opam init --reinit -ni
+RUN uname -rs && opam exec -- ocaml -version && opam --version
+ENV OPAMDOWNLOADJOBS="1"
+ENV OPAMERRLOGLEN="0"
+ENV OPAMSOLVERTIMEOUT="500"
+ENV OPAMPRECISETRACKING="1"
+ENV CI="true"
+ENV OPAM_REPO_CI="true"
+RUN rm -rf opam-repository/
+COPY --chown=1000:1000 . opam-repository/
+RUN opam repository set-url --strict default opam-repository/
+RUN opam update --depexts || true
+RUN opam pin add -k version -yn melange-json.1.3.0 1.3.0
+RUN opam reinstall melange-json.1.3.0; \
+    res=$?; \
+    test "$res" != 31 && exit "$res"; \
+    export OPAMCLI=2.0; \
+    build_dir=$(opam var prefix)/.opam-switch/build; \
+    failed=$(ls "$build_dir"); \
+    partial_fails=""; \
+    for pkg in $failed; do \
+    if opam show -f x-ci-accept-failures: "$pkg" | grep -qF "\"freebsd\""; then \
+    echo "A package failed and has been disabled for CI using the 'x-ci-accept-failures' field."; \
+    fi; \
+    test "$pkg" != 'melange-json.1.3.0' && partial_fails="$partial_fails $pkg"; \
+    done; \
+    test "${partial_fails}" != "" && echo "opam-repo-ci detected dependencies failing: ${partial_fails}"; \
+    exit 1
+RUN (opam reinstall --with-test melange-json.1.3.0) || true
+RUN opam reinstall --with-test --verbose melange-json.1.3.0; \
+    res=$?; \
+    test "$res" != 31 && exit "$res"; \
+    export OPAMCLI=2.0; \
+    build_dir=$(opam var prefix)/.opam-switch/build; \
+    failed=$(ls "$build_dir"); \
+    partial_fails=""; \
+    for pkg in $failed; do \
+    if opam show -f x-ci-accept-failures: "$pkg" | grep -qF "\"freebsd\""; then \
+    echo "A package failed and has been disabled for CI using the 'x-ci-accept-failures' field."; \
+    fi; \
+    test "$pkg" != 'melange-json.1.3.0' && partial_fails="$partial_fails $pkg"; \
+    done; \
+    test "${partial_fails}" != "" && echo "opam-repo-ci detected dependencies failing: ${partial_fails}"; \
+    exit 1
+[0m
+END-OF-DOCKERFILE
+docker build -f ../Dockerfile .
+
+2024-08-28 10:47.29: Using cache hint "freebsd-ocaml-4.14-melange-json.1.3.0-80e343a8e70a4ab0849ec278604a854c2ed539ac"
+2024-08-28 10:47.29: Using OBuilder spec:
+((from freebsd-ocaml-4.14)
+ (user (uid 1000) (gid 1000))
+ (workdir /home/opam)
+ (run (shell "sudo ln -f /usr/local/bin/opam-dev /usr/local/bin/opam"))
+ (run (network host)
+      (shell "opam init --reinit -ni"))
+ (run (shell "uname -rs && opam exec -- ocaml -version && opam --version"))
+ (env OPAMDOWNLOADJOBS 1)
+ (env OPAMERRLOGLEN 0)
+ (env OPAMSOLVERTIMEOUT 500)
+ (env OPAMPRECISETRACKING 1)
+ (env CI true)
+ (env OPAM_REPO_CI true)
+ (run (shell "rm -rf opam-repository/"))
+ (copy (src .) (dst opam-repository/))
+ (run (shell "opam repository set-url --strict default opam-repository/"))
+ (run (network host)
+      (shell "opam update --depexts || true"))
+ (run (shell "opam pin add -k version -yn melange-json.1.3.0 1.3.0"))
+ (run (cache (opam-archives (target /home/opam/.opam/download-cache)))
+      (network host)
+      (shell  "opam reinstall melange-json.1.3.0;\
+             \n        res=$?;\
+             \n        test \"$res\" != 31 && exit \"$res\";\
+             \n        export OPAMCLI=2.0;\
+             \n        build_dir=$(opam var prefix)/.opam-switch/build;\
+             \n        failed=$(ls \"$build_dir\");\
+             \n        partial_fails=\"\";\
+             \n        for pkg in $failed; do\
+             \n          if opam show -f x-ci-accept-failures: \"$pkg\" | grep -qF \"\\\"freebsd\\\"\"; then\
+             \n            echo \"A package failed and has been disabled for CI using the 'x-ci-accept-failures' field.\";\
+             \n          fi;\
+             \n          test \"$pkg\" != 'melange-json.1.3.0' && partial_fails=\"$partial_fails $pkg\";\
+             \n        done;\
+             \n        test \"${partial_fails}\" != \"\" && echo \"opam-repo-ci detected dependencies failing: ${partial_fails}\";\
+             \n        exit 1"))
+ (run (network host)
+      (shell "(opam reinstall --with-test melange-json.1.3.0) || true"))
+ (run (shell  "opam reinstall --with-test --verbose melange-json.1.3.0;\
+             \n        res=$?;\
+             \n        test \"$res\" != 31 && exit \"$res\";\
+             \n        export OPAMCLI=2.0;\
+             \n        build_dir=$(opam var prefix)/.opam-switch/build;\
+             \n        failed=$(ls \"$build_dir\");\
+             \n        partial_fails=\"\";\
+             \n        for pkg in $failed; do\
+             \n          if opam show -f x-ci-accept-failures: \"$pkg\" | grep -qF \"\\\"freebsd\\\"\"; then\
+             \n            echo \"A package failed and has been disabled for CI using the 'x-ci-accept-failures' field.\";\
+             \n          fi;\
+             \n          test \"$pkg\" != 'melange-json.1.3.0' && partial_fails=\"$partial_fails $pkg\";\
+             \n        done;\
+             \n        test \"${partial_fails}\" != \"\" && echo \"opam-repo-ci detected dependencies failing: ${partial_fails}\";\
+             \n        exit 1"))
+)
+
+2024-08-28 10:47.29: Waiting for resource in pool OCluster
+2024-08-28 10:47.30: Waiting for worker…
+2024-08-28 10:47.30: Got resource from pool OCluster
+Building on summer
+All commits already cached
+Updating files: 100% (32048/32048), done.
+HEAD is now at c7fcd25a10 Merge pull request #26445 from mseri/fix-double-available
+Merge made by the 'ort' strategy.
+ .../melange-json-native.1.3.0/opam                 | 42 +++++++++++++++++++
+ packages/melange-json/melange-json.1.3.0/opam      | 47 ++++++++++++++++++++++
+ 2 files changed, 89 insertions(+)
+ create mode 100644 packages/melange-json-native/melange-json-native.1.3.0/opam
+ create mode 100644 packages/melange-json/melange-json.1.3.0/opam
+
+[01;34m(from freebsd-ocaml-4.14)[0m
+[01;2m[01;35m2024-08-28 10:39.01 ---> using "57eeeabfec88366322a66f228a693df277d348dc99f1cc2a63749102c5e1e405" from cache[0m
+
+[01;34m/: (user (uid 1000) (gid 1000))[0m
+
+[01;34m/: (workdir /home/opam)[0m
+
+[01;34m/home/opam: (run (shell "sudo ln -f /usr/local/bin/opam-dev /usr/local/bin/opam"))[0m
+[01;2m[01;35m2024-08-28 10:39.01 ---> using "85d5eb985f2262919a26a9cdcf048ce0967ef341a4c5d41a4d1a47b077ffa8eb" from cache[0m
+
+[01;34m/home/opam: (run (network host)
+                 (shell "opam init --reinit -ni"))[0m
+No configuration file found, using built-in defaults.
+Checking for available remotes: rsync and local, git.
+  - you won't be able to use mercurial repositories unless you install the hg command on your system.
+  - you won't be able to use darcs repositories unless you install the darcs command on your system.
+
+This version of opam requires an update to the layout of /home/opam/.opam from version 2.1 to version 2.2, which can't be reverted.
+You may want to back it up before going further.
+
+Continue? [y/n] y
+[NOTE] The 'jobs' option was reset, its value was 1 and its new value will vary according to the current number of cores on your machine. You can restore the fixed value using:
+           opam option jobs=1 --global
+Format upgrade done.
+
+<><> Updating repositories ><><><><><><><><><><><><><><><><><><><><><><><><><><>
+[default] no changes from git+file:///home/opam/opam-repository
+[01;2m[01;35m2024-08-28 10:39.01 ---> using "08e4174ad8cc33ff0dffef40dd5755acd4c7df1ee65b0d98f918f8851b0422be" from cache[0m
+
+[01;34m/home/opam: (run (shell "uname -rs && opam exec -- ocaml -version && opam --version"))[0m
+FreeBSD 14.0-RELEASE-p6
+The OCaml toplevel, version 4.14.2
+2.2.0
+[01;2m[01;35m2024-08-28 10:39.01 ---> using "a624c9a56a657e8f7944ca7b5e274913c647764382db65f778e1fb6ea0cbf8b9" from cache[0m
+
+[01;34m/home/opam: (env OPAMDOWNLOADJOBS 1)[0m
+
+[01;34m/home/opam: (env OPAMERRLOGLEN 0)[0m
+
+[01;34m/home/opam: (env OPAMSOLVERTIMEOUT 500)[0m
+
+[01;34m/home/opam: (env OPAMPRECISETRACKING 1)[0m
+
+[01;34m/home/opam: (env CI true)[0m
+
+[01;34m/home/opam: (env OPAM_REPO_CI true)[0m
+
+[01;34m/home/opam: (run (shell "rm -rf opam-repository/"))[0m
+[01;2m[01;35m2024-08-28 10:39.02 ---> using "7664227bcddc9f07a15b72213897bcf0575250f735d1bc45966bada674a472ca" from cache[0m
+
+[01;34m/home/opam: (copy (src .) (dst opam-repository/))[0m
+[01;2m[01;35m2024-08-28 10:39.16 ---> saved as "ac1a22190b270215de2fa8f3eadedc21f3437c2b9010b9d8ba6bd06c10221daa"[0m
+
+[01;34m/home/opam: (run (shell "opam repository set-url --strict default opam-repository/"))[0m
+[default] Initialised
+default (at file:///home/opam/opam-repository): 
+    [WARNING] opam %{opam-version}% is out-of-date. Please consider updating it (https://opam.ocaml.org/doc/Install.html)
+
+[01;2m[01;35m2024-08-28 10:39.47 ---> saved as "adb93ce808423bd7b14997a00ef9c8486a62c4eeae2aa9d15c66b81f6bdd9096"[0m
+
+[01;34m/home/opam: (run (network host)
+                 (shell "opam update --depexts || true"))[0m
+[WARNING] Unknown update command for bsd, skipping system update
+[01;2m[01;35m2024-08-28 10:39.47 ---> saved as "0d594ec2a82b4cfeedf0f5c2b91a4d156d39cdd6c8060531e205af1b3c1e56a8"[0m
+
+[01;34m/home/opam: (run (shell "opam pin add -k version -yn melange-json.1.3.0 1.3.0"))[0m
+melange-json is now pinned to version 1.3.0
+[01;2m[01;35m2024-08-28 10:39.48 ---> saved as "f9262181504fadb3853e6bce727b4932f55d421603064568510642a83aba6524"[0m
+
+[01;34m/home/opam: (run (cache (opam-archives (target /home/opam/.opam/download-cache)))
+                 (network host)
+                 (shell  "opam reinstall melange-json.1.3.0;\
+                        \n        res=$?;\
+                        \n        test \"$res\" != 31 && exit \"$res\";\
+                        \n        export OPAMCLI=2.0;\
+                        \n        build_dir=$(opam var prefix)/.opam-switch/build;\
+                        \n        failed=$(ls \"$build_dir\");\
+                        \n        partial_fails=\"\";\
+                        \n        for pkg in $failed; do\
+                        \n          if opam show -f x-ci-accept-failures: \"$pkg\" | grep -qF \"\\\"freebsd\\\"\"; then\
+                        \n            echo \"A package failed and has been disabled for CI using the 'x-ci-accept-failures' field.\";\
+                        \n          fi;\
+                        \n          test \"$pkg\" != 'melange-json.1.3.0' && partial_fails=\"$partial_fails $pkg\";\
+                        \n        done;\
+                        \n        test \"${partial_fails}\" != \"\" && echo \"opam-repo-ci detected dependencies failing: ${partial_fails}\";\
+                        \n        exit 1"))[0m
+melange-json.1.3.0 is not installed. Install it? [y/n] y
+The following actions will be performed:
+=== install 15 packages
+  ∗ cmdliner            1.3.0          [required by melange]
+  ∗ cppo                1.6.9          [required by melange]
+  ∗ dune                3.16.0         [required by melange-json]
+  ∗ dune-build-info     3.16.0         [required by melange]
+  ∗ melange             4.0.0-414      [required by melange-json]
+  ∗ melange-json        1.3.0 (pinned)
+  ∗ menhir              20240715       [required by melange]
+  ∗ menhirCST           20240715       [required by menhir]
+  ∗ menhirLib           20240715       [required by menhir]
+  ∗ menhirSdk           20240715       [required by menhir]
+  ∗ ocaml-compiler-libs v0.12.4        [required by ppxlib]
+  ∗ ppx_derivers        1.2.1          [required by ppxlib]
+  ∗ ppxlib              0.33.0         [required by melange-json]
+  ∗ sexplib0            v0.17.0        [required by ppxlib]
+  ∗ stdlib-shims        0.3.0          [required by ppxlib]
+
+<><> Processing actions <><><><><><><><><><><><><><><><><><><><><><><><><><><><>
+⬇ retrieved cmdliner.1.3.0  (cached)
+⬇ retrieved cppo.1.6.9  (cached)
+⬇ retrieved dune.3.16.0, dune-build-info.3.16.0  (cached)
+⬇ retrieved melange.4.0.0-414  (cached)
+∗ installed cmdliner.1.3.0
+⬇ retrieved melange-json.1.3.0  (cached)
+⬇ retrieved menhir.20240715, menhirCST.20240715, menhirLib.20240715, menhirSdk.20240715  (cached)
+⬇ retrieved ocaml-compiler-libs.v0.12.4  (cached)
+⬇ retrieved ppx_derivers.1.2.1  (cached)
+⬇ retrieved ppxlib.0.33.0  (cached)
+⬇ retrieved sexplib0.v0.17.0  (cached)
+⬇ retrieved stdlib-shims.0.3.0  (cached)
+∗ installed dune.3.16.0
+∗ installed menhirCST.20240715
+∗ installed cppo.1.6.9
+∗ installed ppx_derivers.1.2.1
+∗ installed stdlib-shims.0.3.0
+∗ installed menhirLib.20240715
+∗ installed menhirSdk.20240715
+∗ installed dune-build-info.3.16.0
+∗ installed sexplib0.v0.17.0
+∗ installed ocaml-compiler-libs.v0.12.4
+∗ installed menhir.20240715
+∗ installed ppxlib.0.33.0
+∗ installed melange.4.0.0-414
+∗ installed melange-json.1.3.0
+Done.
+[01;2m[01;35m2024-08-28 10:41.45 ---> saved as "a6831732a168b16e0b7b4fbf8aab724a3eea2ade2c6a1131dee76e55fd29b0ce"[0m
+
+[01;34m/home/opam: (run (network host)
+                 (shell "(opam reinstall --with-test melange-json.1.3.0) || true"))[0m
+[ERROR] Sorry, resolution of the request timed out.
+        Try to specify a more precise request, use a different solver, or increase the allowed time by setting OPAMSOLVERTIMEOUT to a bigger value (currently, it is set to 500.0 seconds).
+[01;2m[01;35m2024-08-28 10:50.20 ---> saved as "61f946aa14953e258c5bde734eb76ded3d4d562a2d87123c2beab6342ca07a48"[0m
+
+[01;34m/home/opam: (run (shell  "opam reinstall --with-test --verbose melange-json.1.3.0;\
+                        \n        res=$?;\
+                        \n        test \"$res\" != 31 && exit \"$res\";\
+                        \n        export OPAMCLI=2.0;\
+                        \n        build_dir=$(opam var prefix)/.opam-switch/build;\
+                        \n        failed=$(ls \"$build_dir\");\
+                        \n        partial_fails=\"\";\
+                        \n        for pkg in $failed; do\
+                        \n          if opam show -f x-ci-accept-failures: \"$pkg\" | grep -qF \"\\\"freebsd\\\"\"; then\
+                        \n            echo \"A package failed and has been disabled for CI using the 'x-ci-accept-failures' field.\";\
+                        \n          fi;\
+                        \n          test \"$pkg\" != 'melange-json.1.3.0' && partial_fails=\"$partial_fails $pkg\";\
+                        \n        done;\
+                        \n        test \"${partial_fails}\" != \"\" && echo \"opam-repo-ci detected dependencies failing: ${partial_fails}\";\
+                        \n        exit 1"))[0m
+[ERROR] Sorry, resolution of the request timed out.
+        Try to specify a more precise request, use a different solver, or increase the allowed time by setting OPAMSOLVERTIMEOUT to a bigger value (currently, it is set to 500.0 seconds).
+'opam reinstall --with-test --verbose melange-json.1.3.0' failed.
+jail: /usr/bin/su -l opam -c cd '/home/opam' && env OPAM_REPO_CI='true' CI='true' OPAMPRECISETRACKING='1' OPAMSOLVERTIMEOUT='500' OPAMERRLOGLEN='0' OPAMDOWNLOADJOBS='1' '/usr/bin/env' 'bash' '-c' 'opam reinstall --with-test --verbose melange-json.1.3.0;
+        res=$?;
+        test "$res" != 31 && exit "$res";
+        export OPAMCLI=2.0;
+        build_dir=$(opam var prefix)/.opam-switch/build;
+        failed=$(ls "$build_dir");
+        partial_fails="";
+        for pkg in $failed; do
+          if opam show -f x-ci-accept-failures: "$pkg" | grep -qF "\"freebsd\""; then
+            echo "A package failed and has been disabled for CI using the '\''x-ci-accept-failures'\'' field.";
+          fi;
+          test "$pkg" != '\''melange-json.1.3.0'\'' && partial_fails="$partial_fails $pkg";
+        done;
+        test "${partial_fails}" != "" && echo "opam-repo-ci detected dependencies failing: ${partial_fails}";
+        exit 1': failed
+"jail" "-c" "name=obuilder_708_10604" "mount.devfs" "path=/obuilder/result/ec8a012c64c4aec6b80469f0dfc806022550c1fb9483f5a8bdcbf1a60ce6919e/rootfs" "vnet" "exec.start=/sbin/ifconfig lo0 127.0.0.1/8" "command=/usr/bin/su" "-l" "opam" "-c" "cd '/home/opam' && env OPAM_REPO_CI='true' CI='true' OPAMPRECISETRACKING='1' OPAMSOLVERTIMEOUT='500' OPAMERRLOGLEN='0' OPAMDOWNLOADJOBS='1' '/usr/bin/env' 'bash' '-c' 'opam reinstall --with-test --verbose melange-json.1.3.0;
+        res=$?;
+        test "$res" != 31 && exit "$res";
+        export OPAMCLI=2.0;
+        build_dir=$(opam var prefix)/.opam-switch/build;
+        failed=$(ls "$build_dir");
+        partial_fails="";
+        for pkg in $failed; do
+          if opam show -f x-ci-accept-failures: "$pkg" | grep -qF "\"freebsd\""; then
+            echo "A package failed and has been disabled for CI using the '\''x-ci-accept-failures'\'' field.";
+          fi;
+          test "$pkg" != '\''melange-json.1.3.0'\'' && partial_fails="$partial_fails $pkg";
+        done;
+        test "${partial_fails}" != "" && echo "opam-repo-ci detected dependencies failing: ${partial_fails}";
+        exit 1'" failed with exit status 1
+2024-08-28 11:07.58: Job failed: Failed: Build failed
+2024-08-28 11:07.58: Log analysis:
+2024-08-28 11:07.58: >>> 
+[ERROR] Sorry, resolution of the request timed out.
+ (score = 20)
+2024-08-28 11:07.58: >>> 
+[ERROR] Sorry, resolution of the request timed out.
+ (score = 20)
+2024-08-28 11:07.58: Sorry, resolution of the request timed out.

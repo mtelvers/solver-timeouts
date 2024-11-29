@@ -1,0 +1,294 @@
+2024-07-27 19:38.21: New job: test spotify_ml.0.0.2, using opam 2.0
+                              from https://github.com/ocaml/opam-repository.git#refs/pull/26298/head (ae05ce139e838834e10b87dbae2ac8ce3728fb6f)
+                              on debian-12-ocaml-5.2/amd64
+
+To reproduce locally:
+
+cd $(mktemp -d)
+git clone --recursive "https://github.com/ocaml/opam-repository.git" && cd "opam-repository" && git fetch origin "refs/pull/26298/head" && git reset --hard ae05ce13
+git fetch origin master
+git merge --no-edit eceb4d83610133a48b62daa36665ce1292646561
+cat > ../Dockerfile <<'END-OF-DOCKERFILE'
+[34mFROM ocaml/opam:debian-12-ocaml-5.2@sha256:845d44986b08213375f74851339e1d0f6ba909bd6e926af00d7368c0b831816c
+USER 1000:1000
+WORKDIR /home/opam
+RUN sudo ln -f /usr/bin/opam-2.0 /usr/bin/opam
+RUN opam init --reinit -ni
+RUN uname -rs && opam exec -- ocaml -version && opam --version
+ENV OPAMDOWNLOADJOBS="1"
+ENV OPAMERRLOGLEN="0"
+ENV OPAMSOLVERTIMEOUT="500"
+ENV OPAMPRECISETRACKING="1"
+ENV CI="true"
+ENV OPAM_REPO_CI="true"
+RUN rm -rf opam-repository/
+COPY --chown=1000:1000 . opam-repository/
+RUN opam repository set-url --strict default opam-repository/
+RUN opam depext -u || true
+RUN opam pin add -k version -yn spotify_ml.0.0.2 0.0.2
+RUN opam depext spotify_ml.0.0.2 && opam reinstall spotify_ml.0.0.2; \
+    res=$?; \
+    test "$res" != 31 && exit "$res"; \
+    export OPAMCLI=2.0; \
+    build_dir=$(opam var prefix)/.opam-switch/build; \
+    failed=$(ls "$build_dir"); \
+    partial_fails=""; \
+    for pkg in $failed; do \
+    if opam show -f x-ci-accept-failures: "$pkg" | grep -qF "\"debian-12\""; then \
+    echo "A package failed and has been disabled for CI using the 'x-ci-accept-failures' field."; \
+    fi; \
+    test "$pkg" != 'spotify_ml.0.0.2' && partial_fails="$partial_fails $pkg"; \
+    done; \
+    test "${partial_fails}" != "" && echo "opam-repo-ci detected dependencies failing: ${partial_fails}"; \
+    exit 1
+RUN (opam depext --with-test spotify_ml.0.0.2 && opam reinstall --with-test spotify_ml.0.0.2) || true
+RUN opam depext --with-test spotify_ml.0.0.2 && opam reinstall --with-test --verbose spotify_ml.0.0.2; \
+    res=$?; \
+    test "$res" != 31 && exit "$res"; \
+    export OPAMCLI=2.0; \
+    build_dir=$(opam var prefix)/.opam-switch/build; \
+    failed=$(ls "$build_dir"); \
+    partial_fails=""; \
+    for pkg in $failed; do \
+    if opam show -f x-ci-accept-failures: "$pkg" | grep -qF "\"debian-12\""; then \
+    echo "A package failed and has been disabled for CI using the 'x-ci-accept-failures' field."; \
+    fi; \
+    test "$pkg" != 'spotify_ml.0.0.2' && partial_fails="$partial_fails $pkg"; \
+    done; \
+    test "${partial_fails}" != "" && echo "opam-repo-ci detected dependencies failing: ${partial_fails}"; \
+    exit 1
+[0m
+END-OF-DOCKERFILE
+docker build -f ../Dockerfile .
+
+2024-07-27 19:38.21: Using cache hint "ocaml/opam:debian-12-ocaml-5.2@sha256:845d44986b08213375f74851339e1d0f6ba909bd6e926af00d7368c0b831816c-spotify_ml.0.0.2-ae05ce139e838834e10b87dbae2ac8ce3728fb6f"
+2024-07-27 19:38.21: Using OBuilder spec:
+((from ocaml/opam:debian-12-ocaml-5.2@sha256:845d44986b08213375f74851339e1d0f6ba909bd6e926af00d7368c0b831816c)
+ (user (uid 1000) (gid 1000))
+ (workdir /home/opam)
+ (run (shell "sudo ln -f /usr/bin/opam-2.0 /usr/bin/opam"))
+ (run (network host)
+      (shell "opam init --reinit --config .opamrc-sandbox -ni"))
+ (run (shell "uname -rs && opam exec -- ocaml -version && opam --version"))
+ (env OPAMDOWNLOADJOBS 1)
+ (env OPAMERRLOGLEN 0)
+ (env OPAMSOLVERTIMEOUT 500)
+ (env OPAMPRECISETRACKING 1)
+ (env CI true)
+ (env OPAM_REPO_CI true)
+ (run (shell "rm -rf opam-repository/"))
+ (copy (src .) (dst opam-repository/))
+ (run (shell "opam repository set-url --strict default opam-repository/"))
+ (run (network host)
+      (shell "opam depext -u || true"))
+ (run (shell "opam pin add -k version -yn spotify_ml.0.0.2 0.0.2"))
+ (run (cache (opam-archives (target /home/opam/.opam/download-cache)))
+      (network host)
+      (shell  "opam depext spotify_ml.0.0.2 && opam reinstall spotify_ml.0.0.2;\
+             \n        res=$?;\
+             \n        test \"$res\" != 31 && exit \"$res\";\
+             \n        export OPAMCLI=2.0;\
+             \n        build_dir=$(opam var prefix)/.opam-switch/build;\
+             \n        failed=$(ls \"$build_dir\");\
+             \n        partial_fails=\"\";\
+             \n        for pkg in $failed; do\
+             \n          if opam show -f x-ci-accept-failures: \"$pkg\" | grep -qF \"\\\"debian-12\\\"\"; then\
+             \n            echo \"A package failed and has been disabled for CI using the 'x-ci-accept-failures' field.\";\
+             \n          fi;\
+             \n          test \"$pkg\" != 'spotify_ml.0.0.2' && partial_fails=\"$partial_fails $pkg\";\
+             \n        done;\
+             \n        test \"${partial_fails}\" != \"\" && echo \"opam-repo-ci detected dependencies failing: ${partial_fails}\";\
+             \n        exit 1"))
+ (run (network host)
+      (shell "(opam depext --with-test spotify_ml.0.0.2 && opam reinstall --with-test spotify_ml.0.0.2) || true"))
+ (run (shell  "opam depext --with-test spotify_ml.0.0.2 && opam reinstall --with-test --verbose spotify_ml.0.0.2;\
+             \n        res=$?;\
+             \n        test \"$res\" != 31 && exit \"$res\";\
+             \n        export OPAMCLI=2.0;\
+             \n        build_dir=$(opam var prefix)/.opam-switch/build;\
+             \n        failed=$(ls \"$build_dir\");\
+             \n        partial_fails=\"\";\
+             \n        for pkg in $failed; do\
+             \n          if opam show -f x-ci-accept-failures: \"$pkg\" | grep -qF \"\\\"debian-12\\\"\"; then\
+             \n            echo \"A package failed and has been disabled for CI using the 'x-ci-accept-failures' field.\";\
+             \n          fi;\
+             \n          test \"$pkg\" != 'spotify_ml.0.0.2' && partial_fails=\"$partial_fails $pkg\";\
+             \n        done;\
+             \n        test \"${partial_fails}\" != \"\" && echo \"opam-repo-ci detected dependencies failing: ${partial_fails}\";\
+             \n        exit 1"))
+)
+
+2024-07-27 19:38.21: Waiting for resource in pool OCluster
+2024-07-27 19:38.21: Waiting for worker…
+2024-07-27 19:38.21: Got resource from pool OCluster
+Building on x86-bm-c11.sw.ocaml.org
+All commits already cached
+Updating files:  46% (14717/31878)Updating files:  47% (14983/31878)Updating files:  48% (15302/31878)Updating files:  49% (15621/31878)Updating files:  50% (15939/31878)Updating files:  51% (16258/31878)Updating files:  52% (16577/31878)Updating files:  53% (16896/31878)Updating files:  54% (17215/31878)Updating files:  55% (17533/31878)Updating files:  56% (17852/31878)Updating files:  57% (18171/31878)Updating files:  58% (18490/31878)Updating files:  59% (18809/31878)Updating files:  60% (19127/31878)Updating files:  61% (19446/31878)Updating files:  62% (19765/31878)Updating files:  63% (20084/31878)Updating files:  64% (20402/31878)Updating files:  65% (20721/31878)Updating files:  66% (21040/31878)Updating files:  67% (21359/31878)Updating files:  68% (21678/31878)Updating files:  69% (21996/31878)Updating files:  70% (22315/31878)Updating files:  71% (22634/31878)Updating files:  72% (22953/31878)Updating files:  73% (23271/31878)Updating files:  74% (23590/31878)Updating files:  75% (23909/31878)Updating files:  76% (24228/31878)Updating files:  77% (24547/31878)Updating files:  78% (24865/31878)Updating files:  79% (25184/31878)Updating files:  80% (25503/31878)Updating files:  81% (25822/31878)Updating files:  82% (26140/31878)Updating files:  83% (26459/31878)Updating files:  84% (26778/31878)Updating files:  85% (27097/31878)Updating files:  86% (27416/31878)Updating files:  87% (27734/31878)Updating files:  88% (28053/31878)Updating files:  88% (28113/31878)Updating files:  89% (28372/31878)Updating files:  90% (28691/31878)Updating files:  91% (29009/31878)Updating files:  92% (29328/31878)Updating files:  93% (29647/31878)Updating files:  94% (29966/31878)Updating files:  95% (30285/31878)Updating files:  96% (30603/31878)Updating files:  97% (30922/31878)Updating files:  98% (31241/31878)Updating files:  99% (31560/31878)Updating files: 100% (31878/31878)Updating files: 100% (31878/31878), done.
+HEAD is now at eceb4d8361 Merge pull request #26272 from zapashcanon/master
+Updating eceb4d8361..ae05ce139e
+Fast-forward
+ packages/spotify_ml/spotify_ml.0.0.2/opam | 44 +++++++++++++++++++++++++++++++
+ 1 file changed, 44 insertions(+)
+ create mode 100644 packages/spotify_ml/spotify_ml.0.0.2/opam
+
+[01;34m(from ocaml/opam:debian-12-ocaml-5.2@sha256:845d44986b08213375f74851339e1d0f6ba909bd6e926af00d7368c0b831816c)[0m
+Unable to find image 'ocaml/opam:debian-12-ocaml-5.2@sha256:845d44986b08213375f74851339e1d0f6ba909bd6e926af00d7368c0b831816c' locally
+docker.io/ocaml/opam@sha256:845d44986b08213375f74851339e1d0f6ba909bd6e926af00d7368c0b831816c: Pulling from ocaml/opam
+0b289a00eb4e: Pulling fs layer
+0b289a00eb4e: Verifying Checksum
+0b289a00eb4e: Download complete
+0b289a00eb4e: Pull complete
+Digest: sha256:845d44986b08213375f74851339e1d0f6ba909bd6e926af00d7368c0b831816c
+Status: Downloaded newer image for ocaml/opam@sha256:845d44986b08213375f74851339e1d0f6ba909bd6e926af00d7368c0b831816c
+[01;2m[01;35m2024-07-27 19:37.53 ---> using "485a6de1674a3786cf38a8f1e18154b8fa465b09f645546f9fbb8975c7ccea01" from cache[0m
+
+[01;34m/: (user (uid 1000) (gid 1000))[0m
+
+[01;34m/: (workdir /home/opam)[0m
+
+[01;34m/home/opam: (run (shell "sudo ln -f /usr/bin/opam-2.0 /usr/bin/opam"))[0m
+[01;2m[01;35m2024-07-27 19:37.53 ---> using "5a8ff41d74910044958fa9ec9077b591dc33166ebeb0dcf56745ce4ce3d0f10b" from cache[0m
+
+[01;34m/home/opam: (run (network host)
+                 (shell "opam init --reinit --config .opamrc-sandbox -ni"))[0m
+[NOTE] Will configure from /home/opam/.opamrc-sandbox, then /home/opam/.opamrc, and finally from built-in defaults.
+Checking for available remotes: rsync and local, git.
+  - you won't be able to use mercurial repositories unless you install the hg command on your system.
+  - you won't be able to use darcs repositories unless you install the darcs command on your system.
+
+[WARNING] Recommended dependencies -- most packages rely on these:
+  - m4
+
+<><> Updating repositories ><><><><><><><><><><><><><><><><><><><><><><><><><><>
+[default] synchronised from file:///home/opam/opam-repository
+default (at file:///home/opam/opam-repository): 
+    [INFO] opam 2.1 and 2.2 include many performance improvements over 2.0; please consider upgrading (https://opam.ocaml.org/doc/Install.html)
+
+[01;2m[01;35m2024-07-27 19:37.53 ---> using "9f4d035bd4caf620c65d631f7918621461f4125cb72a22f6081cec15a597b250" from cache[0m
+
+[01;34m/home/opam: (run (shell "uname -rs && opam exec -- ocaml -version && opam --version"))[0m
+Linux 5.15.0-117-generic
+The OCaml toplevel, version 5.2.0
+2.0.10
+[01;2m[01;35m2024-07-27 19:37.53 ---> using "eb6ea5d466c1b833636b5cd655347ed43d0b8955d8ad1f6c027fcd656a155a8c" from cache[0m
+
+[01;34m/home/opam: (env OPAMDOWNLOADJOBS 1)[0m
+
+[01;34m/home/opam: (env OPAMERRLOGLEN 0)[0m
+
+[01;34m/home/opam: (env OPAMSOLVERTIMEOUT 500)[0m
+
+[01;34m/home/opam: (env OPAMPRECISETRACKING 1)[0m
+
+[01;34m/home/opam: (env CI true)[0m
+
+[01;34m/home/opam: (env OPAM_REPO_CI true)[0m
+
+[01;34m/home/opam: (run (shell "rm -rf opam-repository/"))[0m
+[01;2m[01;35m2024-07-27 19:37.53 ---> using "55df45a68685bffc35d7e42c5e3be1ae6e6b19cf78c7e159a7b8cb610e3f2728" from cache[0m
+
+[01;34m/home/opam: (copy (src .) (dst opam-repository/))[0m
+[01;2m[01;35m2024-07-27 19:37.55 ---> using "9ff37ebc9665740c6ee59e7f23cd693e708318e264c6827bdec36a36b5dfb7dd" from cache[0m
+
+[01;34m/home/opam: (run (shell "opam repository set-url --strict default opam-repository/"))[0m
+[default] Initialised
+default (at file:///home/opam/opam-repository): 
+    [INFO] opam 2.1 and 2.2 include many performance improvements over 2.0; please consider upgrading (https://opam.ocaml.org/doc/Install.html)
+
+[01;2m[01;35m2024-07-27 19:37.55 ---> using "f9907332e3b61329e8968809cad5e3000525702689e97f743e591a074526dcca" from cache[0m
+
+[01;34m/home/opam: (run (network host)
+                 (shell "opam depext -u || true"))[0m
+# Detecting depexts using vars: arch=x86_64, os=linux, os-distribution=debian, os-family=debian
+# No extra OS packages requirements found.
+# All required OS packages found.
+The following command needs to be run through "sudo":
+    apt-get update
+Hit:1 http://deb.debian.org/debian bookworm InRelease
+Get:2 http://deb.debian.org/debian bookworm-updates InRelease [55.4 kB]
+Get:3 http://deb.debian.org/debian-security bookworm-security InRelease [48.0 kB]
+Get:4 http://deb.debian.org/debian-security bookworm-security/main amd64 Packages [169 kB]
+Fetched 272 kB in 0s (959 kB/s)
+Reading package lists...
+# OS package update successful
+[01;2m[01;35m2024-07-27 19:37.56 ---> using "da76933842a5a216311dc8974db435c681e175503cdb940027f2c209098657ce" from cache[0m
+
+[01;34m/home/opam: (run (shell "opam pin add -k version -yn spotify_ml.0.0.2 0.0.2"))[0m
+spotify_ml is now pinned to version 0.0.2
+[01;2m[01;35m2024-07-27 19:37.56 ---> using "03d02583966030d37c964199af8b04a6b5000b4028d4ae6099118c52cb979e64" from cache[0m
+
+[01;34m/home/opam: (run (cache (opam-archives (target /home/opam/.opam/download-cache)))
+                 (network host)
+                 (shell  "opam depext spotify_ml.0.0.2 && opam reinstall spotify_ml.0.0.2;\
+                        \n        res=$?;\
+                        \n        test \"$res\" != 31 && exit \"$res\";\
+                        \n        export OPAMCLI=2.0;\
+                        \n        build_dir=$(opam var prefix)/.opam-switch/build;\
+                        \n        failed=$(ls \"$build_dir\");\
+                        \n        partial_fails=\"\";\
+                        \n        for pkg in $failed; do\
+                        \n          if opam show -f x-ci-accept-failures: \"$pkg\" | grep -qF \"\\\"debian-12\\\"\"; then\
+                        \n            echo \"A package failed and has been disabled for CI using the 'x-ci-accept-failures' field.\";\
+                        \n          fi;\
+                        \n          test \"$pkg\" != 'spotify_ml.0.0.2' && partial_fails=\"$partial_fails $pkg\";\
+                        \n        done;\
+                        \n        test \"${partial_fails}\" != \"\" && echo \"opam-repo-ci detected dependencies failing: ${partial_fails}\";\
+                        \n        exit 1"))[0m
+# Detecting depexts using vars: arch=x86_64, os=linux, os-distribution=debian, os-family=debian
+# The following system packages are needed:
+libgmp-dev
+pkg-config
+The following command needs to be run through "sudo":
+    apt-get install -qq -yy libgmp-dev pkg-config
+debconf: delaying package configuration, since apt-utils is not installed
+Selecting previously unselected package libgmpxx4ldbl:amd64.
+(Reading database ... (Reading database ... 5%(Reading database ... 10%(Reading database ... 15%(Reading database ... 20%(Reading database ... 25%(Reading database ... 30%(Reading database ... 35%(Reading database ... 40%(Reading database ... 45%(Reading database ... 50%(Reading database ... 55%(Reading database ... 60%(Reading database ... 65%(Reading database ... 70%(Reading database ... 75%(Reading database ... 80%(Reading database ... 85%(Reading database ... 90%(Reading database ... 95%(Reading database ... 100%(Reading database ... 18765 files and directories currently installed.)
+Preparing to unpack .../0-libgmpxx4ldbl_2%3a6.2.1+dfsg1-1.1_amd64.deb ...
+Unpacking libgmpxx4ldbl:amd64 (2:6.2.1+dfsg1-1.1) ...
+Selecting previously unselected package libgmp-dev:amd64.
+Preparing to unpack .../1-libgmp-dev_2%3a6.2.1+dfsg1-1.1_amd64.deb ...
+Unpacking libgmp-dev:amd64 (2:6.2.1+dfsg1-1.1) ...
+Selecting previously unselected package libpkgconf3:amd64.
+Preparing to unpack .../2-libpkgconf3_1.8.1-1_amd64.deb ...
+Unpacking libpkgconf3:amd64 (1.8.1-1) ...
+Selecting previously unselected package pkgconf-bin.
+Preparing to unpack .../3-pkgconf-bin_1.8.1-1_amd64.deb ...
+Unpacking pkgconf-bin (1.8.1-1) ...
+Selecting previously unselected package pkgconf:amd64.
+Preparing to unpack .../4-pkgconf_1.8.1-1_amd64.deb ...
+Unpacking pkgconf:amd64 (1.8.1-1) ...
+Selecting previously unselected package pkg-config:amd64.
+Preparing to unpack .../5-pkg-config_1.8.1-1_amd64.deb ...
+Unpacking pkg-config:amd64 (1.8.1-1) ...
+Setting up libpkgconf3:amd64 (1.8.1-1) ...
+Setting up libgmpxx4ldbl:amd64 (2:6.2.1+dfsg1-1.1) ...
+Setting up pkgconf-bin (1.8.1-1) ...
+Setting up libgmp-dev:amd64 (2:6.2.1+dfsg1-1.1) ...
+Setting up pkgconf:amd64 (1.8.1-1) ...
+Setting up pkg-config:amd64 (1.8.1-1) ...
+Processing triggers for libc-bin (2.36-9+deb12u7) ...
+# OS packages installation successful
+spotify_ml.0.0.2 is not installed. Install it? [Y/n] y
+[ERROR] Sorry, resolution of the request timed out.
+        Try to specify a simpler request, use a different solver, or increase the allowed time by setting OPAMSOLVERTIMEOUT to a bigger value (currently, it is set to 500.0 seconds).
+"/usr/bin/env" "bash" "-c" "opam depext spotify_ml.0.0.2 && opam reinstall spotify_ml.0.0.2;
+        res=$?;
+        test "$res" != 31 && exit "$res";
+        export OPAMCLI=2.0;
+        build_dir=$(opam var prefix)/.opam-switch/build;
+        failed=$(ls "$build_dir");
+        partial_fails="";
+        for pkg in $failed; do
+          if opam show -f x-ci-accept-failures: "$pkg" | grep -qF "\"debian-12\""; then
+            echo "A package failed and has been disabled for CI using the 'x-ci-accept-failures' field.";
+          fi;
+          test "$pkg" != 'spotify_ml.0.0.2' && partial_fails="$partial_fails $pkg";
+        done;
+        test "${partial_fails}" != "" && echo "opam-repo-ci detected dependencies failing: ${partial_fails}";
+        exit 1" failed with exit status 60
+2024-07-27 19:47.41: Job failed: Failed: Build failed
+2024-07-27 19:47.41: Log analysis:
+2024-07-27 19:47.41: >>> 
+[ERROR] Sorry, resolution of the request timed out.
+ (score = 20)
+2024-07-27 19:47.41: Sorry, resolution of the request timed out.

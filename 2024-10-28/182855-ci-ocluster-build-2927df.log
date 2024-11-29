@@ -1,0 +1,318 @@
+2024-10-28 18:28.55: New job: test cohttp-server-lwt-unix.6.0.0~alpha2, using opam dev
+                              from https://github.com/ocaml/opam-repository.git#refs/pull/26799/head (05590ce777293a9ebf35d79eca2fae2e914982ee)
+                              on freebsd-ocaml-5.2/amd64
+
+To reproduce locally:
+
+cd $(mktemp -d)
+git clone --recursive "https://github.com/ocaml/opam-repository.git" && cd "opam-repository" && git fetch origin "refs/pull/26799/head" && git reset --hard 05590ce7
+git fetch origin master
+git merge --no-edit 56e31a3bc1fd0bfd87e5251972e806b8f78082a5
+cat > ../Dockerfile <<'END-OF-DOCKERFILE'
+[34mFROM freebsd-ocaml-5.2
+USER 1000:1000
+WORKDIR /home/opam
+RUN sudo ln -f /usr/local/bin/opam-dev /usr/local/bin/opam
+RUN opam init --reinit -ni
+RUN uname -rs && opam exec -- ocaml -version && opam --version
+ENV OPAMDOWNLOADJOBS="1"
+ENV OPAMERRLOGLEN="0"
+ENV OPAMSOLVERTIMEOUT="1000"
+ENV OPAMPRECISETRACKING="1"
+ENV CI="true"
+ENV OPAM_REPO_CI="true"
+RUN rm -rf opam-repository/
+COPY --chown=1000:1000 . opam-repository/
+RUN opam repository set-url --strict default opam-repository/
+RUN opam update --depexts || true
+RUN opam pin add -k version -yn cohttp-server-lwt-unix.6.0.0~alpha2 6.0.0~alpha2
+RUN opam reinstall cohttp-server-lwt-unix.6.0.0~alpha2; \
+    res=$?; \
+    test "$res" != 31 && exit "$res"; \
+    export OPAMCLI=2.0; \
+    build_dir=$(opam var prefix)/.opam-switch/build; \
+    failed=$(ls "$build_dir"); \
+    partial_fails=""; \
+    for pkg in $failed; do \
+    if opam show -f x-ci-accept-failures: "$pkg" | grep -qF "\"freebsd\""; then \
+    echo "A package failed and has been disabled for CI using the 'x-ci-accept-failures' field."; \
+    fi; \
+    test "$pkg" != 'cohttp-server-lwt-unix.6.0.0~alpha2' && partial_fails="$partial_fails $pkg"; \
+    done; \
+    test "${partial_fails}" != "" && echo "opam-repo-ci detected dependencies failing: ${partial_fails}"; \
+    exit 1
+RUN (opam reinstall --with-test cohttp-server-lwt-unix.6.0.0~alpha2) || true
+RUN opam reinstall --with-test --verbose cohttp-server-lwt-unix.6.0.0~alpha2; \
+    res=$?; \
+    test "$res" != 31 && exit "$res"; \
+    export OPAMCLI=2.0; \
+    build_dir=$(opam var prefix)/.opam-switch/build; \
+    failed=$(ls "$build_dir"); \
+    partial_fails=""; \
+    for pkg in $failed; do \
+    if opam show -f x-ci-accept-failures: "$pkg" | grep -qF "\"freebsd\""; then \
+    echo "A package failed and has been disabled for CI using the 'x-ci-accept-failures' field."; \
+    fi; \
+    test "$pkg" != 'cohttp-server-lwt-unix.6.0.0~alpha2' && partial_fails="$partial_fails $pkg"; \
+    done; \
+    test "${partial_fails}" != "" && echo "opam-repo-ci detected dependencies failing: ${partial_fails}"; \
+    exit 1
+[0m
+END-OF-DOCKERFILE
+docker build -f ../Dockerfile .
+
+2024-10-28 18:28.55: Using cache hint "freebsd-ocaml-5.2-cohttp-server-lwt-unix.6.0.0~alpha2-05590ce777293a9ebf35d79eca2fae2e914982ee"
+2024-10-28 18:28.55: Using OBuilder spec:
+((from freebsd-ocaml-5.2)
+ (user (uid 1000) (gid 1000))
+ (workdir /home/opam)
+ (run (shell "sudo ln -f /usr/local/bin/opam-dev /usr/local/bin/opam"))
+ (run (network host)
+      (shell "opam init --reinit -ni"))
+ (run (shell "uname -rs && opam exec -- ocaml -version && opam --version"))
+ (env OPAMDOWNLOADJOBS 1)
+ (env OPAMERRLOGLEN 0)
+ (env OPAMSOLVERTIMEOUT 1000)
+ (env OPAMPRECISETRACKING 1)
+ (env CI true)
+ (env OPAM_REPO_CI true)
+ (run (shell "rm -rf opam-repository/"))
+ (copy (src .) (dst opam-repository/))
+ (run (shell "opam repository set-url --strict default opam-repository/"))
+ (run (network host)
+      (shell "opam update --depexts || true"))
+ (run (shell "opam pin add -k version -yn cohttp-server-lwt-unix.6.0.0~alpha2 6.0.0~alpha2"))
+ (run (cache (opam-archives (target /home/opam/.opam/download-cache)))
+      (network host)
+      (shell  "opam reinstall cohttp-server-lwt-unix.6.0.0~alpha2;\
+             \n        res=$?;\
+             \n        test \"$res\" != 31 && exit \"$res\";\
+             \n        export OPAMCLI=2.0;\
+             \n        build_dir=$(opam var prefix)/.opam-switch/build;\
+             \n        failed=$(ls \"$build_dir\");\
+             \n        partial_fails=\"\";\
+             \n        for pkg in $failed; do\
+             \n          if opam show -f x-ci-accept-failures: \"$pkg\" | grep -qF \"\\\"freebsd\\\"\"; then\
+             \n            echo \"A package failed and has been disabled for CI using the 'x-ci-accept-failures' field.\";\
+             \n          fi;\
+             \n          test \"$pkg\" != 'cohttp-server-lwt-unix.6.0.0~alpha2' && partial_fails=\"$partial_fails $pkg\";\
+             \n        done;\
+             \n        test \"${partial_fails}\" != \"\" && echo \"opam-repo-ci detected dependencies failing: ${partial_fails}\";\
+             \n        exit 1"))
+ (run (network host)
+      (shell "(opam reinstall --with-test cohttp-server-lwt-unix.6.0.0~alpha2) || true"))
+ (run (shell  "opam reinstall --with-test --verbose cohttp-server-lwt-unix.6.0.0~alpha2;\
+             \n        res=$?;\
+             \n        test \"$res\" != 31 && exit \"$res\";\
+             \n        export OPAMCLI=2.0;\
+             \n        build_dir=$(opam var prefix)/.opam-switch/build;\
+             \n        failed=$(ls \"$build_dir\");\
+             \n        partial_fails=\"\";\
+             \n        for pkg in $failed; do\
+             \n          if opam show -f x-ci-accept-failures: \"$pkg\" | grep -qF \"\\\"freebsd\\\"\"; then\
+             \n            echo \"A package failed and has been disabled for CI using the 'x-ci-accept-failures' field.\";\
+             \n          fi;\
+             \n          test \"$pkg\" != 'cohttp-server-lwt-unix.6.0.0~alpha2' && partial_fails=\"$partial_fails $pkg\";\
+             \n        done;\
+             \n        test \"${partial_fails}\" != \"\" && echo \"opam-repo-ci detected dependencies failing: ${partial_fails}\";\
+             \n        exit 1"))
+)
+
+2024-10-28 18:28.55: Waiting for resource in pool OCluster
+2024-10-28 18:28.55: Waiting for worker…
+2024-10-28 18:34.26: Got resource from pool OCluster
+Building on spring
+All commits already cached
+Updating files: 100% (32540/32540), done.
+HEAD is now at 56e31a3bc1 Merge pull request #26796 from avsm/release-jekyll-format-v0.3.4
+Updating 56e31a3bc1..05590ce777
+Fast-forward
+ packages/cohttp-curl-async/cohttp-curl-async.6.0.0~alpha2/opam          | 2 ++
+ packages/cohttp-curl-lwt/cohttp-curl-lwt.6.0.0~alpha2/opam              | 2 ++
+ packages/cohttp-lwt-jsoo/cohttp-lwt-jsoo.6.0.0~alpha2/opam              | 2 ++
+ packages/cohttp-lwt-unix/cohttp-lwt-unix.6.0.0~alpha2/opam              | 2 ++
+ .../cohttp-server-lwt-unix/cohttp-server-lwt-unix.6.0.0~alpha2/opam     | 2 ++
+ packages/cohttp-top/cohttp-top.6.0.0~alpha2/opam                        | 2 ++
+ 6 files changed, 12 insertions(+)
+
+[01;34m(from freebsd-ocaml-5.2)[0m
+[01;2m[01;35m2024-10-28 18:24.14 ---> using "3515bf58445883216685df527c06fc8b9b7799700694ffa335d1401da4433261" from cache[0m
+
+[01;34m/: (user (uid 1000) (gid 1000))[0m
+
+[01;34m/: (workdir /home/opam)[0m
+
+[01;34m/home/opam: (run (shell "sudo ln -f /usr/local/bin/opam-dev /usr/local/bin/opam"))[0m
+[01;2m[01;35m2024-10-28 18:24.14 ---> using "48364e1fb8dbbd4caee612726b7c964e49452f03ec1f9b0526466ab1c963a289" from cache[0m
+
+[01;34m/home/opam: (run (network host)
+                 (shell "opam init --reinit -ni"))[0m
+No configuration file found, using built-in defaults.
+Checking for available remotes: rsync and local, git.
+  - you won't be able to use mercurial repositories unless you install the hg command on your system.
+  - you won't be able to use darcs repositories unless you install the darcs command on your system.
+
+This version of opam requires an update to the layout of /home/opam/.opam from version 2.1 to version 2.2, which can't be reverted.
+You may want to back it up before going further.
+
+Continue? [y/n] y
+[NOTE] The 'jobs' option was reset, its value was 1 and its new value will vary according to the current number of cores on your machine. You can restore the fixed value using:
+           opam option jobs=1 --global
+Format upgrade done.
+
+<><> Updating repositories ><><><><><><><><><><><><><><><><><><><><><><><><><><>
+[default] no changes from git+file:///home/opam/opam-repository
+[01;2m[01;35m2024-10-28 18:24.14 ---> using "c9405311363be335bd03604ec044c083a65810c936d9b87d54c115ba23ec633d" from cache[0m
+
+[01;34m/home/opam: (run (shell "uname -rs && opam exec -- ocaml -version && opam --version"))[0m
+FreeBSD 14.0-RELEASE-p11
+The OCaml toplevel, version 5.2.0
+2.3.0~alpha1
+[01;2m[01;35m2024-10-28 18:24.15 ---> using "75c557dc5616766214d486bbd9740aad9cf3f41b1975f9eaa3f67179722364a2" from cache[0m
+
+[01;34m/home/opam: (env OPAMDOWNLOADJOBS 1)[0m
+
+[01;34m/home/opam: (env OPAMERRLOGLEN 0)[0m
+
+[01;34m/home/opam: (env OPAMSOLVERTIMEOUT 1000)[0m
+
+[01;34m/home/opam: (env OPAMPRECISETRACKING 1)[0m
+
+[01;34m/home/opam: (env CI true)[0m
+
+[01;34m/home/opam: (env OPAM_REPO_CI true)[0m
+
+[01;34m/home/opam: (run (shell "rm -rf opam-repository/"))[0m
+[01;2m[01;35m2024-10-28 18:24.15 ---> using "92e493e78a5cd5883fb758a776bfa39b25e6510ac546ef720b01153101f881bc" from cache[0m
+
+[01;34m/home/opam: (copy (src .) (dst opam-repository/))[0m
+[01;2m[01;35m2024-10-28 18:24.18 ---> saved as "b8ef9824c92c2b86278d4372fce27b91d75770400ef4a8e584676533b665f232"[0m
+
+[01;34m/home/opam: (run (shell "opam repository set-url --strict default opam-repository/"))[0m
+[default] Initialised
+[01;2m[01;35m2024-10-28 18:24.49 ---> saved as "549974432dbf0cbeda9f5444f259559f21443acce57c7367d850a7644abbe093"[0m
+
+[01;34m/home/opam: (run (network host)
+                 (shell "opam update --depexts || true"))[0m
+[WARNING] Unknown update command for bsd, skipping system update
+[01;2m[01;35m2024-10-28 18:24.49 ---> saved as "dd30d55b6b4d6292c1406c94d6e4dbafff8b4bdac5fcc4a92e3499f48ba7e5ad"[0m
+
+[01;34m/home/opam: (run (shell "opam pin add -k version -yn cohttp-server-lwt-unix.6.0.0~alpha2 6.0.0~alpha2"))[0m
+cohttp-server-lwt-unix is now pinned to version 6.0.0~alpha2
+[01;2m[01;35m2024-10-28 18:24.54 ---> saved as "3f8cc544aebd6e587f5907db60797d7a0c675d22bef54fa506f2c0dffe000dfc"[0m
+
+[01;34m/home/opam: (run (cache (opam-archives (target /home/opam/.opam/download-cache)))
+                 (network host)
+                 (shell  "opam reinstall cohttp-server-lwt-unix.6.0.0~alpha2;\
+                        \n        res=$?;\
+                        \n        test \"$res\" != 31 && exit \"$res\";\
+                        \n        export OPAMCLI=2.0;\
+                        \n        build_dir=$(opam var prefix)/.opam-switch/build;\
+                        \n        failed=$(ls \"$build_dir\");\
+                        \n        partial_fails=\"\";\
+                        \n        for pkg in $failed; do\
+                        \n          if opam show -f x-ci-accept-failures: \"$pkg\" | grep -qF \"\\\"freebsd\\\"\"; then\
+                        \n            echo \"A package failed and has been disabled for CI using the 'x-ci-accept-failures' field.\";\
+                        \n          fi;\
+                        \n          test \"$pkg\" != 'cohttp-server-lwt-unix.6.0.0~alpha2' && partial_fails=\"$partial_fails $pkg\";\
+                        \n        done;\
+                        \n        test \"${partial_fails}\" != \"\" && echo \"opam-repo-ci detected dependencies failing: ${partial_fails}\";\
+                        \n        exit 1"))[0m
+cohttp-server-lwt-unix.6.0.0~alpha2 is not installed. Install it? [y/n] y
+The following actions will be performed:
+=== install 10 packages
+  ∗ base-bytes             base                  [required by ocplib-endian]
+  ∗ cohttp-server-lwt-unix 6.0.0~alpha2 (pinned)
+  ∗ cppo                   1.7.0                 [required by lwt]
+  ∗ csexp                  1.5.2                 [required by dune-configurator]
+  ∗ dune                   3.16.0                [required by cohttp-server-lwt-unix]
+  ∗ dune-configurator      3.16.0                [required by lwt]
+  ∗ http                   6.0.0~alpha2          [required by cohttp-server-lwt-unix]
+  ∗ lwt                    5.8.0                 [required by cohttp-server-lwt-unix]
+  ∗ ocamlfind              1.9.6                 [required by base-bytes]
+  ∗ ocplib-endian          1.2                   [required by lwt]
+
+<><> Processing actions <><><><><><><><><><><><><><><><><><><><><><><><><><><><>
+⬇ retrieved cohttp-server-lwt-unix.6.0.0~alpha2, http.6.0.0~alpha2  (cached)
+⬇ retrieved cppo.1.7.0  (cached)
+⬇ retrieved csexp.1.5.2  (cached)
+⬇ retrieved dune.3.16.0, dune-configurator.3.16.0  (cached)
+⬇ retrieved lwt.5.8.0  (cached)
+⬇ retrieved ocamlfind.1.9.6  (cached)
+⬇ retrieved ocplib-endian.1.2  (cached)
+∗ installed ocamlfind.1.9.6
+∗ installed base-bytes.base
+∗ installed dune.3.16.0
+∗ installed csexp.1.5.2
+∗ installed http.6.0.0~alpha2
+∗ installed cppo.1.7.0
+∗ installed ocplib-endian.1.2
+∗ installed dune-configurator.3.16.0
+∗ installed lwt.5.8.0
+∗ installed cohttp-server-lwt-unix.6.0.0~alpha2
+Done.
+[01;2m[01;35m2024-10-28 18:26.58 ---> saved as "04e34a82ee93fa0bbb9a5fd469e8d96e50ec2c01d06c640f261fe6374fa40f4b"[0m
+
+[01;34m/home/opam: (run (network host)
+                 (shell "(opam reinstall --with-test cohttp-server-lwt-unix.6.0.0~alpha2) || true"))[0m
+[ERROR] Sorry, resolution of the request timed out.
+        Try to specify a more precise request, use a different solver, or increase the allowed time by setting OPAMSOLVERTIMEOUT to a bigger value (currently, it is set to 1000.0 seconds).
+[01;2m[01;35m2024-10-28 18:44.16 ---> saved as "7a82ef408d3afdb8f650c5d50eb2ca23795c88b8905d8cdc962070c0ec8e0835"[0m
+
+[01;34m/home/opam: (run (shell  "opam reinstall --with-test --verbose cohttp-server-lwt-unix.6.0.0~alpha2;\
+                        \n        res=$?;\
+                        \n        test \"$res\" != 31 && exit \"$res\";\
+                        \n        export OPAMCLI=2.0;\
+                        \n        build_dir=$(opam var prefix)/.opam-switch/build;\
+                        \n        failed=$(ls \"$build_dir\");\
+                        \n        partial_fails=\"\";\
+                        \n        for pkg in $failed; do\
+                        \n          if opam show -f x-ci-accept-failures: \"$pkg\" | grep -qF \"\\\"freebsd\\\"\"; then\
+                        \n            echo \"A package failed and has been disabled for CI using the 'x-ci-accept-failures' field.\";\
+                        \n          fi;\
+                        \n          test \"$pkg\" != 'cohttp-server-lwt-unix.6.0.0~alpha2' && partial_fails=\"$partial_fails $pkg\";\
+                        \n        done;\
+                        \n        test \"${partial_fails}\" != \"\" && echo \"opam-repo-ci detected dependencies failing: ${partial_fails}\";\
+                        \n        exit 1"))[0m
+[ERROR] Sorry, resolution of the request timed out.
+        Try to specify a more precise request, use a different solver, or increase the allowed time by setting OPAMSOLVERTIMEOUT to a bigger value (currently, it is set to 1000.0 seconds).
+'opam reinstall --with-test --verbose cohttp-server-lwt-unix.6.0.0~alpha2' failed.
+jail: /usr/bin/su -l opam -c cd '/home/opam' && env OPAM_REPO_CI='true' CI='true' OPAMPRECISETRACKING='1' OPAMSOLVERTIMEOUT='1000' OPAMERRLOGLEN='0' OPAMDOWNLOADJOBS='1' '/usr/bin/env' 'bash' '-c' 'opam reinstall --with-test --verbose cohttp-server-lwt-unix.6.0.0~alpha2;
+        res=$?;
+        test "$res" != 31 && exit "$res";
+        export OPAMCLI=2.0;
+        build_dir=$(opam var prefix)/.opam-switch/build;
+        failed=$(ls "$build_dir");
+        partial_fails="";
+        for pkg in $failed; do
+          if opam show -f x-ci-accept-failures: "$pkg" | grep -qF "\"freebsd\""; then
+            echo "A package failed and has been disabled for CI using the '\''x-ci-accept-failures'\'' field.";
+          fi;
+          test "$pkg" != '\''cohttp-server-lwt-unix.6.0.0~alpha2'\'' && partial_fails="$partial_fails $pkg";
+        done;
+        test "${partial_fails}" != "" && echo "opam-repo-ci detected dependencies failing: ${partial_fails}";
+        exit 1': failed
+"jail" "-c" "name=obuilder_40930_27830" "mount.devfs" "path=/obuilder/result/15a9d14e8155f3392c17f84a8462251965d3b5ae873442f3c42cc3edef1584c9/rootfs" "vnet" "exec.start=/sbin/ifconfig lo0 127.0.0.1/8" "command=/usr/bin/su" "-l" "opam" "-c" "cd '/home/opam' && env OPAM_REPO_CI='true' CI='true' OPAMPRECISETRACKING='1' OPAMSOLVERTIMEOUT='1000' OPAMERRLOGLEN='0' OPAMDOWNLOADJOBS='1' '/usr/bin/env' 'bash' '-c' 'opam reinstall --with-test --verbose cohttp-server-lwt-unix.6.0.0~alpha2;
+        res=$?;
+        test "$res" != 31 && exit "$res";
+        export OPAMCLI=2.0;
+        build_dir=$(opam var prefix)/.opam-switch/build;
+        failed=$(ls "$build_dir");
+        partial_fails="";
+        for pkg in $failed; do
+          if opam show -f x-ci-accept-failures: "$pkg" | grep -qF "\"freebsd\""; then
+            echo "A package failed and has been disabled for CI using the '\''x-ci-accept-failures'\'' field.";
+          fi;
+          test "$pkg" != '\''cohttp-server-lwt-unix.6.0.0~alpha2'\'' && partial_fails="$partial_fails $pkg";
+        done;
+        test "${partial_fails}" != "" && echo "opam-repo-ci detected dependencies failing: ${partial_fails}";
+        exit 1'" failed with exit status 1
+2024-10-28 19:12.28: Job failed: Failed: Build failed
+2024-10-28 19:12.28: Log analysis:
+2024-10-28 19:12.28: >>> 
+[ERROR] Sorry, resolution of the request timed out.
+ (score = 20)
+2024-10-28 19:12.28: >>> 
+[ERROR] Sorry, resolution of the request timed out.
+ (score = 20)
+2024-10-28 19:12.28: Sorry, resolution of the request timed out.

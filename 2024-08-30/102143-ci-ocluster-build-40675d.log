@@ -1,0 +1,252 @@
+2024-08-30 10:21.43: New job: test conduit-lwt-unix.7.0.0, using opam 2.1
+                              from https://github.com/ocaml/opam-repository.git#refs/pull/26454/head (f69a703c228a7b288ead2cb79884f0ee78d9acda)
+                              on debian-12-ocaml-5.2/amd64
+
+To reproduce locally:
+
+cd $(mktemp -d)
+git clone --recursive "https://github.com/ocaml/opam-repository.git" && cd "opam-repository" && git fetch origin "refs/pull/26454/head" && git reset --hard f69a703c
+git fetch origin master
+git merge --no-edit 8187cd8d3681d53f5042b5da316fa3f5e005a247
+cat > ../Dockerfile <<'END-OF-DOCKERFILE'
+[34mFROM ocaml/opam:debian-12-ocaml-5.2@sha256:3eb670568de552be8e9e753c9e412c809c92d27d3e27c2afc0064f753eece77e
+USER 1000:1000
+WORKDIR /home/opam
+RUN sudo ln -f /usr/bin/opam-2.1 /usr/bin/opam
+RUN opam init --reinit -ni
+RUN uname -rs && opam exec -- ocaml -version && opam --version
+ENV OPAMDOWNLOADJOBS="1"
+ENV OPAMERRLOGLEN="0"
+ENV OPAMSOLVERTIMEOUT="500"
+ENV OPAMPRECISETRACKING="1"
+ENV CI="true"
+ENV OPAM_REPO_CI="true"
+RUN rm -rf opam-repository/
+COPY --chown=1000:1000 . opam-repository/
+RUN opam repository set-url --strict default opam-repository/
+RUN opam update --depexts || true
+RUN opam pin add -k version -yn conduit-lwt-unix.7.0.0 7.0.0
+RUN opam reinstall conduit-lwt-unix.7.0.0; \
+    res=$?; \
+    test "$res" != 31 && exit "$res"; \
+    export OPAMCLI=2.0; \
+    build_dir=$(opam var prefix)/.opam-switch/build; \
+    failed=$(ls "$build_dir"); \
+    partial_fails=""; \
+    for pkg in $failed; do \
+    if opam show -f x-ci-accept-failures: "$pkg" | grep -qF "\"debian-12\""; then \
+    echo "A package failed and has been disabled for CI using the 'x-ci-accept-failures' field."; \
+    fi; \
+    test "$pkg" != 'conduit-lwt-unix.7.0.0' && partial_fails="$partial_fails $pkg"; \
+    done; \
+    test "${partial_fails}" != "" && echo "opam-repo-ci detected dependencies failing: ${partial_fails}"; \
+    exit 1
+RUN (opam reinstall --with-test conduit-lwt-unix.7.0.0) || true
+RUN opam reinstall --with-test --verbose conduit-lwt-unix.7.0.0; \
+    res=$?; \
+    test "$res" != 31 && exit "$res"; \
+    export OPAMCLI=2.0; \
+    build_dir=$(opam var prefix)/.opam-switch/build; \
+    failed=$(ls "$build_dir"); \
+    partial_fails=""; \
+    for pkg in $failed; do \
+    if opam show -f x-ci-accept-failures: "$pkg" | grep -qF "\"debian-12\""; then \
+    echo "A package failed and has been disabled for CI using the 'x-ci-accept-failures' field."; \
+    fi; \
+    test "$pkg" != 'conduit-lwt-unix.7.0.0' && partial_fails="$partial_fails $pkg"; \
+    done; \
+    test "${partial_fails}" != "" && echo "opam-repo-ci detected dependencies failing: ${partial_fails}"; \
+    exit 1
+[0m
+END-OF-DOCKERFILE
+docker build -f ../Dockerfile .
+
+2024-08-30 10:21.43: Using cache hint "ocaml/opam:debian-12-ocaml-5.2@sha256:3eb670568de552be8e9e753c9e412c809c92d27d3e27c2afc0064f753eece77e-conduit-lwt-unix.7.0.0-f69a703c228a7b288ead2cb79884f0ee78d9acda"
+2024-08-30 10:21.43: Using OBuilder spec:
+((from ocaml/opam:debian-12-ocaml-5.2@sha256:3eb670568de552be8e9e753c9e412c809c92d27d3e27c2afc0064f753eece77e)
+ (user (uid 1000) (gid 1000))
+ (workdir /home/opam)
+ (run (shell "sudo ln -f /usr/bin/opam-2.1 /usr/bin/opam"))
+ (run (network host)
+      (shell "opam init --reinit --config .opamrc-sandbox -ni"))
+ (run (shell "uname -rs && opam exec -- ocaml -version && opam --version"))
+ (env OPAMDOWNLOADJOBS 1)
+ (env OPAMERRLOGLEN 0)
+ (env OPAMSOLVERTIMEOUT 500)
+ (env OPAMPRECISETRACKING 1)
+ (env CI true)
+ (env OPAM_REPO_CI true)
+ (run (shell "rm -rf opam-repository/"))
+ (copy (src .) (dst opam-repository/))
+ (run (shell "opam repository set-url --strict default opam-repository/"))
+ (run (network host)
+      (shell "opam update --depexts || true"))
+ (run (shell "opam pin add -k version -yn conduit-lwt-unix.7.0.0 7.0.0"))
+ (run (cache (opam-archives (target /home/opam/.opam/download-cache)))
+      (network host)
+      (shell  "opam reinstall conduit-lwt-unix.7.0.0;\
+             \n        res=$?;\
+             \n        test \"$res\" != 31 && exit \"$res\";\
+             \n        export OPAMCLI=2.0;\
+             \n        build_dir=$(opam var prefix)/.opam-switch/build;\
+             \n        failed=$(ls \"$build_dir\");\
+             \n        partial_fails=\"\";\
+             \n        for pkg in $failed; do\
+             \n          if opam show -f x-ci-accept-failures: \"$pkg\" | grep -qF \"\\\"debian-12\\\"\"; then\
+             \n            echo \"A package failed and has been disabled for CI using the 'x-ci-accept-failures' field.\";\
+             \n          fi;\
+             \n          test \"$pkg\" != 'conduit-lwt-unix.7.0.0' && partial_fails=\"$partial_fails $pkg\";\
+             \n        done;\
+             \n        test \"${partial_fails}\" != \"\" && echo \"opam-repo-ci detected dependencies failing: ${partial_fails}\";\
+             \n        exit 1"))
+ (run (network host)
+      (shell "(opam reinstall --with-test conduit-lwt-unix.7.0.0) || true"))
+ (run (shell  "opam reinstall --with-test --verbose conduit-lwt-unix.7.0.0;\
+             \n        res=$?;\
+             \n        test \"$res\" != 31 && exit \"$res\";\
+             \n        export OPAMCLI=2.0;\
+             \n        build_dir=$(opam var prefix)/.opam-switch/build;\
+             \n        failed=$(ls \"$build_dir\");\
+             \n        partial_fails=\"\";\
+             \n        for pkg in $failed; do\
+             \n          if opam show -f x-ci-accept-failures: \"$pkg\" | grep -qF \"\\\"debian-12\\\"\"; then\
+             \n            echo \"A package failed and has been disabled for CI using the 'x-ci-accept-failures' field.\";\
+             \n          fi;\
+             \n          test \"$pkg\" != 'conduit-lwt-unix.7.0.0' && partial_fails=\"$partial_fails $pkg\";\
+             \n        done;\
+             \n        test \"${partial_fails}\" != \"\" && echo \"opam-repo-ci detected dependencies failing: ${partial_fails}\";\
+             \n        exit 1"))
+)
+
+2024-08-30 10:21.43: Waiting for resource in pool OCluster
+2024-08-30 10:22.40: Waiting for worker…
+2024-08-30 10:26.27: Got resource from pool OCluster
+Building on doris.caelum.ci.dev
+All commits already cached
+Updating files:  64% (20636/32060)Updating files:  65% (20839/32060)Updating files:  66% (21160/32060)Updating files:  67% (21481/32060)Updating files:  68% (21801/32060)Updating files:  69% (22122/32060)Updating files:  70% (22442/32060)Updating files:  71% (22763/32060)Updating files:  72% (23084/32060)Updating files:  73% (23404/32060)Updating files:  74% (23725/32060)Updating files:  75% (24045/32060)Updating files:  76% (24366/32060)Updating files:  77% (24687/32060)Updating files:  78% (25007/32060)Updating files:  79% (25328/32060)Updating files:  80% (25648/32060)Updating files:  81% (25969/32060)Updating files:  82% (26290/32060)Updating files:  83% (26610/32060)Updating files:  84% (26931/32060)Updating files:  85% (27251/32060)Updating files:  86% (27572/32060)Updating files:  87% (27893/32060)Updating files:  88% (28213/32060)Updating files:  89% (28534/32060)Updating files:  90% (28854/32060)Updating files:  91% (29175/32060)Updating files:  92% (29496/32060)Updating files:  93% (29816/32060)Updating files:  94% (30137/32060)Updating files:  95% (30457/32060)Updating files:  96% (30778/32060)Updating files:  97% (31099/32060)Updating files:  98% (31419/32060)Updating files:  99% (31740/32060)Updating files: 100% (32060/32060)Updating files: 100% (32060/32060), done.
+HEAD is now at 8187cd8d36 Merge pull request #26463 from hannesm/conduit-bounds
+Updating 8187cd8d36..f69a703c22
+Fast-forward
+ packages/conduit-async/conduit-async.7.0.0/opam    | 41 ++++++++++++++++
+ .../conduit-lwt-unix/conduit-lwt-unix.7.0.0/opam   | 45 +++++++++++++++++
+ packages/conduit-lwt/conduit-lwt.7.0.0/opam        | 33 +++++++++++++
+ packages/conduit-mirage/conduit-mirage.7.0.0/opam  | 51 +++++++++++++++++++
+ packages/conduit/conduit.7.0.0/opam                | 57 ++++++++++++++++++++++
+ 5 files changed, 227 insertions(+)
+ create mode 100644 packages/conduit-async/conduit-async.7.0.0/opam
+ create mode 100644 packages/conduit-lwt-unix/conduit-lwt-unix.7.0.0/opam
+ create mode 100644 packages/conduit-lwt/conduit-lwt.7.0.0/opam
+ create mode 100644 packages/conduit-mirage/conduit-mirage.7.0.0/opam
+ create mode 100644 packages/conduit/conduit.7.0.0/opam
+
+[01;34m(from ocaml/opam:debian-12-ocaml-5.2@sha256:3eb670568de552be8e9e753c9e412c809c92d27d3e27c2afc0064f753eece77e)[0m
+[01;2m[01;35m2024-08-30 10:28.34 ---> using "221319639814ba692dcd418f1d210391b36b017e1c00f2d2ad322a9ee601e274" from cache[0m
+
+[01;34m/: (user (uid 1000) (gid 1000))[0m
+
+[01;34m/: (workdir /home/opam)[0m
+
+[01;34m/home/opam: (run (shell "sudo ln -f /usr/bin/opam-2.1 /usr/bin/opam"))[0m
+[01;2m[01;35m2024-08-30 10:28.34 ---> using "903b4890f3f5df39ec3566136554fbf4cc251883d0bf59c6ad3cfb5e90255b11" from cache[0m
+
+[01;34m/home/opam: (run (network host)
+                 (shell "opam init --reinit --config .opamrc-sandbox -ni"))[0m
+Configuring from /home/opam/.opamrc-sandbox, then /home/opam/.opamrc, and finally from built-in defaults.
+Checking for available remotes: rsync and local, git.
+  - you won't be able to use mercurial repositories unless you install the hg command on your system.
+  - you won't be able to use darcs repositories unless you install the darcs command on your system.
+
+This development version of opam requires an update to the layout of /home/opam/.opam from version 2.0 to version 2.1, which can't be reverted.
+You may want to back it up before going further.
+
+Continue? [Y/n] y
+Format upgrade done.
+
+<><> Updating repositories ><><><><><><><><><><><><><><><><><><><><><><><><><><>
+[default] synchronised from file:///home/opam/opam-repository
+[01;2m[01;35m2024-08-30 10:29.48 ---> saved as "5fbe47a8723be005675b672d8a8582d0f2d79b11d1b7764fb3b5b8a0e19e178b"[0m
+
+[01;34m/home/opam: (run (shell "uname -rs && opam exec -- ocaml -version && opam --version"))[0m
+Linux 5.15.0-119-generic
+The OCaml toplevel, version 5.2.0
+2.1.6
+[01;2m[01;35m2024-08-30 10:29.48 ---> saved as "859a8b1154ef5452df8032feb4fe41fc8fcaba094ede8a2aea97d9804b0aa52b"[0m
+
+[01;34m/home/opam: (env OPAMDOWNLOADJOBS 1)[0m
+
+[01;34m/home/opam: (env OPAMERRLOGLEN 0)[0m
+
+[01;34m/home/opam: (env OPAMSOLVERTIMEOUT 500)[0m
+
+[01;34m/home/opam: (env OPAMPRECISETRACKING 1)[0m
+
+[01;34m/home/opam: (env CI true)[0m
+
+[01;34m/home/opam: (env OPAM_REPO_CI true)[0m
+
+[01;34m/home/opam: (run (shell "rm -rf opam-repository/"))[0m
+[01;2m[01;35m2024-08-30 10:30.02 ---> saved as "47e87038afff8c411be332c00383869b9e5402b2bcdeeac7c608764d7ae34e4c"[0m
+
+[01;34m/home/opam: (copy (src .) (dst opam-repository/))[0m
+[01;2m[01;35m2024-08-30 10:30.58 ---> saved as "e735390a0813d793c82a32291c8deabcb2d961aef7b58d61cc0a15bdef556cd6"[0m
+
+[01;34m/home/opam: (run (shell "opam repository set-url --strict default opam-repository/"))[0m
+[default] Initialised
+[01;2m[01;35m2024-08-30 10:31.20 ---> saved as "120f4cdfcef1d9b85be42cca16cd2d81c8f20d9be3e5731cf0368ba53c2823b0"[0m
+
+[01;34m/home/opam: (run (network host)
+                 (shell "opam update --depexts || true"))[0m
++ /usr/bin/sudo "apt-get" "update"
+- Hit:1 http://deb.debian.org/debian bookworm InRelease
+- Get:2 http://deb.debian.org/debian bookworm-updates InRelease [55.4 kB]
+- Get:3 http://deb.debian.org/debian-security bookworm-security InRelease [48.0 kB]
+- Get:4 http://deb.debian.org/debian-security bookworm-security/main amd64 Packages [179 kB]
+- Fetched 282 kB in 0s (780 kB/s)
+- Reading package lists...
+[01;2m[01;35m2024-08-30 10:31.22 ---> saved as "2f624db433395b63e982552d2e68a717382d8fbfe39c459f0af8d5a761db4442"[0m
+
+[01;34m/home/opam: (run (shell "opam pin add -k version -yn conduit-lwt-unix.7.0.0 7.0.0"))[0m
+conduit-lwt-unix is now pinned to version 7.0.0
+[01;2m[01;35m2024-08-30 10:31.24 ---> saved as "0b17908f7697561fba8eee7c74e586c1d918ef0df52de60e788e9959d13620e5"[0m
+
+[01;34m/home/opam: (run (cache (opam-archives (target /home/opam/.opam/download-cache)))
+                 (network host)
+                 (shell  "opam reinstall conduit-lwt-unix.7.0.0;\
+                        \n        res=$?;\
+                        \n        test \"$res\" != 31 && exit \"$res\";\
+                        \n        export OPAMCLI=2.0;\
+                        \n        build_dir=$(opam var prefix)/.opam-switch/build;\
+                        \n        failed=$(ls \"$build_dir\");\
+                        \n        partial_fails=\"\";\
+                        \n        for pkg in $failed; do\
+                        \n          if opam show -f x-ci-accept-failures: \"$pkg\" | grep -qF \"\\\"debian-12\\\"\"; then\
+                        \n            echo \"A package failed and has been disabled for CI using the 'x-ci-accept-failures' field.\";\
+                        \n          fi;\
+                        \n          test \"$pkg\" != 'conduit-lwt-unix.7.0.0' && partial_fails=\"$partial_fails $pkg\";\
+                        \n        done;\
+                        \n        test \"${partial_fails}\" != \"\" && echo \"opam-repo-ci detected dependencies failing: ${partial_fails}\";\
+                        \n        exit 1"))[0m
+conduit-lwt-unix.7.0.0 is not installed. Install it? [Y/n] y
+[ERROR] Sorry, resolution of the request timed out.
+        Try to specify a more precise request, use a different solver, or increase the allowed time by setting OPAMSOLVERTIMEOUT to a bigger value (currently, it is set to 500.0 seconds).
+"/usr/bin/env" "bash" "-c" "opam reinstall conduit-lwt-unix.7.0.0;
+        res=$?;
+        test "$res" != 31 && exit "$res";
+        export OPAMCLI=2.0;
+        build_dir=$(opam var prefix)/.opam-switch/build;
+        failed=$(ls "$build_dir");
+        partial_fails="";
+        for pkg in $failed; do
+          if opam show -f x-ci-accept-failures: "$pkg" | grep -qF "\"debian-12\""; then
+            echo "A package failed and has been disabled for CI using the 'x-ci-accept-failures' field.";
+          fi;
+          test "$pkg" != 'conduit-lwt-unix.7.0.0' && partial_fails="$partial_fails $pkg";
+        done;
+        test "${partial_fails}" != "" && echo "opam-repo-ci detected dependencies failing: ${partial_fails}";
+        exit 1" failed with exit status 60
+2024-08-30 10:40.11: Job failed: Failed: Build failed
+2024-08-30 10:40.11: Log analysis:
+2024-08-30 10:40.11: >>> 
+[ERROR] Sorry, resolution of the request timed out.
+ (score = 20)
+2024-08-30 10:40.11: Sorry, resolution of the request timed out.

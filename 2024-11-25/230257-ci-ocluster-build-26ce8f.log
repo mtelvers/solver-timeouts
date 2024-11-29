@@ -1,0 +1,435 @@
+2024-11-25 23:02.57: New job: test picos_meta.0.5.0, using opam dev
+                              from https://github.com/ocaml/opam-repository.git#refs/pull/26957/head (5b914129bc8055daaf8267ce078d98e59b88f3ca)
+                              on macos-homebrew-ocaml-4.14/amd64
+
+To reproduce locally:
+
+cd $(mktemp -d)
+git clone --recursive "https://github.com/ocaml/opam-repository.git" && cd "opam-repository" && git fetch origin "refs/pull/26957/head" && git reset --hard 5b914129
+git fetch origin master
+git merge --no-edit e62e88dccc1d1181b3fa83b78e2bf462598afb92
+cat > ../Dockerfile <<'END-OF-DOCKERFILE'
+[34mFROM macos-homebrew-ocaml-4.14
+USER 1000:1000
+RUN ln -f ~/local/bin/opam-dev ~/local/bin/opam
+RUN opam init --reinit -ni
+RUN uname -rs && opam exec -- ocaml -version && opam --version
+ENV OPAMDOWNLOADJOBS="1"
+ENV OPAMERRLOGLEN="0"
+ENV OPAMSOLVERTIMEOUT="1000"
+ENV OPAMPRECISETRACKING="1"
+ENV CI="true"
+ENV OPAM_REPO_CI="true"
+RUN rm -rf opam-repository/
+COPY --chown=1000:1000 . opam-repository/
+RUN opam repository set-url -k local --strict default opam-repository/
+RUN opam update --depexts || true
+RUN opam pin add -k version -yn picos_meta.0.5.0 0.5.0
+RUN opam reinstall picos_meta.0.5.0; \
+    res=$?; \
+    test "$res" != 31 && exit "$res"; \
+    export OPAMCLI=2.0; \
+    build_dir=$(opam var prefix)/.opam-switch/build; \
+    failed=$(ls "$build_dir"); \
+    partial_fails=""; \
+    for pkg in $failed; do \
+    if opam show -f x-ci-accept-failures: "$pkg" | grep -qF "\"macos-homebrew\""; then \
+    echo "A package failed and has been disabled for CI using the 'x-ci-accept-failures' field."; \
+    fi; \
+    test "$pkg" != 'picos_meta.0.5.0' && partial_fails="$partial_fails $pkg"; \
+    done; \
+    test "${partial_fails}" != "" && echo "opam-repo-ci detected dependencies failing: ${partial_fails}"; \
+    exit 1
+RUN (opam reinstall --with-test picos_meta.0.5.0) || true
+RUN opam reinstall --with-test --verbose picos_meta.0.5.0; \
+    res=$?; \
+    test "$res" != 31 && exit "$res"; \
+    export OPAMCLI=2.0; \
+    build_dir=$(opam var prefix)/.opam-switch/build; \
+    failed=$(ls "$build_dir"); \
+    partial_fails=""; \
+    for pkg in $failed; do \
+    if opam show -f x-ci-accept-failures: "$pkg" | grep -qF "\"macos-homebrew\""; then \
+    echo "A package failed and has been disabled for CI using the 'x-ci-accept-failures' field."; \
+    fi; \
+    test "$pkg" != 'picos_meta.0.5.0' && partial_fails="$partial_fails $pkg"; \
+    done; \
+    test "${partial_fails}" != "" && echo "opam-repo-ci detected dependencies failing: ${partial_fails}"; \
+    exit 1
+[0m
+END-OF-DOCKERFILE
+docker build -f ../Dockerfile .
+
+2024-11-25 23:02.57: Using cache hint "macos-homebrew-ocaml-4.14-picos_meta.0.5.0-5b914129bc8055daaf8267ce078d98e59b88f3ca"
+2024-11-25 23:02.57: Using OBuilder spec:
+((from macos-homebrew-ocaml-4.14)
+ (user (uid 1000) (gid 1000))
+ (run (shell "ln -f ~/local/bin/opam-dev ~/local/bin/opam"))
+ (run (network host)
+      (shell "opam init --reinit -ni"))
+ (run (shell "uname -rs && opam exec -- ocaml -version && opam --version"))
+ (env OPAMDOWNLOADJOBS 1)
+ (env OPAMERRLOGLEN 0)
+ (env OPAMSOLVERTIMEOUT 1000)
+ (env OPAMPRECISETRACKING 1)
+ (env CI true)
+ (env OPAM_REPO_CI true)
+ (run (shell "rm -rf opam-repository/"))
+ (copy (src .) (dst opam-repository/))
+ (run (shell "opam repository set-url -k local --strict default opam-repository/"))
+ (run (network host)
+      (shell "opam update --depexts || true"))
+ (run (shell "opam pin add -k version -yn picos_meta.0.5.0 0.5.0"))
+ (run (cache (opam-archives (target /Users/mac1000/.opam/download-cache)) (homebrew (target /Users/mac1000/Library/Caches/Homebrew)))
+      (network host)
+      (shell  "opam reinstall picos_meta.0.5.0;\
+             \n        res=$?;\
+             \n        test \"$res\" != 31 && exit \"$res\";\
+             \n        export OPAMCLI=2.0;\
+             \n        build_dir=$(opam var prefix)/.opam-switch/build;\
+             \n        failed=$(ls \"$build_dir\");\
+             \n        partial_fails=\"\";\
+             \n        for pkg in $failed; do\
+             \n          if opam show -f x-ci-accept-failures: \"$pkg\" | grep -qF \"\\\"macos-homebrew\\\"\"; then\
+             \n            echo \"A package failed and has been disabled for CI using the 'x-ci-accept-failures' field.\";\
+             \n          fi;\
+             \n          test \"$pkg\" != 'picos_meta.0.5.0' && partial_fails=\"$partial_fails $pkg\";\
+             \n        done;\
+             \n        test \"${partial_fails}\" != \"\" && echo \"opam-repo-ci detected dependencies failing: ${partial_fails}\";\
+             \n        exit 1"))
+ (run (network host)
+      (shell "(opam reinstall --with-test picos_meta.0.5.0) || true"))
+ (run (shell  "opam reinstall --with-test --verbose picos_meta.0.5.0;\
+             \n        res=$?;\
+             \n        test \"$res\" != 31 && exit \"$res\";\
+             \n        export OPAMCLI=2.0;\
+             \n        build_dir=$(opam var prefix)/.opam-switch/build;\
+             \n        failed=$(ls \"$build_dir\");\
+             \n        partial_fails=\"\";\
+             \n        for pkg in $failed; do\
+             \n          if opam show -f x-ci-accept-failures: \"$pkg\" | grep -qF \"\\\"macos-homebrew\\\"\"; then\
+             \n            echo \"A package failed and has been disabled for CI using the 'x-ci-accept-failures' field.\";\
+             \n          fi;\
+             \n          test \"$pkg\" != 'picos_meta.0.5.0' && partial_fails=\"$partial_fails $pkg\";\
+             \n        done;\
+             \n        test \"${partial_fails}\" != \"\" && echo \"opam-repo-ci detected dependencies failing: ${partial_fails}\";\
+             \n        exit 1"))
+)
+
+2024-11-25 23:02.57: Waiting for resource in pool OCluster
+2024-11-25 23:03.00: Waiting for worker…
+2024-11-26 04:40.43: Got resource from pool OCluster
+Building on i7-worker-01
+All commits already cached
+Updating files:  17% (5671/32723)Updating files:  18% (5891/32723)Updating files:  19% (6218/32723)Updating files:  20% (6545/32723)Updating files:  21% (6872/32723)Updating files:  22% (7200/32723)Updating files:  23% (7527/32723)Updating files:  24% (7854/32723)Updating files:  25% (8181/32723)Updating files:  26% (8508/32723)Updating files:  27% (8836/32723)Updating files:  28% (9163/32723)Updating files:  29% (9490/32723)Updating files:  30% (9817/32723)Updating files:  31% (10145/32723)Updating files:  32% (10472/32723)Updating files:  32% (10592/32723)Updating files:  33% (10799/32723)Updating files:  34% (11126/32723)Updating files:  35% (11454/32723)Updating files:  36% (11781/32723)Updating files:  37% (12108/32723)Updating files:  38% (12435/32723)Updating files:  39% (12762/32723)Updating files:  40% (13090/32723)Updating files:  41% (13417/32723)Updating files:  42% (13744/32723)Updating files:  43% (14071/32723)Updating files:  44% (14399/32723)Updating files:  45% (14726/32723)Updating files:  46% (15053/32723)Updating files:  47% (15380/32723)Updating files:  48% (15708/32723)Updating files:  49% (16035/32723)Updating files:  50% (16362/32723)Updating files:  50% (16559/32723)Updating files:  51% (16689/32723)Updating files:  52% (17016/32723)Updating files:  53% (17344/32723)Updating files:  54% (17671/32723)Updating files:  55% (17998/32723)Updating files:  56% (18325/32723)Updating files:  57% (18653/32723)Updating files:  58% (18980/32723)Updating files:  59% (19307/32723)Updating files:  60% (19634/32723)Updating files:  61% (19962/32723)Updating files:  62% (20289/32723)Updating files:  63% (20616/32723)Updating files:  64% (20943/32723)Updating files:  65% (21270/32723)Updating files:  66% (21598/32723)Updating files:  66% (21648/32723)Updating files:  67% (21925/32723)Updating files:  68% (22252/32723)Updating files:  69% (22579/32723)Updating files:  70% (22907/32723)Updating files:  71% (23234/32723)Updating files:  72% (23561/32723)Updating files:  73% (23888/32723)Updating files:  74% (24216/32723)Updating files:  75% (24543/32723)Updating files:  76% (24870/32723)Updating files:  77% (25197/32723)Updating files:  78% (25524/32723)Updating files:  79% (25852/32723)Updating files:  80% (26179/32723)Updating files:  81% (26506/32723)Updating files:  82% (26833/32723)Updating files:  83% (27161/32723)Updating files:  83% (27317/32723)Updating files:  84% (27488/32723)Updating files:  85% (27815/32723)Updating files:  86% (28142/32723)Updating files:  87% (28470/32723)Updating files:  88% (28797/32723)Updating files:  89% (29124/32723)Updating files:  90% (29451/32723)Updating files:  91% (29778/32723)Updating files:  92% (30106/32723)Updating files:  93% (30433/32723)Updating files:  94% (30760/32723)Updating files:  95% (31087/32723)Updating files:  96% (31415/32723)Updating files:  97% (31742/32723)Updating files:  98% (32069/32723)Updating files:  99% (32396/32723)Updating files: 100% (32723/32723)Updating files: 100% (32723/32723), done.
+HEAD is now at e62e88dccc Merge pull request #26953 from shonfeder/revert-color-0.3.0
+Updating e62e88dccc..5b914129bc
+Fast-forward
+ packages/ojs-base/ojs-base.0.1.0/opam     | 2 +-
+ packages/ojs-base/ojs-base.0.2.0/opam     | 2 +-
+ packages/ojs-base/ojs-base.0.3.0/opam     | 2 +-
+ packages/ojs-base/ojs-base.0.4.0/opam     | 2 +-
+ packages/ojs-base/ojs-base.0.5.0/opam     | 2 +-
+ packages/ojs-base/ojs-base.0.6.0/opam     | 2 +-
+ packages/picos/picos.0.1.0/opam           | 4 ++--
+ packages/picos/picos.0.2.0/opam           | 4 ++--
+ packages/picos/picos.0.3.0/opam           | 4 ++--
+ packages/picos/picos.0.4.0/opam           | 2 +-
+ packages/picos_meta/picos_meta.0.5.0/opam | 2 +-
+ packages/picos_meta/picos_meta.0.6.0/opam | 2 +-
+ 12 files changed, 15 insertions(+), 15 deletions(-)
+
+[01;34m(from macos-homebrew-ocaml-4.14)[0m
+[01;2m[01;35m2024-11-26 04:40.52 ---> using "0c60f117aee57abea8364cb033d47bb1d63ff0f68e5ee97378e032498e8442af" from cache[0m
+
+[01;34m/: (user (uid 1000) (gid 1000))[0m
+
+[01;34m/: (run (shell "ln -f ~/local/bin/opam-dev ~/local/bin/opam"))[0m
+[01;2m[01;35m2024-11-26 04:40.52 ---> using "f20a31eccb94af52fa2a3ef86b723bc6460bac3d8a92b8861915540c2498d20a" from cache[0m
+
+[01;34m/: (run (network host)
+        (shell "opam init --reinit -ni"))[0m
+No configuration file found, using built-in defaults.
+Checking for available remotes: rsync and local, git.
+  - you won't be able to use mercurial repositories unless you install the hg command on your system.
+  - you won't be able to use darcs repositories unless you install the darcs command on your system.
+
+This version of opam requires an update to the layout of /Users/mac1000/.opam from version 2.1 to version 2.2, which can't be reverted.
+You may want to back it up before going further.
+
+Continue? [y/n] y
+[NOTE] The 'jobs' option was reset, its value was 1 and its new value will vary according to the current number of cores on your machine. You can restore the fixed value using:
+           opam option jobs=1 --global
+Format upgrade done.
+
+<><> Updating repositories ><><><><><><><><><><><><><><><><><><><><><><><><><><>
+[default] no changes from git+file:///Users/mac1000/opam-repository
+[01;2m[01;35m2024-11-26 04:40.53 ---> using "7818e224f85c11d1d318abe9ba4e297be345388b7ed476f912b6900c6bae56aa" from cache[0m
+
+[01;34m/: (run (shell "uname -rs && opam exec -- ocaml -version && opam --version"))[0m
+Darwin 23.4.0
+The OCaml toplevel, version 4.14.2
+2.3.0
+[01;2m[01;35m2024-11-26 04:40.53 ---> using "b68dfff025f7534bf3966778231000a9d9e4e27525baf87e50daaae0b61c1ee7" from cache[0m
+
+[01;34m/: (env OPAMDOWNLOADJOBS 1)[0m
+
+[01;34m/: (env OPAMERRLOGLEN 0)[0m
+
+[01;34m/: (env OPAMSOLVERTIMEOUT 1000)[0m
+
+[01;34m/: (env OPAMPRECISETRACKING 1)[0m
+
+[01;34m/: (env CI true)[0m
+
+[01;34m/: (env OPAM_REPO_CI true)[0m
+
+[01;34m/: (run (shell "rm -rf opam-repository/"))[0m
+[01;2m[01;35m2024-11-26 04:40.53 ---> using "db65ca45b0dda4f74e29bfe7d60602daffc92169f11d7cb2a2ac00d1ebd104ff" from cache[0m
+
+[01;34m/: (copy (src .) (dst opam-repository/))[0m
+[01;2m[01;35m2024-11-26 04:40.57 ---> using "92f3bd368e6be1bfd9381a4553f562c4045d0069ca23eae542e644261c8b52d0" from cache[0m
+
+[01;34m/: (run (shell "opam repository set-url -k local --strict default opam-repository/"))[0m
+[default] Initialised
+[01;2m[01;35m2024-11-26 04:40.58 ---> using "bbf5f9148f85bc7c69697c3e19e06e5ea80d35cdbb86705a8b4d77a2db14fa5a" from cache[0m
+
+[01;34m/: (run (network host)
+        (shell "opam update --depexts || true"))[0m
++ /usr/local/bin/brew "update"
+- ==> Updating Homebrew...
+- ==> Homebrew collects anonymous analytics.
+- Read the analytics documentation (and how to opt-out) here:
+-   https://docs.brew.sh/Analytics
+- No analytics have been recorded yet (nor will be during this `brew` run).
+- 
+- ==> Homebrew is run entirely by unpaid volunteers. Please consider donating:
+-   https://github.com/Homebrew/brew#donations
+- 
+- Already up-to-date.
+[01;2m[01;35m2024-11-26 04:40.58 ---> using "725527a407cafa97e14587d28bd04df97727507bd4ef6fb43d85308b34876e84" from cache[0m
+
+[01;34m/: (run (shell "opam pin add -k version -yn picos_meta.0.5.0 0.5.0"))[0m
+picos_meta is now pinned to version 0.5.0
+[01;2m[01;35m2024-11-26 04:40.58 ---> using "4fa8fc4e56a41f6962b859193ccad02b0c69e5404f285a1b3b17dc0b0485ebdc" from cache[0m
+
+[01;34m/: (run (cache (opam-archives (target /Users/mac1000/.opam/download-cache)) (homebrew (target /Users/mac1000/Library/Caches/Homebrew)))
+        (network host)
+        (shell  "opam reinstall picos_meta.0.5.0;\
+               \n        res=$?;\
+               \n        test \"$res\" != 31 && exit \"$res\";\
+               \n        export OPAMCLI=2.0;\
+               \n        build_dir=$(opam var prefix)/.opam-switch/build;\
+               \n        failed=$(ls \"$build_dir\");\
+               \n        partial_fails=\"\";\
+               \n        for pkg in $failed; do\
+               \n          if opam show -f x-ci-accept-failures: \"$pkg\" | grep -qF \"\\\"macos-homebrew\\\"\"; then\
+               \n            echo \"A package failed and has been disabled for CI using the 'x-ci-accept-failures' field.\";\
+               \n          fi;\
+               \n          test \"$pkg\" != 'picos_meta.0.5.0' && partial_fails=\"$partial_fails $pkg\";\
+               \n        done;\
+               \n        test \"${partial_fails}\" != \"\" && echo \"opam-repo-ci detected dependencies failing: ${partial_fails}\";\
+               \n        exit 1"))[0m
+picos_meta.0.5.0 is not installed. Install it? [y/n] y
+The following actions will be performed:
+=== install 53 packages
+  - install angstrom                   0.16.1         [required by uri]
+  - install backoff                    0.1.1          [required by picos_io, picos, picos_aux, picos_mux]
+  - install base                       v0.16.3        [required by ppx_sexp_conv]
+  - install base-bytes                 base           [required by ocplib-endian]
+  - install base64                     3.5.1          [required by cohttp]
+  - install bigstringaf                0.10.0         [required by angstrom]
+  - install cmdliner                   1.3.0          [required by dscheck]
+  - install cohttp                     6.0.0~beta2    [required by picos_io_cohttp]
+  - install conf-bash                  1              [required by base]
+  - install containers                 3.15           [required by dscheck]
+  - install cppo                       1.7.0          [required by lwt]
+  - install csexp                      1.5.2          [required by dune-configurator]
+  - install dscheck                    0.5.0          [required by picos_meta]
+  - install dune                       3.16.1         [required by picos_meta]
+  - install dune-configurator          3.16.1         [required by lwt]
+  - install either                     1.0.0          [required by containers]
+  - install fmt                        0.9.0          [required by picos_io_cohttp]
+  - install http                       6.0.0~beta2    [required by cohttp]
+  - install logs                       0.7.0          [required by cohttp]
+  - install lwt                        5.9.0          [required by picos_meta]
+  - install mtime                      2.1.0          [required by picos_io]
+  - install multicore-magic            2.3.0          [required by picos_io, picos_aux, picos_mux]
+  - install ocaml-compiler-libs        v0.12.4        [required by ppxlib]
+  - install ocaml-syntax-shims         1.0.0          [required by angstrom]
+  - install ocamlbuild                 0.15.0         [required by mtime]
+  - install ocamlfind                  1.9.6          [required by mtime]
+  - install ocplib-endian              1.2            [required by lwt]
+  - install oseq                       0.5.1          [required by dscheck]
+  - install picos                      0.5.0          [required by picos_meta]
+  - install picos_aux                  0.5.0          [required by picos_meta]
+  - install picos_io                   0.5.0          [required by picos_meta]
+  - install picos_io_cohttp            0.5.0          [required by picos_meta]
+  - install picos_lwt                  0.5.0          [required by picos_meta]
+  - install picos_meta                 0.5.0 (pinned)
+  - install picos_mux                  0.5.0          [required by picos_meta]
+  - install picos_std                  0.5.0          [required by picos_meta]
+  - install ppx_derivers               1.2.1          [required by ppxlib]
+  - install ppx_sexp_conv              v0.16.0        [required by cohttp]
+  - install ppxlib                     0.33.0         [required by ppx_sexp_conv]
+  - install psq                        0.2.1          [required by picos_io]
+  - install qcheck-core                0.22           [required by picos_meta]
+  - install qcheck-multicoretests-util 0.4            [required by qcheck-stm]
+  - install qcheck-stm                 0.4            [required by picos_meta]
+  - install re                         1.12.0         [required by cohttp]
+  - install seq                        base           [required by psq]
+  - install sexplib0                   v0.16.0        [required by cohttp]
+  - install stdlib-shims               0.3.0          [required by ppxlib]
+  - install stringext                  1.6.0          [required by cohttp]
+  - install thread-local-storage       0.2            [required by picos]
+  - install topkg                      1.0.7          [required by mtime]
+  - install tsort                      2.1.0          [required by dscheck]
+  - install uri                        4.4.0          [required by picos_io_cohttp]
+  - install uri-sexp                   4.4.0          [required by cohttp]
+
+<><> Processing actions <><><><><><><><><><><><><><><><><><><><><><><><><><><><>
+-> retrieved angstrom.0.16.1  (cached)
+-> retrieved backoff.0.1.1  (cached)
+-> retrieved base.v0.16.3  (cached)
+-> retrieved base64.3.5.1  (cached)
+-> retrieved bigstringaf.0.10.0  (cached)
+-> retrieved cmdliner.1.3.0  (cached)
+-> retrieved cohttp.6.0.0~beta2, http.6.0.0~beta2  (cached)
+-> installed conf-bash.1
+-> retrieved containers.3.15  (cached)
+-> retrieved cppo.1.7.0  (cached)
+-> retrieved csexp.1.5.2  (cached)
+-> retrieved dscheck.0.5.0  (cached)
+-> retrieved dune.3.16.1, dune-configurator.3.16.1  (cached)
+-> retrieved either.1.0.0  (cached)
+-> retrieved fmt.0.9.0  (cached)
+-> retrieved logs.0.7.0  (cached)
+-> retrieved lwt.5.9.0  (cached)
+-> retrieved mtime.2.1.0  (cached)
+-> retrieved multicore-magic.2.3.0  (cached)
+-> retrieved ocaml-compiler-libs.v0.12.4  (cached)
+-> installed cmdliner.1.3.0
+-> retrieved ocaml-syntax-shims.1.0.0  (cached)
+-> retrieved ocamlbuild.0.15.0  (cached)
+-> retrieved ocamlfind.1.9.6  (cached)
+-> retrieved ocplib-endian.1.2  (cached)
+-> retrieved oseq.0.5.1  (cached)
+-> retrieved picos.0.5.0, picos_aux.0.5.0, picos_io.0.5.0, picos_io_cohttp.0.5.0, picos_lwt.0.5.0, picos_meta.0.5.0, picos_mux.0.5.0, picos_std.0.5.0  (cached)
+-> retrieved ppx_derivers.1.2.1  (cached)
+-> retrieved ppx_sexp_conv.v0.16.0  (cached)
+-> retrieved ppxlib.0.33.0  (cached)
+-> retrieved psq.0.2.1  (cached)
+-> retrieved qcheck-core.0.22  (cached)
+-> retrieved qcheck-multicoretests-util.0.4, qcheck-stm.0.4  (cached)
+-> retrieved re.1.12.0  (cached)
+-> retrieved seq.base  (cached)
+-> installed seq.base
+-> retrieved sexplib0.v0.16.0  (cached)
+-> retrieved stdlib-shims.0.3.0  (cached)
+-> retrieved stringext.1.6.0  (cached)
+-> retrieved thread-local-storage.0.2  (cached)
+-> retrieved topkg.1.0.7  (cached)
+-> retrieved tsort.2.1.0  (cached)
+-> retrieved uri.4.4.0, uri-sexp.4.4.0  (cached)
+-> installed ocamlfind.1.9.6
+-> installed base-bytes.base
+-> installed ocamlbuild.0.15.0
+-> installed topkg.1.0.7
+-> installed mtime.2.1.0
+-> installed fmt.0.9.0
+-> installed dune.3.16.1
+-> installed csexp.1.5.2
+-> installed ppx_derivers.1.2.1
+-> installed psq.0.2.1
+-> installed oseq.0.5.1
+-> installed ocaml-syntax-shims.1.0.0
+-> installed ocaml-compiler-libs.v0.12.4
+-> installed multicore-magic.2.3.0
+-> installed http.6.0.0~beta2
+-> installed either.1.0.0
+-> installed cppo.1.7.0
+-> installed base64.3.5.1
+-> installed backoff.0.1.1
+-> installed stdlib-shims.0.3.0
+-> installed stringext.1.6.0
+-> installed tsort.2.1.0
+-> installed thread-local-storage.0.2
+-> installed picos_aux.0.5.0
+-> installed ocplib-endian.1.2
+-> installed sexplib0.v0.16.0
+-> installed picos.0.5.0
+-> installed dune-configurator.3.16.1
+-> installed re.1.12.0
+-> installed qcheck-core.0.22
+-> installed bigstringaf.0.10.0
+-> installed picos_std.0.5.0
+-> installed qcheck-multicoretests-util.0.4
+-> installed angstrom.0.16.1
+-> installed picos_io.0.5.0
+-> installed qcheck-stm.0.4
+-> installed picos_mux.0.5.0
+-> installed containers.3.15
+-> installed dscheck.0.5.0
+-> installed uri.4.4.0
+-> installed lwt.5.9.0
+-> installed picos_lwt.0.5.0
+-> installed base.v0.16.3
+-> installed logs.0.7.0
+-> installed ppxlib.0.33.0
+-> installed ppx_sexp_conv.v0.16.0
+-> installed uri-sexp.4.4.0
+-> installed cohttp.6.0.0~beta2
+-> installed picos_io_cohttp.0.5.0
+-> installed picos_meta.0.5.0
+Done.
+# To update the current shell environment, run: eval $(opam env)
+[01;2m[01;35m2024-11-26 04:40.59 ---> using "9cdf57774b7b0cdd8dafdeba326d7e14d2777df591bada039c736bba207c8182" from cache[0m
+
+[01;34m/: (run (network host)
+        (shell "(opam reinstall --with-test picos_meta.0.5.0) || true"))[0m
+[ERROR] Sorry, resolution of the request timed out.
+        Try to specify a more precise request, use a different solver, or increase the allowed time by setting OPAMSOLVERTIMEOUT to a bigger value (currently, it is set to 1000.0 seconds).
+[01;2m[01;35m2024-11-26 04:57.53 ---> saved as "98d03fb278ec24f6f5d5ea901be8b61b106847c45780ca8da7a053914c928dfa"[0m
+
+[01;34m/: (run (shell  "opam reinstall --with-test --verbose picos_meta.0.5.0;\
+               \n        res=$?;\
+               \n        test \"$res\" != 31 && exit \"$res\";\
+               \n        export OPAMCLI=2.0;\
+               \n        build_dir=$(opam var prefix)/.opam-switch/build;\
+               \n        failed=$(ls \"$build_dir\");\
+               \n        partial_fails=\"\";\
+               \n        for pkg in $failed; do\
+               \n          if opam show -f x-ci-accept-failures: \"$pkg\" | grep -qF \"\\\"macos-homebrew\\\"\"; then\
+               \n            echo \"A package failed and has been disabled for CI using the 'x-ci-accept-failures' field.\";\
+               \n          fi;\
+               \n          test \"$pkg\" != 'picos_meta.0.5.0' && partial_fails=\"$partial_fails $pkg\";\
+               \n        done;\
+               \n        test \"${partial_fails}\" != \"\" && echo \"opam-repo-ci detected dependencies failing: ${partial_fails}\";\
+               \n        exit 1"))[0m
+[ERROR] Sorry, resolution of the request timed out.
+        Try to specify a more precise request, use a different solver, or increase the allowed time by setting OPAMSOLVERTIMEOUT to a bigger value (currently, it is set to 1000.0 seconds).
+'opam reinstall --with-test --verbose picos_meta.0.5.0' failed.
+"/usr/bin/env" "bash" "-c" "opam reinstall --with-test --verbose picos_meta.0.5.0;
+        res=$?;
+        test "$res" != 31 && exit "$res";
+        export OPAMCLI=2.0;
+        build_dir=$(opam var prefix)/.opam-switch/build;
+        failed=$(ls "$build_dir");
+        partial_fails="";
+        for pkg in $failed; do
+          if opam show -f x-ci-accept-failures: "$pkg" | grep -qF "\"macos-homebrew\""; then
+            echo "A package failed and has been disabled for CI using the 'x-ci-accept-failures' field.";
+          fi;
+          test "$pkg" != 'picos_meta.0.5.0' && partial_fails="$partial_fails $pkg";
+        done;
+        test "${partial_fails}" != "" && echo "opam-repo-ci detected dependencies failing: ${partial_fails}";
+        exit 1" failed with exit status 60
+2024-11-26 05:15.01: Job failed: Failed: Build failed
+2024-11-26 05:15.01: Log analysis:
+2024-11-26 05:15.01: >>> 
+[ERROR] Sorry, resolution of the request timed out.
+ (score = 20)
+2024-11-26 05:15.01: >>> 
+[ERROR] Sorry, resolution of the request timed out.
+ (score = 20)
+2024-11-26 05:15.01: Sorry, resolution of the request timed out.

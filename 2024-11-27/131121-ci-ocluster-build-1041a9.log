@@ -1,0 +1,375 @@
+2024-11-27 13:11.21: New job: test js_of_ocaml-toplevel.6.0.0, using opam dev
+                              from https://github.com/ocaml/opam-repository.git#refs/pull/26971/head (e708667f9527ab62584c92a1548b6bb3e0955b55)
+                              on alpine-3.20-ocaml-5.2/amd64
+
+To reproduce locally:
+
+cd $(mktemp -d)
+git clone --recursive "https://github.com/ocaml/opam-repository.git" && cd "opam-repository" && git fetch origin "refs/pull/26971/head" && git reset --hard e708667f
+git fetch origin master
+git merge --no-edit 9d42b7886a5a13809be454300e69a8851f4223a7
+cat > ../Dockerfile <<'END-OF-DOCKERFILE'
+[34mFROM ocaml/opam:alpine-3.20-ocaml-5.2@sha256:03b411a82ea5bc09e266e851e26b83bf4c10aeacde902630bcff4c38e07733c4
+USER 1000:1000
+WORKDIR /home/opam
+RUN sudo ln -f /usr/bin/opam-dev /usr/bin/opam
+RUN opam init --reinit -ni
+RUN uname -rs && opam exec -- ocaml -version && opam --version
+ENV OPAMDOWNLOADJOBS="1"
+ENV OPAMERRLOGLEN="0"
+ENV OPAMSOLVERTIMEOUT="1000"
+ENV OPAMPRECISETRACKING="1"
+ENV CI="true"
+ENV OPAM_REPO_CI="true"
+RUN rm -rf opam-repository/
+COPY --chown=1000:1000 . opam-repository/
+RUN opam repository set-url --strict default opam-repository/
+RUN opam update --depexts || true
+RUN opam pin add -k version -yn js_of_ocaml-toplevel.6.0.0 6.0.0
+RUN opam reinstall js_of_ocaml-toplevel.6.0.0; \
+    res=$?; \
+    test "$res" != 31 && exit "$res"; \
+    export OPAMCLI=2.0; \
+    build_dir=$(opam var prefix)/.opam-switch/build; \
+    failed=$(ls "$build_dir"); \
+    partial_fails=""; \
+    for pkg in $failed; do \
+    if opam show -f x-ci-accept-failures: "$pkg" | grep -qF "\"alpine-3.20\""; then \
+    echo "A package failed and has been disabled for CI using the 'x-ci-accept-failures' field."; \
+    fi; \
+    test "$pkg" != 'js_of_ocaml-toplevel.6.0.0' && partial_fails="$partial_fails $pkg"; \
+    done; \
+    test "${partial_fails}" != "" && echo "opam-repo-ci detected dependencies failing: ${partial_fails}"; \
+    exit 1
+RUN (opam reinstall --with-test js_of_ocaml-toplevel.6.0.0) || true
+RUN opam reinstall --with-test --verbose js_of_ocaml-toplevel.6.0.0; \
+    res=$?; \
+    test "$res" != 31 && exit "$res"; \
+    export OPAMCLI=2.0; \
+    build_dir=$(opam var prefix)/.opam-switch/build; \
+    failed=$(ls "$build_dir"); \
+    partial_fails=""; \
+    for pkg in $failed; do \
+    if opam show -f x-ci-accept-failures: "$pkg" | grep -qF "\"alpine-3.20\""; then \
+    echo "A package failed and has been disabled for CI using the 'x-ci-accept-failures' field."; \
+    fi; \
+    test "$pkg" != 'js_of_ocaml-toplevel.6.0.0' && partial_fails="$partial_fails $pkg"; \
+    done; \
+    test "${partial_fails}" != "" && echo "opam-repo-ci detected dependencies failing: ${partial_fails}"; \
+    exit 1
+[0m
+END-OF-DOCKERFILE
+docker build -f ../Dockerfile .
+
+2024-11-27 13:11.21: Using cache hint "ocaml/opam:alpine-3.20-ocaml-5.2@sha256:03b411a82ea5bc09e266e851e26b83bf4c10aeacde902630bcff4c38e07733c4-js_of_ocaml-toplevel.6.0.0-e708667f9527ab62584c92a1548b6bb3e0955b55"
+2024-11-27 13:11.21: Using OBuilder spec:
+((from ocaml/opam:alpine-3.20-ocaml-5.2@sha256:03b411a82ea5bc09e266e851e26b83bf4c10aeacde902630bcff4c38e07733c4)
+ (user (uid 1000) (gid 1000))
+ (workdir /home/opam)
+ (run (shell "sudo ln -f /usr/bin/opam-dev /usr/bin/opam"))
+ (run (network host)
+      (shell "opam init --reinit --config .opamrc-sandbox -ni"))
+ (run (shell "uname -rs && opam exec -- ocaml -version && opam --version"))
+ (env OPAMDOWNLOADJOBS 1)
+ (env OPAMERRLOGLEN 0)
+ (env OPAMSOLVERTIMEOUT 1000)
+ (env OPAMPRECISETRACKING 1)
+ (env CI true)
+ (env OPAM_REPO_CI true)
+ (run (shell "rm -rf opam-repository/"))
+ (copy (src .) (dst opam-repository/))
+ (run (shell "opam repository set-url --strict default opam-repository/"))
+ (run (network host)
+      (shell "opam update --depexts || true"))
+ (run (shell "opam pin add -k version -yn js_of_ocaml-toplevel.6.0.0 6.0.0"))
+ (run (cache (opam-archives (target /home/opam/.opam/download-cache)))
+      (network host)
+      (shell  "opam reinstall js_of_ocaml-toplevel.6.0.0;\
+             \n        res=$?;\
+             \n        test \"$res\" != 31 && exit \"$res\";\
+             \n        export OPAMCLI=2.0;\
+             \n        build_dir=$(opam var prefix)/.opam-switch/build;\
+             \n        failed=$(ls \"$build_dir\");\
+             \n        partial_fails=\"\";\
+             \n        for pkg in $failed; do\
+             \n          if opam show -f x-ci-accept-failures: \"$pkg\" | grep -qF \"\\\"alpine-3.20\\\"\"; then\
+             \n            echo \"A package failed and has been disabled for CI using the 'x-ci-accept-failures' field.\";\
+             \n          fi;\
+             \n          test \"$pkg\" != 'js_of_ocaml-toplevel.6.0.0' && partial_fails=\"$partial_fails $pkg\";\
+             \n        done;\
+             \n        test \"${partial_fails}\" != \"\" && echo \"opam-repo-ci detected dependencies failing: ${partial_fails}\";\
+             \n        exit 1"))
+ (run (network host)
+      (shell "(opam reinstall --with-test js_of_ocaml-toplevel.6.0.0) || true"))
+ (run (shell  "opam reinstall --with-test --verbose js_of_ocaml-toplevel.6.0.0;\
+             \n        res=$?;\
+             \n        test \"$res\" != 31 && exit \"$res\";\
+             \n        export OPAMCLI=2.0;\
+             \n        build_dir=$(opam var prefix)/.opam-switch/build;\
+             \n        failed=$(ls \"$build_dir\");\
+             \n        partial_fails=\"\";\
+             \n        for pkg in $failed; do\
+             \n          if opam show -f x-ci-accept-failures: \"$pkg\" | grep -qF \"\\\"alpine-3.20\\\"\"; then\
+             \n            echo \"A package failed and has been disabled for CI using the 'x-ci-accept-failures' field.\";\
+             \n          fi;\
+             \n          test \"$pkg\" != 'js_of_ocaml-toplevel.6.0.0' && partial_fails=\"$partial_fails $pkg\";\
+             \n        done;\
+             \n        test \"${partial_fails}\" != \"\" && echo \"opam-repo-ci detected dependencies failing: ${partial_fails}\";\
+             \n        exit 1"))
+)
+
+2024-11-27 13:11.21: Waiting for resource in pool OCluster
+2024-11-27 15:27.17: Waiting for worker…
+2024-11-27 15:31.29: Got resource from pool OCluster
+Building on x86-bm-c13.sw.ocaml.org
+All commits already cached
+Updating files:  47% (15696/32753)Updating files:  48% (15722/32753)Updating files:  49% (16049/32753)Updating files:  50% (16377/32753)Updating files:  51% (16705/32753)Updating files:  52% (17032/32753)Updating files:  53% (17360/32753)Updating files:  54% (17687/32753)Updating files:  55% (18015/32753)Updating files:  56% (18342/32753)Updating files:  57% (18670/32753)Updating files:  58% (18997/32753)Updating files:  59% (19325/32753)Updating files:  60% (19652/32753)Updating files:  61% (19980/32753)Updating files:  62% (20307/32753)Updating files:  63% (20635/32753)Updating files:  64% (20962/32753)Updating files:  65% (21290/32753)Updating files:  66% (21617/32753)Updating files:  67% (21945/32753)Updating files:  68% (22273/32753)Updating files:  69% (22600/32753)Updating files:  70% (22928/32753)Updating files:  71% (23255/32753)Updating files:  72% (23583/32753)Updating files:  73% (23910/32753)Updating files:  74% (24238/32753)Updating files:  75% (24565/32753)Updating files:  76% (24893/32753)Updating files:  77% (25220/32753)Updating files:  78% (25548/32753)Updating files:  79% (25875/32753)Updating files:  80% (26203/32753)Updating files:  81% (26530/32753)Updating files:  82% (26858/32753)Updating files:  83% (27185/32753)Updating files:  84% (27513/32753)Updating files:  85% (27841/32753)Updating files:  86% (28168/32753)Updating files:  87% (28496/32753)Updating files:  88% (28823/32753)Updating files:  89% (29151/32753)Updating files:  90% (29478/32753)Updating files:  91% (29806/32753)Updating files:  92% (30133/32753)Updating files:  93% (30461/32753)Updating files:  94% (30788/32753)Updating files:  95% (31116/32753)Updating files:  96% (31443/32753)Updating files:  97% (31771/32753)Updating files:  98% (32098/32753)Updating files:  99% (32426/32753)Updating files: 100% (32753/32753)Updating files: 100% (32753/32753), done.
+HEAD is now at 9d42b7886a Merge pull request #26964 from mmottl/release-postgresql-5.1.1
+Updating 9d42b7886a..e708667f95
+Fast-forward
+ packages/eliom/eliom.10.4.0/opam                   |  2 +-
+ packages/eliom/eliom.10.4.1/opam                   |  2 +-
+ packages/eliom/eliom.11.0.0/opam                   |  2 +-
+ packages/eliom/eliom.11.0.1/opam                   |  2 +-
+ packages/ezjs_blockies/ezjs_blockies.0.1.1/opam    |  4 +-
+ packages/fmlib_js/fmlib_js.0.2.0/opam              |  2 +-
+ packages/fmlib_js/fmlib_js.0.3.0/opam              |  2 +-
+ packages/fmlib_js/fmlib_js.0.3.1/opam              |  2 +-
+ packages/fmlib_js/fmlib_js.0.4.0/opam              |  2 +-
+ packages/fmlib_js/fmlib_js.0.5.0/opam              |  2 +-
+ packages/fmlib_js/fmlib_js.0.5.1/opam              |  2 +-
+ packages/fmlib_js/fmlib_js.0.5.2/opam              |  2 +-
+ packages/fmlib_js/fmlib_js.0.5.3/opam              |  2 +-
+ packages/fmlib_js/fmlib_js.0.5.4/opam              |  2 +-
+ packages/fmlib_js/fmlib_js.0.5.5/opam              |  2 +-
+ packages/fmlib_js/fmlib_js.0.5.6/opam              |  2 +-
+ packages/fmlib_js/fmlib_js.0.5.7/opam              |  2 +-
+ packages/fmlib_js/fmlib_js.0.5.8/opam              |  2 +-
+ packages/fmlib_js/fmlib_js.0.5.9/opam              |  2 +-
+ .../graphv_webgl_impl/graphv_webgl_impl.0.1.1/opam |  2 +-
+ packages/incr_dom/incr_dom.v0.15.1/opam            |  2 +-
+ packages/incr_dom/incr_dom.v0.16.0/opam            |  2 +-
+ .../js_of_ocaml-compiler.6.0.0/opam                | 56 ++++++++++++++++++++++
+ .../js_of_ocaml-lwt/js_of_ocaml-lwt.6.0.0/opam     | 48 +++++++++++++++++++
+ .../js_of_ocaml-ppx/js_of_ocaml-ppx.6.0.0/opam     | 45 +++++++++++++++++
+ .../js_of_ocaml-ppx_deriving_json.6.0.0/opam       | 45 +++++++++++++++++
+ .../js_of_ocaml-toplevel.6.0.0/opam                | 48 +++++++++++++++++++
+ .../js_of_ocaml-tyxml/js_of_ocaml-tyxml.6.0.0/opam | 49 +++++++++++++++++++
+ packages/js_of_ocaml/js_of_ocaml.6.0.0/opam        | 45 +++++++++++++++++
+ packages/ocsigen-start/ocsigen-start.7.0.0/opam    |  1 +
+ .../ocsigen-toolkit/ocsigen-toolkit.3.3.1/opam     |  2 +-
+ .../ocsigen-toolkit/ocsigen-toolkit.3.3.4/opam     |  2 +-
+ .../ocsigen-toolkit/ocsigen-toolkit.4.0.0/opam     |  2 +-
+ packages/ojs_base/ojs_base.0.7.0/opam              |  4 +-
+ packages/timmy-jsoo/timmy-jsoo.1.0.0/opam          |  2 +-
+ packages/timmy-jsoo/timmy-jsoo.1.0.4/opam          |  2 +-
+ 36 files changed, 367 insertions(+), 30 deletions(-)
+ create mode 100644 packages/js_of_ocaml-compiler/js_of_ocaml-compiler.6.0.0/opam
+ create mode 100644 packages/js_of_ocaml-lwt/js_of_ocaml-lwt.6.0.0/opam
+ create mode 100644 packages/js_of_ocaml-ppx/js_of_ocaml-ppx.6.0.0/opam
+ create mode 100644 packages/js_of_ocaml-ppx_deriving_json/js_of_ocaml-ppx_deriving_json.6.0.0/opam
+ create mode 100644 packages/js_of_ocaml-toplevel/js_of_ocaml-toplevel.6.0.0/opam
+ create mode 100644 packages/js_of_ocaml-tyxml/js_of_ocaml-tyxml.6.0.0/opam
+ create mode 100644 packages/js_of_ocaml/js_of_ocaml.6.0.0/opam
+
+[01;34m(from ocaml/opam:alpine-3.20-ocaml-5.2@sha256:03b411a82ea5bc09e266e851e26b83bf4c10aeacde902630bcff4c38e07733c4)[0m
+[01;2m[01;35m2024-11-27 15:31.33 ---> using "53d22ae55c0c36868f5306ac655f171b94d9049a3ff2889c587b756e0ec7b711" from cache[0m
+
+[01;34m/: (user (uid 1000) (gid 1000))[0m
+
+[01;34m/: (workdir /home/opam)[0m
+
+[01;34m/home/opam: (run (shell "sudo ln -f /usr/bin/opam-dev /usr/bin/opam"))[0m
+[01;2m[01;35m2024-11-27 15:31.33 ---> using "b6791279c6e5dc1f1766a0bef889cc7acfa71e6eecccec27b63bb54d50dc835b" from cache[0m
+
+[01;34m/home/opam: (run (network host)
+                 (shell "opam init --reinit --config .opamrc-sandbox -ni"))[0m
+Configuring from /home/opam/.opamrc-sandbox, then /home/opam/.opamrc, and finally from built-in defaults.
+Checking for available remotes: rsync and local, git.
+  - you won't be able to use mercurial repositories unless you install the hg command on your system.
+  - you won't be able to use darcs repositories unless you install the darcs command on your system.
+
+This development version of opam requires an update to the layout of /home/opam/.opam from version 2.0 to version 2.2, which can't be reverted.
+You may want to back it up before going further.
+
+Continue? [Y/n] y
+[NOTE] The 'jobs' option was reset, its value was 255 and its new value will vary according to the current number of cores on your machine. You can restore the fixed value using:
+           opam option jobs=255 --global
+Format upgrade done.
+
+<><> Updating repositories ><><><><><><><><><><><><><><><><><><><><><><><><><><>
+[default] synchronised from file:///home/opam/opam-repository
+[01;2m[01;35m2024-11-27 15:32.52 ---> saved as "3aaf37720a2d051e65ddfec053d5ab23dc963c93328e8d46a43127f76173f696"[0m
+
+[01;34m/home/opam: (run (shell "uname -rs && opam exec -- ocaml -version && opam --version"))[0m
+Linux 5.15.0-126-generic
+The OCaml toplevel, version 5.2.1
+2.4.0~alpha1~dev
+[01;2m[01;35m2024-11-27 15:32.53 ---> saved as "5bb235b04438766b41e82cde565f1314ef0283f0ef0bcb98a3aff5d3bf521491"[0m
+
+[01;34m/home/opam: (env OPAMDOWNLOADJOBS 1)[0m
+
+[01;34m/home/opam: (env OPAMERRLOGLEN 0)[0m
+
+[01;34m/home/opam: (env OPAMSOLVERTIMEOUT 1000)[0m
+
+[01;34m/home/opam: (env OPAMPRECISETRACKING 1)[0m
+
+[01;34m/home/opam: (env CI true)[0m
+
+[01;34m/home/opam: (env OPAM_REPO_CI true)[0m
+
+[01;34m/home/opam: (run (shell "rm -rf opam-repository/"))[0m
+[01;2m[01;35m2024-11-27 15:33.05 ---> saved as "fe569b1e4d12816cc066c73ad1c371e9d1ca0d1cbb31862adb43244bf31f9a79"[0m
+
+[01;34m/home/opam: (copy (src .) (dst opam-repository/))[0m
+[01;2m[01;35m2024-11-27 15:33.14 ---> saved as "db3bc445b66338c3d029cc6bd522c57bfd02ee655e853e119ae6cd9b45f2bf29"[0m
+
+[01;34m/home/opam: (run (shell "opam repository set-url --strict default opam-repository/"))[0m
+[default] Initialised
+[01;2m[01;35m2024-11-27 15:34.09 ---> saved as "9690be6a2d43c00b094cb3ee18a068a4e7b27bfeed535ede0afadf6de30ab2eb"[0m
+
+[01;34m/home/opam: (run (network host)
+                 (shell "opam update --depexts || true"))[0m
++ /usr/bin/sudo "apk" "update"
+- fetch https://dl-cdn.alpinelinux.org/alpine/v3.20/main/x86_64/APKINDEX.tar.gz
+- fetch https://dl-cdn.alpinelinux.org/alpine/v3.20/community/x86_64/APKINDEX.tar.gz
+- fetch https://dl-cdn.alpinelinux.org/alpine/edge/main/x86_64/APKINDEX.tar.gz
+- fetch https://dl-cdn.alpinelinux.org/alpine/edge/community/x86_64/APKINDEX.tar.gz
+- fetch https://dl-cdn.alpinelinux.org/alpine/edge/testing/x86_64/APKINDEX.tar.gz
+- v3.20.3-360-gc37cdfde251 [https://dl-cdn.alpinelinux.org/alpine/v3.20/main]
+- v3.20.3-370-g2a97877cb75 [https://dl-cdn.alpinelinux.org/alpine/v3.20/community]
+- v20240923-5434-gc955431cd6f [https://dl-cdn.alpinelinux.org/alpine/edge/main]
+- v20240923-5446-g152987cc917 [https://dl-cdn.alpinelinux.org/alpine/edge/community]
+- v20240923-5425-g9882d53b272 [https://dl-cdn.alpinelinux.org/alpine/edge/testing]
+- OK: 56012 distinct packages available
+[01;2m[01;35m2024-11-27 15:34.10 ---> saved as "758f5dae38e3388c401d92f7dba77b28a3de69cf7cb088b99c8be38c24888179"[0m
+
+[01;34m/home/opam: (run (shell "opam pin add -k version -yn js_of_ocaml-toplevel.6.0.0 6.0.0"))[0m
+js_of_ocaml-toplevel is now pinned to version 6.0.0
+[01;2m[01;35m2024-11-27 15:34.11 ---> saved as "a05f4143302374765e81d359126f281d519d60d57b54a2775edef6d6a8664192"[0m
+
+[01;34m/home/opam: (run (cache (opam-archives (target /home/opam/.opam/download-cache)))
+                 (network host)
+                 (shell  "opam reinstall js_of_ocaml-toplevel.6.0.0;\
+                        \n        res=$?;\
+                        \n        test \"$res\" != 31 && exit \"$res\";\
+                        \n        export OPAMCLI=2.0;\
+                        \n        build_dir=$(opam var prefix)/.opam-switch/build;\
+                        \n        failed=$(ls \"$build_dir\");\
+                        \n        partial_fails=\"\";\
+                        \n        for pkg in $failed; do\
+                        \n          if opam show -f x-ci-accept-failures: \"$pkg\" | grep -qF \"\\\"alpine-3.20\\\"\"; then\
+                        \n            echo \"A package failed and has been disabled for CI using the 'x-ci-accept-failures' field.\";\
+                        \n          fi;\
+                        \n          test \"$pkg\" != 'js_of_ocaml-toplevel.6.0.0' && partial_fails=\"$partial_fails $pkg\";\
+                        \n        done;\
+                        \n        test \"${partial_fails}\" != \"\" && echo \"opam-repo-ci detected dependencies failing: ${partial_fails}\";\
+                        \n        exit 1"))[0m
+js_of_ocaml-toplevel.6.0.0 is not installed. Install it? [Y/n] y
+The following actions will be performed:
+=== install 18 packages
+  - install cmdliner             1.3.0          [required by js_of_ocaml-compiler]
+  - install dune                 3.16.1         [required by js_of_ocaml-toplevel]
+  - install gen                  1.1            [required by sedlex]
+  - install js_of_ocaml-compiler 6.0.0          [required by js_of_ocaml-toplevel]
+  - install js_of_ocaml-toplevel 6.0.0 (pinned)
+  - install menhir               20240715       [required by js_of_ocaml-compiler]
+  - install menhirCST            20240715       [required by menhir]
+  - install menhirLib            20240715       [required by js_of_ocaml-compiler]
+  - install menhirSdk            20240715       [required by js_of_ocaml-compiler]
+  - install ocaml-compiler-libs  v0.17.0        [required by ppxlib]
+  - install ocamlfind            1.9.6          [required by js_of_ocaml-toplevel]
+  - install ppx_derivers         1.2.1          [required by ppxlib]
+  - install ppxlib               0.33.0         [required by js_of_ocaml-toplevel]
+  - install sedlex               3.3            [required by js_of_ocaml-compiler]
+  - install seq                  base           [required by yojson]
+  - install sexplib0             v0.17.0        [required by ppxlib]
+  - install stdlib-shims         0.3.0          [required by ppxlib]
+  - install yojson               2.2.2          [required by js_of_ocaml-compiler]
+
+<><> Processing actions <><><><><><><><><><><><><><><><><><><><><><><><><><><><>
+-> retrieved cmdliner.1.3.0  (cached)
+-> retrieved dune.3.16.1  (cached)
+-> retrieved gen.1.1  (cached)
+-> retrieved js_of_ocaml-compiler.6.0.0, js_of_ocaml-toplevel.6.0.0  (cached)
+-> installed cmdliner.1.3.0
+-> retrieved menhir.20240715, menhirCST.20240715, menhirLib.20240715, menhirSdk.20240715  (cached)
+-> retrieved ocaml-compiler-libs.v0.17.0  (cached)
+-> retrieved ocamlfind.1.9.6  (cached)
+-> retrieved ppx_derivers.1.2.1  (cached)
+-> retrieved ppxlib.0.33.0  (cached)
+-> retrieved sedlex.3.3  (cached)
+-> retrieved seq.base  (cached)
+-> installed seq.base
+-> retrieved sexplib0.v0.17.0  (cached)
+-> retrieved stdlib-shims.0.3.0  (cached)
+-> retrieved yojson.2.2.2  (cached)
+-> installed ocamlfind.1.9.6
+-> installed dune.3.16.1
+-> installed ppx_derivers.1.2.1
+-> installed menhirCST.20240715
+-> installed stdlib-shims.0.3.0
+-> installed menhirSdk.20240715
+-> installed sexplib0.v0.17.0
+-> installed gen.1.1
+-> installed menhirLib.20240715
+-> installed ocaml-compiler-libs.v0.17.0
+-> installed yojson.2.2.2
+-> installed menhir.20240715
+-> installed ppxlib.0.33.0
+-> installed sedlex.3.3
+-> installed js_of_ocaml-compiler.6.0.0
+-> installed js_of_ocaml-toplevel.6.0.0
+Done.
+# To update the current shell environment, run: eval $(opam env)
+[01;2m[01;35m2024-11-27 15:35.40 ---> saved as "1450db9e944a8d2cce0044a7c3a3466bff6c0816a4db393a856fd68bc85f8c9a"[0m
+
+[01;34m/home/opam: (run (network host)
+                 (shell "(opam reinstall --with-test js_of_ocaml-toplevel.6.0.0) || true"))[0m
+[ERROR] Sorry, resolution of the request timed out.
+        Try to specify a more precise request, use a different solver, or increase the allowed time by setting OPAMSOLVERTIMEOUT to a bigger value (currently, it is set to 1000.0 seconds).
+[01;2m[01;35m2024-11-27 15:52.36 ---> saved as "6fea80b26058216e6a1f5b9a28aea9ff18971b7bc0a637f5e31b7a46c8cef18c"[0m
+
+[01;34m/home/opam: (run (shell  "opam reinstall --with-test --verbose js_of_ocaml-toplevel.6.0.0;\
+                        \n        res=$?;\
+                        \n        test \"$res\" != 31 && exit \"$res\";\
+                        \n        export OPAMCLI=2.0;\
+                        \n        build_dir=$(opam var prefix)/.opam-switch/build;\
+                        \n        failed=$(ls \"$build_dir\");\
+                        \n        partial_fails=\"\";\
+                        \n        for pkg in $failed; do\
+                        \n          if opam show -f x-ci-accept-failures: \"$pkg\" | grep -qF \"\\\"alpine-3.20\\\"\"; then\
+                        \n            echo \"A package failed and has been disabled for CI using the 'x-ci-accept-failures' field.\";\
+                        \n          fi;\
+                        \n          test \"$pkg\" != 'js_of_ocaml-toplevel.6.0.0' && partial_fails=\"$partial_fails $pkg\";\
+                        \n        done;\
+                        \n        test \"${partial_fails}\" != \"\" && echo \"opam-repo-ci detected dependencies failing: ${partial_fails}\";\
+                        \n        exit 1"))[0m
+[ERROR] Sorry, resolution of the request timed out.
+        Try to specify a more precise request, use a different solver, or increase the allowed time by setting OPAMSOLVERTIMEOUT to a bigger value (currently, it is set to 1000.0 seconds).
+'opam reinstall --with-test --verbose js_of_ocaml-toplevel.6.0.0' failed.
+"/usr/bin/env" "bash" "-c" "opam reinstall --with-test --verbose js_of_ocaml-toplevel.6.0.0;
+        res=$?;
+        test "$res" != 31 && exit "$res";
+        export OPAMCLI=2.0;
+        build_dir=$(opam var prefix)/.opam-switch/build;
+        failed=$(ls "$build_dir");
+        partial_fails="";
+        for pkg in $failed; do
+          if opam show -f x-ci-accept-failures: "$pkg" | grep -qF "\"alpine-3.20\""; then
+            echo "A package failed and has been disabled for CI using the 'x-ci-accept-failures' field.";
+          fi;
+          test "$pkg" != 'js_of_ocaml-toplevel.6.0.0' && partial_fails="$partial_fails $pkg";
+        done;
+        test "${partial_fails}" != "" && echo "opam-repo-ci detected dependencies failing: ${partial_fails}";
+        exit 1" failed with exit status 60
+2024-11-27 16:09.45: Job failed: Failed: Build failed
+2024-11-27 16:09.45: Log analysis:
+2024-11-27 16:09.45: >>> 
+[ERROR] Sorry, resolution of the request timed out.
+ (score = 20)
+2024-11-27 16:09.45: >>> 
+[ERROR] Sorry, resolution of the request timed out.
+ (score = 20)
+2024-11-27 16:09.45: Sorry, resolution of the request timed out.

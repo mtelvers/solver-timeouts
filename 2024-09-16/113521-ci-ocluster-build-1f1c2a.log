@@ -1,0 +1,443 @@
+2024-09-16 11:35.21: New job: test pp.2.0.0, using opam dev
+                              from https://github.com/ocaml/opam-repository.git#refs/pull/26570/head (745b16a7d006e1e5698a2bb813725c03c246bcc7)
+                              on debian-12-ocaml-4.11/amd64
+
+To reproduce locally:
+
+cd $(mktemp -d)
+git clone --recursive "https://github.com/ocaml/opam-repository.git" && cd "opam-repository" && git fetch origin "refs/pull/26570/head" && git reset --hard 745b16a7
+git fetch origin master
+git merge --no-edit 12d7650ba97ec7883fa001a001e0433e54eb4e53
+cat > ../Dockerfile <<'END-OF-DOCKERFILE'
+[34mFROM ocaml/opam:debian-12-ocaml-4.11@sha256:7a3d58c501028d55318e8ea9416b7c488fb2b901d00e3eae4ea94bf5181476e7
+USER 1000:1000
+WORKDIR /home/opam
+RUN sudo ln -f /usr/bin/opam-dev /usr/bin/opam
+RUN opam init --reinit -ni
+RUN uname -rs && opam exec -- ocaml -version && opam --version
+ENV OPAMDOWNLOADJOBS="1"
+ENV OPAMERRLOGLEN="0"
+ENV OPAMSOLVERTIMEOUT="500"
+ENV OPAMPRECISETRACKING="1"
+ENV CI="true"
+ENV OPAM_REPO_CI="true"
+RUN rm -rf opam-repository/
+COPY --chown=1000:1000 . opam-repository/
+RUN opam repository set-url --strict default opam-repository/
+RUN opam update --depexts || true
+RUN opam pin add -k version -yn pp.2.0.0 2.0.0
+RUN opam reinstall pp.2.0.0; \
+    res=$?; \
+    test "$res" != 31 && exit "$res"; \
+    export OPAMCLI=2.0; \
+    build_dir=$(opam var prefix)/.opam-switch/build; \
+    failed=$(ls "$build_dir"); \
+    partial_fails=""; \
+    for pkg in $failed; do \
+    if opam show -f x-ci-accept-failures: "$pkg" | grep -qF "\"debian-12\""; then \
+    echo "A package failed and has been disabled for CI using the 'x-ci-accept-failures' field."; \
+    fi; \
+    test "$pkg" != 'pp.2.0.0' && partial_fails="$partial_fails $pkg"; \
+    done; \
+    test "${partial_fails}" != "" && echo "opam-repo-ci detected dependencies failing: ${partial_fails}"; \
+    exit 1
+RUN (opam reinstall --with-test pp.2.0.0) || true
+RUN opam reinstall --with-test --verbose pp.2.0.0; \
+    res=$?; \
+    test "$res" != 31 && exit "$res"; \
+    export OPAMCLI=2.0; \
+    build_dir=$(opam var prefix)/.opam-switch/build; \
+    failed=$(ls "$build_dir"); \
+    partial_fails=""; \
+    for pkg in $failed; do \
+    if opam show -f x-ci-accept-failures: "$pkg" | grep -qF "\"debian-12\""; then \
+    echo "A package failed and has been disabled for CI using the 'x-ci-accept-failures' field."; \
+    fi; \
+    test "$pkg" != 'pp.2.0.0' && partial_fails="$partial_fails $pkg"; \
+    done; \
+    test "${partial_fails}" != "" && echo "opam-repo-ci detected dependencies failing: ${partial_fails}"; \
+    exit 1
+[0m
+END-OF-DOCKERFILE
+docker build -f ../Dockerfile .
+
+2024-09-16 11:35.21: Using cache hint "ocaml/opam:debian-12-ocaml-4.11@sha256:7a3d58c501028d55318e8ea9416b7c488fb2b901d00e3eae4ea94bf5181476e7-pp.2.0.0-745b16a7d006e1e5698a2bb813725c03c246bcc7"
+2024-09-16 11:35.21: Using OBuilder spec:
+((from ocaml/opam:debian-12-ocaml-4.11@sha256:7a3d58c501028d55318e8ea9416b7c488fb2b901d00e3eae4ea94bf5181476e7)
+ (user (uid 1000) (gid 1000))
+ (workdir /home/opam)
+ (run (shell "sudo ln -f /usr/bin/opam-dev /usr/bin/opam"))
+ (run (network host)
+      (shell "opam init --reinit --config .opamrc-sandbox -ni"))
+ (run (shell "uname -rs && opam exec -- ocaml -version && opam --version"))
+ (env OPAMDOWNLOADJOBS 1)
+ (env OPAMERRLOGLEN 0)
+ (env OPAMSOLVERTIMEOUT 500)
+ (env OPAMPRECISETRACKING 1)
+ (env CI true)
+ (env OPAM_REPO_CI true)
+ (run (shell "rm -rf opam-repository/"))
+ (copy (src .) (dst opam-repository/))
+ (run (shell "opam repository set-url --strict default opam-repository/"))
+ (run (network host)
+      (shell "opam update --depexts || true"))
+ (run (shell "opam pin add -k version -yn pp.2.0.0 2.0.0"))
+ (run (cache (opam-archives (target /home/opam/.opam/download-cache)))
+      (network host)
+      (shell  "opam reinstall pp.2.0.0;\
+             \n        res=$?;\
+             \n        test \"$res\" != 31 && exit \"$res\";\
+             \n        export OPAMCLI=2.0;\
+             \n        build_dir=$(opam var prefix)/.opam-switch/build;\
+             \n        failed=$(ls \"$build_dir\");\
+             \n        partial_fails=\"\";\
+             \n        for pkg in $failed; do\
+             \n          if opam show -f x-ci-accept-failures: \"$pkg\" | grep -qF \"\\\"debian-12\\\"\"; then\
+             \n            echo \"A package failed and has been disabled for CI using the 'x-ci-accept-failures' field.\";\
+             \n          fi;\
+             \n          test \"$pkg\" != 'pp.2.0.0' && partial_fails=\"$partial_fails $pkg\";\
+             \n        done;\
+             \n        test \"${partial_fails}\" != \"\" && echo \"opam-repo-ci detected dependencies failing: ${partial_fails}\";\
+             \n        exit 1"))
+ (run (network host)
+      (shell "(opam reinstall --with-test pp.2.0.0) || true"))
+ (run (shell  "opam reinstall --with-test --verbose pp.2.0.0;\
+             \n        res=$?;\
+             \n        test \"$res\" != 31 && exit \"$res\";\
+             \n        export OPAMCLI=2.0;\
+             \n        build_dir=$(opam var prefix)/.opam-switch/build;\
+             \n        failed=$(ls \"$build_dir\");\
+             \n        partial_fails=\"\";\
+             \n        for pkg in $failed; do\
+             \n          if opam show -f x-ci-accept-failures: \"$pkg\" | grep -qF \"\\\"debian-12\\\"\"; then\
+             \n            echo \"A package failed and has been disabled for CI using the 'x-ci-accept-failures' field.\";\
+             \n          fi;\
+             \n          test \"$pkg\" != 'pp.2.0.0' && partial_fails=\"$partial_fails $pkg\";\
+             \n        done;\
+             \n        test \"${partial_fails}\" != \"\" && echo \"opam-repo-ci detected dependencies failing: ${partial_fails}\";\
+             \n        exit 1"))
+)
+
+2024-09-16 11:35.21: Waiting for resource in pool OCluster
+2024-09-16 12:16.15: Waiting for worker…
+2024-09-16 12:17.30: Got resource from pool OCluster
+Building on x86-bm-c5.sw.ocaml.org
+All commits already cached
+Updating files:  46% (14967/32226)Updating files:  47% (15147/32226)Updating files:  48% (15469/32226)Updating files:  49% (15791/32226)Updating files:  50% (16113/32226)Updating files:  51% (16436/32226)Updating files:  52% (16758/32226)Updating files:  53% (17080/32226)Updating files:  54% (17403/32226)Updating files:  55% (17725/32226)Updating files:  56% (18047/32226)Updating files:  57% (18369/32226)Updating files:  58% (18692/32226)Updating files:  59% (19014/32226)Updating files:  60% (19336/32226)Updating files:  61% (19658/32226)Updating files:  62% (19981/32226)Updating files:  63% (20303/32226)Updating files:  64% (20625/32226)Updating files:  65% (20947/32226)Updating files:  66% (21270/32226)Updating files:  67% (21592/32226)Updating files:  68% (21914/32226)Updating files:  69% (22236/32226)Updating files:  70% (22559/32226)Updating files:  71% (22881/32226)Updating files:  72% (23203/32226)Updating files:  73% (23525/32226)Updating files:  74% (23848/32226)Updating files:  75% (24170/32226)Updating files:  76% (24492/32226)Updating files:  77% (24815/32226)Updating files:  78% (25137/32226)Updating files:  79% (25459/32226)Updating files:  80% (25781/32226)Updating files:  81% (26104/32226)Updating files:  82% (26426/32226)Updating files:  83% (26748/32226)Updating files:  84% (27070/32226)Updating files:  85% (27393/32226)Updating files:  86% (27715/32226)Updating files:  87% (28037/32226)Updating files:  88% (28359/32226)Updating files:  89% (28682/32226)Updating files:  90% (29004/32226)Updating files:  91% (29326/32226)Updating files:  92% (29648/32226)Updating files:  93% (29971/32226)Updating files:  94% (30293/32226)Updating files:  95% (30615/32226)Updating files:  96% (30937/32226)Updating files:  97% (31260/32226)Updating files:  98% (31582/32226)Updating files:  99% (31904/32226)Updating files: 100% (32226/32226)Updating files: 100% (32226/32226), done.
+HEAD is now at 12d7650ba9 Merge pull request #26569 from polytypic/release-multicore-bench-0.1.5
+Merge made by the 'ort' strategy.
+ .../dune-private-libs/dune-private-libs.3.0.2/opam |  2 +-
+ .../dune-private-libs/dune-private-libs.3.0.3/opam |  2 +-
+ .../dune-private-libs/dune-private-libs.3.1.0/opam |  2 +-
+ .../dune-private-libs/dune-private-libs.3.1.1/opam |  2 +-
+ .../dune-private-libs.3.10.0/opam                  |  2 +-
+ .../dune-private-libs.3.11.0/opam                  |  2 +-
+ .../dune-private-libs.3.11.1/opam                  |  2 +-
+ .../dune-private-libs.3.12.1/opam                  |  2 +-
+ .../dune-private-libs.3.12.2/opam                  |  2 +-
+ .../dune-private-libs.3.13.0/opam                  |  2 +-
+ .../dune-private-libs.3.13.1/opam                  |  2 +-
+ .../dune-private-libs.3.14.0/opam                  |  2 +-
+ .../dune-private-libs.3.14.2/opam                  |  2 +-
+ .../dune-private-libs.3.15.0/opam                  |  2 +-
+ .../dune-private-libs.3.15.2/opam                  |  2 +-
+ .../dune-private-libs.3.15.3/opam                  |  2 +-
+ .../dune-private-libs.3.16.0/opam                  |  2 +-
+ .../dune-private-libs/dune-private-libs.3.2.0/opam |  2 +-
+ .../dune-private-libs/dune-private-libs.3.3.0/opam |  2 +-
+ .../dune-private-libs/dune-private-libs.3.3.1/opam |  2 +-
+ .../dune-private-libs/dune-private-libs.3.4.0/opam |  2 +-
+ .../dune-private-libs/dune-private-libs.3.4.1/opam |  2 +-
+ .../dune-private-libs/dune-private-libs.3.5.0/opam |  2 +-
+ .../dune-private-libs/dune-private-libs.3.6.0/opam |  2 +-
+ .../dune-private-libs/dune-private-libs.3.6.1/opam |  2 +-
+ .../dune-private-libs/dune-private-libs.3.6.2/opam |  2 +-
+ .../dune-private-libs/dune-private-libs.3.7.0/opam |  2 +-
+ .../dune-private-libs/dune-private-libs.3.7.1/opam |  2 +-
+ .../dune-private-libs/dune-private-libs.3.8.0/opam |  2 +-
+ .../dune-private-libs/dune-private-libs.3.8.1/opam |  2 +-
+ .../dune-private-libs/dune-private-libs.3.8.2/opam |  2 +-
+ .../dune-private-libs/dune-private-libs.3.8.3/opam |  2 +-
+ .../dune-private-libs/dune-private-libs.3.9.0/opam |  2 +-
+ .../dune-private-libs/dune-private-libs.3.9.1/opam |  2 +-
+ .../dune-private-libs/dune-private-libs.3.9.2/opam |  2 +-
+ .../dune-private-libs/dune-private-libs.3.9.3/opam |  2 +-
+ packages/dune-rpc/dune-rpc.3.0.2/opam              |  2 +-
+ packages/dune-rpc/dune-rpc.3.0.3/opam              |  2 +-
+ packages/dune-rpc/dune-rpc.3.1.0/opam              |  2 +-
+ packages/dune-rpc/dune-rpc.3.1.1/opam              |  2 +-
+ packages/dune-rpc/dune-rpc.3.10.0/opam             |  2 +-
+ packages/dune-rpc/dune-rpc.3.11.0/opam             |  2 +-
+ packages/dune-rpc/dune-rpc.3.11.1/opam             |  2 +-
+ packages/dune-rpc/dune-rpc.3.12.1/opam             |  2 +-
+ packages/dune-rpc/dune-rpc.3.12.2/opam             |  2 +-
+ packages/dune-rpc/dune-rpc.3.13.0/opam             |  2 +-
+ packages/dune-rpc/dune-rpc.3.13.1/opam             |  2 +-
+ packages/dune-rpc/dune-rpc.3.14.0/opam             |  2 +-
+ packages/dune-rpc/dune-rpc.3.14.2/opam             |  2 +-
+ packages/dune-rpc/dune-rpc.3.15.0/opam             |  2 +-
+ packages/dune-rpc/dune-rpc.3.15.2/opam             |  2 +-
+ packages/dune-rpc/dune-rpc.3.15.3/opam             |  2 +-
+ packages/dune-rpc/dune-rpc.3.16.0/opam             |  2 +-
+ packages/dune-rpc/dune-rpc.3.2.0/opam              |  2 +-
+ packages/dune-rpc/dune-rpc.3.3.0/opam              |  2 +-
+ packages/dune-rpc/dune-rpc.3.3.1/opam              |  2 +-
+ packages/dune-rpc/dune-rpc.3.4.0/opam              |  2 +-
+ packages/dune-rpc/dune-rpc.3.4.1/opam              |  2 +-
+ packages/dune-rpc/dune-rpc.3.5.0/opam              |  2 +-
+ packages/dune-rpc/dune-rpc.3.6.0/opam              |  2 +-
+ packages/dune-rpc/dune-rpc.3.6.1/opam              |  2 +-
+ packages/dune-rpc/dune-rpc.3.6.2/opam              |  2 +-
+ packages/dune-rpc/dune-rpc.3.7.0/opam              |  2 +-
+ packages/dune-rpc/dune-rpc.3.7.1/opam              |  2 +-
+ packages/dune-rpc/dune-rpc.3.8.0/opam              |  2 +-
+ packages/dune-rpc/dune-rpc.3.8.1/opam              |  2 +-
+ packages/dune-rpc/dune-rpc.3.8.2/opam              |  2 +-
+ packages/dune-rpc/dune-rpc.3.8.3/opam              |  2 +-
+ packages/dune-rpc/dune-rpc.3.9.0/opam              |  2 +-
+ packages/dune-rpc/dune-rpc.3.9.1/opam              |  2 +-
+ packages/dune-rpc/dune-rpc.3.9.2/opam              |  2 +-
+ packages/dune-rpc/dune-rpc.3.9.3/opam              |  2 +-
+ packages/dyn/dyn.3.0.2/opam                        |  2 +-
+ packages/dyn/dyn.3.0.3/opam                        |  2 +-
+ packages/dyn/dyn.3.1.0/opam                        |  2 +-
+ packages/dyn/dyn.3.1.1/opam                        |  2 +-
+ packages/dyn/dyn.3.10.0/opam                       |  2 +-
+ packages/dyn/dyn.3.11.0/opam                       |  2 +-
+ packages/dyn/dyn.3.11.1/opam                       |  2 +-
+ packages/dyn/dyn.3.12.1/opam                       |  2 +-
+ packages/dyn/dyn.3.12.2/opam                       |  2 +-
+ packages/dyn/dyn.3.13.0/opam                       |  2 +-
+ packages/dyn/dyn.3.13.1/opam                       |  2 +-
+ packages/dyn/dyn.3.14.0/opam                       |  2 +-
+ packages/dyn/dyn.3.14.2/opam                       |  2 +-
+ packages/dyn/dyn.3.15.0/opam                       |  2 +-
+ packages/dyn/dyn.3.15.2/opam                       |  2 +-
+ packages/dyn/dyn.3.15.3/opam                       |  2 +-
+ packages/dyn/dyn.3.16.0/opam                       |  2 +-
+ packages/dyn/dyn.3.2.0/opam                        |  2 +-
+ packages/dyn/dyn.3.3.0/opam                        |  2 +-
+ packages/dyn/dyn.3.3.1/opam                        |  2 +-
+ packages/dyn/dyn.3.4.0/opam                        |  2 +-
+ packages/dyn/dyn.3.4.1/opam                        |  2 +-
+ packages/dyn/dyn.3.5.0/opam                        |  2 +-
+ packages/dyn/dyn.3.6.0/opam                        |  2 +-
+ packages/dyn/dyn.3.6.1/opam                        |  2 +-
+ packages/dyn/dyn.3.6.2/opam                        |  2 +-
+ packages/dyn/dyn.3.7.0/opam                        |  2 +-
+ packages/dyn/dyn.3.7.1/opam                        |  2 +-
+ packages/dyn/dyn.3.8.0/opam                        |  2 +-
+ packages/dyn/dyn.3.8.1/opam                        |  2 +-
+ packages/dyn/dyn.3.8.2/opam                        |  2 +-
+ packages/dyn/dyn.3.8.3/opam                        |  2 +-
+ packages/dyn/dyn.3.9.0/opam                        |  2 +-
+ packages/dyn/dyn.3.9.1/opam                        |  2 +-
+ packages/dyn/dyn.3.9.2/opam                        |  2 +-
+ packages/dyn/dyn.3.9.3/opam                        |  2 +-
+ packages/lsp/lsp.1.10.0/opam                       |  2 +-
+ packages/lsp/lsp.1.10.1/opam                       |  2 +-
+ packages/lsp/lsp.1.10.2/opam                       |  2 +-
+ packages/lsp/lsp.1.10.3/opam                       |  2 +-
+ packages/lsp/lsp.1.6.1/opam                        |  2 +-
+ packages/lsp/lsp.1.7.0/opam                        |  2 +-
+ packages/lsp/lsp.1.8.0/opam                        |  2 +-
+ packages/lsp/lsp.1.8.2/opam                        |  2 +-
+ packages/lsp/lsp.1.8.3/opam                        |  2 +-
+ packages/lsp/lsp.1.9.0/opam                        |  2 +-
+ packages/lsp/lsp.1.9.1/opam                        |  2 +-
+ packages/pp/pp.2.0.0/opam                          | 60 ++++++++++++++++++++++
+ packages/stdune/stdune.3.0.2/opam                  |  2 +-
+ packages/stdune/stdune.3.0.3/opam                  |  2 +-
+ packages/stdune/stdune.3.1.0/opam                  |  2 +-
+ packages/stdune/stdune.3.1.1/opam                  |  2 +-
+ packages/stdune/stdune.3.10.0/opam                 |  2 +-
+ packages/stdune/stdune.3.11.0/opam                 |  2 +-
+ packages/stdune/stdune.3.11.1/opam                 |  2 +-
+ packages/stdune/stdune.3.12.1/opam                 |  2 +-
+ packages/stdune/stdune.3.12.2/opam                 |  2 +-
+ packages/stdune/stdune.3.13.0/opam                 |  2 +-
+ packages/stdune/stdune.3.13.1/opam                 |  2 +-
+ packages/stdune/stdune.3.14.0/opam                 |  2 +-
+ packages/stdune/stdune.3.14.2/opam                 |  2 +-
+ packages/stdune/stdune.3.15.0/opam                 |  2 +-
+ packages/stdune/stdune.3.15.2/opam                 |  2 +-
+ packages/stdune/stdune.3.15.3/opam                 |  2 +-
+ packages/stdune/stdune.3.16.0/opam                 |  2 +-
+ packages/stdune/stdune.3.2.0/opam                  |  2 +-
+ packages/stdune/stdune.3.3.0/opam                  |  2 +-
+ packages/stdune/stdune.3.3.1/opam                  |  2 +-
+ packages/stdune/stdune.3.4.0/opam                  |  2 +-
+ packages/stdune/stdune.3.4.1/opam                  |  2 +-
+ packages/stdune/stdune.3.5.0/opam                  |  2 +-
+ packages/stdune/stdune.3.6.0/opam                  |  2 +-
+ packages/stdune/stdune.3.6.1/opam                  |  2 +-
+ packages/stdune/stdune.3.6.2/opam                  |  2 +-
+ packages/stdune/stdune.3.7.0/opam                  |  2 +-
+ packages/stdune/stdune.3.7.1/opam                  |  2 +-
+ packages/stdune/stdune.3.8.0/opam                  |  2 +-
+ packages/stdune/stdune.3.8.1/opam                  |  2 +-
+ packages/stdune/stdune.3.8.2/opam                  |  2 +-
+ packages/stdune/stdune.3.8.3/opam                  |  2 +-
+ packages/stdune/stdune.3.9.0/opam                  |  2 +-
+ packages/stdune/stdune.3.9.1/opam                  |  2 +-
+ packages/stdune/stdune.3.9.2/opam                  |  2 +-
+ packages/stdune/stdune.3.9.3/opam                  |  2 +-
+ 156 files changed, 215 insertions(+), 155 deletions(-)
+ create mode 100644 packages/pp/pp.2.0.0/opam
+
+[01;34m(from ocaml/opam:debian-12-ocaml-4.11@sha256:7a3d58c501028d55318e8ea9416b7c488fb2b901d00e3eae4ea94bf5181476e7)[0m
+[01;2m[01;35m2024-09-16 12:18.25 ---> saved as "7c9d80c6275be1f462cb36204c6232602c0fc1a02021eb94be1f064ed4e2f59d"[0m
+
+[01;34m/: (user (uid 1000) (gid 1000))[0m
+
+[01;34m/: (workdir /home/opam)[0m
+
+[01;34m/home/opam: (run (shell "sudo ln -f /usr/bin/opam-dev /usr/bin/opam"))[0m
+[01;2m[01;35m2024-09-16 12:18.25 ---> saved as "9e2fce9facd63032a9254bf59c511fda177d6498affcecf8442b00e8617d32ac"[0m
+
+[01;34m/home/opam: (run (network host)
+                 (shell "opam init --reinit --config .opamrc-sandbox -ni"))[0m
+Configuring from /home/opam/.opamrc-sandbox, then /home/opam/.opamrc, and finally from built-in defaults.
+Checking for available remotes: rsync and local, git.
+  - you won't be able to use mercurial repositories unless you install the hg command on your system.
+  - you won't be able to use darcs repositories unless you install the darcs command on your system.
+
+This development version of opam requires an update to the layout of /home/opam/.opam from version 2.0 to version 2.2, which can't be reverted.
+You may want to back it up before going further.
+
+Continue? [y/n] y
+[NOTE] The 'jobs' option was reset, its value was 39 and its new value will vary according to the current number of cores on your machine. You can restore the fixed value using:
+           opam option jobs=39 --global
+Format upgrade done.
+
+<><> Updating repositories ><><><><><><><><><><><><><><><><><><><><><><><><><><>
+[default] synchronised from file:///home/opam/opam-repository
+[01;2m[01;35m2024-09-16 12:19.32 ---> saved as "b778a526c8bc7ff0da89cbf8e4be6674e1a24a457f1041b4eeb1fc8e661eda32"[0m
+
+[01;34m/home/opam: (run (shell "uname -rs && opam exec -- ocaml -version && opam --version"))[0m
+Linux 5.15.0-121-generic
+The OCaml toplevel, version 4.11.2
+2.3.0~alpha~dev
+[01;2m[01;35m2024-09-16 12:19.33 ---> saved as "53415d0bd9d2fc4941d613ad43f3039008f254262091f00291bbb81b5ce15885"[0m
+
+[01;34m/home/opam: (env OPAMDOWNLOADJOBS 1)[0m
+
+[01;34m/home/opam: (env OPAMERRLOGLEN 0)[0m
+
+[01;34m/home/opam: (env OPAMSOLVERTIMEOUT 500)[0m
+
+[01;34m/home/opam: (env OPAMPRECISETRACKING 1)[0m
+
+[01;34m/home/opam: (env CI true)[0m
+
+[01;34m/home/opam: (env OPAM_REPO_CI true)[0m
+
+[01;34m/home/opam: (run (shell "rm -rf opam-repository/"))[0m
+[01;2m[01;35m2024-09-16 12:19.41 ---> saved as "decce0e170466ea7a798678c16a0f194492dc711b0af5feb1051ea584c451a0e"[0m
+
+[01;34m/home/opam: (copy (src .) (dst opam-repository/))[0m
+[01;2m[01;35m2024-09-16 12:20.12 ---> saved as "9cde506c9bae43b156e1b9881ff6c66d98649cd908a16dae1fb8835e886e26bd"[0m
+
+[01;34m/home/opam: (run (shell "opam repository set-url --strict default opam-repository/"))[0m
+[default] Initialised
+[01;2m[01;35m2024-09-16 12:20.59 ---> saved as "29b9d368d7a4e894c50a654e6cc04e0a0ffed87f620b38f782c8a3a9e5fa81b8"[0m
+
+[01;34m/home/opam: (run (network host)
+                 (shell "opam update --depexts || true"))[0m
++ /usr/bin/sudo "apt-get" "update"
+- Hit:1 http://deb.debian.org/debian bookworm InRelease
+- Get:2 http://deb.debian.org/debian bookworm-updates InRelease [55.4 kB]
+- Get:3 http://deb.debian.org/debian-security bookworm-security InRelease [48.0 kB]
+- Get:4 http://deb.debian.org/debian bookworm-updates/main amd64 Packages.diff/Index [11.7 kB]
+- Get:5 http://deb.debian.org/debian bookworm-updates/main amd64 Packages T-2024-09-10-2011.55-F-2024-09-10-2011.55.pdiff [1116 B]
+- Get:5 http://deb.debian.org/debian bookworm-updates/main amd64 Packages T-2024-09-10-2011.55-F-2024-09-10-2011.55.pdiff [1116 B]
+- Get:6 http://deb.debian.org/debian-security bookworm-security/main amd64 Packages [181 kB]
+- Fetched 297 kB in 0s (948 kB/s)
+- Reading package lists...
+- 
+[01;2m[01;35m2024-09-16 12:21.01 ---> saved as "2a29f4a37c97bba706e11a4668d730c80aab408ef5911d29656938cf4c54fdd8"[0m
+
+[01;34m/home/opam: (run (shell "opam pin add -k version -yn pp.2.0.0 2.0.0"))[0m
+pp is now pinned to version 2.0.0
+[01;2m[01;35m2024-09-16 12:21.02 ---> saved as "905bda1d91bf119c1aa9d449ccdbe5271a9046bf81af7d592659409a44e62c97"[0m
+
+[01;34m/home/opam: (run (cache (opam-archives (target /home/opam/.opam/download-cache)))
+                 (network host)
+                 (shell  "opam reinstall pp.2.0.0;\
+                        \n        res=$?;\
+                        \n        test \"$res\" != 31 && exit \"$res\";\
+                        \n        export OPAMCLI=2.0;\
+                        \n        build_dir=$(opam var prefix)/.opam-switch/build;\
+                        \n        failed=$(ls \"$build_dir\");\
+                        \n        partial_fails=\"\";\
+                        \n        for pkg in $failed; do\
+                        \n          if opam show -f x-ci-accept-failures: \"$pkg\" | grep -qF \"\\\"debian-12\\\"\"; then\
+                        \n            echo \"A package failed and has been disabled for CI using the 'x-ci-accept-failures' field.\";\
+                        \n          fi;\
+                        \n          test \"$pkg\" != 'pp.2.0.0' && partial_fails=\"$partial_fails $pkg\";\
+                        \n        done;\
+                        \n        test \"${partial_fails}\" != \"\" && echo \"opam-repo-ci detected dependencies failing: ${partial_fails}\";\
+                        \n        exit 1"))[0m
+pp.2.0.0 is not installed. Install it? [y/n] y
+The following actions will be performed:
+=== install 2 packages
+  - install dune 3.16.0         [required by pp]
+  - install pp   2.0.0 (pinned)
+
+<><> Processing actions <><><><><><><><><><><><><><><><><><><><><><><><><><><><>
+-> retrieved dune.3.16.0  (cached)
+-> retrieved pp.2.0.0  (cached)
+-> installed dune.3.16.0
+-> installed pp.2.0.0
+Done.
+# To update the current shell environment, run: eval $(opam env)
+[01;2m[01;35m2024-09-16 12:21.47 ---> saved as "d92ab580bd32a6ff227f7890a4001283753de70b35bca4437d9457fca620eada"[0m
+
+[01;34m/home/opam: (run (network host)
+                 (shell "(opam reinstall --with-test pp.2.0.0) || true"))[0m
+[ERROR] Sorry, resolution of the request timed out.
+        Try to specify a more precise request, use a different solver, or increase the allowed time by setting OPAMSOLVERTIMEOUT to a bigger value (currently, it is set to 500.0 seconds).
+[01;2m[01;35m2024-09-16 12:30.19 ---> saved as "5b4c53978477e97f94ee26a1a233911a848eed64f4559965eb07413f5b863161"[0m
+
+[01;34m/home/opam: (run (shell  "opam reinstall --with-test --verbose pp.2.0.0;\
+                        \n        res=$?;\
+                        \n        test \"$res\" != 31 && exit \"$res\";\
+                        \n        export OPAMCLI=2.0;\
+                        \n        build_dir=$(opam var prefix)/.opam-switch/build;\
+                        \n        failed=$(ls \"$build_dir\");\
+                        \n        partial_fails=\"\";\
+                        \n        for pkg in $failed; do\
+                        \n          if opam show -f x-ci-accept-failures: \"$pkg\" | grep -qF \"\\\"debian-12\\\"\"; then\
+                        \n            echo \"A package failed and has been disabled for CI using the 'x-ci-accept-failures' field.\";\
+                        \n          fi;\
+                        \n          test \"$pkg\" != 'pp.2.0.0' && partial_fails=\"$partial_fails $pkg\";\
+                        \n        done;\
+                        \n        test \"${partial_fails}\" != \"\" && echo \"opam-repo-ci detected dependencies failing: ${partial_fails}\";\
+                        \n        exit 1"))[0m
+[ERROR] Sorry, resolution of the request timed out.
+        Try to specify a more precise request, use a different solver, or increase the allowed time by setting OPAMSOLVERTIMEOUT to a bigger value (currently, it is set to 500.0 seconds).
+'opam reinstall --with-test --verbose pp.2.0.0' failed.
+"/usr/bin/env" "bash" "-c" "opam reinstall --with-test --verbose pp.2.0.0;
+        res=$?;
+        test "$res" != 31 && exit "$res";
+        export OPAMCLI=2.0;
+        build_dir=$(opam var prefix)/.opam-switch/build;
+        failed=$(ls "$build_dir");
+        partial_fails="";
+        for pkg in $failed; do
+          if opam show -f x-ci-accept-failures: "$pkg" | grep -qF "\"debian-12\""; then
+            echo "A package failed and has been disabled for CI using the 'x-ci-accept-failures' field.";
+          fi;
+          test "$pkg" != 'pp.2.0.0' && partial_fails="$partial_fails $pkg";
+        done;
+        test "${partial_fails}" != "" && echo "opam-repo-ci detected dependencies failing: ${partial_fails}";
+        exit 1" failed with exit status 60
+2024-09-16 12:38.59: Job failed: Failed: Build failed
+2024-09-16 12:38.59: Log analysis:
+2024-09-16 12:38.59: >>> 
+[ERROR] Sorry, resolution of the request timed out.
+ (score = 20)
+2024-09-16 12:38.59: >>> 
+[ERROR] Sorry, resolution of the request timed out.
+ (score = 20)
+2024-09-16 12:38.59: Sorry, resolution of the request timed out.

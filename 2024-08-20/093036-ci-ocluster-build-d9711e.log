@@ -1,0 +1,830 @@
+2024-08-20 09:30.36: New job: test git.2.1.1, using opam dev
+                              from https://github.com/ocaml/opam-repository.git#refs/pull/26378/head (cd59661bc85b5a67c3837459d02c70c2c4aa15a1)
+                              on freebsd-ocaml-4.14/amd64
+
+To reproduce locally:
+
+cd $(mktemp -d)
+git clone --recursive "https://github.com/ocaml/opam-repository.git" && cd "opam-repository" && git fetch origin "refs/pull/26378/head" && git reset --hard cd59661b
+git fetch origin master
+git merge --no-edit 0f2e2e7a59bb6529f1cf8ec039da401833b24cdf
+cat > ../Dockerfile <<'END-OF-DOCKERFILE'
+[34mFROM freebsd-ocaml-4.14
+USER 1000:1000
+WORKDIR /home/opam
+RUN sudo ln -f /usr/local/bin/opam-dev /usr/local/bin/opam
+RUN opam init --reinit -ni
+RUN uname -rs && opam exec -- ocaml -version && opam --version
+ENV OPAMDOWNLOADJOBS="1"
+ENV OPAMERRLOGLEN="0"
+ENV OPAMSOLVERTIMEOUT="500"
+ENV OPAMPRECISETRACKING="1"
+ENV CI="true"
+ENV OPAM_REPO_CI="true"
+RUN rm -rf opam-repository/
+COPY --chown=1000:1000 . opam-repository/
+RUN opam repository set-url --strict default opam-repository/
+RUN opam update --depexts || true
+RUN opam pin add -k version -yn git.2.1.1 2.1.1
+RUN opam reinstall git.2.1.1; \
+    res=$?; \
+    test "$res" != 31 && exit "$res"; \
+    export OPAMCLI=2.0; \
+    build_dir=$(opam var prefix)/.opam-switch/build; \
+    failed=$(ls "$build_dir"); \
+    partial_fails=""; \
+    for pkg in $failed; do \
+    if opam show -f x-ci-accept-failures: "$pkg" | grep -qF "\"freebsd\""; then \
+    echo "A package failed and has been disabled for CI using the 'x-ci-accept-failures' field."; \
+    fi; \
+    test "$pkg" != 'git.2.1.1' && partial_fails="$partial_fails $pkg"; \
+    done; \
+    test "${partial_fails}" != "" && echo "opam-repo-ci detected dependencies failing: ${partial_fails}"; \
+    exit 1
+RUN (opam reinstall --with-test git.2.1.1) || true
+RUN opam reinstall --with-test --verbose git.2.1.1; \
+    res=$?; \
+    test "$res" != 31 && exit "$res"; \
+    export OPAMCLI=2.0; \
+    build_dir=$(opam var prefix)/.opam-switch/build; \
+    failed=$(ls "$build_dir"); \
+    partial_fails=""; \
+    for pkg in $failed; do \
+    if opam show -f x-ci-accept-failures: "$pkg" | grep -qF "\"freebsd\""; then \
+    echo "A package failed and has been disabled for CI using the 'x-ci-accept-failures' field."; \
+    fi; \
+    test "$pkg" != 'git.2.1.1' && partial_fails="$partial_fails $pkg"; \
+    done; \
+    test "${partial_fails}" != "" && echo "opam-repo-ci detected dependencies failing: ${partial_fails}"; \
+    exit 1
+[0m
+END-OF-DOCKERFILE
+docker build -f ../Dockerfile .
+
+2024-08-20 09:30.36: Using cache hint "freebsd-ocaml-4.14-git.2.1.1-cd59661bc85b5a67c3837459d02c70c2c4aa15a1"
+2024-08-20 09:30.36: Using OBuilder spec:
+((from freebsd-ocaml-4.14)
+ (user (uid 1000) (gid 1000))
+ (workdir /home/opam)
+ (run (shell "sudo ln -f /usr/local/bin/opam-dev /usr/local/bin/opam"))
+ (run (network host)
+      (shell "opam init --reinit -ni"))
+ (run (shell "uname -rs && opam exec -- ocaml -version && opam --version"))
+ (env OPAMDOWNLOADJOBS 1)
+ (env OPAMERRLOGLEN 0)
+ (env OPAMSOLVERTIMEOUT 500)
+ (env OPAMPRECISETRACKING 1)
+ (env CI true)
+ (env OPAM_REPO_CI true)
+ (run (shell "rm -rf opam-repository/"))
+ (copy (src .) (dst opam-repository/))
+ (run (shell "opam repository set-url --strict default opam-repository/"))
+ (run (network host)
+      (shell "opam update --depexts || true"))
+ (run (shell "opam pin add -k version -yn git.2.1.1 2.1.1"))
+ (run (cache (opam-archives (target /home/opam/.opam/download-cache)))
+      (network host)
+      (shell  "opam reinstall git.2.1.1;\
+             \n        res=$?;\
+             \n        test \"$res\" != 31 && exit \"$res\";\
+             \n        export OPAMCLI=2.0;\
+             \n        build_dir=$(opam var prefix)/.opam-switch/build;\
+             \n        failed=$(ls \"$build_dir\");\
+             \n        partial_fails=\"\";\
+             \n        for pkg in $failed; do\
+             \n          if opam show -f x-ci-accept-failures: \"$pkg\" | grep -qF \"\\\"freebsd\\\"\"; then\
+             \n            echo \"A package failed and has been disabled for CI using the 'x-ci-accept-failures' field.\";\
+             \n          fi;\
+             \n          test \"$pkg\" != 'git.2.1.1' && partial_fails=\"$partial_fails $pkg\";\
+             \n        done;\
+             \n        test \"${partial_fails}\" != \"\" && echo \"opam-repo-ci detected dependencies failing: ${partial_fails}\";\
+             \n        exit 1"))
+ (run (network host)
+      (shell "(opam reinstall --with-test git.2.1.1) || true"))
+ (run (shell  "opam reinstall --with-test --verbose git.2.1.1;\
+             \n        res=$?;\
+             \n        test \"$res\" != 31 && exit \"$res\";\
+             \n        export OPAMCLI=2.0;\
+             \n        build_dir=$(opam var prefix)/.opam-switch/build;\
+             \n        failed=$(ls \"$build_dir\");\
+             \n        partial_fails=\"\";\
+             \n        for pkg in $failed; do\
+             \n          if opam show -f x-ci-accept-failures: \"$pkg\" | grep -qF \"\\\"freebsd\\\"\"; then\
+             \n            echo \"A package failed and has been disabled for CI using the 'x-ci-accept-failures' field.\";\
+             \n          fi;\
+             \n          test \"$pkg\" != 'git.2.1.1' && partial_fails=\"$partial_fails $pkg\";\
+             \n        done;\
+             \n        test \"${partial_fails}\" != \"\" && echo \"opam-repo-ci detected dependencies failing: ${partial_fails}\";\
+             \n        exit 1"))
+)
+
+2024-08-20 09:30.36: Waiting for resource in pool OCluster
+2024-08-20 13:41.58: Waiting for worker…
+2024-08-20 14:27.52: Got resource from pool OCluster
+Building on spring
+All commits already cached
+Updating files: 100% (31972/31972), done.
+HEAD is now at 0f2e2e7a59 Merge pull request #26366 from jchavarri/release-melange-json-1.2.0
+Updating 0f2e2e7a59..cd59661bc8
+Fast-forward
+ packages/albatross/albatross.1.5.6/opam                 | 4 ++--
+ packages/albatross/albatross.2.0.0/opam                 | 4 ++--
+ packages/albatross/albatross.2.1.0/opam                 | 4 ++--
+ packages/aws-s3-lwt/aws-s3-lwt.2.0.0/opam               | 2 +-
+ packages/azure-cosmos-db/azure-cosmos-db.0.1.5/opam     | 2 +-
+ packages/azure-cosmos-db/azure-cosmos-db.0.1.6/opam     | 2 +-
+ packages/calculon/calculon.0.1/opam                     | 2 +-
+ packages/calculon/calculon.0.2/opam                     | 2 +-
+ packages/calculon/calculon.0.3/opam                     | 2 +-
+ packages/calculon/calculon.0.4/opam                     | 2 +-
+ packages/capnp-rpc-lwt/capnp-rpc-lwt.0.3.1/opam         | 2 +-
+ packages/capnp-rpc-lwt/capnp-rpc-lwt.0.3.2/opam         | 2 +-
+ packages/capnp-rpc-lwt/capnp-rpc-lwt.0.3.3/opam         | 2 +-
+ packages/capnp-rpc-lwt/capnp-rpc-lwt.0.4.0/opam         | 2 +-
+ packages/capnp-rpc-mirage/capnp-rpc-mirage.0.6.0/opam   | 2 +-
+ packages/capnp-rpc-mirage/capnp-rpc-mirage.0.7.0/opam   | 2 +-
+ packages/capnp-rpc-mirage/capnp-rpc-mirage.0.8.0/opam   | 2 +-
+ packages/capnp-rpc-mirage/capnp-rpc-mirage.0.9.0/opam   | 2 +-
+ packages/capnp-rpc-mirage/capnp-rpc-mirage.1.0/opam     | 2 +-
+ packages/capnp-rpc-mirage/capnp-rpc-mirage.1.2.1/opam   | 2 +-
+ packages/capnp-rpc-mirage/capnp-rpc-mirage.1.2.2/opam   | 2 +-
+ packages/capnp-rpc-mirage/capnp-rpc-mirage.1.2.3/opam   | 2 +-
+ packages/capnp-rpc-net/capnp-rpc-net.0.5.0/opam         | 2 +-
+ packages/capnp-rpc-net/capnp-rpc-net.0.6.0/opam         | 4 ++--
+ packages/capnp-rpc-net/capnp-rpc-net.0.7.0/opam         | 4 ++--
+ packages/capnp-rpc-net/capnp-rpc-net.0.8.0/opam         | 4 ++--
+ packages/capnp-rpc-net/capnp-rpc-net.0.9.0/opam         | 4 ++--
+ packages/capnp-rpc-net/capnp-rpc-net.1.0/opam           | 4 ++--
+ packages/capnp-rpc-net/capnp-rpc-net.1.1/opam           | 2 +-
+ packages/capnp-rpc-net/capnp-rpc-net.1.2.1/opam         | 4 ++--
+ packages/capnp-rpc-net/capnp-rpc-net.1.2.2/opam         | 4 ++--
+ packages/capnp-rpc-net/capnp-rpc-net.1.2.3/opam         | 4 ++--
+ packages/capnp-rpc-net/capnp-rpc-net.1.2/opam           | 2 +-
+ packages/caqti-mirage/caqti-mirage.2.1.1/opam           | 4 ++--
+ packages/caqti-tls/caqti-tls.2.1.1/opam                 | 2 +-
+ packages/caqti/caqti.2.1.1/opam                         | 2 +-
+ packages/carbon/carbon.0.1.0/opam                       | 2 +-
+ packages/cohttp-eio/cohttp-eio.6.0.0~beta2/opam         | 2 +-
+ packages/comby/comby.1.2.2/opam                         | 2 +-
+ packages/comby/comby.1.3.0/opam                         | 4 ++--
+ packages/comby/comby.1.4.0/opam                         | 2 +-
+ packages/comby/comby.1.4.1/opam                         | 2 +-
+ packages/conduit-lwt-unix/conduit-lwt-unix.6.2.0/opam   | 1 +
+ packages/conduit-lwt-unix/conduit-lwt-unix.6.2.1/opam   | 1 +
+ packages/conduit-lwt-unix/conduit-lwt-unix.6.2.2/opam   | 1 +
+ packages/conduit-lwt-unix/conduit-lwt-unix.6.2.3/opam   | 1 +
+ packages/conduit-mirage/conduit-mirage.2.1.0/opam       | 2 +-
+ packages/conduit-mirage/conduit-mirage.2.2.0/opam       | 4 ++--
+ packages/conduit-mirage/conduit-mirage.4.0.2/opam       | 4 ++--
+ packages/conduit-mirage/conduit-mirage.5.0.0/opam       | 4 ++--
+ packages/conduit-mirage/conduit-mirage.5.1.0/opam       | 4 ++--
+ packages/conduit-mirage/conduit-mirage.5.1.1/opam       | 4 ++--
+ packages/conduit-mirage/conduit-mirage.6.0.0/opam       | 4 ++--
+ packages/conduit-mirage/conduit-mirage.6.0.1/opam       | 4 ++--
+ packages/conduit-mirage/conduit-mirage.6.1.0/opam       | 4 ++--
+ packages/conduit-mirage/conduit-mirage.6.2.0/opam       | 2 +-
+ packages/conduit-mirage/conduit-mirage.6.2.1/opam       | 4 ++--
+ packages/conduit-mirage/conduit-mirage.6.2.2/opam       | 4 ++--
+ packages/conduit-mirage/conduit-mirage.6.2.3/opam       | 4 ++--
+ packages/conduit/conduit.0.10.0/opam                    | 2 +-
+ packages/conduit/conduit.0.11.0/opam                    | 3 ++-
+ packages/conduit/conduit.0.12.0/opam                    | 3 ++-
+ packages/conduit/conduit.0.13.0/opam                    | 3 ++-
+ packages/conduit/conduit.0.14.0/opam                    | 3 ++-
+ packages/conduit/conduit.0.14.1/opam                    | 3 ++-
+ packages/conduit/conduit.0.14.2/opam                    | 1 +
+ packages/conduit/conduit.0.14.3/opam                    | 1 +
+ packages/conduit/conduit.0.14.4/opam                    | 1 +
+ packages/conduit/conduit.0.14.5/opam                    | 1 +
+ packages/conduit/conduit.0.15.0/opam                    | 3 ++-
+ packages/conduit/conduit.0.15.1/opam                    | 3 ++-
+ packages/conduit/conduit.0.15.2/opam                    | 3 ++-
+ packages/conduit/conduit.0.15.3/opam                    | 3 ++-
+ packages/conduit/conduit.0.15.4/opam                    | 3 ++-
+ packages/conduit/conduit.0.9.0/opam                     | 3 ++-
+ packages/current_github/current_github.0.1/opam         | 2 +-
+ packages/current_github/current_github.0.2/opam         | 2 +-
+ packages/current_github/current_github.0.3/opam         | 2 +-
+ packages/current_github/current_github.0.4/opam         | 2 +-
+ packages/current_github/current_github.0.5/opam         | 2 +-
+ packages/current_github/current_github.0.6.1/opam       | 2 +-
+ packages/current_github/current_github.0.6.2/opam       | 2 +-
+ packages/current_github/current_github.0.6.4/opam       | 2 +-
+ packages/current_github/current_github.0.6.6/opam       | 2 +-
+ packages/current_github/current_github.0.6/opam         | 2 +-
+ packages/current_slack/current_slack.0.1/opam           | 2 +-
+ packages/current_slack/current_slack.0.2/opam           | 2 +-
+ packages/current_slack/current_slack.0.3/opam           | 2 +-
+ packages/current_slack/current_slack.0.4/opam           | 2 +-
+ packages/current_slack/current_slack.0.5/opam           | 2 +-
+ packages/current_slack/current_slack.0.6.1/opam         | 2 +-
+ packages/current_slack/current_slack.0.6.2/opam         | 2 +-
+ packages/current_slack/current_slack.0.6.4/opam         | 2 +-
+ packages/current_slack/current_slack.0.6.6/opam         | 2 +-
+ packages/current_slack/current_slack.0.6/opam           | 2 +-
+ packages/datakit-ci/datakit-ci.0.12.1/opam              | 2 +-
+ packages/datakit-ci/datakit-ci.0.12.2/opam              | 2 +-
+ packages/datakit-ci/datakit-ci.0.12.3/opam              | 2 +-
+ packages/datakit-ci/datakit-ci.0.12.4/opam              | 2 +-
+ packages/datakit-ci/datakit-ci.1.0.0/opam               | 2 +-
+ packages/dkim-bin/dkim-bin.0.6.0/opam                   | 2 +-
+ packages/dns-certify/dns-certify.4.0.0/opam             | 2 +-
+ packages/dns-certify/dns-certify.4.1.0/opam             | 2 +-
+ packages/dns-certify/dns-certify.4.2.0/opam             | 2 +-
+ packages/dns-certify/dns-certify.4.3.0/opam             | 2 +-
+ packages/dns-certify/dns-certify.4.3.1/opam             | 2 +-
+ packages/dns-client-lwt/dns-client-lwt.7.0.0/opam       | 2 +-
+ packages/dns-client-lwt/dns-client-lwt.7.0.1/opam       | 2 +-
+ packages/dns-client-lwt/dns-client-lwt.7.0.2/opam       | 2 +-
+ packages/dns-client-lwt/dns-client-lwt.7.0.3/opam       | 2 +-
+ packages/dns-client-lwt/dns-client-lwt.8.0.0/opam       | 2 +-
+ packages/dns-client-mirage/dns-client-mirage.7.0.0/opam | 2 +-
+ packages/dns-client-mirage/dns-client-mirage.7.0.1/opam | 2 +-
+ packages/dns-client-mirage/dns-client-mirage.7.0.2/opam | 2 +-
+ packages/dns-client-mirage/dns-client-mirage.7.0.3/opam | 2 +-
+ packages/dns-client-mirage/dns-client-mirage.8.0.0/opam | 2 +-
+ packages/dns-client/dns-client.6.0.0/opam               | 2 +-
+ packages/dns-client/dns-client.6.0.1/opam               | 2 +-
+ packages/dns-client/dns-client.6.0.2/opam               | 2 +-
+ packages/dns-client/dns-client.6.1.0/opam               | 2 +-
+ packages/dns-client/dns-client.6.1.1/opam               | 2 +-
+ packages/dns-client/dns-client.6.1.2/opam               | 2 +-
+ packages/dns-client/dns-client.6.1.3/opam               | 2 +-
+ packages/dns-client/dns-client.6.1.4/opam               | 2 +-
+ packages/dns-client/dns-client.6.2.0/opam               | 2 +-
+ packages/dns-client/dns-client.6.2.1/opam               | 2 +-
+ packages/dns-client/dns-client.6.2.2/opam               | 2 +-
+ packages/dns-client/dns-client.6.3.0/opam               | 2 +-
+ packages/dns-client/dns-client.6.4.0/opam               | 2 +-
+ packages/dns-client/dns-client.6.4.1/opam               | 2 +-
+ packages/dns-resolver/dns-resolver.6.0.0/opam           | 2 +-
+ packages/dns-resolver/dns-resolver.6.0.1/opam           | 2 +-
+ packages/dns-resolver/dns-resolver.6.0.2/opam           | 2 +-
+ packages/dns-resolver/dns-resolver.6.1.0/opam           | 2 +-
+ packages/dns-resolver/dns-resolver.6.1.1/opam           | 2 +-
+ packages/dns-resolver/dns-resolver.6.1.2/opam           | 2 +-
+ packages/dns-resolver/dns-resolver.6.1.3/opam           | 2 +-
+ packages/dns-resolver/dns-resolver.6.1.4/opam           | 2 +-
+ packages/dns-resolver/dns-resolver.6.2.0/opam           | 2 +-
+ packages/dns-resolver/dns-resolver.6.2.1/opam           | 2 +-
+ packages/dns-resolver/dns-resolver.6.2.2/opam           | 2 +-
+ packages/dns-resolver/dns-resolver.6.3.0/opam           | 2 +-
+ packages/dns-resolver/dns-resolver.6.4.0/opam           | 2 +-
+ packages/dns-resolver/dns-resolver.6.4.1/opam           | 2 +-
+ packages/dns-resolver/dns-resolver.7.0.0/opam           | 2 +-
+ packages/dns-resolver/dns-resolver.7.0.1/opam           | 2 +-
+ packages/dns-resolver/dns-resolver.7.0.2/opam           | 2 +-
+ packages/dns-resolver/dns-resolver.7.0.3/opam           | 2 +-
+ packages/dns-resolver/dns-resolver.8.0.0/opam           | 2 +-
+ packages/doculib/doculib.1.3.1/opam                     | 2 +-
+ packages/doculib/doculib.1.3.2/opam                     | 2 +-
+ packages/doculib/doculib.1.3.3/opam                     | 2 +-
+ packages/doculib/doculib.1.3.4/opam                     | 2 +-
+ packages/doculib/doculib.1.3.5/opam                     | 2 +-
+ packages/doi2bib/doi2bib.0.1.4/opam                     | 2 +-
+ packages/doi2bib/doi2bib.0.2.1/opam                     | 2 +-
+ packages/doi2bib/doi2bib.0.3.0/opam                     | 2 +-
+ packages/doi2bib/doi2bib.0.3.1/opam                     | 2 +-
+ packages/doi2bib/doi2bib.0.4.0/opam                     | 2 +-
+ packages/doi2bib/doi2bib.0.5.1/opam                     | 2 +-
+ packages/doi2bib/doi2bib.0.5.2/opam                     | 2 +-
+ packages/doi2bib/doi2bib.0.6.0/opam                     | 2 +-
+ packages/doi2bib/doi2bib.0.6.1/opam                     | 2 +-
+ packages/doi2bib/doi2bib.0.6.2/opam                     | 2 +-
+ packages/dropbox/dropbox.0.2/opam                       | 2 +-
+ packages/ez_api/ez_api.0.1.0/opam                       | 1 +
+ packages/ez_api/ez_api.1.0.0/opam                       | 1 +
+ packages/ez_api/ez_api.1.1.1/opam                       | 1 +
+ packages/ez_api/ez_api.1.2.0/opam                       | 1 +
+ packages/ez_api/ez_api.2.0.0/opam                       | 1 +
+ packages/ez_api/ez_api.2.1.0/opam                       | 1 +
+ packages/git-mirage/git-mirage.2.0.0/opam               | 2 +-
+ packages/git-mirage/git-mirage.2.1.0/opam               | 2 +-
+ packages/git-mirage/git-mirage.2.1.1/opam               | 2 +-
+ packages/git-mirage/git-mirage.2.1.2/opam               | 2 +-
+ packages/git-mirage/git-mirage.2.1.3/opam               | 2 +-
+ packages/git-mirage/git-mirage.3.10.0/opam              | 4 ++--
+ packages/git-mirage/git-mirage.3.10.1/opam              | 4 ++--
+ packages/git-mirage/git-mirage.3.11.0/opam              | 4 ++--
+ packages/git-mirage/git-mirage.3.12.0/opam              | 4 ++--
+ packages/git-mirage/git-mirage.3.13.0/opam              | 4 ++--
+ packages/git-mirage/git-mirage.3.14.0/opam              | 4 ++--
+ packages/git-mirage/git-mirage.3.15.0/opam              | 4 ++--
+ packages/git-mirage/git-mirage.3.16.0/opam              | 4 ++--
+ packages/git-mirage/git-mirage.3.16.1/opam              | 4 ++--
+ packages/git-mirage/git-mirage.3.6.0/opam               | 2 +-
+ packages/git-mirage/git-mirage.3.7.0/opam               | 4 ++--
+ packages/git-mirage/git-mirage.3.7.1/opam               | 4 ++--
+ packages/git-mirage/git-mirage.3.8.0/opam               | 4 ++--
+ packages/git-mirage/git-mirage.3.8.1/opam               | 4 ++--
+ packages/git-mirage/git-mirage.3.9.0/opam               | 4 ++--
+ packages/git-mirage/git-mirage.3.9.1/opam               | 4 ++--
+ packages/git-paf/git-paf.3.10.0/opam                    | 4 ++--
+ packages/git-paf/git-paf.3.10.1/opam                    | 4 ++--
+ packages/git-paf/git-paf.3.11.0/opam                    | 4 ++--
+ packages/git-paf/git-paf.3.12.0/opam                    | 4 ++--
+ packages/git-paf/git-paf.3.13.0/opam                    | 4 ++--
+ packages/git-paf/git-paf.3.14.0/opam                    | 4 ++--
+ packages/git-paf/git-paf.3.15.0/opam                    | 4 ++--
+ packages/git-paf/git-paf.3.16.0/opam                    | 4 ++--
+ packages/git-paf/git-paf.3.16.1/opam                    | 4 ++--
+ packages/git-paf/git-paf.3.5.0/opam                     | 4 ++--
+ packages/git-paf/git-paf.3.6.0/opam                     | 4 ++--
+ packages/git-paf/git-paf.3.7.0/opam                     | 4 ++--
+ packages/git-paf/git-paf.3.7.1/opam                     | 4 ++--
+ packages/git-paf/git-paf.3.8.0/opam                     | 4 ++--
+ packages/git-paf/git-paf.3.8.1/opam                     | 4 ++--
+ packages/git-paf/git-paf.3.9.0/opam                     | 4 ++--
+ packages/git-paf/git-paf.3.9.1/opam                     | 4 ++--
+ packages/git-unix/git-unix.2.0.0/opam                   | 2 +-
+ packages/git-unix/git-unix.2.1.1/opam                   | 2 +-
+ packages/git-unix/git-unix.2.1.2/opam                   | 2 +-
+ packages/git-unix/git-unix.2.1.3/opam                   | 2 +-
+ packages/git-unix/git-unix.3.10.0/opam                  | 4 ++--
+ packages/git-unix/git-unix.3.10.1/opam                  | 4 ++--
+ packages/git-unix/git-unix.3.11.0/opam                  | 4 ++--
+ packages/git-unix/git-unix.3.12.0/opam                  | 4 ++--
+ packages/git-unix/git-unix.3.13.0/opam                  | 4 ++--
+ packages/git-unix/git-unix.3.14.0/opam                  | 4 ++--
+ packages/git-unix/git-unix.3.15.0/opam                  | 4 ++--
+ packages/git-unix/git-unix.3.16.0/opam                  | 2 +-
+ packages/git-unix/git-unix.3.16.1/opam                  | 2 +-
+ packages/git-unix/git-unix.3.5.0/opam                   | 4 ++--
+ packages/git-unix/git-unix.3.6.0/opam                   | 4 ++--
+ packages/git-unix/git-unix.3.7.0/opam                   | 4 ++--
+ packages/git-unix/git-unix.3.7.1/opam                   | 4 ++--
+ packages/git-unix/git-unix.3.8.0/opam                   | 4 ++--
+ packages/git-unix/git-unix.3.8.1/opam                   | 4 ++--
+ packages/git-unix/git-unix.3.9.0/opam                   | 4 ++--
+ packages/git-unix/git-unix.3.9.1/opam                   | 4 ++--
+ packages/git/git.2.0.0/opam                             | 2 +-
+ packages/git/git.2.1.0/opam                             | 2 +-
+ packages/git/git.2.1.1/opam                             | 2 +-
+ packages/git/git.2.1.2/opam                             | 2 +-
+ packages/git/git.2.1.3/opam                             | 2 +-
+ packages/github-unix/github-unix.3.0.0/opam             | 2 +-
+ packages/github-unix/github-unix.3.0.1/opam             | 2 +-
+ packages/github/github.2.0.0/opam                       | 2 +-
+ packages/github/github.2.0.1/opam                       | 2 +-
+ packages/github/github.2.0.2/opam                       | 2 +-
+ packages/github/github.2.0.3/opam                       | 2 +-
+ packages/github/github.2.1.0/opam                       | 2 +-
+ packages/github/github.2.2.0/opam                       | 2 +-
+ packages/github/github.2.3.0/opam                       | 2 +-
+ packages/gitlab-unix/gitlab-unix.0.1.0/opam             | 2 +-
+ packages/gitlab-unix/gitlab-unix.0.1.1/opam             | 2 +-
+ packages/gitlab-unix/gitlab-unix.0.1.2/opam             | 2 +-
+ packages/gitlab-unix/gitlab-unix.0.1.3/opam             | 2 +-
+ packages/gitlab-unix/gitlab-unix.0.1.4/opam             | 2 +-
+ packages/gitlab-unix/gitlab-unix.0.1.5/opam             | 2 +-
+ packages/gitlab-unix/gitlab-unix.0.1.6/opam             | 2 +-
+ packages/gitlab-unix/gitlab-unix.0.1.7/opam             | 2 +-
+ packages/gitlab-unix/gitlab-unix.0.1.8/opam             | 2 +-
+ packages/gluten-async/gluten-async.0.3.0/opam           | 3 +++
+ packages/gluten-async/gluten-async.0.4.0/opam           | 3 +++
+ packages/gluten-async/gluten-async.0.4.1/opam           | 3 +++
+ packages/gluten-async/gluten-async.0.5.0/opam           | 3 +++
+ packages/gluten-async/gluten-async.0.5.1/opam           | 3 +++
+ packages/gluten-lwt-unix/gluten-lwt-unix.0.4.1/opam     | 3 +++
+ packages/gluten-lwt-unix/gluten-lwt-unix.0.5.0/opam     | 3 +++
+ packages/gluten-lwt-unix/gluten-lwt-unix.0.5.1/opam     | 3 +++
+ packages/grpc-examples/grpc-examples.0.2.0/opam         | 2 +-
+ packages/h2-async/h2-async.0.10.0/opam                  | 3 +++
+ packages/h2-async/h2-async.0.11.0/opam                  | 3 +++
+ packages/h2-async/h2-async.0.12.0/opam                  | 3 +++
+ packages/h2-lwt-unix/h2-lwt-unix.0.10.0/opam            | 3 +++
+ packages/h2-lwt-unix/h2-lwt-unix.0.11.0/opam            | 3 +++
+ packages/h2-lwt-unix/h2-lwt-unix.0.12.0/opam            | 3 +++
+ packages/h2-lwt-unix/h2-lwt-unix.0.6.0/opam             | 3 +++
+ packages/h2-lwt-unix/h2-lwt-unix.0.6.1/opam             | 3 +++
+ packages/h2-lwt-unix/h2-lwt-unix.0.8.0/opam             | 3 +++
+ packages/h2-lwt-unix/h2-lwt-unix.0.9.0/opam             | 3 +++
+ packages/http-lwt-client/http-lwt-client.0.2.2/opam     | 4 ++--
+ packages/http-lwt-client/http-lwt-client.0.2.3/opam     | 4 ++--
+ packages/http-lwt-client/http-lwt-client.0.2.4/opam     | 4 ++--
+ packages/http-lwt-client/http-lwt-client.0.2.5/opam     | 4 ++--
+ packages/http-lwt-client/http-lwt-client.0.2.6/opam     | 4 ++--
+ packages/imaplet-lwt/imaplet-lwt.0.1.14/opam            | 2 +-
+ packages/imaplet-lwt/imaplet-lwt.0.1.15/opam            | 2 +-
+ packages/imaplet-lwt/imaplet-lwt.0.1.8/opam             | 2 +-
+ packages/imaplet-lwt/imaplet-lwt.0.1.9/opam             | 2 +-
+ packages/ip2locationio/ip2locationio.1.0.0/opam         | 2 +-
+ packages/ip2whois/ip2whois.1.0.0/opam                   | 2 +-
+ packages/irc-client-tls/irc-client-tls.0.6.0/opam       | 2 +-
+ packages/irc-client-tls/irc-client-tls.0.6.1/opam       | 2 +-
+ packages/irc-client-tls/irc-client-tls.0.6.2/opam       | 2 +-
+ packages/irc-client-tls/irc-client-tls.0.7.1/opam       | 2 +-
+ packages/ldp_tls/ldp_tls.0.1.0/opam                     | 4 ++--
+ packages/ldp_tls/ldp_tls.0.2.0/opam                     | 4 ++--
+ packages/letters/letters.0.3.3/opam                     | 4 ++--
+ packages/links/links.0.9.6/opam                         | 2 +-
+ packages/links/links.0.9.7/opam                         | 2 +-
+ packages/links/links.0.9.8/opam                         | 2 +-
+ packages/logs-syslog/logs-syslog.0.3.0/opam             | 1 +
+ packages/logs-syslog/logs-syslog.0.3.1/opam             | 1 +
+ packages/logs-syslog/logs-syslog.0.3.2/opam             | 2 ++
+ packages/logs-syslog/logs-syslog.0.4.0/opam             | 2 ++
+ packages/mehari-eio/mehari-eio.0.1/opam                 | 4 ++--
+ packages/mehari-eio/mehari-eio.0.2/opam                 | 4 ++--
+ packages/mehari-eio/mehari-eio.0.3/opam                 | 4 ++--
+ packages/mehari-eio/mehari-eio.0.4/opam                 | 4 ++--
+ packages/mehari-mirage/mehari-mirage.0.1/opam           | 2 +-
+ packages/mehari-mirage/mehari-mirage.0.2/opam           | 4 ++--
+ packages/mehari-mirage/mehari-mirage.0.3/opam           | 4 ++--
+ packages/mehari-mirage/mehari-mirage.0.4/opam           | 4 ++--
+ packages/mehari/mehari.0.3/opam                         | 2 +-
+ packages/mehari/mehari.0.4/opam                         | 2 +-
+ packages/mirror/mirror.0.0.1/opam                       | 2 +-
+ packages/mqtt/mqtt.0.2.2/opam                           | 4 ++--
+ packages/octez-node/octez-node.15.0/opam                | 2 +-
+ packages/octez-node/octez-node.15.1/opam                | 2 +-
+ packages/octez-node/octez-node.16.0/opam                | 2 +-
+ packages/octez-node/octez-node.16.1/opam                | 2 +-
+ packages/octez-node/octez-node.17.1/opam                | 2 +-
+ packages/octez-node/octez-node.17.2/opam                | 2 +-
+ packages/octez-node/octez-node.17.3/opam                | 2 +-
+ packages/octez-node/octez-node.18.0/opam                | 2 +-
+ packages/octez-node/octez-node.18.1/opam                | 2 +-
+ packages/octez-node/octez-node.19.0/opam                | 2 +-
+ packages/octez-node/octez-node.19.1/opam                | 2 +-
+ packages/octez-node/octez-node.20.1/opam                | 2 +-
+ packages/opam-publish/opam-publish.0.3.5/opam           | 2 +-
+ packages/opam-publish/opam-publish.2.0.0/opam           | 2 +-
+ packages/opam-publish/opam-publish.2.0.0~beta/opam      | 2 +-
+ packages/opam-publish/opam-publish.2.0.1/opam           | 2 +-
+ packages/opam-publish/opam-publish.2.0.2/opam           | 2 +-
+ packages/opam-publish/opam-publish.2.0.3/opam           | 2 +-
+ packages/paf-le/paf-le.0.0.4/opam                       | 2 +-
+ packages/paf-le/paf-le.0.0.5/opam                       | 2 +-
+ packages/paf-le/paf-le.0.0.6/opam                       | 2 +-
+ packages/paf-le/paf-le.0.0.7/opam                       | 2 +-
+ packages/paf-le/paf-le.0.0.8-1/opam                     | 2 +-
+ packages/paf-le/paf-le.0.0.8/opam                       | 2 +-
+ packages/paf-le/paf-le.0.0.9/opam                       | 2 +-
+ packages/paf-le/paf-le.0.1.0/opam                       | 2 +-
+ packages/paf-le/paf-le.0.2.0/opam                       | 2 +-
+ packages/paf-le/paf-le.0.3.0/opam                       | 2 +-
+ packages/paf-le/paf-le.0.4.0/opam                       | 2 +-
+ packages/paf/paf.0.0.2/opam                             | 4 ++--
+ packages/paf/paf.0.0.3/opam                             | 2 +-
+ packages/paf/paf.0.0.4/opam                             | 2 +-
+ packages/paf/paf.0.0.6/opam                             | 4 ++--
+ packages/paf/paf.0.0.7/opam                             | 4 ++--
+ packages/paf/paf.0.0.8-1/opam                           | 4 ++--
+ packages/paf/paf.0.0.8/opam                             | 4 ++--
+ packages/paf/paf.0.0.9/opam                             | 4 ++--
+ packages/paf/paf.0.1.0/opam                             | 4 ++--
+ packages/paf/paf.0.2.0/opam                             | 4 ++--
+ packages/paf/paf.0.3.0/opam                             | 4 ++--
+ packages/paf/paf.0.4.0/opam                             | 4 ++--
+ packages/paf/paf.0.5.0/opam                             | 4 ++--
+ packages/paf/paf.0.6.0/opam                             | 4 ++--
+ packages/quests/quests.0.1.3/opam                       | 2 +-
+ packages/sendmail-lwt/sendmail-lwt.0.8.0/opam           | 4 ++--
+ packages/sendmail-lwt/sendmail-lwt.0.8.1/opam           | 4 ++--
+ packages/sendmail/sendmail.0.8.1/opam                   | 2 +-
+ packages/sihl-core/sihl-core.0.2.0/opam                 | 2 +-
+ packages/sihl-core/sihl-core.0.2.1/opam                 | 2 +-
+ packages/sihl-core/sihl-core.0.2.2/opam                 | 2 +-
+ packages/sihl-core/sihl-core.0.3.0~rc1/opam             | 2 +-
+ packages/sihl/sihl.0.0.56/opam                          | 2 +-
+ packages/sihl/sihl.0.1.0/opam                           | 2 +-
+ packages/sihl/sihl.0.1.1/opam                           | 2 +-
+ packages/sihl/sihl.0.1.2/opam                           | 2 +-
+ packages/sihl/sihl.0.1.3/opam                           | 2 +-
+ packages/sihl/sihl.0.1.4/opam                           | 2 +-
+ packages/sihl/sihl.0.1.5/opam                           | 2 +-
+ packages/sihl/sihl.0.3.0/opam                           | 2 +-
+ packages/sihl/sihl.0.3.0~rc2/opam                       | 2 +-
+ packages/sihl/sihl.0.4.0/opam                           | 2 +-
+ packages/sihl/sihl.0.4.1/opam                           | 2 +-
+ packages/sihl/sihl.0.5.0/opam                           | 2 +-
+ packages/sihl/sihl.0.6.0~rc1/opam                       | 2 +-
+ packages/sihl/sihl.1.0.0/opam                           | 2 +-
+ packages/sihl/sihl.1.0.0~rc1/opam                       | 2 +-
+ packages/sihl/sihl.1.0.0~rc2/opam                       | 2 +-
+ packages/sihl/sihl.1.0.0~rc3/opam                       | 2 +-
+ packages/sihl/sihl.1.0.1/opam                           | 2 +-
+ packages/sihl/sihl.2.0.0/opam                           | 2 +-
+ packages/sihl/sihl.2.0.1/opam                           | 2 +-
+ packages/sihl/sihl.3.0.0/opam                           | 2 +-
+ packages/sihl/sihl.3.0.1/opam                           | 2 +-
+ packages/sihl/sihl.3.0.2/opam                           | 2 +-
+ packages/sihl/sihl.3.0.3/opam                           | 2 +-
+ packages/sihl/sihl.3.0.4/opam                           | 2 +-
+ packages/sihl/sihl.3.0.5/opam                           | 2 +-
+ packages/slacko/slacko.0.13.0/opam                      | 2 +-
+ packages/slacko/slacko.0.14.1/opam                      | 2 +-
+ packages/slacko/slacko.0.15.0/opam                      | 2 +-
+ packages/starred_ml/starred_ml.0.0.2/opam               | 2 +-
+ packages/starred_ml/starred_ml.0.0.3/opam               | 2 +-
+ packages/starred_ml/starred_ml.0.0.4/opam               | 2 +-
+ packages/starred_ml/starred_ml.0.0.5/opam               | 2 +-
+ packages/syndic/syndic.1.5.1/opam                       | 2 +-
+ packages/syndic/syndic.1.5.2/opam                       | 2 +-
+ packages/syndic/syndic.1.5.3/opam                       | 2 +-
+ packages/syndic/syndic.1.5/opam                         | 2 +-
+ packages/tezos-node/tezos-node.10.2/opam                | 2 +-
+ packages/tezos-node/tezos-node.11.0/opam                | 2 +-
+ packages/tezos-node/tezos-node.11.1/opam                | 2 +-
+ packages/tezos-node/tezos-node.12.0/opam                | 2 +-
+ packages/tezos-node/tezos-node.12.3/opam                | 2 +-
+ packages/tezos-node/tezos-node.13.0/opam                | 2 +-
+ packages/tezos-node/tezos-node.14.0/opam                | 2 +-
+ packages/tezos-node/tezos-node.7.0/opam                 | 2 +-
+ packages/tezos-node/tezos-node.7.1/opam                 | 2 +-
+ packages/tezos-node/tezos-node.7.2/opam                 | 2 +-
+ packages/tezos-node/tezos-node.7.3/opam                 | 2 +-
+ packages/tezos-node/tezos-node.7.4/opam                 | 2 +-
+ packages/tezos-node/tezos-node.8.0/opam                 | 2 +-
+ packages/tezos-node/tezos-node.8.1/opam                 | 2 +-
+ packages/tezos-node/tezos-node.8.2/opam                 | 2 +-
+ packages/tezos-node/tezos-node.8.3/opam                 | 2 +-
+ packages/tezos-node/tezos-node.9.1/opam                 | 2 +-
+ packages/tezos-node/tezos-node.9.2/opam                 | 2 +-
+ packages/tezos-node/tezos-node.9.3/opam                 | 2 +-
+ packages/tezos-node/tezos-node.9.4/opam                 | 2 +-
+ packages/tezos-node/tezos-node.9.7/opam                 | 2 +-
+ packages/tls-liquidsoap/tls-liquidsoap.1/opam           | 2 +-
+ packages/tlstunnel/tlstunnel.0.1.3/opam                 | 2 +-
+ packages/tlstunnel/tlstunnel.0.2.0/opam                 | 2 +-
+ packages/wcs-api/wcs-api.2017-05-26.02/opam             | 2 +-
+ 422 files changed, 572 insertions(+), 487 deletions(-)
+
+[01;34m(from freebsd-ocaml-4.14)[0m
+[01;2m[01;35m2024-08-20 14:19.20 ---> using "57eeeabfec88366322a66f228a693df277d348dc99f1cc2a63749102c5e1e405" from cache[0m
+
+[01;34m/: (user (uid 1000) (gid 1000))[0m
+
+[01;34m/: (workdir /home/opam)[0m
+
+[01;34m/home/opam: (run (shell "sudo ln -f /usr/local/bin/opam-dev /usr/local/bin/opam"))[0m
+[01;2m[01;35m2024-08-20 14:19.22 ---> using "85d5eb985f2262919a26a9cdcf048ce0967ef341a4c5d41a4d1a47b077ffa8eb" from cache[0m
+
+[01;34m/home/opam: (run (network host)
+                 (shell "opam init --reinit -ni"))[0m
+No configuration file found, using built-in defaults.
+Checking for available remotes: rsync and local, git.
+  - you won't be able to use mercurial repositories unless you install the hg command on your system.
+  - you won't be able to use darcs repositories unless you install the darcs command on your system.
+
+This version of opam requires an update to the layout of /home/opam/.opam from version 2.1 to version 2.2, which can't be reverted.
+You may want to back it up before going further.
+
+Continue? [y/n] y
+[NOTE] The 'jobs' option was reset, its value was 1 and its new value will vary according to the current number of cores on your machine. You can restore the fixed value using:
+           opam option jobs=1 --global
+Format upgrade done.
+
+<><> Updating repositories ><><><><><><><><><><><><><><><><><><><><><><><><><><>
+[default] no changes from git+file:///home/opam/opam-repository
+[01;2m[01;35m2024-08-20 14:19.22 ---> using "08e4174ad8cc33ff0dffef40dd5755acd4c7df1ee65b0d98f918f8851b0422be" from cache[0m
+
+[01;34m/home/opam: (run (shell "uname -rs && opam exec -- ocaml -version && opam --version"))[0m
+FreeBSD 14.0-RELEASE-p6
+The OCaml toplevel, version 4.14.2
+2.2.0
+[01;2m[01;35m2024-08-20 14:19.23 ---> using "a624c9a56a657e8f7944ca7b5e274913c647764382db65f778e1fb6ea0cbf8b9" from cache[0m
+
+[01;34m/home/opam: (env OPAMDOWNLOADJOBS 1)[0m
+
+[01;34m/home/opam: (env OPAMERRLOGLEN 0)[0m
+
+[01;34m/home/opam: (env OPAMSOLVERTIMEOUT 500)[0m
+
+[01;34m/home/opam: (env OPAMPRECISETRACKING 1)[0m
+
+[01;34m/home/opam: (env CI true)[0m
+
+[01;34m/home/opam: (env OPAM_REPO_CI true)[0m
+
+[01;34m/home/opam: (run (shell "rm -rf opam-repository/"))[0m
+[01;2m[01;35m2024-08-20 14:19.24 ---> using "7664227bcddc9f07a15b72213897bcf0575250f735d1bc45966bada674a472ca" from cache[0m
+
+[01;34m/home/opam: (copy (src .) (dst opam-repository/))[0m
+[01;2m[01;35m2024-08-20 14:19.39 ---> using "f6020018ea506f54e1bc31c62ab577eadcdb6c40da8516f7a57703cfab02b457" from cache[0m
+
+[01;34m/home/opam: (run (shell "opam repository set-url --strict default opam-repository/"))[0m
+[default] Initialised
+[01;2m[01;35m2024-08-20 14:19.40 ---> using "7ccdb9e498623f849f8cb5912f8ebd782f11e78e5df45502df1e8513ed4b89c5" from cache[0m
+
+[01;34m/home/opam: (run (network host)
+                 (shell "opam update --depexts || true"))[0m
+[WARNING] Unknown update command for bsd, skipping system update
+[01;2m[01;35m2024-08-20 14:19.41 ---> using "05340f3560fa98644ce4eecada8893cb7320a8c17cc304ee7ffd3c38f2ec7046" from cache[0m
+
+[01;34m/home/opam: (run (shell "opam pin add -k version -yn git.2.1.1 2.1.1"))[0m
+git is now pinned to version 2.1.1
+[01;2m[01;35m2024-08-20 14:19.45 ---> saved as "8385e3fa64a436a1494c557bcb3e09fc724932e31e6ad09bed0f5bbda6bd4019"[0m
+
+[01;34m/home/opam: (run (cache (opam-archives (target /home/opam/.opam/download-cache)))
+                 (network host)
+                 (shell  "opam reinstall git.2.1.1;\
+                        \n        res=$?;\
+                        \n        test \"$res\" != 31 && exit \"$res\";\
+                        \n        export OPAMCLI=2.0;\
+                        \n        build_dir=$(opam var prefix)/.opam-switch/build;\
+                        \n        failed=$(ls \"$build_dir\");\
+                        \n        partial_fails=\"\";\
+                        \n        for pkg in $failed; do\
+                        \n          if opam show -f x-ci-accept-failures: \"$pkg\" | grep -qF \"\\\"freebsd\\\"\"; then\
+                        \n            echo \"A package failed and has been disabled for CI using the 'x-ci-accept-failures' field.\";\
+                        \n          fi;\
+                        \n          test \"$pkg\" != 'git.2.1.1' && partial_fails=\"$partial_fails $pkg\";\
+                        \n        done;\
+                        \n        test \"${partial_fails}\" != \"\" && echo \"opam-repo-ci detected dependencies failing: ${partial_fails}\";\
+                        \n        exit 1"))[0m
+git.2.1.1 is not installed. Install it? [y/n] y
+The following actions will be performed:
+=== install 42 packages
+  ∗ angstrom          0.13.0         [required by git]
+  ∗ astring           0.8.5          [required by git]
+  ∗ base-bytes        base           [required by decompress, digestif]
+  ∗ bigarray-compat   1.1.0          [required by digestif, cstruct, decompress, encore]
+  ∗ bigstringaf       0.10.0         [required by angstrom, encore]
+  ∗ bos               0.2.1          [required by duff]
+  ∗ checkseum         0.4.0          [required by git]
+  ∗ cmdliner          1.0.4          [required by decompress, duff]
+  ∗ conf-pkg-config   3              [required by checkseum]
+  ∗ cppo              1.6.9          [required by lwt]
+  ∗ csexp             1.5.2          [required by dune-configurator]
+  ∗ cstruct           6.0.1          [required by git]
+  ∗ decompress        0.9.1          [required by git]
+  ∗ digestif          0.9.0          [required by git]
+  ∗ duff              0.2            [required by git]
+  ∗ dune              3.16.0         [required by git]
+  ∗ dune-configurator 3.16.0         [required by checkseum]
+  ∗ encore            0.4            [required by git]
+  ∗ eqaf              0.10           [required by digestif]
+  ∗ fmt               0.9.0          [required by git]
+  ∗ fpath             0.7.3          [required by git]
+  ∗ git               2.1.1 (pinned)
+  ∗ hex               1.5.0          [required by git]
+  ∗ ke                0.6            [required by git]
+  ∗ logs              0.7.0          [required by git]
+  ∗ lru               0.3.1          [required by git]
+  ∗ lwt               5.7.0          [required by git]
+  ∗ mmap              1.2.0          [required by decompress]
+  ∗ ocamlbuild        0.15.0         [required by astring]
+  ∗ ocamlfind         1.9.6          [required by astring]
+  ∗ ocamlgraph        2.1.0          [required by git]
+  ∗ ocplib-endian     1.2            [required by git]
+  ∗ optint            0.3.0          [required by checkseum, decompress]
+  ∗ psq               0.2.1          [required by lru]
+  ∗ re                1.11.0         [required by uri]
+  ∗ result            1.5            [required by angstrom]
+  ∗ rresult           0.7.0          [required by git]
+  ∗ seq               base           [required by psq, re]
+  ∗ stdlib-shims      0.3.0          [required by git]
+  ∗ stringext         1.6.0          [required by uri]
+  ∗ topkg             1.0.7          [required by astring]
+  ∗ uri               3.1.0          [required by git]
+
+<><> Processing actions <><><><><><><><><><><><><><><><><><><><><><><><><><><><>
+⬇ retrieved angstrom.0.13.0  (cached)
+⬇ retrieved astring.0.8.5  (cached)
+⬇ retrieved bigarray-compat.1.1.0  (cached)
+⬇ retrieved bigstringaf.0.10.0  (cached)
+⬇ retrieved bos.0.2.1  (cached)
+⬇ retrieved checkseum.0.4.0  (https://github.com/mirage/checkseum/releases/download/v0.4.0/checkseum-0.4.0.tbz)
+⬇ retrieved cmdliner.1.0.4  (cached)
+⬇ retrieved cppo.1.6.9  (cached)
+∗ installed conf-pkg-config.3
+⬇ retrieved csexp.1.5.2  (cached)
+⬇ retrieved cstruct.6.0.1  (cached)
+⬇ retrieved decompress.0.9.1  (https://github.com/mirage/decompress/releases/download/v0.9.1/decompress-v0.9.1.tbz)
+⬇ retrieved digestif.0.9.0  (https://github.com/mirage/digestif/releases/download/v0.9.0/digestif-v0.9.0.tbz)
+⬇ retrieved duff.0.2  (https://github.com/dinosaure/duff/releases/download/v0.2/duff-v0.2.tbz)
+⬇ retrieved dune.3.16.0, dune-configurator.3.16.0  (cached)
+⬇ retrieved encore.0.4  (https://github.com/mirage/encore/releases/download/v0.4/encore-v0.4.tbz)
+∗ installed cmdliner.1.0.4
+⬇ retrieved eqaf.0.10  (cached)
+⬇ retrieved fmt.0.9.0  (cached)
+⬇ retrieved fpath.0.7.3  (cached)
+⬇ retrieved git.2.1.1  (https://github.com/mirage/ocaml-git/releases/download/2.1.1/git-2.1.1.tbz)
+⬇ retrieved hex.1.5.0  (cached)
+⬇ retrieved ke.0.6  (cached)
+⬇ retrieved logs.0.7.0  (cached)
+⬇ retrieved lru.0.3.1  (cached)
+⬇ retrieved lwt.5.7.0  (cached)
+⬇ retrieved mmap.1.2.0  (cached)
+⬇ retrieved ocamlbuild.0.15.0  (cached)
+⬇ retrieved ocamlfind.1.9.6  (cached)
+⬇ retrieved ocamlgraph.2.1.0  (cached)
+⬇ retrieved ocplib-endian.1.2  (cached)
+⬇ retrieved optint.0.3.0  (cached)
+⬇ retrieved psq.0.2.1  (cached)
+⬇ retrieved re.1.11.0  (cached)
+⬇ retrieved result.1.5  (cached)
+⬇ retrieved rresult.0.7.0  (cached)
+⬇ retrieved seq.base  (cached)
+∗ installed seq.base
+⬇ retrieved stdlib-shims.0.3.0  (cached)
+⬇ retrieved stringext.1.6.0  (cached)
+⬇ retrieved topkg.1.0.7  (cached)
+⬇ retrieved uri.3.1.0  (https://github.com/mirage/ocaml-uri/releases/download/v3.1.0/uri-v3.1.0.tbz)
+∗ installed ocamlfind.1.9.6
+∗ installed base-bytes.base
+∗ installed ocamlbuild.0.15.0
+∗ installed topkg.1.0.7
+∗ installed rresult.0.7.0
+∗ installed fmt.0.9.0
+∗ installed astring.0.8.5
+∗ installed fpath.0.7.3
+∗ installed dune.3.16.0
+∗ installed bigarray-compat.1.1.0
+∗ installed csexp.1.5.2
+∗ installed psq.0.2.1
+∗ installed cstruct.6.0.1
+∗ installed re.1.11.0
+∗ installed optint.0.3.0
+∗ installed ke.0.6
+∗ installed eqaf.0.10
+∗ installed cppo.1.6.9
+∗ installed hex.1.5.0
+∗ installed lru.0.3.1
+∗ installed mmap.1.2.0
+∗ installed stdlib-shims.0.3.0
+∗ installed result.1.5
+∗ installed stringext.1.6.0
+∗ installed ocplib-endian.1.2
+∗ installed dune-configurator.3.16.0
+∗ installed digestif.0.9.0
+∗ installed uri.3.1.0
+∗ installed bigstringaf.0.10.0
+∗ installed checkseum.0.4.0
+∗ installed angstrom.0.13.0
+∗ installed ocamlgraph.2.1.0
+∗ installed encore.0.4
+∗ installed decompress.0.9.1
+∗ installed lwt.5.7.0
+∗ installed logs.0.7.0
+∗ installed bos.0.2.1
+∗ installed duff.0.2
+∗ installed git.2.1.1
+Done.
+[01;2m[01;35m2024-08-20 14:22.30 ---> saved as "961117c3377a6a099a6ce39ccd31108ff756a7a8915c0e2dc190efe8b29af01c"[0m
+
+[01;34m/home/opam: (run (network host)
+                 (shell "(opam reinstall --with-test git.2.1.1) || true"))[0m
+[ERROR] Sorry, resolution of the request timed out.
+        Try to specify a more precise request, use a different solver, or increase the allowed time by setting OPAMSOLVERTIMEOUT to a bigger value (currently, it is set to 500.0 seconds).
+[01;2m[01;35m2024-08-20 14:31.11 ---> saved as "257599837892d115d49b6ada645bcf75029b64433c42600c6a1d35f34cabb6a3"[0m
+
+[01;34m/home/opam: (run (shell  "opam reinstall --with-test --verbose git.2.1.1;\
+                        \n        res=$?;\
+                        \n        test \"$res\" != 31 && exit \"$res\";\
+                        \n        export OPAMCLI=2.0;\
+                        \n        build_dir=$(opam var prefix)/.opam-switch/build;\
+                        \n        failed=$(ls \"$build_dir\");\
+                        \n        partial_fails=\"\";\
+                        \n        for pkg in $failed; do\
+                        \n          if opam show -f x-ci-accept-failures: \"$pkg\" | grep -qF \"\\\"freebsd\\\"\"; then\
+                        \n            echo \"A package failed and has been disabled for CI using the 'x-ci-accept-failures' field.\";\
+                        \n          fi;\
+                        \n          test \"$pkg\" != 'git.2.1.1' && partial_fails=\"$partial_fails $pkg\";\
+                        \n        done;\
+                        \n        test \"${partial_fails}\" != \"\" && echo \"opam-repo-ci detected dependencies failing: ${partial_fails}\";\
+                        \n        exit 1"))[0m
+[ERROR] Sorry, resolution of the request timed out.
+        Try to specify a more precise request, use a different solver, or increase the allowed time by setting OPAMSOLVERTIMEOUT to a bigger value (currently, it is set to 500.0 seconds).
+'opam reinstall --with-test --verbose git.2.1.1' failed.
+jail: /usr/bin/su -l opam -c cd '/home/opam' && env OPAM_REPO_CI='true' CI='true' OPAMPRECISETRACKING='1' OPAMSOLVERTIMEOUT='500' OPAMERRLOGLEN='0' OPAMDOWNLOADJOBS='1' '/usr/bin/env' 'bash' '-c' 'opam reinstall --with-test --verbose git.2.1.1;
+        res=$?;
+        test "$res" != 31 && exit "$res";
+        export OPAMCLI=2.0;
+        build_dir=$(opam var prefix)/.opam-switch/build;
+        failed=$(ls "$build_dir");
+        partial_fails="";
+        for pkg in $failed; do
+          if opam show -f x-ci-accept-failures: "$pkg" | grep -qF "\"freebsd\""; then
+            echo "A package failed and has been disabled for CI using the '\''x-ci-accept-failures'\'' field.";
+          fi;
+          test "$pkg" != '\''git.2.1.1'\'' && partial_fails="$partial_fails $pkg";
+        done;
+        test "${partial_fails}" != "" && echo "opam-repo-ci detected dependencies failing: ${partial_fails}";
+        exit 1': failed
+"jail" "-c" "name=obuilder_3671_1367" "mount.devfs" "path=/obuilder/result/f22a28498d900e7b0ce21a031f1e3ee24009eecfb94974b298a2abbf6bb9af2a/rootfs" "vnet" "exec.start=/sbin/ifconfig lo0 127.0.0.1/8" "command=/usr/bin/su" "-l" "opam" "-c" "cd '/home/opam' && env OPAM_REPO_CI='true' CI='true' OPAMPRECISETRACKING='1' OPAMSOLVERTIMEOUT='500' OPAMERRLOGLEN='0' OPAMDOWNLOADJOBS='1' '/usr/bin/env' 'bash' '-c' 'opam reinstall --with-test --verbose git.2.1.1;
+        res=$?;
+        test "$res" != 31 && exit "$res";
+        export OPAMCLI=2.0;
+        build_dir=$(opam var prefix)/.opam-switch/build;
+        failed=$(ls "$build_dir");
+        partial_fails="";
+        for pkg in $failed; do
+          if opam show -f x-ci-accept-failures: "$pkg" | grep -qF "\"freebsd\""; then
+            echo "A package failed and has been disabled for CI using the '\''x-ci-accept-failures'\'' field.";
+          fi;
+          test "$pkg" != '\''git.2.1.1'\'' && partial_fails="$partial_fails $pkg";
+        done;
+        test "${partial_fails}" != "" && echo "opam-repo-ci detected dependencies failing: ${partial_fails}";
+        exit 1'" failed with exit status 1
+2024-08-20 14:49.47: Job failed: Failed: Build failed
+2024-08-20 14:49.47: Log analysis:
+2024-08-20 14:49.47: >>> 
+[ERROR] Sorry, resolution of the request timed out.
+ (score = 20)
+2024-08-20 14:49.47: >>> 
+[ERROR] Sorry, resolution of the request timed out.
+ (score = 20)
+2024-08-20 14:49.47: Sorry, resolution of the request timed out.

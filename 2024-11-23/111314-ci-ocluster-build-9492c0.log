@@ -1,0 +1,425 @@
+2024-11-23 11:13.14: New job: test cohttp-curl-lwt.6.0.0, using opam dev
+                              from https://github.com/ocaml/opam-repository.git#refs/pull/26925/head (5e85658ef7dec0b072e561cdfb8474c0b3651ab9)
+                              on ubuntu-24.04-ocaml-4.14/riscv64
+
+To reproduce locally:
+
+cd $(mktemp -d)
+git clone --recursive "https://github.com/ocaml/opam-repository.git" && cd "opam-repository" && git fetch origin "refs/pull/26925/head" && git reset --hard 5e85658e
+git fetch origin master
+git merge --no-edit 595a5de8851ee6850657337060ce4b5acbfb0aa9
+cat > ../Dockerfile <<'END-OF-DOCKERFILE'
+[34mFROM ocaml/opam:ubuntu-24.04-ocaml-4.14@sha256:74a79217a07b9e749d967746dac71296666e7f7a46773608872e5d5f917487b7
+USER 1000:1000
+WORKDIR /home/opam
+RUN sudo ln -f /usr/bin/opam-dev /usr/bin/opam
+RUN opam init --reinit -ni
+RUN uname -rs && opam exec -- ocaml -version && opam --version
+ENV OPAMDOWNLOADJOBS="1"
+ENV OPAMERRLOGLEN="0"
+ENV OPAMSOLVERTIMEOUT="1000"
+ENV OPAMPRECISETRACKING="1"
+ENV CI="true"
+ENV OPAM_REPO_CI="true"
+RUN rm -rf opam-repository/
+COPY --chown=1000:1000 . opam-repository/
+RUN opam repository set-url --strict default opam-repository/
+RUN opam update --depexts || true
+RUN opam pin add -k version -yn cohttp-curl-lwt.6.0.0 6.0.0
+RUN opam reinstall cohttp-curl-lwt.6.0.0; \
+    res=$?; \
+    test "$res" != 31 && exit "$res"; \
+    export OPAMCLI=2.0; \
+    build_dir=$(opam var prefix)/.opam-switch/build; \
+    failed=$(ls "$build_dir"); \
+    partial_fails=""; \
+    for pkg in $failed; do \
+    if opam show -f x-ci-accept-failures: "$pkg" | grep -qF "\"ubuntu-24.04\""; then \
+    echo "A package failed and has been disabled for CI using the 'x-ci-accept-failures' field."; \
+    fi; \
+    test "$pkg" != 'cohttp-curl-lwt.6.0.0' && partial_fails="$partial_fails $pkg"; \
+    done; \
+    test "${partial_fails}" != "" && echo "opam-repo-ci detected dependencies failing: ${partial_fails}"; \
+    exit 1
+RUN (opam reinstall --with-test cohttp-curl-lwt.6.0.0) || true
+RUN opam reinstall --with-test --verbose cohttp-curl-lwt.6.0.0; \
+    res=$?; \
+    test "$res" != 31 && exit "$res"; \
+    export OPAMCLI=2.0; \
+    build_dir=$(opam var prefix)/.opam-switch/build; \
+    failed=$(ls "$build_dir"); \
+    partial_fails=""; \
+    for pkg in $failed; do \
+    if opam show -f x-ci-accept-failures: "$pkg" | grep -qF "\"ubuntu-24.04\""; then \
+    echo "A package failed and has been disabled for CI using the 'x-ci-accept-failures' field."; \
+    fi; \
+    test "$pkg" != 'cohttp-curl-lwt.6.0.0' && partial_fails="$partial_fails $pkg"; \
+    done; \
+    test "${partial_fails}" != "" && echo "opam-repo-ci detected dependencies failing: ${partial_fails}"; \
+    exit 1
+[0m
+END-OF-DOCKERFILE
+docker build -f ../Dockerfile .
+
+2024-11-23 11:13.14: Using cache hint "ocaml/opam:ubuntu-24.04-ocaml-4.14@sha256:74a79217a07b9e749d967746dac71296666e7f7a46773608872e5d5f917487b7-cohttp-curl-lwt.6.0.0-5e85658ef7dec0b072e561cdfb8474c0b3651ab9"
+2024-11-23 11:13.14: Using OBuilder spec:
+((from ocaml/opam:ubuntu-24.04-ocaml-4.14@sha256:74a79217a07b9e749d967746dac71296666e7f7a46773608872e5d5f917487b7)
+ (user (uid 1000) (gid 1000))
+ (workdir /home/opam)
+ (run (shell "sudo ln -f /usr/bin/opam-dev /usr/bin/opam"))
+ (run (network host)
+      (shell "opam init --reinit --config .opamrc-sandbox -ni"))
+ (run (shell "uname -rs && opam exec -- ocaml -version && opam --version"))
+ (env OPAMDOWNLOADJOBS 1)
+ (env OPAMERRLOGLEN 0)
+ (env OPAMSOLVERTIMEOUT 1000)
+ (env OPAMPRECISETRACKING 1)
+ (env CI true)
+ (env OPAM_REPO_CI true)
+ (run (shell "rm -rf opam-repository/"))
+ (copy (src .) (dst opam-repository/))
+ (run (shell "opam repository set-url --strict default opam-repository/"))
+ (run (network host)
+      (shell "opam update --depexts || true"))
+ (run (shell "opam pin add -k version -yn cohttp-curl-lwt.6.0.0 6.0.0"))
+ (run (cache (opam-archives (target /home/opam/.opam/download-cache)))
+      (network host)
+      (shell  "opam reinstall cohttp-curl-lwt.6.0.0;\
+             \n        res=$?;\
+             \n        test \"$res\" != 31 && exit \"$res\";\
+             \n        export OPAMCLI=2.0;\
+             \n        build_dir=$(opam var prefix)/.opam-switch/build;\
+             \n        failed=$(ls \"$build_dir\");\
+             \n        partial_fails=\"\";\
+             \n        for pkg in $failed; do\
+             \n          if opam show -f x-ci-accept-failures: \"$pkg\" | grep -qF \"\\\"ubuntu-24.04\\\"\"; then\
+             \n            echo \"A package failed and has been disabled for CI using the 'x-ci-accept-failures' field.\";\
+             \n          fi;\
+             \n          test \"$pkg\" != 'cohttp-curl-lwt.6.0.0' && partial_fails=\"$partial_fails $pkg\";\
+             \n        done;\
+             \n        test \"${partial_fails}\" != \"\" && echo \"opam-repo-ci detected dependencies failing: ${partial_fails}\";\
+             \n        exit 1"))
+ (run (network host)
+      (shell "(opam reinstall --with-test cohttp-curl-lwt.6.0.0) || true"))
+ (run (shell  "opam reinstall --with-test --verbose cohttp-curl-lwt.6.0.0;\
+             \n        res=$?;\
+             \n        test \"$res\" != 31 && exit \"$res\";\
+             \n        export OPAMCLI=2.0;\
+             \n        build_dir=$(opam var prefix)/.opam-switch/build;\
+             \n        failed=$(ls \"$build_dir\");\
+             \n        partial_fails=\"\";\
+             \n        for pkg in $failed; do\
+             \n          if opam show -f x-ci-accept-failures: \"$pkg\" | grep -qF \"\\\"ubuntu-24.04\\\"\"; then\
+             \n            echo \"A package failed and has been disabled for CI using the 'x-ci-accept-failures' field.\";\
+             \n          fi;\
+             \n          test \"$pkg\" != 'cohttp-curl-lwt.6.0.0' && partial_fails=\"$partial_fails $pkg\";\
+             \n        done;\
+             \n        test \"${partial_fails}\" != \"\" && echo \"opam-repo-ci detected dependencies failing: ${partial_fails}\";\
+             \n        exit 1"))
+)
+
+2024-11-23 11:13.14: Waiting for resource in pool OCluster
+2024-11-23 11:13.14: Waiting for worker…
+2024-11-23 22:12.56: Got resource from pool OCluster
+Building on riscv-bm-a2.sw.ocaml.org
+All commits already cached
+Updating files:   9% (2974/32722)Updating files:  10% (3273/32722)Updating files:  11% (3600/32722)Updating files:  12% (3927/32722)Updating files:  13% (4254/32722)Updating files:  14% (4582/32722)Updating files:  15% (4909/32722)Updating files:  16% (5236/32722)Updating files:  17% (5563/32722)Updating files:  17% (5761/32722)Updating files:  18% (5890/32722)Updating files:  19% (6218/32722)Updating files:  20% (6545/32722)Updating files:  21% (6872/32722)Updating files:  22% (7199/32722)Updating files:  23% (7527/32722)Updating files:  24% (7854/32722)Updating files:  25% (8181/32722)Updating files:  26% (8508/32722)Updating files:  26% (8735/32722)Updating files:  27% (8835/32722)Updating files:  28% (9163/32722)Updating files:  29% (9490/32722)Updating files:  30% (9817/32722)Updating files:  31% (10144/32722)Updating files:  32% (10472/32722)Updating files:  33% (10799/32722)Updating files:  34% (11126/32722)Updating files:  34% (11292/32722)Updating files:  35% (11453/32722)Updating files:  36% (11780/32722)Updating files:  37% (12108/32722)Updating files:  38% (12435/32722)Updating files:  39% (12762/32722)Updating files:  40% (13089/32722)Updating files:  41% (13417/32722)Updating files:  42% (13744/32722)Updating files:  42% (13948/32722)Updating files:  43% (14071/32722)Updating files:  44% (14398/32722)Updating files:  45% (14725/32722)Updating files:  46% (15053/32722)Updating files:  47% (15380/32722)Updating files:  48% (15707/32722)Updating files:  49% (16034/32722)Updating files:  50% (16361/32722)Updating files:  50% (16497/32722)Updating files:  51% (16689/32722)Updating files:  52% (17016/32722)Updating files:  53% (17343/32722)Updating files:  54% (17670/32722)Updating files:  55% (17998/32722)Updating files:  56% (18325/32722)Updating files:  57% (18652/32722)Updating files:  57% (18971/32722)Updating files:  58% (18979/32722)Updating files:  59% (19306/32722)Updating files:  60% (19634/32722)Updating files:  61% (19961/32722)Updating files:  62% (20288/32722)Updating files:  63% (20615/32722)Updating files:  64% (20943/32722)Updating files:  65% (21270/32722)Updating files:  65% (21471/32722)Updating files:  66% (21597/32722)Updating files:  67% (21924/32722)Updating files:  68% (22251/32722)Updating files:  69% (22579/32722)Updating files:  70% (22906/32722)Updating files:  71% (23233/32722)Updating files:  72% (23560/32722)Updating files:  73% (23888/32722)Updating files:  73% (23973/32722)Updating files:  74% (24215/32722)Updating files:  75% (24542/32722)Updating files:  76% (24869/32722)Updating files:  77% (25196/32722)Updating files:  78% (25524/32722)Updating files:  79% (25851/32722)Updating files:  80% (26178/32722)Updating files:  81% (26505/32722)Updating files:  81% (26532/32722)Updating files:  82% (26833/32722)Updating files:  83% (27160/32722)Updating files:  84% (27487/32722)Updating files:  85% (27814/32722)Updating files:  86% (28141/32722)Updating files:  87% (28469/32722)Updating files:  88% (28796/32722)Updating files:  89% (29123/32722)Updating files:  89% (29136/32722)Updating files:  90% (29450/32722)Updating files:  91% (29778/32722)Updating files:  92% (30105/32722)Updating files:  93% (30432/32722)Updating files:  94% (30759/32722)Updating files:  95% (31086/32722)Updating files:  96% (31414/32722)Updating files:  97% (31741/32722)Updating files:  97% (31796/32722)Updating files:  98% (32068/32722)Updating files:  99% (32395/32722)Updating files: 100% (32722/32722)Updating files: 100% (32722/32722), done.
+HEAD is now at 595a5de885 Merge pull request #26930 from avsm/graphql-cohttp-upper
+Merge made by the 'ort' strategy.
+ packages/cohttp-async/cohttp-async.6.0.0/opam      | 73 +++++++++++++++++++++
+ packages/cohttp-bench/cohttp-bench.6.0.0/opam      | 61 ++++++++++++++++++
+ .../cohttp-curl-async/cohttp-curl-async.6.0.0/opam | 62 ++++++++++++++++++
+ .../cohttp-curl-lwt/cohttp-curl-lwt.6.0.0/opam     | 61 ++++++++++++++++++
+ packages/cohttp-curl/cohttp-curl.6.0.0/opam        | 50 +++++++++++++++
+ packages/cohttp-eio/cohttp-eio.6.0.0/opam          | 62 ++++++++++++++++++
+ .../cohttp-lwt-jsoo/cohttp-lwt-jsoo.6.0.0/opam     | 62 ++++++++++++++++++
+ .../cohttp-lwt-unix/cohttp-lwt-unix.6.0.0/opam     | 69 ++++++++++++++++++++
+ packages/cohttp-lwt/cohttp-lwt.6.0.0/opam          | 61 ++++++++++++++++++
+ packages/cohttp-mirage/cohttp-mirage.6.0.0/opam    | 69 ++++++++++++++++++++
+ .../cohttp-server-lwt-unix.6.0.0/opam              | 56 ++++++++++++++++
+ packages/cohttp-top/cohttp-top.6.0.0/opam          | 53 ++++++++++++++++
+ packages/cohttp/cohttp.6.0.0/opam                  | 74 ++++++++++++++++++++++
+ packages/http/http.6.0.0/opam                      | 59 +++++++++++++++++
+ 14 files changed, 872 insertions(+)
+ create mode 100644 packages/cohttp-async/cohttp-async.6.0.0/opam
+ create mode 100644 packages/cohttp-bench/cohttp-bench.6.0.0/opam
+ create mode 100644 packages/cohttp-curl-async/cohttp-curl-async.6.0.0/opam
+ create mode 100644 packages/cohttp-curl-lwt/cohttp-curl-lwt.6.0.0/opam
+ create mode 100644 packages/cohttp-curl/cohttp-curl.6.0.0/opam
+ create mode 100644 packages/cohttp-eio/cohttp-eio.6.0.0/opam
+ create mode 100644 packages/cohttp-lwt-jsoo/cohttp-lwt-jsoo.6.0.0/opam
+ create mode 100644 packages/cohttp-lwt-unix/cohttp-lwt-unix.6.0.0/opam
+ create mode 100644 packages/cohttp-lwt/cohttp-lwt.6.0.0/opam
+ create mode 100644 packages/cohttp-mirage/cohttp-mirage.6.0.0/opam
+ create mode 100644 packages/cohttp-server-lwt-unix/cohttp-server-lwt-unix.6.0.0/opam
+ create mode 100644 packages/cohttp-top/cohttp-top.6.0.0/opam
+ create mode 100644 packages/cohttp/cohttp.6.0.0/opam
+ create mode 100644 packages/http/http.6.0.0/opam
+
+[01;34m(from ocaml/opam:ubuntu-24.04-ocaml-4.14@sha256:74a79217a07b9e749d967746dac71296666e7f7a46773608872e5d5f917487b7)[0m
+Unable to find image 'ocaml/opam:ubuntu-24.04-ocaml-4.14@sha256:74a79217a07b9e749d967746dac71296666e7f7a46773608872e5d5f917487b7' locally
+docker.io/ocaml/opam@sha256:74a79217a07b9e749d967746dac71296666e7f7a46773608872e5d5f917487b7: Pulling from ocaml/opam
+ee732b5fddd0: Already exists
+4f8e8e1f9f84: Already exists
+68ba40696519: Already exists
+1a6ae489338d: Already exists
+61a5e994df1e: Already exists
+572d1e8b8168: Already exists
+f730494fb64c: Already exists
+243d12eea946: Already exists
+73a9454febcc: Already exists
+b38c147e04b2: Already exists
+6981e7a1d9e1: Already exists
+bd5d95902f12: Already exists
+66e08a5e3913: Already exists
+f6c863c750f6: Already exists
+3032bf9f7315: Already exists
+3032bf9f7315: Already exists
+fa99d7b6739c: Already exists
+f72eef7dfc41: Already exists
+9fa5cd29d5fb: Already exists
+d6e19500368e: Already exists
+4f4fb700ef54: Already exists
+63f3db6adf2e: Already exists
+2446edbd83de: Already exists
+489932655f26: Already exists
+cf8fba4d9f3c: Already exists
+af8576294388: Already exists
+c18ad58e1818: Already exists
+1436dd9737d6: Already exists
+b10a27c1e421: Already exists
+5c264a9b12d0: Already exists
+1114fee1c45f: Already exists
+c5100d048b99: Already exists
+796cb318dc22: Already exists
+90e2bded7da1: Already exists
+0b812d0f1e13: Already exists
+ee45a4ccdbb8: Already exists
+30a7f5f824a8: Already exists
+308e663e0ba6: Already exists
+949e860d5ee4: Pulling fs layer
+31df206ee863: Pulling fs layer
+dc305f29ff78: Pulling fs layer
+ee2b80cd8acf: Pulling fs layer
+ee2b80cd8acf: Waiting
+31df206ee863: Verifying Checksum
+31df206ee863: Download complete
+dc305f29ff78: Verifying Checksum
+dc305f29ff78: Download complete
+ee2b80cd8acf: Download complete
+949e860d5ee4: Verifying Checksum
+949e860d5ee4: Download complete
+949e860d5ee4: Pull complete
+31df206ee863: Pull complete
+dc305f29ff78: Pull complete
+ee2b80cd8acf: Pull complete
+Digest: sha256:74a79217a07b9e749d967746dac71296666e7f7a46773608872e5d5f917487b7
+Status: Downloaded newer image for ocaml/opam@sha256:74a79217a07b9e749d967746dac71296666e7f7a46773608872e5d5f917487b7
+[01;2m[01;35m2024-11-23 22:13.15 ---> using "180ae51fc5d6ce175a3ec8a0fbf1872f08ab7db00cf801379d8056bbbcf5d751" from cache[0m
+
+[01;34m/: (user (uid 1000) (gid 1000))[0m
+
+[01;34m/: (workdir /home/opam)[0m
+
+[01;34m/home/opam: (run (shell "sudo ln -f /usr/bin/opam-dev /usr/bin/opam"))[0m
+[01;2m[01;35m2024-11-23 22:13.15 ---> using "0cc91d394ac32c8d8e271a483bb7ec704b2ae6920abced44978ab2ea93303906" from cache[0m
+
+[01;34m/home/opam: (run (network host)
+                 (shell "opam init --reinit --config .opamrc-sandbox -ni"))[0m
+Configuring from /home/opam/.opamrc-sandbox, then /home/opam/.opamrc, and finally from built-in defaults.
+Checking for available remotes: rsync and local, git.
+  - you won't be able to use mercurial repositories unless you install the hg command on your system.
+  - you won't be able to use darcs repositories unless you install the darcs command on your system.
+
+This development version of opam requires an update to the layout of /home/opam/.opam from version 2.0 to version 2.2, which can't be reverted.
+You may want to back it up before going further.
+
+Continue? [Y/n] y
+Format upgrade done.
+
+<><> Updating repositories ><><><><><><><><><><><><><><><><><><><><><><><><><><>
+[default] synchronised from file:///home/opam/opam-repository
+[01;2m[01;35m2024-11-23 22:13.15 ---> using "edd5bfc3e6c397c9a8c3ec2b53bf61fe0190ad9663ab9001f3874a2c3777c046" from cache[0m
+
+[01;34m/home/opam: (run (shell "uname -rs && opam exec -- ocaml -version && opam --version"))[0m
+Linux 5.10.113+
+The OCaml toplevel, version 4.14.2
+2.4.0~alpha1~dev
+[01;2m[01;35m2024-11-23 22:13.15 ---> using "ef47ad3109ecdd321c0f279e010716f7b41bde104915c8fe1692c7acd1a96ee8" from cache[0m
+
+[01;34m/home/opam: (env OPAMDOWNLOADJOBS 1)[0m
+
+[01;34m/home/opam: (env OPAMERRLOGLEN 0)[0m
+
+[01;34m/home/opam: (env OPAMSOLVERTIMEOUT 1000)[0m
+
+[01;34m/home/opam: (env OPAMPRECISETRACKING 1)[0m
+
+[01;34m/home/opam: (env CI true)[0m
+
+[01;34m/home/opam: (env OPAM_REPO_CI true)[0m
+
+[01;34m/home/opam: (run (shell "rm -rf opam-repository/"))[0m
+[01;2m[01;35m2024-11-23 22:13.15 ---> using "75986cc52e7b76a7b88826d7fcc07c296e36b525b01acb78355c816ab4c043e2" from cache[0m
+
+[01;34m/home/opam: (copy (src .) (dst opam-repository/))[0m
+[01;2m[01;35m2024-11-23 22:13.58 ---> saved as "9c61879f1ad500af40885b826e637610901f719fd8b14342a44ef7d283ef2d6e"[0m
+
+[01;34m/home/opam: (run (shell "opam repository set-url --strict default opam-repository/"))[0m
+[default] Initialised
+[01;2m[01;35m2024-11-23 22:18.11 ---> saved as "fc11aed0c5d187014970a0485523340cc09a771c6b3cf948ed5984f7884ed8eb"[0m
+
+[01;34m/home/opam: (run (network host)
+                 (shell "opam update --depexts || true"))[0m
++ /usr/bin/sudo "apt-get" "update"
+- Hit:1 http://ports.ubuntu.com/ubuntu-ports noble InRelease
+- Get:2 http://ports.ubuntu.com/ubuntu-ports noble-updates InRelease [126 kB]
+- Get:3 http://ports.ubuntu.com/ubuntu-ports noble-backports InRelease [126 kB]
+- Get:4 http://ports.ubuntu.com/ubuntu-ports noble-security InRelease [126 kB]
+- Get:5 http://ports.ubuntu.com/ubuntu-ports noble-updates/universe riscv64 Packages [781 kB]
+- Get:6 http://ports.ubuntu.com/ubuntu-ports noble-updates/main riscv64 Packages [532 kB]
+- Get:7 http://ports.ubuntu.com/ubuntu-ports noble-backports/universe riscv64 Packages [10.1 kB]
+- Get:8 http://ports.ubuntu.com/ubuntu-ports noble-security/main riscv64 Packages [307 kB]
+- Get:9 http://ports.ubuntu.com/ubuntu-ports noble-security/universe riscv64 Packages [590 kB]
+- Fetched 2598 kB in 2s (1587 kB/s)
+- Reading package lists...
+- 
+[01;2m[01;35m2024-11-23 22:18.18 ---> saved as "66e13b32a527cab9c8f11a5559d99090c61174225b436edc87ee3b75a492154a"[0m
+
+[01;34m/home/opam: (run (shell "opam pin add -k version -yn cohttp-curl-lwt.6.0.0 6.0.0"))[0m
+cohttp-curl-lwt is now pinned to version 6.0.0
+[01;2m[01;35m2024-11-23 22:18.22 ---> saved as "fd343b6d7c2a31a1b0b1be3fa79ff62a78b29430e6b1d1a649bab6dfa2e49306"[0m
+
+[01;34m/home/opam: (run (cache (opam-archives (target /home/opam/.opam/download-cache)))
+                 (network host)
+                 (shell  "opam reinstall cohttp-curl-lwt.6.0.0;\
+                        \n        res=$?;\
+                        \n        test \"$res\" != 31 && exit \"$res\";\
+                        \n        export OPAMCLI=2.0;\
+                        \n        build_dir=$(opam var prefix)/.opam-switch/build;\
+                        \n        failed=$(ls \"$build_dir\");\
+                        \n        partial_fails=\"\";\
+                        \n        for pkg in $failed; do\
+                        \n          if opam show -f x-ci-accept-failures: \"$pkg\" | grep -qF \"\\\"ubuntu-24.04\\\"\"; then\
+                        \n            echo \"A package failed and has been disabled for CI using the 'x-ci-accept-failures' field.\";\
+                        \n          fi;\
+                        \n          test \"$pkg\" != 'cohttp-curl-lwt.6.0.0' && partial_fails=\"$partial_fails $pkg\";\
+                        \n        done;\
+                        \n        test \"${partial_fails}\" != \"\" && echo \"opam-repo-ci detected dependencies failing: ${partial_fails}\";\
+                        \n        exit 1"))[0m
+cohttp-curl-lwt.6.0.0 is not installed. Install it? [Y/n] y
+The following actions will be performed:
+=== install 14 packages
+  - install base-bytes        base           [required by ocplib-endian]
+  - install cohttp-curl       6.0.0          [required by cohttp-curl-lwt]
+  - install cohttp-curl-lwt   6.0.0 (pinned)
+  - install conf-libcurl      2              [required by ocurl]
+  - install cppo              1.7.0          [required by lwt]
+  - install csexp             1.5.2          [required by dune-configurator]
+  - install dune              3.16.1         [required by cohttp-curl-lwt]
+  - install dune-configurator 3.16.1         [required by lwt]
+  - install http              6.0.0          [required by cohttp-curl-lwt]
+  - install lwt               5.9.0          [required by cohttp-curl-lwt]
+  - install ocamlfind         1.9.6          [required by ocurl]
+  - install ocplib-endian     1.2            [required by lwt]
+  - install ocurl             0.9.2          [required by cohttp-curl-lwt]
+  - install stringext         1.6.0          [required by cohttp-curl-lwt]
+
+The following system packages will first need to be installed:
+    libcurl4-gnutls-dev
+
+<><> Handling external dependencies <><><><><><><><><><><><><><><><><><><><><><>
+
+opam believes some required external dependencies are missing. opam can:
+> 1. Run apt-get to install them (may need root/sudo access)
+  2. Display the recommended apt-get command and wait while you run it manually (e.g. in another terminal)
+  3. Continue anyway, and, upon success, permanently register that this external dependency is present, but not detectable
+  4. Abort the installation
+
+[1/2/3/4] 1
+
++ /usr/bin/sudo "apt-get" "install" "-qq" "-yy" "libcurl4-gnutls-dev"
+- debconf: delaying package configuration, since apt-utils is not installed
+- Selecting previously unselected package libcurl4-gnutls-dev:riscv64.
+- (Reading database ... (Reading database ... 5%(Reading database ... 10%(Reading database ... 15%(Reading database ... 20%(Reading database ... 25%(Reading database ... 30%(Reading database ... 35%(Reading database ... 40%(Reading database ... 45%(Reading database ... 50%(Reading database ... 55%(Reading database ... 60%(Reading database ... 65%(Reading database ... 70%(Reading database ... 75%(Reading database ... 80%(Reading database ... 85%(Reading database ... 90%(Reading database ... 95%
+- (Reading database ... 100%(Reading database ... 16242 files and directories currently installed.)
+- Preparing to unpack .../libcurl4-gnutls-dev_8.5.0-2ubuntu10.5_riscv64.deb ...
+- Unpacking libcurl4-gnutls-dev:riscv64 (8.5.0-2ubuntu10.5) ...
+- Setting up libcurl4-gnutls-dev:riscv64 (8.5.0-2ubuntu10.5) ...
+
+<><> Processing actions <><><><><><><><><><><><><><><><><><><><><><><><><><><><>
+-> retrieved cohttp-curl.6.0.0, cohttp-curl-lwt.6.0.0, http.6.0.0  (cached)
+-> retrieved cppo.1.7.0  (cached)
+-> installed conf-libcurl.2
+-> retrieved csexp.1.5.2  (cached)
+-> retrieved dune.3.16.1, dune-configurator.3.16.1  (cached)
+-> retrieved lwt.5.9.0  (cached)
+-> retrieved ocamlfind.1.9.6  (cached)
+-> retrieved ocplib-endian.1.2  (cached)
+-> retrieved ocurl.0.9.2  (cached)
+-> retrieved stringext.1.6.0  (cached)
+-> installed ocamlfind.1.9.6
+-> installed base-bytes.base
+-> installed dune.3.16.1
+-> installed csexp.1.5.2
+-> installed http.6.0.0
+-> installed cppo.1.7.0
+-> installed stringext.1.6.0
+-> installed ocplib-endian.1.2
+-> installed dune-configurator.3.16.1
+-> installed lwt.5.9.0
+-> installed ocurl.0.9.2
+-> installed cohttp-curl.6.0.0
+-> installed cohttp-curl-lwt.6.0.0
+Done.
+# To update the current shell environment, run: eval $(opam env)
+[01;2m[01;35m2024-11-23 22:24.54 ---> saved as "73c8c362ad4f83a7d2f48df6c9184d3f07b33865dd6a882ad67522a0988c80ef"[0m
+
+[01;34m/home/opam: (run (network host)
+                 (shell "(opam reinstall --with-test cohttp-curl-lwt.6.0.0) || true"))[0m
+[ERROR] Sorry, resolution of the request timed out.
+        Try to specify a more precise request, use a different solver, or increase the allowed time by setting OPAMSOLVERTIMEOUT to a bigger value (currently, it is set to 1000.0 seconds).
+[01;2m[01;35m2024-11-23 22:42.31 ---> saved as "1f5801c2f69111d70de6b4bcebcfe9333da1b9107f95aba1251abd9f039bb643"[0m
+
+[01;34m/home/opam: (run (shell  "opam reinstall --with-test --verbose cohttp-curl-lwt.6.0.0;\
+                        \n        res=$?;\
+                        \n        test \"$res\" != 31 && exit \"$res\";\
+                        \n        export OPAMCLI=2.0;\
+                        \n        build_dir=$(opam var prefix)/.opam-switch/build;\
+                        \n        failed=$(ls \"$build_dir\");\
+                        \n        partial_fails=\"\";\
+                        \n        for pkg in $failed; do\
+                        \n          if opam show -f x-ci-accept-failures: \"$pkg\" | grep -qF \"\\\"ubuntu-24.04\\\"\"; then\
+                        \n            echo \"A package failed and has been disabled for CI using the 'x-ci-accept-failures' field.\";\
+                        \n          fi;\
+                        \n          test \"$pkg\" != 'cohttp-curl-lwt.6.0.0' && partial_fails=\"$partial_fails $pkg\";\
+                        \n        done;\
+                        \n        test \"${partial_fails}\" != \"\" && echo \"opam-repo-ci detected dependencies failing: ${partial_fails}\";\
+                        \n        exit 1"))[0m
+[ERROR] Sorry, resolution of the request timed out.
+        Try to specify a more precise request, use a different solver, or increase the allowed time by setting OPAMSOLVERTIMEOUT to a bigger value (currently, it is set to 1000.0 seconds).
+'opam reinstall --with-test --verbose cohttp-curl-lwt.6.0.0' failed.
+"/usr/bin/env" "bash" "-c" "opam reinstall --with-test --verbose cohttp-curl-lwt.6.0.0;
+        res=$?;
+        test "$res" != 31 && exit "$res";
+        export OPAMCLI=2.0;
+        build_dir=$(opam var prefix)/.opam-switch/build;
+        failed=$(ls "$build_dir");
+        partial_fails="";
+        for pkg in $failed; do
+          if opam show -f x-ci-accept-failures: "$pkg" | grep -qF "\"ubuntu-24.04\""; then
+            echo "A package failed and has been disabled for CI using the 'x-ci-accept-failures' field.";
+          fi;
+          test "$pkg" != 'cohttp-curl-lwt.6.0.0' && partial_fails="$partial_fails $pkg";
+        done;
+        test "${partial_fails}" != "" && echo "opam-repo-ci detected dependencies failing: ${partial_fails}";
+        exit 1" failed with exit status 60
+2024-11-23 23:01.07: Job failed: Failed: Build failed
+2024-11-23 23:01.07: Log analysis:
+2024-11-23 23:01.07: >>> 
+[ERROR] Sorry, resolution of the request timed out.
+ (score = 20)
+2024-11-23 23:01.07: >>> 
+[ERROR] Sorry, resolution of the request timed out.
+ (score = 20)
+2024-11-23 23:01.07: Sorry, resolution of the request timed out.

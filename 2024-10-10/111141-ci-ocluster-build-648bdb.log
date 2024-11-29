@@ -1,0 +1,299 @@
+2024-10-10 11:11.41: New job: test solid.0.1.0, using opam 2.0
+                              from https://github.com/ocaml/opam-repository.git#refs/pull/26714/head (a2dac402c55dcfcb34772b77c0b0b327f7baab61)
+                              on debian-12-ocaml-4.14/amd64
+
+To reproduce locally:
+
+cd $(mktemp -d)
+git clone --recursive "https://github.com/ocaml/opam-repository.git" && cd "opam-repository" && git fetch origin "refs/pull/26714/head" && git reset --hard a2dac402
+git fetch origin master
+git merge --no-edit ac01ad6037c0bdcca9f67fe49cd54475b585f9b2
+cat > ../Dockerfile <<'END-OF-DOCKERFILE'
+[34mFROM ocaml/opam:debian-12-ocaml-4.14@sha256:221b2ac3322a79ec1ecd509b6b12eab868fce78f360aed36b2854d34e8a9ec0a
+USER 1000:1000
+WORKDIR /home/opam
+RUN sudo ln -f /usr/bin/opam-2.0 /usr/bin/opam
+RUN opam init --reinit -ni
+RUN uname -rs && opam exec -- ocaml -version && opam --version
+ENV OPAMDOWNLOADJOBS="1"
+ENV OPAMERRLOGLEN="0"
+ENV OPAMSOLVERTIMEOUT="1000"
+ENV OPAMPRECISETRACKING="1"
+ENV CI="true"
+ENV OPAM_REPO_CI="true"
+RUN rm -rf opam-repository/
+COPY --chown=1000:1000 . opam-repository/
+RUN opam repository set-url --strict default opam-repository/
+RUN opam depext -u || true
+RUN opam pin add -k version -yn solid.0.1.0 0.1.0
+RUN opam depext solid.0.1.0 && opam reinstall solid.0.1.0; \
+    res=$?; \
+    test "$res" != 31 && exit "$res"; \
+    export OPAMCLI=2.0; \
+    build_dir=$(opam var prefix)/.opam-switch/build; \
+    failed=$(ls "$build_dir"); \
+    partial_fails=""; \
+    for pkg in $failed; do \
+    if opam show -f x-ci-accept-failures: "$pkg" | grep -qF "\"debian-12\""; then \
+    echo "A package failed and has been disabled for CI using the 'x-ci-accept-failures' field."; \
+    fi; \
+    test "$pkg" != 'solid.0.1.0' && partial_fails="$partial_fails $pkg"; \
+    done; \
+    test "${partial_fails}" != "" && echo "opam-repo-ci detected dependencies failing: ${partial_fails}"; \
+    exit 1
+RUN (opam depext --with-test solid.0.1.0 && opam reinstall --with-test solid.0.1.0) || true
+RUN opam depext --with-test solid.0.1.0 && opam reinstall --with-test --verbose solid.0.1.0; \
+    res=$?; \
+    test "$res" != 31 && exit "$res"; \
+    export OPAMCLI=2.0; \
+    build_dir=$(opam var prefix)/.opam-switch/build; \
+    failed=$(ls "$build_dir"); \
+    partial_fails=""; \
+    for pkg in $failed; do \
+    if opam show -f x-ci-accept-failures: "$pkg" | grep -qF "\"debian-12\""; then \
+    echo "A package failed and has been disabled for CI using the 'x-ci-accept-failures' field."; \
+    fi; \
+    test "$pkg" != 'solid.0.1.0' && partial_fails="$partial_fails $pkg"; \
+    done; \
+    test "${partial_fails}" != "" && echo "opam-repo-ci detected dependencies failing: ${partial_fails}"; \
+    exit 1
+[0m
+END-OF-DOCKERFILE
+docker build -f ../Dockerfile .
+
+2024-10-10 11:11.41: Using cache hint "ocaml/opam:debian-12-ocaml-4.14@sha256:221b2ac3322a79ec1ecd509b6b12eab868fce78f360aed36b2854d34e8a9ec0a-solid.0.1.0-a2dac402c55dcfcb34772b77c0b0b327f7baab61"
+2024-10-10 11:11.41: Using OBuilder spec:
+((from ocaml/opam:debian-12-ocaml-4.14@sha256:221b2ac3322a79ec1ecd509b6b12eab868fce78f360aed36b2854d34e8a9ec0a)
+ (user (uid 1000) (gid 1000))
+ (workdir /home/opam)
+ (run (shell "sudo ln -f /usr/bin/opam-2.0 /usr/bin/opam"))
+ (run (network host)
+      (shell "opam init --reinit --config .opamrc-sandbox -ni"))
+ (run (shell "uname -rs && opam exec -- ocaml -version && opam --version"))
+ (env OPAMDOWNLOADJOBS 1)
+ (env OPAMERRLOGLEN 0)
+ (env OPAMSOLVERTIMEOUT 1000)
+ (env OPAMPRECISETRACKING 1)
+ (env CI true)
+ (env OPAM_REPO_CI true)
+ (run (shell "rm -rf opam-repository/"))
+ (copy (src .) (dst opam-repository/))
+ (run (shell "opam repository set-url --strict default opam-repository/"))
+ (run (network host)
+      (shell "opam depext -u || true"))
+ (run (shell "opam pin add -k version -yn solid.0.1.0 0.1.0"))
+ (run (cache (opam-archives (target /home/opam/.opam/download-cache)))
+      (network host)
+      (shell  "opam depext solid.0.1.0 && opam reinstall solid.0.1.0;\
+             \n        res=$?;\
+             \n        test \"$res\" != 31 && exit \"$res\";\
+             \n        export OPAMCLI=2.0;\
+             \n        build_dir=$(opam var prefix)/.opam-switch/build;\
+             \n        failed=$(ls \"$build_dir\");\
+             \n        partial_fails=\"\";\
+             \n        for pkg in $failed; do\
+             \n          if opam show -f x-ci-accept-failures: \"$pkg\" | grep -qF \"\\\"debian-12\\\"\"; then\
+             \n            echo \"A package failed and has been disabled for CI using the 'x-ci-accept-failures' field.\";\
+             \n          fi;\
+             \n          test \"$pkg\" != 'solid.0.1.0' && partial_fails=\"$partial_fails $pkg\";\
+             \n        done;\
+             \n        test \"${partial_fails}\" != \"\" && echo \"opam-repo-ci detected dependencies failing: ${partial_fails}\";\
+             \n        exit 1"))
+ (run (network host)
+      (shell "(opam depext --with-test solid.0.1.0 && opam reinstall --with-test solid.0.1.0) || true"))
+ (run (shell  "opam depext --with-test solid.0.1.0 && opam reinstall --with-test --verbose solid.0.1.0;\
+             \n        res=$?;\
+             \n        test \"$res\" != 31 && exit \"$res\";\
+             \n        export OPAMCLI=2.0;\
+             \n        build_dir=$(opam var prefix)/.opam-switch/build;\
+             \n        failed=$(ls \"$build_dir\");\
+             \n        partial_fails=\"\";\
+             \n        for pkg in $failed; do\
+             \n          if opam show -f x-ci-accept-failures: \"$pkg\" | grep -qF \"\\\"debian-12\\\"\"; then\
+             \n            echo \"A package failed and has been disabled for CI using the 'x-ci-accept-failures' field.\";\
+             \n          fi;\
+             \n          test \"$pkg\" != 'solid.0.1.0' && partial_fails=\"$partial_fails $pkg\";\
+             \n        done;\
+             \n        test \"${partial_fails}\" != \"\" && echo \"opam-repo-ci detected dependencies failing: ${partial_fails}\";\
+             \n        exit 1"))
+)
+
+2024-10-10 11:11.41: Waiting for resource in pool OCluster
+2024-10-10 12:01.38: Waiting for worker…
+2024-10-10 12:03.56: Got resource from pool OCluster
+Building on asteria.caelum.ci.dev
+All commits already cached
+Updating files:  63% (20428/32401)Updating files:  64% (20737/32401)Updating files:  65% (21061/32401)Updating files:  66% (21385/32401)Updating files:  67% (21709/32401)Updating files:  68% (22033/32401)Updating files:  69% (22357/32401)Updating files:  70% (22681/32401)Updating files:  71% (23005/32401)Updating files:  72% (23329/32401)Updating files:  73% (23653/32401)Updating files:  74% (23977/32401)Updating files:  75% (24301/32401)Updating files:  76% (24625/32401)Updating files:  77% (24949/32401)Updating files:  78% (25273/32401)Updating files:  79% (25597/32401)Updating files:  80% (25921/32401)Updating files:  81% (26245/32401)Updating files:  82% (26569/32401)Updating files:  83% (26893/32401)Updating files:  84% (27217/32401)Updating files:  85% (27541/32401)Updating files:  86% (27865/32401)Updating files:  87% (28189/32401)Updating files:  88% (28513/32401)Updating files:  89% (28837/32401)Updating files:  90% (29161/32401)Updating files:  91% (29485/32401)Updating files:  92% (29809/32401)Updating files:  93% (30133/32401)Updating files:  94% (30457/32401)Updating files:  95% (30781/32401)Updating files:  96% (31105/32401)Updating files:  97% (31429/32401)Updating files:  98% (31753/32401)Updating files:  99% (32077/32401)Updating files: 100% (32401/32401)Updating files: 100% (32401/32401), done.
+HEAD is now at ac01ad6037 Merge pull request #26705 from mefyl/opam-publish-timmy.1.1.5
+Updating ac01ad6037..a2dac402c5
+Fast-forward
+ packages/solid/solid.0.1.0/opam | 2 +-
+ packages/solid/solid.0.2.0/opam | 2 +-
+ packages/solid/solid.0.3.0/opam | 2 +-
+ 3 files changed, 3 insertions(+), 3 deletions(-)
+
+[01;34m(from ocaml/opam:debian-12-ocaml-4.14@sha256:221b2ac3322a79ec1ecd509b6b12eab868fce78f360aed36b2854d34e8a9ec0a)[0m
+[01;2m[01;35m2024-10-10 12:09.34 ---> using "4f4376b62389ff69b0a4664f72d4c0ec1ca7963b50058c2cc54460063230484f" from cache[0m
+
+[01;34m/: (user (uid 1000) (gid 1000))[0m
+
+[01;34m/: (workdir /home/opam)[0m
+
+[01;34m/home/opam: (run (shell "sudo ln -f /usr/bin/opam-2.0 /usr/bin/opam"))[0m
+[01;2m[01;35m2024-10-10 12:09.34 ---> using "25410409e85fa30c191ccb240c7ab51df8a3b75c1657ab28683e0f2e9bec66f2" from cache[0m
+
+[01;34m/home/opam: (run (network host)
+                 (shell "opam init --reinit --config .opamrc-sandbox -ni"))[0m
+[NOTE] Will configure from /home/opam/.opamrc-sandbox, then /home/opam/.opamrc, and finally from built-in defaults.
+Checking for available remotes: rsync and local, git.
+  - you won't be able to use mercurial repositories unless you install the hg command on your system.
+  - you won't be able to use darcs repositories unless you install the darcs command on your system.
+
+[WARNING] Recommended dependencies -- most packages rely on these:
+  - m4
+
+<><> Updating repositories ><><><><><><><><><><><><><><><><><><><><><><><><><><>
+[default] synchronised from file:///home/opam/opam-repository
+default (at file:///home/opam/opam-repository): 
+    [INFO] opam 2.1 and 2.2 include many performance and security improvements over 2.0; please consider upgrading (https://opam.ocaml.org/doc/Install.html)
+
+[01;2m[01;35m2024-10-10 12:09.34 ---> using "0a8e93d4379d6a1bf79e583a2bf4d02bd22be820fba73daa7259fada28d829d1" from cache[0m
+
+[01;34m/home/opam: (run (shell "uname -rs && opam exec -- ocaml -version && opam --version"))[0m
+Linux 5.15.0-122-generic
+The OCaml toplevel, version 4.14.2
+2.0.10
+[01;2m[01;35m2024-10-10 12:09.34 ---> using "b8a955de8c5da8d122d92264621cc5b62597e49145fb0c2a9d2a9eb2067bcc9b" from cache[0m
+
+[01;34m/home/opam: (env OPAMDOWNLOADJOBS 1)[0m
+
+[01;34m/home/opam: (env OPAMERRLOGLEN 0)[0m
+
+[01;34m/home/opam: (env OPAMSOLVERTIMEOUT 1000)[0m
+
+[01;34m/home/opam: (env OPAMPRECISETRACKING 1)[0m
+
+[01;34m/home/opam: (env CI true)[0m
+
+[01;34m/home/opam: (env OPAM_REPO_CI true)[0m
+
+[01;34m/home/opam: (run (shell "rm -rf opam-repository/"))[0m
+[01;2m[01;35m2024-10-10 12:09.34 ---> using "8b278286731010b8850fcaaea8325fdd85f92cf63e9286abce1876f6d567ea61" from cache[0m
+
+[01;34m/home/opam: (copy (src .) (dst opam-repository/))[0m
+[01;2m[01;35m2024-10-10 12:09.36 ---> using "9fef4f026b5959836643f294d9be8f5c9db017f9b046215b5f9128cb2fdc2ee7" from cache[0m
+
+[01;34m/home/opam: (run (shell "opam repository set-url --strict default opam-repository/"))[0m
+[default] Initialised
+default (at file:///home/opam/opam-repository): 
+    [INFO] opam 2.1 and 2.2 include many performance and security improvements over 2.0; please consider upgrading (https://opam.ocaml.org/doc/Install.html)
+
+[01;2m[01;35m2024-10-10 12:09.46 ---> saved as "db377e103a7c20db9e5951ebc6291851165fdf38c9f405bc15623314c96f4e85"[0m
+
+[01;34m/home/opam: (run (network host)
+                 (shell "opam depext -u || true"))[0m
+# Detecting depexts using vars: arch=x86_64, os=linux, os-distribution=debian, os-family=debian
+# No extra OS packages requirements found.
+# All required OS packages found.
+The following command needs to be run through "sudo":
+    apt-get update
+Hit:1 http://deb.debian.org/debian bookworm InRelease
+Get:2 http://deb.debian.org/debian bookworm-updates InRelease [55.4 kB]
+Get:3 http://deb.debian.org/debian-security bookworm-security InRelease [48.0 kB]
+Get:4 http://deb.debian.org/debian-security bookworm-security/main amd64 Packages [188 kB]
+Fetched 291 kB in 0s (813 kB/s)
+Reading package lists...
+# OS package update successful
+[01;2m[01;35m2024-10-10 12:09.49 ---> saved as "441ca43ab3dfad6e05089b278866449473eb44fa051bcc58390e30f453e1b0fa"[0m
+
+[01;34m/home/opam: (run (shell "opam pin add -k version -yn solid.0.1.0 0.1.0"))[0m
+solid is now pinned to version 0.1.0
+[01;2m[01;35m2024-10-10 12:09.50 ---> saved as "af6487dd4feab084126ca90639858c43f168ca2f35e707bcede2fee06da800b1"[0m
+
+[01;34m/home/opam: (run (cache (opam-archives (target /home/opam/.opam/download-cache)))
+                 (network host)
+                 (shell  "opam depext solid.0.1.0 && opam reinstall solid.0.1.0;\
+                        \n        res=$?;\
+                        \n        test \"$res\" != 31 && exit \"$res\";\
+                        \n        export OPAMCLI=2.0;\
+                        \n        build_dir=$(opam var prefix)/.opam-switch/build;\
+                        \n        failed=$(ls \"$build_dir\");\
+                        \n        partial_fails=\"\";\
+                        \n        for pkg in $failed; do\
+                        \n          if opam show -f x-ci-accept-failures: \"$pkg\" | grep -qF \"\\\"debian-12\\\"\"; then\
+                        \n            echo \"A package failed and has been disabled for CI using the 'x-ci-accept-failures' field.\";\
+                        \n          fi;\
+                        \n          test \"$pkg\" != 'solid.0.1.0' && partial_fails=\"$partial_fails $pkg\";\
+                        \n        done;\
+                        \n        test \"${partial_fails}\" != \"\" && echo \"opam-repo-ci detected dependencies failing: ${partial_fails}\";\
+                        \n        exit 1"))[0m
+# Detecting depexts using vars: arch=x86_64, os=linux, os-distribution=debian, os-family=debian
+libpcre3-dev
+pkg-config
+# The following system packages are needed:
+The following command needs to be run through "sudo":
+    apt-get install -qq -yy libpcre3-dev pkg-config
+debconf: delaying package configuration, since apt-utils is not installed
+Selecting previously unselected package libpcre16-3:amd64.
+(Reading database ... (Reading database ... 5%(Reading database ... 10%(Reading database ... 15%(Reading database ... 20%(Reading database ... 25%(Reading database ... 30%(Reading database ... 35%(Reading database ... 40%(Reading database ... 45%(Reading database ... 50%(Reading database ... 55%(Reading database ... 60%(Reading database ... 65%(Reading database ... 70%(Reading database ... 75%(Reading database ... 80%(Reading database ... 85%(Reading database ... 90%(Reading database ... 95%(Reading database ... 100%(Reading database ... 18745 files and directories currently installed.)
+Preparing to unpack .../0-libpcre16-3_2%3a8.39-15_amd64.deb ...
+Unpacking libpcre16-3:amd64 (2:8.39-15) ...
+Selecting previously unselected package libpcre3:amd64.
+Preparing to unpack .../1-libpcre3_2%3a8.39-15_amd64.deb ...
+Unpacking libpcre3:amd64 (2:8.39-15) ...
+Selecting previously unselected package libpcre32-3:amd64.
+Preparing to unpack .../2-libpcre32-3_2%3a8.39-15_amd64.deb ...
+Unpacking libpcre32-3:amd64 (2:8.39-15) ...
+Selecting previously unselected package libpcrecpp0v5:amd64.
+Preparing to unpack .../3-libpcrecpp0v5_2%3a8.39-15_amd64.deb ...
+Unpacking libpcrecpp0v5:amd64 (2:8.39-15) ...
+Selecting previously unselected package libpcre3-dev:amd64.
+Preparing to unpack .../4-libpcre3-dev_2%3a8.39-15_amd64.deb ...
+Unpacking libpcre3-dev:amd64 (2:8.39-15) ...
+Selecting previously unselected package libpkgconf3:amd64.
+Preparing to unpack .../5-libpkgconf3_1.8.1-1_amd64.deb ...
+Unpacking libpkgconf3:amd64 (1.8.1-1) ...
+Selecting previously unselected package pkgconf-bin.
+Preparing to unpack .../6-pkgconf-bin_1.8.1-1_amd64.deb ...
+Unpacking pkgconf-bin (1.8.1-1) ...
+Selecting previously unselected package pkgconf:amd64.
+Preparing to unpack .../7-pkgconf_1.8.1-1_amd64.deb ...
+Unpacking pkgconf:amd64 (1.8.1-1) ...
+Selecting previously unselected package pkg-config:amd64.
+Preparing to unpack .../8-pkg-config_1.8.1-1_amd64.deb ...
+Unpacking pkg-config:amd64 (1.8.1-1) ...
+Setting up libpcre16-3:amd64 (2:8.39-15) ...
+Setting up libpcre3:amd64 (2:8.39-15) ...
+Setting up libpkgconf3:amd64 (1.8.1-1) ...
+Setting up libpcre32-3:amd64 (2:8.39-15) ...
+Setting up pkgconf-bin (1.8.1-1) ...
+Setting up libpcrecpp0v5:amd64 (2:8.39-15) ...
+Setting up libpcre3-dev:amd64 (2:8.39-15) ...
+Setting up pkgconf:amd64 (1.8.1-1) ...
+Setting up pkg-config:amd64 (1.8.1-1) ...
+Processing triggers for libc-bin (2.36-9+deb12u8) ...
+# OS packages installation successful
+solid.0.1.0 is not installed. Install it? [Y/n] y
+[ERROR] Sorry, resolution of the request timed out.
+        Try to specify a simpler request, use a different solver, or increase the allowed time by setting OPAMSOLVERTIMEOUT to a bigger value (currently, it is set to 1000.0 seconds).
+"/usr/bin/env" "bash" "-c" "opam depext solid.0.1.0 && opam reinstall solid.0.1.0;
+        res=$?;
+        test "$res" != 31 && exit "$res";
+        export OPAMCLI=2.0;
+        build_dir=$(opam var prefix)/.opam-switch/build;
+        failed=$(ls "$build_dir");
+        partial_fails="";
+        for pkg in $failed; do
+          if opam show -f x-ci-accept-failures: "$pkg" | grep -qF "\"debian-12\""; then
+            echo "A package failed and has been disabled for CI using the 'x-ci-accept-failures' field.";
+          fi;
+          test "$pkg" != 'solid.0.1.0' && partial_fails="$partial_fails $pkg";
+        done;
+        test "${partial_fails}" != "" && echo "opam-repo-ci detected dependencies failing: ${partial_fails}";
+        exit 1" failed with exit status 60
+2024-10-10 12:27.04: Job failed: Failed: Build failed
+2024-10-10 12:27.04: Log analysis:
+2024-10-10 12:27.04: >>> 
+[ERROR] Sorry, resolution of the request timed out.
+ (score = 20)
+2024-10-10 12:27.04: Sorry, resolution of the request timed out.

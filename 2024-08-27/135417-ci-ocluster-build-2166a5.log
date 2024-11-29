@@ -1,0 +1,289 @@
+2024-08-27 13:54.17: New job: test letsencrypt-dns.0.5.1, using opam 2.0
+                              from https://github.com/ocaml/opam-repository.git#refs/pull/26437/head (603c51f606f17c27dc70fafc37a4bc6c362f4ab5)
+                              on debian-12-ocaml-4.14/amd64
+
+To reproduce locally:
+
+cd $(mktemp -d)
+git clone --recursive "https://github.com/ocaml/opam-repository.git" && cd "opam-repository" && git fetch origin "refs/pull/26437/head" && git reset --hard 603c51f6
+git fetch origin master
+git merge --no-edit ab2a16face507a25ac428369dc82bee2d9a78637
+cat > ../Dockerfile <<'END-OF-DOCKERFILE'
+[34mFROM ocaml/opam:debian-12-ocaml-4.14@sha256:96b7e06f32b2480a427ce5197d626516b00550d1b2cfeb8791d68a36ead5e654
+USER 1000:1000
+WORKDIR /home/opam
+RUN sudo ln -f /usr/bin/opam-2.0 /usr/bin/opam
+RUN opam init --reinit -ni
+RUN uname -rs && opam exec -- ocaml -version && opam --version
+ENV OPAMDOWNLOADJOBS="1"
+ENV OPAMERRLOGLEN="0"
+ENV OPAMSOLVERTIMEOUT="500"
+ENV OPAMPRECISETRACKING="1"
+ENV CI="true"
+ENV OPAM_REPO_CI="true"
+RUN rm -rf opam-repository/
+COPY --chown=1000:1000 . opam-repository/
+RUN opam repository set-url --strict default opam-repository/
+RUN opam depext -u || true
+RUN opam pin add -k version -yn letsencrypt-dns.0.5.1 0.5.1
+RUN opam depext letsencrypt-dns.0.5.1 && opam reinstall letsencrypt-dns.0.5.1; \
+    res=$?; \
+    test "$res" != 31 && exit "$res"; \
+    export OPAMCLI=2.0; \
+    build_dir=$(opam var prefix)/.opam-switch/build; \
+    failed=$(ls "$build_dir"); \
+    partial_fails=""; \
+    for pkg in $failed; do \
+    if opam show -f x-ci-accept-failures: "$pkg" | grep -qF "\"debian-12\""; then \
+    echo "A package failed and has been disabled for CI using the 'x-ci-accept-failures' field."; \
+    fi; \
+    test "$pkg" != 'letsencrypt-dns.0.5.1' && partial_fails="$partial_fails $pkg"; \
+    done; \
+    test "${partial_fails}" != "" && echo "opam-repo-ci detected dependencies failing: ${partial_fails}"; \
+    exit 1
+RUN (opam depext --with-test letsencrypt-dns.0.5.1 && opam reinstall --with-test letsencrypt-dns.0.5.1) || true
+RUN opam depext --with-test letsencrypt-dns.0.5.1 && opam reinstall --with-test --verbose letsencrypt-dns.0.5.1; \
+    res=$?; \
+    test "$res" != 31 && exit "$res"; \
+    export OPAMCLI=2.0; \
+    build_dir=$(opam var prefix)/.opam-switch/build; \
+    failed=$(ls "$build_dir"); \
+    partial_fails=""; \
+    for pkg in $failed; do \
+    if opam show -f x-ci-accept-failures: "$pkg" | grep -qF "\"debian-12\""; then \
+    echo "A package failed and has been disabled for CI using the 'x-ci-accept-failures' field."; \
+    fi; \
+    test "$pkg" != 'letsencrypt-dns.0.5.1' && partial_fails="$partial_fails $pkg"; \
+    done; \
+    test "${partial_fails}" != "" && echo "opam-repo-ci detected dependencies failing: ${partial_fails}"; \
+    exit 1
+[0m
+END-OF-DOCKERFILE
+docker build -f ../Dockerfile .
+
+2024-08-27 13:54.17: Using cache hint "ocaml/opam:debian-12-ocaml-4.14@sha256:96b7e06f32b2480a427ce5197d626516b00550d1b2cfeb8791d68a36ead5e654-letsencrypt-dns.0.5.1-603c51f606f17c27dc70fafc37a4bc6c362f4ab5"
+2024-08-27 13:54.17: Using OBuilder spec:
+((from ocaml/opam:debian-12-ocaml-4.14@sha256:96b7e06f32b2480a427ce5197d626516b00550d1b2cfeb8791d68a36ead5e654)
+ (user (uid 1000) (gid 1000))
+ (workdir /home/opam)
+ (run (shell "sudo ln -f /usr/bin/opam-2.0 /usr/bin/opam"))
+ (run (network host)
+      (shell "opam init --reinit --config .opamrc-sandbox -ni"))
+ (run (shell "uname -rs && opam exec -- ocaml -version && opam --version"))
+ (env OPAMDOWNLOADJOBS 1)
+ (env OPAMERRLOGLEN 0)
+ (env OPAMSOLVERTIMEOUT 500)
+ (env OPAMPRECISETRACKING 1)
+ (env CI true)
+ (env OPAM_REPO_CI true)
+ (run (shell "rm -rf opam-repository/"))
+ (copy (src .) (dst opam-repository/))
+ (run (shell "opam repository set-url --strict default opam-repository/"))
+ (run (network host)
+      (shell "opam depext -u || true"))
+ (run (shell "opam pin add -k version -yn letsencrypt-dns.0.5.1 0.5.1"))
+ (run (cache (opam-archives (target /home/opam/.opam/download-cache)))
+      (network host)
+      (shell  "opam depext letsencrypt-dns.0.5.1 && opam reinstall letsencrypt-dns.0.5.1;\
+             \n        res=$?;\
+             \n        test \"$res\" != 31 && exit \"$res\";\
+             \n        export OPAMCLI=2.0;\
+             \n        build_dir=$(opam var prefix)/.opam-switch/build;\
+             \n        failed=$(ls \"$build_dir\");\
+             \n        partial_fails=\"\";\
+             \n        for pkg in $failed; do\
+             \n          if opam show -f x-ci-accept-failures: \"$pkg\" | grep -qF \"\\\"debian-12\\\"\"; then\
+             \n            echo \"A package failed and has been disabled for CI using the 'x-ci-accept-failures' field.\";\
+             \n          fi;\
+             \n          test \"$pkg\" != 'letsencrypt-dns.0.5.1' && partial_fails=\"$partial_fails $pkg\";\
+             \n        done;\
+             \n        test \"${partial_fails}\" != \"\" && echo \"opam-repo-ci detected dependencies failing: ${partial_fails}\";\
+             \n        exit 1"))
+ (run (network host)
+      (shell "(opam depext --with-test letsencrypt-dns.0.5.1 && opam reinstall --with-test letsencrypt-dns.0.5.1) || true"))
+ (run (shell  "opam depext --with-test letsencrypt-dns.0.5.1 && opam reinstall --with-test --verbose letsencrypt-dns.0.5.1;\
+             \n        res=$?;\
+             \n        test \"$res\" != 31 && exit \"$res\";\
+             \n        export OPAMCLI=2.0;\
+             \n        build_dir=$(opam var prefix)/.opam-switch/build;\
+             \n        failed=$(ls \"$build_dir\");\
+             \n        partial_fails=\"\";\
+             \n        for pkg in $failed; do\
+             \n          if opam show -f x-ci-accept-failures: \"$pkg\" | grep -qF \"\\\"debian-12\\\"\"; then\
+             \n            echo \"A package failed and has been disabled for CI using the 'x-ci-accept-failures' field.\";\
+             \n          fi;\
+             \n          test \"$pkg\" != 'letsencrypt-dns.0.5.1' && partial_fails=\"$partial_fails $pkg\";\
+             \n        done;\
+             \n        test \"${partial_fails}\" != \"\" && echo \"opam-repo-ci detected dependencies failing: ${partial_fails}\";\
+             \n        exit 1"))
+)
+
+2024-08-27 13:54.17: Waiting for resource in pool OCluster
+2024-08-27 13:55.52: Waiting for worker…
+2024-08-27 14:00.00: Got resource from pool OCluster
+Building on x86-bm-c18.sw.ocaml.org
+All commits already cached
+Updating files:  83% (26794/32028)Updating files:  84% (26904/32028)Updating files:  85% (27224/32028)Updating files:  86% (27545/32028)Updating files:  87% (27865/32028)Updating files:  88% (28185/32028)Updating files:  89% (28505/32028)Updating files:  90% (28826/32028)Updating files:  91% (29146/32028)Updating files:  92% (29466/32028)Updating files:  93% (29787/32028)Updating files:  94% (30107/32028)Updating files:  95% (30427/32028)Updating files:  96% (30747/32028)Updating files:  97% (31068/32028)Updating files:  98% (31388/32028)Updating files:  99% (31708/32028)Updating files: 100% (32028/32028)Updating files: 100% (32028/32028), done.
+HEAD is now at ab2a16face Merge pull request #26432 from dinosaure/dns-lower-bounds
+Updating ab2a16face..603c51f606
+Fast-forward
+ packages/letsencrypt-dns/letsencrypt-dns.0.3.0/opam | 2 +-
+ packages/letsencrypt-dns/letsencrypt-dns.0.4.0/opam | 2 +-
+ packages/letsencrypt-dns/letsencrypt-dns.0.4.1/opam | 2 +-
+ packages/letsencrypt-dns/letsencrypt-dns.0.5.0/opam | 2 +-
+ packages/letsencrypt-dns/letsencrypt-dns.0.5.1/opam | 2 +-
+ 5 files changed, 5 insertions(+), 5 deletions(-)
+
+[01;34m(from ocaml/opam:debian-12-ocaml-4.14@sha256:96b7e06f32b2480a427ce5197d626516b00550d1b2cfeb8791d68a36ead5e654)[0m
+[01;2m[01;35m2024-08-27 14:00.02 ---> using "3c8ca8e2fa10a69c1b8131fd079a5e0622f93a76f6d6a2f9894b263e242fa63e" from cache[0m
+
+[01;34m/: (user (uid 1000) (gid 1000))[0m
+
+[01;34m/: (workdir /home/opam)[0m
+
+[01;34m/home/opam: (run (shell "sudo ln -f /usr/bin/opam-2.0 /usr/bin/opam"))[0m
+[01;2m[01;35m2024-08-27 14:00.02 ---> using "c4be45d18e74db04c84a8fc6cf05d5272978594725b442369d38bf9e1bafb7d3" from cache[0m
+
+[01;34m/home/opam: (run (network host)
+                 (shell "opam init --reinit --config .opamrc-sandbox -ni"))[0m
+[NOTE] Will configure from /home/opam/.opamrc-sandbox, then /home/opam/.opamrc, and finally from built-in defaults.
+Checking for available remotes: rsync and local, git.
+  - you won't be able to use mercurial repositories unless you install the hg command on your system.
+  - you won't be able to use darcs repositories unless you install the darcs command on your system.
+
+[WARNING] Recommended dependencies -- most packages rely on these:
+  - m4
+
+<><> Updating repositories ><><><><><><><><><><><><><><><><><><><><><><><><><><>
+[default] synchronised from file:///home/opam/opam-repository
+default (at file:///home/opam/opam-repository): 
+    [INFO] opam 2.1 and 2.2 include many performance improvements over 2.0; please consider upgrading (https://opam.ocaml.org/doc/Install.html)
+
+[01;2m[01;35m2024-08-27 14:00.17 ---> saved as "5be73a97039b959cb6003882cb2726ad1fec8424890ed76451cb904a622c8f9c"[0m
+
+[01;34m/home/opam: (run (shell "uname -rs && opam exec -- ocaml -version && opam --version"))[0m
+Linux 5.15.0-119-generic
+The OCaml toplevel, version 4.14.2
+2.0.10
+[01;2m[01;35m2024-08-27 14:00.18 ---> saved as "feb9bb614a6fd37835f0c9596c6d8d61fc4abf97f4d256c990d72acacd137b96"[0m
+
+[01;34m/home/opam: (env OPAMDOWNLOADJOBS 1)[0m
+
+[01;34m/home/opam: (env OPAMERRLOGLEN 0)[0m
+
+[01;34m/home/opam: (env OPAMSOLVERTIMEOUT 500)[0m
+
+[01;34m/home/opam: (env OPAMPRECISETRACKING 1)[0m
+
+[01;34m/home/opam: (env CI true)[0m
+
+[01;34m/home/opam: (env OPAM_REPO_CI true)[0m
+
+[01;34m/home/opam: (run (shell "rm -rf opam-repository/"))[0m
+[01;2m[01;35m2024-08-27 14:00.28 ---> saved as "2db5f34a54cf09d93c910f603cc2bae8c8a5ce8f1e54730bd5a436af3cf9fb4a"[0m
+
+[01;34m/home/opam: (copy (src .) (dst opam-repository/))[0m
+[01;2m[01;35m2024-08-27 14:00.39 ---> saved as "98d125b8fe30f1b1a6eb43f106aecaabe6c7bba05f7c411a517201de318e0ba1"[0m
+
+[01;34m/home/opam: (run (shell "opam repository set-url --strict default opam-repository/"))[0m
+[default] Initialised
+default (at file:///home/opam/opam-repository): 
+    [INFO] opam 2.1 and 2.2 include many performance and security improvements over %{opam-version}%; please consider upgrading (https://opam.ocaml.org/doc/Install.html)
+
+[01;2m[01;35m2024-08-27 14:01.12 ---> saved as "39865d4daed7ebd43be213198afd9812f56a92cf3b48f52eb3c3a38f1c463801"[0m
+
+[01;34m/home/opam: (run (network host)
+                 (shell "opam depext -u || true"))[0m
+# Detecting depexts using vars: arch=x86_64, os=linux, os-distribution=debian, os-family=debian
+# No extra OS packages requirements found.
+# All required OS packages found.
+The following command needs to be run through "sudo":
+    apt-get update
+Hit:1 http://deb.debian.org/debian bookworm InRelease
+Get:2 http://deb.debian.org/debian bookworm-updates InRelease [55.4 kB]
+Get:3 http://deb.debian.org/debian-security bookworm-security InRelease [48.0 kB]
+Get:4 http://deb.debian.org/debian-security bookworm-security/main amd64 Packages [179 kB]
+Fetched 282 kB in 0s (903 kB/s)
+Reading package lists...
+# OS package update successful
+[01;2m[01;35m2024-08-27 14:01.14 ---> saved as "d290512bda50419e02942eff4e9412e6217295a486b54e45cac71effc3d5d270"[0m
+
+[01;34m/home/opam: (run (shell "opam pin add -k version -yn letsencrypt-dns.0.5.1 0.5.1"))[0m
+letsencrypt-dns is now pinned to version 0.5.1
+[01;2m[01;35m2024-08-27 14:01.14 ---> saved as "872067d8bfb3824c33b887d849544c89d6168c0f63fcdaf9ce4b48ea02ebfbd7"[0m
+
+[01;34m/home/opam: (run (cache (opam-archives (target /home/opam/.opam/download-cache)))
+                 (network host)
+                 (shell  "opam depext letsencrypt-dns.0.5.1 && opam reinstall letsencrypt-dns.0.5.1;\
+                        \n        res=$?;\
+                        \n        test \"$res\" != 31 && exit \"$res\";\
+                        \n        export OPAMCLI=2.0;\
+                        \n        build_dir=$(opam var prefix)/.opam-switch/build;\
+                        \n        failed=$(ls \"$build_dir\");\
+                        \n        partial_fails=\"\";\
+                        \n        for pkg in $failed; do\
+                        \n          if opam show -f x-ci-accept-failures: \"$pkg\" | grep -qF \"\\\"debian-12\\\"\"; then\
+                        \n            echo \"A package failed and has been disabled for CI using the 'x-ci-accept-failures' field.\";\
+                        \n          fi;\
+                        \n          test \"$pkg\" != 'letsencrypt-dns.0.5.1' && partial_fails=\"$partial_fails $pkg\";\
+                        \n        done;\
+                        \n        test \"${partial_fails}\" != \"\" && echo \"opam-repo-ci detected dependencies failing: ${partial_fails}\";\
+                        \n        exit 1"))[0m
+# Detecting depexts using vars: arch=x86_64, os=linux, os-distribution=debian, os-family=debian
+# The following system packages are needed:
+libgmp-dev
+pkg-config
+The following command needs to be run through "sudo":
+    apt-get install -qq -yy libgmp-dev pkg-config
+debconf: delaying package configuration, since apt-utils is not installed
+Selecting previously unselected package libgmpxx4ldbl:amd64.
+(Reading database ... (Reading database ... 5%(Reading database ... 10%(Reading database ... 15%(Reading database ... 20%(Reading database ... 25%(Reading database ... 30%(Reading database ... 35%(Reading database ... 40%(Reading database ... 45%(Reading database ... 50%(Reading database ... 55%(Reading database ... 60%(Reading database ... 65%(Reading database ... 70%(Reading database ... 75%(Reading database ... 80%(Reading database ... 85%(Reading database ... 90%(Reading database ... 95%(Reading database ... 100%(Reading database ... 18734 files and directories currently installed.)
+Preparing to unpack .../0-libgmpxx4ldbl_2%3a6.2.1+dfsg1-1.1_amd64.deb ...
+Unpacking libgmpxx4ldbl:amd64 (2:6.2.1+dfsg1-1.1) ...
+Selecting previously unselected package libgmp-dev:amd64.
+Preparing to unpack .../1-libgmp-dev_2%3a6.2.1+dfsg1-1.1_amd64.deb ...
+Unpacking libgmp-dev:amd64 (2:6.2.1+dfsg1-1.1) ...
+Selecting previously unselected package libpkgconf3:amd64.
+Preparing to unpack .../2-libpkgconf3_1.8.1-1_amd64.deb ...
+Unpacking libpkgconf3:amd64 (1.8.1-1) ...
+Selecting previously unselected package pkgconf-bin.
+Preparing to unpack .../3-pkgconf-bin_1.8.1-1_amd64.deb ...
+Unpacking pkgconf-bin (1.8.1-1) ...
+Selecting previously unselected package pkgconf:amd64.
+Preparing to unpack .../4-pkgconf_1.8.1-1_amd64.deb ...
+Unpacking pkgconf:amd64 (1.8.1-1) ...
+Selecting previously unselected package pkg-config:amd64.
+Preparing to unpack .../5-pkg-config_1.8.1-1_amd64.deb ...
+Unpacking pkg-config:amd64 (1.8.1-1) ...
+Setting up libpkgconf3:amd64 (1.8.1-1) ...
+Setting up libgmpxx4ldbl:amd64 (2:6.2.1+dfsg1-1.1) ...
+Setting up pkgconf-bin (1.8.1-1) ...
+Setting up libgmp-dev:amd64 (2:6.2.1+dfsg1-1.1) ...
+Setting up pkgconf:amd64 (1.8.1-1) ...
+Setting up pkg-config:amd64 (1.8.1-1) ...
+Processing triggers for libc-bin (2.36-9+deb12u7) ...
+# OS packages installation successful
+letsencrypt-dns.0.5.1 is not installed. Install it? [Y/n] y
+[ERROR] Sorry, resolution of the request timed out.
+        Try to specify a simpler request, use a different solver, or increase the allowed time by setting OPAMSOLVERTIMEOUT to a bigger value (currently, it is set to 500.0 seconds).
+"/usr/bin/env" "bash" "-c" "opam depext letsencrypt-dns.0.5.1 && opam reinstall letsencrypt-dns.0.5.1;
+        res=$?;
+        test "$res" != 31 && exit "$res";
+        export OPAMCLI=2.0;
+        build_dir=$(opam var prefix)/.opam-switch/build;
+        failed=$(ls "$build_dir");
+        partial_fails="";
+        for pkg in $failed; do
+          if opam show -f x-ci-accept-failures: "$pkg" | grep -qF "\"debian-12\""; then
+            echo "A package failed and has been disabled for CI using the 'x-ci-accept-failures' field.";
+          fi;
+          test "$pkg" != 'letsencrypt-dns.0.5.1' && partial_fails="$partial_fails $pkg";
+        done;
+        test "${partial_fails}" != "" && echo "opam-repo-ci detected dependencies failing: ${partial_fails}";
+        exit 1" failed with exit status 60
+2024-08-27 14:10.11: Job failed: Failed: Build failed
+2024-08-27 14:10.11: Log analysis:
+2024-08-27 14:10.11: >>> 
+[ERROR] Sorry, resolution of the request timed out.
+ (score = 20)
+2024-08-27 14:10.11: Sorry, resolution of the request timed out.

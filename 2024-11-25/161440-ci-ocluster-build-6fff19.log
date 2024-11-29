@@ -1,0 +1,537 @@
+2024-11-25 16:14.40: New job: test js_of_ocaml-toplevel.5.8.2-floats, using opam dev
+                              from https://github.com/ocaml/opam-repository.git#refs/pull/26591/head (24be28ca82f90d7175046d734a9c3e19765ec02b)
+                              on ubuntu-24.04-ocaml-4.14/riscv64
+
+To reproduce locally:
+
+cd $(mktemp -d)
+git clone --recursive "https://github.com/ocaml/opam-repository.git" && cd "opam-repository" && git fetch origin "refs/pull/26591/head" && git reset --hard 24be28ca
+git fetch origin master
+git merge --no-edit e62e88dccc1d1181b3fa83b78e2bf462598afb92
+cat > ../Dockerfile <<'END-OF-DOCKERFILE'
+[34mFROM ocaml/opam:ubuntu-24.04-ocaml-4.14@sha256:74a79217a07b9e749d967746dac71296666e7f7a46773608872e5d5f917487b7
+USER 1000:1000
+WORKDIR /home/opam
+RUN sudo ln -f /usr/bin/opam-dev /usr/bin/opam
+RUN opam init --reinit -ni
+RUN uname -rs && opam exec -- ocaml -version && opam --version
+ENV OPAMDOWNLOADJOBS="1"
+ENV OPAMERRLOGLEN="0"
+ENV OPAMSOLVERTIMEOUT="1000"
+ENV OPAMPRECISETRACKING="1"
+ENV CI="true"
+ENV OPAM_REPO_CI="true"
+RUN rm -rf opam-repository/
+COPY --chown=1000:1000 . opam-repository/
+RUN opam repository set-url --strict default opam-repository/
+RUN opam update --depexts || true
+RUN opam pin add -k version -yn js_of_ocaml-toplevel.5.8.2-floats 5.8.2-floats
+RUN opam reinstall js_of_ocaml-toplevel.5.8.2-floats; \
+    res=$?; \
+    test "$res" != 31 && exit "$res"; \
+    export OPAMCLI=2.0; \
+    build_dir=$(opam var prefix)/.opam-switch/build; \
+    failed=$(ls "$build_dir"); \
+    partial_fails=""; \
+    for pkg in $failed; do \
+    if opam show -f x-ci-accept-failures: "$pkg" | grep -qF "\"ubuntu-24.04\""; then \
+    echo "A package failed and has been disabled for CI using the 'x-ci-accept-failures' field."; \
+    fi; \
+    test "$pkg" != 'js_of_ocaml-toplevel.5.8.2-floats' && partial_fails="$partial_fails $pkg"; \
+    done; \
+    test "${partial_fails}" != "" && echo "opam-repo-ci detected dependencies failing: ${partial_fails}"; \
+    exit 1
+RUN (opam reinstall --with-test js_of_ocaml-toplevel.5.8.2-floats) || true
+RUN opam reinstall --with-test --verbose js_of_ocaml-toplevel.5.8.2-floats; \
+    res=$?; \
+    test "$res" != 31 && exit "$res"; \
+    export OPAMCLI=2.0; \
+    build_dir=$(opam var prefix)/.opam-switch/build; \
+    failed=$(ls "$build_dir"); \
+    partial_fails=""; \
+    for pkg in $failed; do \
+    if opam show -f x-ci-accept-failures: "$pkg" | grep -qF "\"ubuntu-24.04\""; then \
+    echo "A package failed and has been disabled for CI using the 'x-ci-accept-failures' field."; \
+    fi; \
+    test "$pkg" != 'js_of_ocaml-toplevel.5.8.2-floats' && partial_fails="$partial_fails $pkg"; \
+    done; \
+    test "${partial_fails}" != "" && echo "opam-repo-ci detected dependencies failing: ${partial_fails}"; \
+    exit 1
+[0m
+END-OF-DOCKERFILE
+docker build -f ../Dockerfile .
+
+2024-11-25 16:14.40: Using cache hint "ocaml/opam:ubuntu-24.04-ocaml-4.14@sha256:74a79217a07b9e749d967746dac71296666e7f7a46773608872e5d5f917487b7-js_of_ocaml-toplevel.5.8.2-floats-24be28ca82f90d7175046d734a9c3e19765ec02b"
+2024-11-25 16:14.40: Using OBuilder spec:
+((from ocaml/opam:ubuntu-24.04-ocaml-4.14@sha256:74a79217a07b9e749d967746dac71296666e7f7a46773608872e5d5f917487b7)
+ (user (uid 1000) (gid 1000))
+ (workdir /home/opam)
+ (run (shell "sudo ln -f /usr/bin/opam-dev /usr/bin/opam"))
+ (run (network host)
+      (shell "opam init --reinit --config .opamrc-sandbox -ni"))
+ (run (shell "uname -rs && opam exec -- ocaml -version && opam --version"))
+ (env OPAMDOWNLOADJOBS 1)
+ (env OPAMERRLOGLEN 0)
+ (env OPAMSOLVERTIMEOUT 1000)
+ (env OPAMPRECISETRACKING 1)
+ (env CI true)
+ (env OPAM_REPO_CI true)
+ (run (shell "rm -rf opam-repository/"))
+ (copy (src .) (dst opam-repository/))
+ (run (shell "opam repository set-url --strict default opam-repository/"))
+ (run (network host)
+      (shell "opam update --depexts || true"))
+ (run (shell "opam pin add -k version -yn js_of_ocaml-toplevel.5.8.2-floats 5.8.2-floats"))
+ (run (cache (opam-archives (target /home/opam/.opam/download-cache)))
+      (network host)
+      (shell  "opam reinstall js_of_ocaml-toplevel.5.8.2-floats;\
+             \n        res=$?;\
+             \n        test \"$res\" != 31 && exit \"$res\";\
+             \n        export OPAMCLI=2.0;\
+             \n        build_dir=$(opam var prefix)/.opam-switch/build;\
+             \n        failed=$(ls \"$build_dir\");\
+             \n        partial_fails=\"\";\
+             \n        for pkg in $failed; do\
+             \n          if opam show -f x-ci-accept-failures: \"$pkg\" | grep -qF \"\\\"ubuntu-24.04\\\"\"; then\
+             \n            echo \"A package failed and has been disabled for CI using the 'x-ci-accept-failures' field.\";\
+             \n          fi;\
+             \n          test \"$pkg\" != 'js_of_ocaml-toplevel.5.8.2-floats' && partial_fails=\"$partial_fails $pkg\";\
+             \n        done;\
+             \n        test \"${partial_fails}\" != \"\" && echo \"opam-repo-ci detected dependencies failing: ${partial_fails}\";\
+             \n        exit 1"))
+ (run (network host)
+      (shell "(opam reinstall --with-test js_of_ocaml-toplevel.5.8.2-floats) || true"))
+ (run (shell  "opam reinstall --with-test --verbose js_of_ocaml-toplevel.5.8.2-floats;\
+             \n        res=$?;\
+             \n        test \"$res\" != 31 && exit \"$res\";\
+             \n        export OPAMCLI=2.0;\
+             \n        build_dir=$(opam var prefix)/.opam-switch/build;\
+             \n        failed=$(ls \"$build_dir\");\
+             \n        partial_fails=\"\";\
+             \n        for pkg in $failed; do\
+             \n          if opam show -f x-ci-accept-failures: \"$pkg\" | grep -qF \"\\\"ubuntu-24.04\\\"\"; then\
+             \n            echo \"A package failed and has been disabled for CI using the 'x-ci-accept-failures' field.\";\
+             \n          fi;\
+             \n          test \"$pkg\" != 'js_of_ocaml-toplevel.5.8.2-floats' && partial_fails=\"$partial_fails $pkg\";\
+             \n        done;\
+             \n        test \"${partial_fails}\" != \"\" && echo \"opam-repo-ci detected dependencies failing: ${partial_fails}\";\
+             \n        exit 1"))
+)
+
+2024-11-25 16:14.40: Connecting to build cluster…
+2024-11-25 16:14.40: Waiting for resource in pool OCluster
+2024-11-25 16:14.53: Waiting for worker…
+2024-11-25 16:16.59: Got resource from pool OCluster
+Building on riscv-worker-04.caelum.ci.dev
+Updating files:   2% (812/32817)Updating files:   3% (985/32817)Updating files:   4% (1313/32817)Updating files:   5% (1641/32817)Updating files:   5% (1701/32817)Updating files:   6% (1970/32817)Updating files:   7% (2298/32817)Updating files:   7% (2596/32817)Updating files:   8% (2626/32817)Updating files:   9% (2954/32817)Updating files:  10% (3282/32817)Updating files:  10% (3601/32817)Updating files:  11% (3610/32817)Updating files:  12% (3939/32817)Updating files:  13% (4267/32817)Updating files:  13% (4451/32817)Updating files:  14% (4595/32817)Updating files:  15% (4923/32817)Updating files:  16% (5251/32817)Updating files:  16% (5284/32817)Updating files:  17% (5579/32817)Updating files:  18% (5908/32817)Updating files:  19% (6236/32817)Updating files:  19% (6237/32817)Updating files:  20% (6564/32817)Updating files:  21% (6892/32817)Updating files:  21% (7114/32817)Updating files:  22% (7220/32817)Updating files:  23% (7548/32817)Updating files:  24% (7877/32817)Updating files:  24% (8047/32817)Updating files:  25% (8205/32817)Updating files:  26% (8533/32817)Updating files:  27% (8861/32817)Updating files:  27% (9001/32817)Updating files:  28% (9189/32817)Updating files:  29% (9517/32817)Updating files:  30% (9846/32817)Updating files:  30% (9963/32817)Updating files:  31% (10174/32817)Updating files:  32% (10502/32817)Updating files:  33% (10830/32817)Updating files:  33% (10850/32817)Updating files:  34% (11158/32817)Updating files:  35% (11486/32817)Updating files:  35% (11695/32817)Updating files:  36% (11815/32817)Updating files:  37% (12143/32817)Updating files:  38% (12471/32817)Updating files:  38% (12639/32817)Updating files:  39% (12799/32817)Updating files:  40% (13127/32817)Updating files:  41% (13455/32817)Updating files:  41% (13614/32817)Updating files:  42% (13784/32817)Updating files:  43% (14112/32817)Updating files:  44% (14440/32817)Updating files:  44% (14553/32817)Updating files:  45% (14768/32817)Updating files:  46% (15096/32817)Updating files:  47% (15424/32817)Updating files:  47% (15444/32817)Updating files:  48% (15753/32817)Updating files:  49% (16081/32817)Updating files:  50% (16409/32817)Updating files:  50% (16411/32817)Updating files:  51% (16737/32817)Updating files:  52% (17065/32817)Updating files:  52% (17349/32817)Updating files:  53% (17394/32817)Updating files:  54% (17722/32817)Updating files:  55% (18050/32817)Updating files:  55% (18180/32817)Updating files:  56% (18378/32817)Updating files:  57% (18706/32817)Updating files:  58% (19034/32817)Updating files:  58% (19080/32817)Updating files:  59% (19363/32817)Updating files:  60% (19691/32817)Updating files:  61% (20019/32817)Updating files:  61% (20078/32817)Updating files:  62% (20347/32817)Updating files:  63% (20675/32817)Updating files:  64% (21003/32817)Updating files:  64% (21093/32817)Updating files:  65% (21332/32817)Updating files:  66% (21660/32817)Updating files:  66% (21779/32817)Updating files:  67% (21988/32817)Updating files:  68% (22316/32817)Updating files:  69% (22644/32817)Updating files:  69% (22736/32817)Updating files:  70% (22972/32817)Updating files:  71% (23301/32817)Updating files:  71% (23611/32817)Updating files:  72% (23629/32817)Updating files:  73% (23957/32817)Updating files:  74% (24285/32817)Updating files:  74% (24532/32817)Updating files:  75% (24613/32817)Updating files:  76% (24941/32817)Updating files:  77% (25270/32817)Updating files:  77% (25442/32817)Updating files:  78% (25598/32817)Updating files:  79% (25926/32817)Updating files:  80% (26254/32817)Updating files:  80% (26380/32817)Updating files:  81% (26582/32817)Updating files:  82% (26910/32817)Updating files:  83% (27239/32817)Updating files:  83% (27506/32817)Updating files:  84% (27567/32817)Updating files:  85% (27895/32817)Updating files:  86% (28223/32817)Updating files:  87% (28551/32817)Updating files:  87% (28629/32817)Updating files:  88% (28879/32817)Updating files:  89% (29208/32817)Updating files:  89% (29516/32817)Updating files:  90% (29536/32817)Updating files:  91% (29864/32817)Updating files:  92% (30192/32817)Updating files:  92% (30445/32817)Updating files:  93% (30520/32817)Updating files:  94% (30848/32817)Updating files:  95% (31177/32817)Updating files:  95% (31327/32817)Updating files:  96% (31505/32817)Updating files:  97% (31833/32817)Updating files:  98% (32161/32817)Updating files:  98% (32256/32817)Updating files:  99% (32489/32817)Updating files: 100% (32817/32817)Updating files: 100% (32817/32817), done.
+HEAD is now at 9191cba574 Merge commit '7d056a17b3735f6625d5d59a0cb52e4cbd3e79d3'
+HEAD is now at e62e88dccc Merge pull request #26953 from shonfeder/revert-color-0.3.0
+Merge made by the 'ort' strategy.
+ .../js_of_ocaml-compiler.5.8.2-floats/opam         | 55 ++++++++++++++++++++++
+ .../js_of_ocaml-lwt.5.8.2-floats/opam              | 48 +++++++++++++++++++
+ .../js_of_ocaml-ppx.5.8.2-floats/opam              | 45 ++++++++++++++++++
+ .../opam                                           | 45 ++++++++++++++++++
+ .../js_of_ocaml-toplevel.5.8.2-floats/opam         | 48 +++++++++++++++++++
+ .../js_of_ocaml-tyxml.5.8.2-floats/opam            | 49 +++++++++++++++++++
+ packages/js_of_ocaml/js_of_ocaml.5.8.2-floats/opam | 55 ++++++++++++++++++++++
+ 7 files changed, 345 insertions(+)
+ create mode 100644 packages/js_of_ocaml-compiler/js_of_ocaml-compiler.5.8.2-floats/opam
+ create mode 100644 packages/js_of_ocaml-lwt/js_of_ocaml-lwt.5.8.2-floats/opam
+ create mode 100644 packages/js_of_ocaml-ppx/js_of_ocaml-ppx.5.8.2-floats/opam
+ create mode 100644 packages/js_of_ocaml-ppx_deriving_json/js_of_ocaml-ppx_deriving_json.5.8.2-floats/opam
+ create mode 100644 packages/js_of_ocaml-toplevel/js_of_ocaml-toplevel.5.8.2-floats/opam
+ create mode 100644 packages/js_of_ocaml-tyxml/js_of_ocaml-tyxml.5.8.2-floats/opam
+ create mode 100644 packages/js_of_ocaml/js_of_ocaml.5.8.2-floats/opam
+
+[01;34m(from ocaml/opam:ubuntu-24.04-ocaml-4.14@sha256:74a79217a07b9e749d967746dac71296666e7f7a46773608872e5d5f917487b7)[0m
+Unable to find image 'ocaml/opam:ubuntu-24.04-ocaml-4.14@sha256:74a79217a07b9e749d967746dac71296666e7f7a46773608872e5d5f917487b7' locally
+docker.io/ocaml/opam@sha256:74a79217a07b9e749d967746dac71296666e7f7a46773608872e5d5f917487b7: Pulling from ocaml/opam
+ee732b5fddd0: Pulling fs layer
+4f8e8e1f9f84: Pulling fs layer
+68ba40696519: Pulling fs layer
+1a6ae489338d: Pulling fs layer
+61a5e994df1e: Pulling fs layer
+572d1e8b8168: Pulling fs layer
+f730494fb64c: Pulling fs layer
+243d12eea946: Pulling fs layer
+73a9454febcc: Pulling fs layer
+b38c147e04b2: Pulling fs layer
+6981e7a1d9e1: Pulling fs layer
+bd5d95902f12: Pulling fs layer
+66e08a5e3913: Pulling fs layer
+f6c863c750f6: Pulling fs layer
+243d12eea946: Waiting
+73a9454febcc: Waiting
+61a5e994df1e: Waiting
+3032bf9f7315: Pulling fs layer
+fa99d7b6739c: Pulling fs layer
+b38c147e04b2: Waiting
+6981e7a1d9e1: Waiting
+f72eef7dfc41: Pulling fs layer
+bd5d95902f12: Waiting
+66e08a5e3913: Waiting
+9fa5cd29d5fb: Pulling fs layer
+f6c863c750f6: Waiting
+1a6ae489338d: Waiting
+3032bf9f7315: Waiting
+572d1e8b8168: Waiting
+fa99d7b6739c: Waiting
+9fa5cd29d5fb: Waiting
+f72eef7dfc41: Waiting
+d6e19500368e: Pulling fs layer
+4f4fb700ef54: Pulling fs layer
+d6e19500368e: Waiting
+63f3db6adf2e: Pulling fs layer
+2446edbd83de: Pulling fs layer
+489932655f26: Pulling fs layer
+cf8fba4d9f3c: Pulling fs layer
+af8576294388: Pulling fs layer
+c18ad58e1818: Pulling fs layer
+1436dd9737d6: Pulling fs layer
+4f4fb700ef54: Waiting
+b10a27c1e421: Pulling fs layer
+63f3db6adf2e: Waiting
+cf8fba4d9f3c: Waiting
+5c264a9b12d0: Pulling fs layer
+1114fee1c45f: Pulling fs layer
+c5100d048b99: Pulling fs layer
+796cb318dc22: Pulling fs layer
+90e2bded7da1: Pulling fs layer
+af8576294388: Waiting
+0b812d0f1e13: Pulling fs layer
+c18ad58e1818: Waiting
+ee45a4ccdbb8: Pulling fs layer
+1436dd9737d6: Waiting
+30a7f5f824a8: Pulling fs layer
+308e663e0ba6: Pulling fs layer
+2446edbd83de: Waiting
+489932655f26: Waiting
+949e860d5ee4: Pulling fs layer
+31df206ee863: Pulling fs layer
+90e2bded7da1: Waiting
+b10a27c1e421: Waiting
+1114fee1c45f: Waiting
+c5100d048b99: Waiting
+796cb318dc22: Waiting
+0b812d0f1e13: Waiting
+ee45a4ccdbb8: Waiting
+dc305f29ff78: Pulling fs layer
+30a7f5f824a8: Waiting
+308e663e0ba6: Waiting
+ee2b80cd8acf: Pulling fs layer
+949e860d5ee4: Waiting
+31df206ee863: Waiting
+ee2b80cd8acf: Waiting
+dc305f29ff78: Waiting
+4f8e8e1f9f84: Download complete
+68ba40696519: Verifying Checksum
+68ba40696519: Download complete
+61a5e994df1e: Verifying Checksum
+61a5e994df1e: Download complete
+1a6ae489338d: Verifying Checksum
+1a6ae489338d: Download complete
+ee732b5fddd0: Verifying Checksum
+ee732b5fddd0: Download complete
+f730494fb64c: Verifying Checksum
+f730494fb64c: Download complete
+243d12eea946: Verifying Checksum
+243d12eea946: Download complete
+73a9454febcc: Verifying Checksum
+73a9454febcc: Download complete
+b38c147e04b2: Verifying Checksum
+b38c147e04b2: Download complete
+6981e7a1d9e1: Verifying Checksum
+6981e7a1d9e1: Download complete
+bd5d95902f12: Verifying Checksum
+bd5d95902f12: Download complete
+66e08a5e3913: Download complete
+f6c863c750f6: Download complete
+3032bf9f7315: Download complete
+fa99d7b6739c: Verifying Checksum
+fa99d7b6739c: Download complete
+f72eef7dfc41: Download complete
+9fa5cd29d5fb: Download complete
+d6e19500368e: Verifying Checksum
+d6e19500368e: Download complete
+4f4fb700ef54: Download complete
+63f3db6adf2e: Verifying Checksum
+63f3db6adf2e: Download complete
+2446edbd83de: Verifying Checksum
+2446edbd83de: Download complete
+489932655f26: Verifying Checksum
+489932655f26: Download complete
+cf8fba4d9f3c: Verifying Checksum
+cf8fba4d9f3c: Download complete
+af8576294388: Verifying Checksum
+af8576294388: Download complete
+c18ad58e1818: Verifying Checksum
+c18ad58e1818: Download complete
+1436dd9737d6: Verifying Checksum
+1436dd9737d6: Download complete
+b10a27c1e421: Verifying Checksum
+b10a27c1e421: Download complete
+5c264a9b12d0: Download complete
+1114fee1c45f: Download complete
+c5100d048b99: Download complete
+796cb318dc22: Verifying Checksum
+796cb318dc22: Download complete
+0b812d0f1e13: Verifying Checksum
+0b812d0f1e13: Download complete
+572d1e8b8168: Verifying Checksum
+572d1e8b8168: Download complete
+30a7f5f824a8: Download complete
+308e663e0ba6: Download complete
+ee732b5fddd0: Pull complete
+4f8e8e1f9f84: Pull complete
+68ba40696519: Pull complete
+1a6ae489338d: Pull complete
+61a5e994df1e: Pull complete
+90e2bded7da1: Download complete
+31df206ee863: Verifying Checksum
+31df206ee863: Download complete
+dc305f29ff78: Download complete
+ee45a4ccdbb8: Verifying Checksum
+ee45a4ccdbb8: Download complete
+ee2b80cd8acf: Verifying Checksum
+ee2b80cd8acf: Download complete
+949e860d5ee4: Verifying Checksum
+949e860d5ee4: Download complete
+572d1e8b8168: Pull complete
+f730494fb64c: Pull complete
+243d12eea946: Pull complete
+73a9454febcc: Pull complete
+b38c147e04b2: Pull complete
+6981e7a1d9e1: Pull complete
+bd5d95902f12: Pull complete
+66e08a5e3913: Pull complete
+f6c863c750f6: Pull complete
+3032bf9f7315: Pull complete
+fa99d7b6739c: Pull complete
+f72eef7dfc41: Pull complete
+9fa5cd29d5fb: Pull complete
+d6e19500368e: Pull complete
+4f4fb700ef54: Pull complete
+63f3db6adf2e: Pull complete
+2446edbd83de: Pull complete
+489932655f26: Pull complete
+cf8fba4d9f3c: Pull complete
+af8576294388: Pull complete
+c18ad58e1818: Pull complete
+1436dd9737d6: Pull complete
+b10a27c1e421: Pull complete
+5c264a9b12d0: Pull complete
+1114fee1c45f: Pull complete
+c5100d048b99: Pull complete
+796cb318dc22: Pull complete
+90e2bded7da1: Pull complete
+0b812d0f1e13: Pull complete
+ee45a4ccdbb8: Pull complete
+30a7f5f824a8: Pull complete
+308e663e0ba6: Pull complete
+949e860d5ee4: Pull complete
+31df206ee863: Pull complete
+dc305f29ff78: Pull complete
+ee2b80cd8acf: Pull complete
+Digest: sha256:74a79217a07b9e749d967746dac71296666e7f7a46773608872e5d5f917487b7
+Status: Downloaded newer image for ocaml/opam@sha256:74a79217a07b9e749d967746dac71296666e7f7a46773608872e5d5f917487b7
+[01;2m[01;35m2024-11-25 16:18.47 ---> using "180ae51fc5d6ce175a3ec8a0fbf1872f08ab7db00cf801379d8056bbbcf5d751" from cache[0m
+
+[01;34m/: (user (uid 1000) (gid 1000))[0m
+
+[01;34m/: (workdir /home/opam)[0m
+
+[01;34m/home/opam: (run (shell "sudo ln -f /usr/bin/opam-dev /usr/bin/opam"))[0m
+[01;2m[01;35m2024-11-25 16:18.47 ---> using "0cc91d394ac32c8d8e271a483bb7ec704b2ae6920abced44978ab2ea93303906" from cache[0m
+
+[01;34m/home/opam: (run (network host)
+                 (shell "opam init --reinit --config .opamrc-sandbox -ni"))[0m
+Configuring from /home/opam/.opamrc-sandbox, then /home/opam/.opamrc, and finally from built-in defaults.
+Checking for available remotes: rsync and local, git.
+  - you won't be able to use mercurial repositories unless you install the hg command on your system.
+  - you won't be able to use darcs repositories unless you install the darcs command on your system.
+
+This development version of opam requires an update to the layout of /home/opam/.opam from version 2.0 to version 2.2, which can't be reverted.
+You may want to back it up before going further.
+
+Continue? [Y/n] y
+[NOTE] The 'jobs' option was reset, its value was 3 and its new value will vary according to the current number of cores on your machine. You can restore the fixed value using:
+           opam option jobs=3 --global
+Format upgrade done.
+
+<><> Updating repositories ><><><><><><><><><><><><><><><><><><><><><><><><><><>
+[default] synchronised from file:///home/opam/opam-repository
+[01;2m[01;35m2024-11-25 16:18.47 ---> using "edd5bfc3e6c397c9a8c3ec2b53bf61fe0190ad9663ab9001f3874a2c3777c046" from cache[0m
+
+[01;34m/home/opam: (run (shell "uname -rs && opam exec -- ocaml -version && opam --version"))[0m
+Linux 6.8.0-49-generic
+The OCaml toplevel, version 4.14.2
+2.4.0~alpha1~dev
+[01;2m[01;35m2024-11-25 16:18.47 ---> using "ef47ad3109ecdd321c0f279e010716f7b41bde104915c8fe1692c7acd1a96ee8" from cache[0m
+
+[01;34m/home/opam: (env OPAMDOWNLOADJOBS 1)[0m
+
+[01;34m/home/opam: (env OPAMERRLOGLEN 0)[0m
+
+[01;34m/home/opam: (env OPAMSOLVERTIMEOUT 1000)[0m
+
+[01;34m/home/opam: (env OPAMPRECISETRACKING 1)[0m
+
+[01;34m/home/opam: (env CI true)[0m
+
+[01;34m/home/opam: (env OPAM_REPO_CI true)[0m
+
+[01;34m/home/opam: (run (shell "rm -rf opam-repository/"))[0m
+[01;2m[01;35m2024-11-25 16:18.47 ---> using "75986cc52e7b76a7b88826d7fcc07c296e36b525b01acb78355c816ab4c043e2" from cache[0m
+
+[01;34m/home/opam: (copy (src .) (dst opam-repository/))[0m
+[01;2m[01;35m2024-11-25 16:20.51 ---> saved as "846e338fa01fc14cd81e35253360844fc026ba4685c4e4e02a790f90400be5c9"[0m
+
+[01;34m/home/opam: (run (shell "opam repository set-url --strict default opam-repository/"))[0m
+[default] Initialised
+[01;2m[01;35m2024-11-25 16:30.58 ---> saved as "3cc1d498cca644ced43ca5eb887aee2d3987bf3ef7f894c46ca3cc230042e1e7"[0m
+
+[01;34m/home/opam: (run (network host)
+                 (shell "opam update --depexts || true"))[0m
++ /usr/bin/sudo "apt-get" "update"
+- Hit:1 http://ports.ubuntu.com/ubuntu-ports noble InRelease
+- Get:2 http://ports.ubuntu.com/ubuntu-ports noble-updates InRelease [126 kB]
+- Get:3 http://ports.ubuntu.com/ubuntu-ports noble-backports InRelease [126 kB]
+- Get:4 http://ports.ubuntu.com/ubuntu-ports noble-security InRelease [126 kB]
+- Get:5 http://ports.ubuntu.com/ubuntu-ports noble-updates/universe riscv64 Packages [781 kB]
+- Get:6 http://ports.ubuntu.com/ubuntu-ports noble-updates/main riscv64 Packages [532 kB]
+- Get:7 http://ports.ubuntu.com/ubuntu-ports noble-backports/universe riscv64 Packages [10.1 kB]
+- Get:8 http://ports.ubuntu.com/ubuntu-ports noble-security/main riscv64 Packages [307 kB]
+- Get:9 http://ports.ubuntu.com/ubuntu-ports noble-security/universe riscv64 Packages [590 kB]
+- Fetched 2598 kB in 10s (261 kB/s)
+- Reading package lists...
+- 
+[01;2m[01;35m2024-11-25 16:31.26 ---> saved as "5912b61a35b05ca5e7e64dd3a6ecd710ec4921793c5c5ab3f785e0bc19b8b100"[0m
+
+[01;34m/home/opam: (run (shell "opam pin add -k version -yn js_of_ocaml-toplevel.5.8.2-floats 5.8.2-floats"))[0m
+js_of_ocaml-toplevel is now pinned to version 5.8.2-floats
+[01;2m[01;35m2024-11-25 16:31.47 ---> saved as "95c34741b39241627849259ee81f36250aacea36298a4d498b82715583653bb6"[0m
+
+[01;34m/home/opam: (run (cache (opam-archives (target /home/opam/.opam/download-cache)))
+                 (network host)
+                 (shell  "opam reinstall js_of_ocaml-toplevel.5.8.2-floats;\
+                        \n        res=$?;\
+                        \n        test \"$res\" != 31 && exit \"$res\";\
+                        \n        export OPAMCLI=2.0;\
+                        \n        build_dir=$(opam var prefix)/.opam-switch/build;\
+                        \n        failed=$(ls \"$build_dir\");\
+                        \n        partial_fails=\"\";\
+                        \n        for pkg in $failed; do\
+                        \n          if opam show -f x-ci-accept-failures: \"$pkg\" | grep -qF \"\\\"ubuntu-24.04\\\"\"; then\
+                        \n            echo \"A package failed and has been disabled for CI using the 'x-ci-accept-failures' field.\";\
+                        \n          fi;\
+                        \n          test \"$pkg\" != 'js_of_ocaml-toplevel.5.8.2-floats' && partial_fails=\"$partial_fails $pkg\";\
+                        \n        done;\
+                        \n        test \"${partial_fails}\" != \"\" && echo \"opam-repo-ci detected dependencies failing: ${partial_fails}\";\
+                        \n        exit 1"))[0m
+js_of_ocaml-toplevel.5.8.2-floats is not installed. Install it? [Y/n] y
+The following actions will be performed:
+=== install 18 packages
+  - install cmdliner             1.3.0                 [required by js_of_ocaml-compiler]
+  - install dune                 3.16.1                [required by js_of_ocaml-toplevel]
+  - install gen                  1.1                   [required by sedlex]
+  - install js_of_ocaml-compiler 5.8.2-floats          [required by js_of_ocaml-toplevel]
+  - install js_of_ocaml-toplevel 5.8.2-floats (pinned)
+  - install menhir               20240715              [required by js_of_ocaml-compiler]
+  - install menhirCST            20240715              [required by menhir]
+  - install menhirLib            20240715              [required by js_of_ocaml-compiler]
+  - install menhirSdk            20240715              [required by js_of_ocaml-compiler]
+  - install ocaml-compiler-libs  v0.12.4               [required by ppxlib]
+  - install ocamlfind            1.9.6                 [required by js_of_ocaml-toplevel]
+  - install ppx_derivers         1.2.1                 [required by ppxlib]
+  - install ppxlib               0.33.0                [required by js_of_ocaml-compiler]
+  - install sedlex               3.3                   [required by js_of_ocaml-compiler]
+  - install seq                  base                  [required by yojson]
+  - install sexplib0             v0.17.0               [required by ppxlib]
+  - install stdlib-shims         0.3.0                 [required by ppxlib]
+  - install yojson               2.2.2                 [required by js_of_ocaml-compiler]
+
+<><> Processing actions <><><><><><><><><><><><><><><><><><><><><><><><><><><><>
+-> retrieved cmdliner.1.3.0  (cached)
+-> retrieved dune.3.16.1  (cached)
+-> retrieved gen.1.1  (cached)
+-> retrieved js_of_ocaml-compiler.5.8.2-floats, js_of_ocaml-toplevel.5.8.2-floats  (cached)
+-> retrieved menhir.20240715, menhirCST.20240715, menhirLib.20240715, menhirSdk.20240715  (cached)
+-> installed cmdliner.1.3.0
+-> retrieved ocaml-compiler-libs.v0.12.4  (cached)
+-> retrieved ocamlfind.1.9.6  (cached)
+-> retrieved ppx_derivers.1.2.1  (cached)
+-> retrieved ppxlib.0.33.0  (cached)
+-> retrieved sedlex.3.3  (cached)
+-> retrieved seq.base  (cached)
+-> installed seq.base
+-> retrieved sexplib0.v0.17.0  (cached)
+-> retrieved stdlib-shims.0.3.0  (cached)
+-> retrieved yojson.2.2.2  (cached)
+-> installed ocamlfind.1.9.6
+-> installed dune.3.16.1
+-> installed ppx_derivers.1.2.1
+-> installed menhirCST.20240715
+-> installed stdlib-shims.0.3.0
+-> installed menhirSdk.20240715
+-> installed sexplib0.v0.17.0
+-> installed menhirLib.20240715
+-> installed gen.1.1
+-> installed ocaml-compiler-libs.v0.12.4
+-> installed yojson.2.2.2
+-> installed ppxlib.0.33.0
+-> installed sedlex.3.3
+-> installed menhir.20240715
+-> installed js_of_ocaml-compiler.5.8.2-floats
+-> installed js_of_ocaml-toplevel.5.8.2-floats
+Done.
+# To update the current shell environment, run: eval $(opam env)
+[01;2m[01;35m2024-11-25 16:50.55 ---> saved as "ee43758d7ca0eeb44bb7349dcce3de5b96c42c0c94870a6f99c90019020e635f"[0m
+
+[01;34m/home/opam: (run (network host)
+                 (shell "(opam reinstall --with-test js_of_ocaml-toplevel.5.8.2-floats) || true"))[0m
+[ERROR] Sorry, resolution of the request timed out.
+        Try to specify a more precise request, use a different solver, or increase the allowed time by setting OPAMSOLVERTIMEOUT to a bigger value (currently, it is set to 1000.0 seconds).
+[01;2m[01;35m2024-11-25 17:09.56 ---> saved as "b762a920053337e51d258b26985ef37710d9a0fa6ea913bcdfb1e6f427dc9b3d"[0m
+
+[01;34m/home/opam: (run (shell  "opam reinstall --with-test --verbose js_of_ocaml-toplevel.5.8.2-floats;\
+                        \n        res=$?;\
+                        \n        test \"$res\" != 31 && exit \"$res\";\
+                        \n        export OPAMCLI=2.0;\
+                        \n        build_dir=$(opam var prefix)/.opam-switch/build;\
+                        \n        failed=$(ls \"$build_dir\");\
+                        \n        partial_fails=\"\";\
+                        \n        for pkg in $failed; do\
+                        \n          if opam show -f x-ci-accept-failures: \"$pkg\" | grep -qF \"\\\"ubuntu-24.04\\\"\"; then\
+                        \n            echo \"A package failed and has been disabled for CI using the 'x-ci-accept-failures' field.\";\
+                        \n          fi;\
+                        \n          test \"$pkg\" != 'js_of_ocaml-toplevel.5.8.2-floats' && partial_fails=\"$partial_fails $pkg\";\
+                        \n        done;\
+                        \n        test \"${partial_fails}\" != \"\" && echo \"opam-repo-ci detected dependencies failing: ${partial_fails}\";\
+                        \n        exit 1"))[0m
+[ERROR] Sorry, resolution of the request timed out.
+        Try to specify a more precise request, use a different solver, or increase the allowed time by setting OPAMSOLVERTIMEOUT to a bigger value (currently, it is set to 1000.0 seconds).
+'opam reinstall --with-test --verbose js_of_ocaml-toplevel.5.8.2-floats' failed.
+"/usr/bin/env" "bash" "-c" "opam reinstall --with-test --verbose js_of_ocaml-toplevel.5.8.2-floats;
+        res=$?;
+        test "$res" != 31 && exit "$res";
+        export OPAMCLI=2.0;
+        build_dir=$(opam var prefix)/.opam-switch/build;
+        failed=$(ls "$build_dir");
+        partial_fails="";
+        for pkg in $failed; do
+          if opam show -f x-ci-accept-failures: "$pkg" | grep -qF "\"ubuntu-24.04\""; then
+            echo "A package failed and has been disabled for CI using the 'x-ci-accept-failures' field.";
+          fi;
+          test "$pkg" != 'js_of_ocaml-toplevel.5.8.2-floats' && partial_fails="$partial_fails $pkg";
+        done;
+        test "${partial_fails}" != "" && echo "opam-repo-ci detected dependencies failing: ${partial_fails}";
+        exit 1" failed with exit status 60
+2024-11-25 17:30.43: Job failed: Failed: Build failed
+2024-11-25 17:30.43: Log analysis:
+2024-11-25 17:30.43: >>> 
+[ERROR] Sorry, resolution of the request timed out.
+ (score = 20)
+2024-11-25 17:30.43: >>> 
+[ERROR] Sorry, resolution of the request timed out.
+ (score = 20)
+2024-11-25 17:30.43: Sorry, resolution of the request timed out.

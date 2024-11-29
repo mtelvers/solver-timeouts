@@ -1,0 +1,291 @@
+2024-07-22 09:55.01: New job: test lambdapi.2.5.1, using opam 2.0
+                              from https://github.com/ocaml/opam-repository.git#refs/pull/26270/head (5b0603c50b11a425d94487caa242946e2ceef2a8)
+                              on debian-12-ocaml-4.14/amd64
+
+To reproduce locally:
+
+cd $(mktemp -d)
+git clone --recursive "https://github.com/ocaml/opam-repository.git" && cd "opam-repository" && git fetch origin "refs/pull/26270/head" && git reset --hard 5b0603c5
+git fetch origin master
+git merge --no-edit 9a084ee68fc785b9569617aa4db4ee1720920494
+cat > ../Dockerfile <<'END-OF-DOCKERFILE'
+[34mFROM ocaml/opam:debian-12-ocaml-4.14@sha256:26a960ee1e2387f1702c5ef30713c6fbb28c1ef00f4e42ca6ae073632781956d
+USER 1000:1000
+WORKDIR /home/opam
+RUN sudo ln -f /usr/bin/opam-2.0 /usr/bin/opam
+RUN opam init --reinit -ni
+RUN uname -rs && opam exec -- ocaml -version && opam --version
+ENV OPAMDOWNLOADJOBS="1"
+ENV OPAMERRLOGLEN="0"
+ENV OPAMSOLVERTIMEOUT="500"
+ENV OPAMPRECISETRACKING="1"
+ENV CI="true"
+ENV OPAM_REPO_CI="true"
+RUN rm -rf opam-repository/
+COPY --chown=1000:1000 . opam-repository/
+RUN opam repository set-url --strict default opam-repository/
+RUN opam depext -u || true
+RUN opam pin add -k version -yn lambdapi.2.5.1 2.5.1
+RUN opam depext lambdapi.2.5.1 && opam reinstall lambdapi.2.5.1; \
+    res=$?; \
+    test "$res" != 31 && exit "$res"; \
+    export OPAMCLI=2.0; \
+    build_dir=$(opam var prefix)/.opam-switch/build; \
+    failed=$(ls "$build_dir"); \
+    partial_fails=""; \
+    for pkg in $failed; do \
+    if opam show -f x-ci-accept-failures: "$pkg" | grep -qF "\"debian-12\""; then \
+    echo "A package failed and has been disabled for CI using the 'x-ci-accept-failures' field."; \
+    fi; \
+    test "$pkg" != 'lambdapi.2.5.1' && partial_fails="$partial_fails $pkg"; \
+    done; \
+    test "${partial_fails}" != "" && echo "opam-repo-ci detected dependencies failing: ${partial_fails}"; \
+    exit 1
+RUN (opam depext --with-test lambdapi.2.5.1 && opam reinstall --with-test lambdapi.2.5.1) || true
+RUN opam depext --with-test lambdapi.2.5.1 && opam reinstall --with-test --verbose lambdapi.2.5.1; \
+    res=$?; \
+    test "$res" != 31 && exit "$res"; \
+    export OPAMCLI=2.0; \
+    build_dir=$(opam var prefix)/.opam-switch/build; \
+    failed=$(ls "$build_dir"); \
+    partial_fails=""; \
+    for pkg in $failed; do \
+    if opam show -f x-ci-accept-failures: "$pkg" | grep -qF "\"debian-12\""; then \
+    echo "A package failed and has been disabled for CI using the 'x-ci-accept-failures' field."; \
+    fi; \
+    test "$pkg" != 'lambdapi.2.5.1' && partial_fails="$partial_fails $pkg"; \
+    done; \
+    test "${partial_fails}" != "" && echo "opam-repo-ci detected dependencies failing: ${partial_fails}"; \
+    exit 1
+[0m
+END-OF-DOCKERFILE
+docker build -f ../Dockerfile .
+
+2024-07-22 09:55.01: Using cache hint "ocaml/opam:debian-12-ocaml-4.14@sha256:26a960ee1e2387f1702c5ef30713c6fbb28c1ef00f4e42ca6ae073632781956d-lambdapi.2.5.1-5b0603c50b11a425d94487caa242946e2ceef2a8"
+2024-07-22 09:55.01: Using OBuilder spec:
+((from ocaml/opam:debian-12-ocaml-4.14@sha256:26a960ee1e2387f1702c5ef30713c6fbb28c1ef00f4e42ca6ae073632781956d)
+ (user (uid 1000) (gid 1000))
+ (workdir /home/opam)
+ (run (shell "sudo ln -f /usr/bin/opam-2.0 /usr/bin/opam"))
+ (run (network host)
+      (shell "opam init --reinit --config .opamrc-sandbox -ni"))
+ (run (shell "uname -rs && opam exec -- ocaml -version && opam --version"))
+ (env OPAMDOWNLOADJOBS 1)
+ (env OPAMERRLOGLEN 0)
+ (env OPAMSOLVERTIMEOUT 500)
+ (env OPAMPRECISETRACKING 1)
+ (env CI true)
+ (env OPAM_REPO_CI true)
+ (run (shell "rm -rf opam-repository/"))
+ (copy (src .) (dst opam-repository/))
+ (run (shell "opam repository set-url --strict default opam-repository/"))
+ (run (network host)
+      (shell "opam depext -u || true"))
+ (run (shell "opam pin add -k version -yn lambdapi.2.5.1 2.5.1"))
+ (run (cache (opam-archives (target /home/opam/.opam/download-cache)))
+      (network host)
+      (shell  "opam depext lambdapi.2.5.1 && opam reinstall lambdapi.2.5.1;\
+             \n        res=$?;\
+             \n        test \"$res\" != 31 && exit \"$res\";\
+             \n        export OPAMCLI=2.0;\
+             \n        build_dir=$(opam var prefix)/.opam-switch/build;\
+             \n        failed=$(ls \"$build_dir\");\
+             \n        partial_fails=\"\";\
+             \n        for pkg in $failed; do\
+             \n          if opam show -f x-ci-accept-failures: \"$pkg\" | grep -qF \"\\\"debian-12\\\"\"; then\
+             \n            echo \"A package failed and has been disabled for CI using the 'x-ci-accept-failures' field.\";\
+             \n          fi;\
+             \n          test \"$pkg\" != 'lambdapi.2.5.1' && partial_fails=\"$partial_fails $pkg\";\
+             \n        done;\
+             \n        test \"${partial_fails}\" != \"\" && echo \"opam-repo-ci detected dependencies failing: ${partial_fails}\";\
+             \n        exit 1"))
+ (run (network host)
+      (shell "(opam depext --with-test lambdapi.2.5.1 && opam reinstall --with-test lambdapi.2.5.1) || true"))
+ (run (shell  "opam depext --with-test lambdapi.2.5.1 && opam reinstall --with-test --verbose lambdapi.2.5.1;\
+             \n        res=$?;\
+             \n        test \"$res\" != 31 && exit \"$res\";\
+             \n        export OPAMCLI=2.0;\
+             \n        build_dir=$(opam var prefix)/.opam-switch/build;\
+             \n        failed=$(ls \"$build_dir\");\
+             \n        partial_fails=\"\";\
+             \n        for pkg in $failed; do\
+             \n          if opam show -f x-ci-accept-failures: \"$pkg\" | grep -qF \"\\\"debian-12\\\"\"; then\
+             \n            echo \"A package failed and has been disabled for CI using the 'x-ci-accept-failures' field.\";\
+             \n          fi;\
+             \n          test \"$pkg\" != 'lambdapi.2.5.1' && partial_fails=\"$partial_fails $pkg\";\
+             \n        done;\
+             \n        test \"${partial_fails}\" != \"\" && echo \"opam-repo-ci detected dependencies failing: ${partial_fails}\";\
+             \n        exit 1"))
+)
+
+2024-07-22 09:55.01: Waiting for resource in pool OCluster
+2024-07-22 09:58.30: Waiting for worker…
+2024-07-22 10:02.26: Got resource from pool OCluster
+Building on x86-bm-c2.sw.ocaml.org
+All commits already cached
+Updating files:  77% (24579/31855)Updating files:  78% (24847/31855)Updating files:  79% (25166/31855)Updating files:  80% (25484/31855)Updating files:  81% (25803/31855)Updating files:  82% (26122/31855)Updating files:  83% (26440/31855)Updating files:  84% (26759/31855)Updating files:  85% (27077/31855)Updating files:  86% (27396/31855)Updating files:  87% (27714/31855)Updating files:  88% (28033/31855)Updating files:  89% (28351/31855)Updating files:  90% (28670/31855)Updating files:  91% (28989/31855)Updating files:  92% (29307/31855)Updating files:  93% (29626/31855)Updating files:  94% (29944/31855)Updating files:  95% (30263/31855)Updating files:  96% (30581/31855)Updating files:  97% (30900/31855)Updating files:  98% (31218/31855)Updating files:  99% (31537/31855)Updating files: 100% (31855/31855)Updating files: 100% (31855/31855), done.
+HEAD is now at 9a084ee68f Upper-bound `cudajit` for arrayjit 0.3.3 (#26268)
+Updating 9a084ee68f..5b0603c50b
+Fast-forward
+ packages/lambdapi/lambdapi.2.5.1/opam | 90 +++++++++++++++++++++++++++++++++++
+ 1 file changed, 90 insertions(+)
+ create mode 100644 packages/lambdapi/lambdapi.2.5.1/opam
+
+[01;34m(from ocaml/opam:debian-12-ocaml-4.14@sha256:26a960ee1e2387f1702c5ef30713c6fbb28c1ef00f4e42ca6ae073632781956d)[0m
+[01;2m[01;35m2024-07-22 10:02.29 ---> using "589904b23d29ba1225cff907dea1a5c40518ee28d93a5f9c6f6ee6e1404fb592" from cache[0m
+
+[01;34m/: (user (uid 1000) (gid 1000))[0m
+
+[01;34m/: (workdir /home/opam)[0m
+
+[01;34m/home/opam: (run (shell "sudo ln -f /usr/bin/opam-2.0 /usr/bin/opam"))[0m
+[01;2m[01;35m2024-07-22 10:02.29 ---> using "511cd4f7ac166b84c08c0972e6bf094108c50e8356650a7f922f8246d1c46c21" from cache[0m
+
+[01;34m/home/opam: (run (network host)
+                 (shell "opam init --reinit --config .opamrc-sandbox -ni"))[0m
+[NOTE] Will configure from /home/opam/.opamrc-sandbox, then /home/opam/.opamrc, and finally from built-in defaults.
+Checking for available remotes: rsync and local, git.
+  - you won't be able to use mercurial repositories unless you install the hg command on your system.
+  - you won't be able to use darcs repositories unless you install the darcs command on your system.
+
+[WARNING] Recommended dependencies -- most packages rely on these:
+  - m4
+
+<><> Updating repositories ><><><><><><><><><><><><><><><><><><><><><><><><><><>
+[default] synchronised from file:///home/opam/opam-repository
+default (at file:///home/opam/opam-repository): 
+    [INFO] opam 2.1 and 2.2 include many performance improvements over 2.0; please consider upgrading (https://opam.ocaml.org/doc/Install.html)
+
+[01;2m[01;35m2024-07-22 10:03.04 ---> saved as "6b12d4da72472a72a8d2d09ee5d7d1eedba6cc058d961e73f656a2e2e032ae1b"[0m
+
+[01;34m/home/opam: (run (shell "uname -rs && opam exec -- ocaml -version && opam --version"))[0m
+Linux 5.15.0-116-generic
+The OCaml toplevel, version 4.14.2
+2.0.10
+[01;2m[01;35m2024-07-22 10:03.05 ---> saved as "69cad05560bc4e5e3b7907f882e921b36151b38cf16d8b15467a0a271b43f8e8"[0m
+
+[01;34m/home/opam: (env OPAMDOWNLOADJOBS 1)[0m
+
+[01;34m/home/opam: (env OPAMERRLOGLEN 0)[0m
+
+[01;34m/home/opam: (env OPAMSOLVERTIMEOUT 500)[0m
+
+[01;34m/home/opam: (env OPAMPRECISETRACKING 1)[0m
+
+[01;34m/home/opam: (env CI true)[0m
+
+[01;34m/home/opam: (env OPAM_REPO_CI true)[0m
+
+[01;34m/home/opam: (run (shell "rm -rf opam-repository/"))[0m
+[01;2m[01;35m2024-07-22 10:03.13 ---> saved as "781e839f7c57a61d08c6f39ba8c4083065d53c172b7e657727339f458b9991b9"[0m
+
+[01;34m/home/opam: (copy (src .) (dst opam-repository/))[0m
+[01;2m[01;35m2024-07-22 10:03.28 ---> saved as "7e2b8d8088152ad01f405d39447f380397935aee651567a0b3cc87242a878a30"[0m
+
+[01;34m/home/opam: (run (shell "opam repository set-url --strict default opam-repository/"))[0m
+[default] Initialised
+default (at file:///home/opam/opam-repository): 
+    [INFO] opam 2.1 and 2.2 include many performance improvements over 2.0; please consider upgrading (https://opam.ocaml.org/doc/Install.html)
+
+[01;2m[01;35m2024-07-22 10:03.59 ---> saved as "248685d9931bf2075c474c32fa2b1ce24b0044f38a9fe23136cada745183caf6"[0m
+
+[01;34m/home/opam: (run (network host)
+                 (shell "opam depext -u || true"))[0m
+# Detecting depexts using vars: arch=x86_64, os=linux, os-distribution=debian, os-family=debian
+# No extra OS packages requirements found.
+# All required OS packages found.
+The following command needs to be run through "sudo":
+    apt-get update
+Hit:1 http://deb.debian.org/debian bookworm InRelease
+Get:2 http://deb.debian.org/debian bookworm-updates InRelease [55.4 kB]
+Get:3 http://deb.debian.org/debian-security bookworm-security InRelease [48.0 kB]
+Get:4 http://deb.debian.org/debian-security bookworm-security/main amd64 Packages [169 kB]
+Fetched 272 kB in 0s (959 kB/s)
+Reading package lists...
+# OS package update successful
+[01;2m[01;35m2024-07-22 10:04.01 ---> saved as "39fa4d57ac0b55d44e3e860371e31ff153e3e8e08df5e150805744f053b9d7b7"[0m
+
+[01;34m/home/opam: (run (shell "opam pin add -k version -yn lambdapi.2.5.1 2.5.1"))[0m
+lambdapi is now pinned to version 2.5.1
+[01;2m[01;35m2024-07-22 10:04.02 ---> saved as "0cc24ddc77ed7947fce4cd574c70bba440d55afd066de8771409b71070801383"[0m
+
+[01;34m/home/opam: (run (cache (opam-archives (target /home/opam/.opam/download-cache)))
+                 (network host)
+                 (shell  "opam depext lambdapi.2.5.1 && opam reinstall lambdapi.2.5.1;\
+                        \n        res=$?;\
+                        \n        test \"$res\" != 31 && exit \"$res\";\
+                        \n        export OPAMCLI=2.0;\
+                        \n        build_dir=$(opam var prefix)/.opam-switch/build;\
+                        \n        failed=$(ls \"$build_dir\");\
+                        \n        partial_fails=\"\";\
+                        \n        for pkg in $failed; do\
+                        \n          if opam show -f x-ci-accept-failures: \"$pkg\" | grep -qF \"\\\"debian-12\\\"\"; then\
+                        \n            echo \"A package failed and has been disabled for CI using the 'x-ci-accept-failures' field.\";\
+                        \n          fi;\
+                        \n          test \"$pkg\" != 'lambdapi.2.5.1' && partial_fails=\"$partial_fails $pkg\";\
+                        \n        done;\
+                        \n        test \"${partial_fails}\" != \"\" && echo \"opam-repo-ci detected dependencies failing: ${partial_fails}\";\
+                        \n        exit 1"))[0m
+# Detecting depexts using vars: arch=x86_64, os=linux, os-distribution=debian, os-family=debian
+# The following system packages are needed:
+libev-dev
+libssl-dev
+pkg-config
+The following command needs to be run through "sudo":
+    apt-get install -qq -yy libev-dev libssl-dev pkg-config
+debconf: delaying package configuration, since apt-utils is not installed
+Selecting previously unselected package libev4:amd64.
+(Reading database ... (Reading database ... 5%(Reading database ... 10%(Reading database ... 15%(Reading database ... 20%(Reading database ... 25%(Reading database ... 30%(Reading database ... 35%(Reading database ... 40%(Reading database ... 45%(Reading database ... 50%(Reading database ... 55%(Reading database ... 60%(Reading database ... 65%(Reading database ... 70%(Reading database ... 75%(Reading database ... 80%(Reading database ... 85%(Reading database ... 90%(Reading database ... 95%(Reading database ... 100%(Reading database ... 18734 files and directories currently installed.)
+Preparing to unpack .../0-libev4_1%3a4.33-1_amd64.deb ...
+Unpacking libev4:amd64 (1:4.33-1) ...
+Selecting previously unselected package libev-dev:amd64.
+Preparing to unpack .../1-libev-dev_1%3a4.33-1_amd64.deb ...
+Unpacking libev-dev:amd64 (1:4.33-1) ...
+Selecting previously unselected package libpkgconf3:amd64.
+Preparing to unpack .../2-libpkgconf3_1.8.1-1_amd64.deb ...
+Unpacking libpkgconf3:amd64 (1.8.1-1) ...
+Selecting previously unselected package libssl-dev:amd64.
+Preparing to unpack .../3-libssl-dev_3.0.13-1~deb12u1_amd64.deb ...
+Unpacking libssl-dev:amd64 (3.0.13-1~deb12u1) ...
+Selecting previously unselected package pkgconf-bin.
+Preparing to unpack .../4-pkgconf-bin_1.8.1-1_amd64.deb ...
+Unpacking pkgconf-bin (1.8.1-1) ...
+Selecting previously unselected package pkgconf:amd64.
+Preparing to unpack .../5-pkgconf_1.8.1-1_amd64.deb ...
+Unpacking pkgconf:amd64 (1.8.1-1) ...
+Selecting previously unselected package pkg-config:amd64.
+Preparing to unpack .../6-pkg-config_1.8.1-1_amd64.deb ...
+Unpacking pkg-config:amd64 (1.8.1-1) ...
+Setting up libev4:amd64 (1:4.33-1) ...
+Setting up libpkgconf3:amd64 (1.8.1-1) ...
+Setting up libssl-dev:amd64 (3.0.13-1~deb12u1) ...
+Setting up pkgconf-bin (1.8.1-1) ...
+Setting up libev-dev:amd64 (1:4.33-1) ...
+Setting up pkgconf:amd64 (1.8.1-1) ...
+Setting up pkg-config:amd64 (1.8.1-1) ...
+Processing triggers for libc-bin (2.36-9+deb12u7) ...
+# OS packages installation successful
+lambdapi.2.5.1 is not installed. Install it? [Y/n] y
+[ERROR] Sorry, resolution of the request timed out.
+        Try to specify a simpler request, use a different solver, or increase the allowed time by setting OPAMSOLVERTIMEOUT to a bigger value (currently, it is set to 500.0 seconds).
+"/usr/bin/env" "bash" "-c" "opam depext lambdapi.2.5.1 && opam reinstall lambdapi.2.5.1;
+        res=$?;
+        test "$res" != 31 && exit "$res";
+        export OPAMCLI=2.0;
+        build_dir=$(opam var prefix)/.opam-switch/build;
+        failed=$(ls "$build_dir");
+        partial_fails="";
+        for pkg in $failed; do
+          if opam show -f x-ci-accept-failures: "$pkg" | grep -qF "\"debian-12\""; then
+            echo "A package failed and has been disabled for CI using the 'x-ci-accept-failures' field.";
+          fi;
+          test "$pkg" != 'lambdapi.2.5.1' && partial_fails="$partial_fails $pkg";
+        done;
+        test "${partial_fails}" != "" && echo "opam-repo-ci detected dependencies failing: ${partial_fails}";
+        exit 1" failed with exit status 60
+2024-07-22 10:13.04: Job failed: Failed: Build failed
+2024-07-22 10:13.04: Log analysis:
+2024-07-22 10:13.04: >>> 
+[ERROR] Sorry, resolution of the request timed out.
+ (score = 20)
+2024-07-22 10:13.04: Sorry, resolution of the request timed out.

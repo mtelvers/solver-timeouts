@@ -1,0 +1,255 @@
+2024-09-11 10:34.00: New job: test octez-shell-libs.19.1, using opam 2.1
+                              from https://github.com/ocaml/opam-repository.git#refs/pull/26519/head (c84654adc4262e11827a4bce57abfc0a09511f21)
+                              on debian-12-ocaml-4.14/amd64
+
+To reproduce locally:
+
+cd $(mktemp -d)
+git clone --recursive "https://github.com/ocaml/opam-repository.git" && cd "opam-repository" && git fetch origin "refs/pull/26519/head" && git reset --hard c84654ad
+git fetch origin master
+git merge --no-edit abac1deff0ec6249cf93f6b25ffdc49ae1caf04c
+cat > ../Dockerfile <<'END-OF-DOCKERFILE'
+[34mFROM ocaml/opam:debian-12-ocaml-4.14@sha256:2135d0c56fc438ebc9377f99b020c06d4ecd43611be356b669914fea73ab2be1
+USER 1000:1000
+WORKDIR /home/opam
+RUN sudo ln -f /usr/bin/opam-2.1 /usr/bin/opam
+RUN opam init --reinit -ni
+RUN uname -rs && opam exec -- ocaml -version && opam --version
+ENV OPAMDOWNLOADJOBS="1"
+ENV OPAMERRLOGLEN="0"
+ENV OPAMSOLVERTIMEOUT="500"
+ENV OPAMPRECISETRACKING="1"
+ENV CI="true"
+ENV OPAM_REPO_CI="true"
+RUN rm -rf opam-repository/
+COPY --chown=1000:1000 . opam-repository/
+RUN opam repository set-url --strict default opam-repository/
+RUN opam update --depexts || true
+RUN opam pin add -k version -yn octez-shell-libs.19.1 19.1
+RUN opam reinstall octez-shell-libs.19.1; \
+    res=$?; \
+    test "$res" != 31 && exit "$res"; \
+    export OPAMCLI=2.0; \
+    build_dir=$(opam var prefix)/.opam-switch/build; \
+    failed=$(ls "$build_dir"); \
+    partial_fails=""; \
+    for pkg in $failed; do \
+    if opam show -f x-ci-accept-failures: "$pkg" | grep -qF "\"debian-12\""; then \
+    echo "A package failed and has been disabled for CI using the 'x-ci-accept-failures' field."; \
+    fi; \
+    test "$pkg" != 'octez-shell-libs.19.1' && partial_fails="$partial_fails $pkg"; \
+    done; \
+    test "${partial_fails}" != "" && echo "opam-repo-ci detected dependencies failing: ${partial_fails}"; \
+    exit 1
+RUN (opam reinstall --with-test octez-shell-libs.19.1) || true
+RUN opam reinstall --with-test --verbose octez-shell-libs.19.1; \
+    res=$?; \
+    test "$res" != 31 && exit "$res"; \
+    export OPAMCLI=2.0; \
+    build_dir=$(opam var prefix)/.opam-switch/build; \
+    failed=$(ls "$build_dir"); \
+    partial_fails=""; \
+    for pkg in $failed; do \
+    if opam show -f x-ci-accept-failures: "$pkg" | grep -qF "\"debian-12\""; then \
+    echo "A package failed and has been disabled for CI using the 'x-ci-accept-failures' field."; \
+    fi; \
+    test "$pkg" != 'octez-shell-libs.19.1' && partial_fails="$partial_fails $pkg"; \
+    done; \
+    test "${partial_fails}" != "" && echo "opam-repo-ci detected dependencies failing: ${partial_fails}"; \
+    exit 1
+[0m
+END-OF-DOCKERFILE
+docker build -f ../Dockerfile .
+
+2024-09-11 10:34.00: Using cache hint "ocaml/opam:debian-12-ocaml-4.14@sha256:2135d0c56fc438ebc9377f99b020c06d4ecd43611be356b669914fea73ab2be1-octez-shell-libs.19.1-c84654adc4262e11827a4bce57abfc0a09511f21"
+2024-09-11 10:34.00: Using OBuilder spec:
+((from ocaml/opam:debian-12-ocaml-4.14@sha256:2135d0c56fc438ebc9377f99b020c06d4ecd43611be356b669914fea73ab2be1)
+ (user (uid 1000) (gid 1000))
+ (workdir /home/opam)
+ (run (shell "sudo ln -f /usr/bin/opam-2.1 /usr/bin/opam"))
+ (run (network host)
+      (shell "opam init --reinit --config .opamrc-sandbox -ni"))
+ (run (shell "uname -rs && opam exec -- ocaml -version && opam --version"))
+ (env OPAMDOWNLOADJOBS 1)
+ (env OPAMERRLOGLEN 0)
+ (env OPAMSOLVERTIMEOUT 500)
+ (env OPAMPRECISETRACKING 1)
+ (env CI true)
+ (env OPAM_REPO_CI true)
+ (run (shell "rm -rf opam-repository/"))
+ (copy (src .) (dst opam-repository/))
+ (run (shell "opam repository set-url --strict default opam-repository/"))
+ (run (network host)
+      (shell "opam update --depexts || true"))
+ (run (shell "opam pin add -k version -yn octez-shell-libs.19.1 19.1"))
+ (run (cache (opam-archives (target /home/opam/.opam/download-cache)))
+      (network host)
+      (shell  "opam reinstall octez-shell-libs.19.1;\
+             \n        res=$?;\
+             \n        test \"$res\" != 31 && exit \"$res\";\
+             \n        export OPAMCLI=2.0;\
+             \n        build_dir=$(opam var prefix)/.opam-switch/build;\
+             \n        failed=$(ls \"$build_dir\");\
+             \n        partial_fails=\"\";\
+             \n        for pkg in $failed; do\
+             \n          if opam show -f x-ci-accept-failures: \"$pkg\" | grep -qF \"\\\"debian-12\\\"\"; then\
+             \n            echo \"A package failed and has been disabled for CI using the 'x-ci-accept-failures' field.\";\
+             \n          fi;\
+             \n          test \"$pkg\" != 'octez-shell-libs.19.1' && partial_fails=\"$partial_fails $pkg\";\
+             \n        done;\
+             \n        test \"${partial_fails}\" != \"\" && echo \"opam-repo-ci detected dependencies failing: ${partial_fails}\";\
+             \n        exit 1"))
+ (run (network host)
+      (shell "(opam reinstall --with-test octez-shell-libs.19.1) || true"))
+ (run (shell  "opam reinstall --with-test --verbose octez-shell-libs.19.1;\
+             \n        res=$?;\
+             \n        test \"$res\" != 31 && exit \"$res\";\
+             \n        export OPAMCLI=2.0;\
+             \n        build_dir=$(opam var prefix)/.opam-switch/build;\
+             \n        failed=$(ls \"$build_dir\");\
+             \n        partial_fails=\"\";\
+             \n        for pkg in $failed; do\
+             \n          if opam show -f x-ci-accept-failures: \"$pkg\" | grep -qF \"\\\"debian-12\\\"\"; then\
+             \n            echo \"A package failed and has been disabled for CI using the 'x-ci-accept-failures' field.\";\
+             \n          fi;\
+             \n          test \"$pkg\" != 'octez-shell-libs.19.1' && partial_fails=\"$partial_fails $pkg\";\
+             \n        done;\
+             \n        test \"${partial_fails}\" != \"\" && echo \"opam-repo-ci detected dependencies failing: ${partial_fails}\";\
+             \n        exit 1"))
+)
+
+2024-09-11 10:34.00: Waiting for resource in pool OCluster
+2024-09-11 10:41.15: Waiting for worker…
+2024-09-11 10:46.19: Got resource from pool OCluster
+Building on asteria.caelum.ci.dev
+All commits already cached
+Updating files:  63% (20347/32180)Updating files:  64% (20596/32180)Updating files:  65% (20917/32180)Updating files:  66% (21239/32180)Updating files:  67% (21561/32180)Updating files:  68% (21883/32180)Updating files:  69% (22205/32180)Updating files:  70% (22526/32180)Updating files:  71% (22848/32180)Updating files:  72% (23170/32180)Updating files:  73% (23492/32180)Updating files:  74% (23814/32180)Updating files:  75% (24135/32180)Updating files:  76% (24457/32180)Updating files:  77% (24779/32180)Updating files:  78% (25101/32180)Updating files:  79% (25423/32180)Updating files:  80% (25744/32180)Updating files:  81% (26066/32180)Updating files:  82% (26388/32180)Updating files:  83% (26710/32180)Updating files:  84% (27032/32180)Updating files:  85% (27353/32180)Updating files:  86% (27675/32180)Updating files:  87% (27997/32180)Updating files:  88% (28319/32180)Updating files:  89% (28641/32180)Updating files:  90% (28962/32180)Updating files:  91% (29284/32180)Updating files:  92% (29606/32180)Updating files:  93% (29928/32180)Updating files:  94% (30250/32180)Updating files:  95% (30571/32180)Updating files:  96% (30893/32180)Updating files:  97% (31215/32180)Updating files:  98% (31537/32180)Updating files:  99% (31859/32180)Updating files: 100% (32180/32180)Updating files: 100% (32180/32180), done.
+HEAD is now at abac1deff0 Merge pull request #26532 from copy/master
+Updating abac1deff0..c84654adc4
+Fast-forward
+ .../ledgerwallet-tezos.0.4.1/opam                  | 27 ++++++++++++++++++++++
+ packages/ledgerwallet/ledgerwallet.0.4.1/opam      | 27 ++++++++++++++++++++++
+ .../octez-shell-libs/octez-shell-libs.19.0/opam    |  2 +-
+ .../octez-shell-libs/octez-shell-libs.19.1/opam    |  2 +-
+ 4 files changed, 56 insertions(+), 2 deletions(-)
+ create mode 100644 packages/ledgerwallet-tezos/ledgerwallet-tezos.0.4.1/opam
+ create mode 100644 packages/ledgerwallet/ledgerwallet.0.4.1/opam
+
+[01;34m(from ocaml/opam:debian-12-ocaml-4.14@sha256:2135d0c56fc438ebc9377f99b020c06d4ecd43611be356b669914fea73ab2be1)[0m
+Unable to find image 'ocaml/opam:debian-12-ocaml-4.14@sha256:2135d0c56fc438ebc9377f99b020c06d4ecd43611be356b669914fea73ab2be1' locally
+docker.io/ocaml/opam@sha256:2135d0c56fc438ebc9377f99b020c06d4ecd43611be356b669914fea73ab2be1: Pulling from ocaml/opam
+Digest: sha256:2135d0c56fc438ebc9377f99b020c06d4ecd43611be356b669914fea73ab2be1
+Status: Downloaded newer image for ocaml/opam@sha256:2135d0c56fc438ebc9377f99b020c06d4ecd43611be356b669914fea73ab2be1
+[01;2m[01;35m2024-09-11 10:46.33 ---> using "103a548bcf08062184789f8399ddfc3128a2d5d426168f6d2c8435f8ce1ce572" from cache[0m
+
+[01;34m/: (user (uid 1000) (gid 1000))[0m
+
+[01;34m/: (workdir /home/opam)[0m
+
+[01;34m/home/opam: (run (shell "sudo ln -f /usr/bin/opam-2.1 /usr/bin/opam"))[0m
+[01;2m[01;35m2024-09-11 10:46.33 ---> using "abebda967ba7134533c31f5df4cb94773061f84b5a28fc695c4ed4d647fb65f5" from cache[0m
+
+[01;34m/home/opam: (run (network host)
+                 (shell "opam init --reinit --config .opamrc-sandbox -ni"))[0m
+Configuring from /home/opam/.opamrc-sandbox, then /home/opam/.opamrc, and finally from built-in defaults.
+Checking for available remotes: rsync and local, git.
+  - you won't be able to use mercurial repositories unless you install the hg command on your system.
+  - you won't be able to use darcs repositories unless you install the darcs command on your system.
+
+This development version of opam requires an update to the layout of /home/opam/.opam from version 2.0 to version 2.1, which can't be reverted.
+You may want to back it up before going further.
+
+Continue? [Y/n] y
+Format upgrade done.
+
+<><> Updating repositories ><><><><><><><><><><><><><><><><><><><><><><><><><><>
+[default] synchronised from file:///home/opam/opam-repository
+[01;2m[01;35m2024-09-11 10:46.33 ---> using "9547c4f530308c07c2af21f252b718a828d6a4f9806e2178dd6ed4ba1b750bc1" from cache[0m
+
+[01;34m/home/opam: (run (shell "uname -rs && opam exec -- ocaml -version && opam --version"))[0m
+Linux 5.15.0-119-generic
+The OCaml toplevel, version 4.14.2
+2.1.6
+[01;2m[01;35m2024-09-11 10:46.33 ---> using "2f3694496ea1d533c96c89e99db1549b3baf0980046c47975686f87d4a6a5682" from cache[0m
+
+[01;34m/home/opam: (env OPAMDOWNLOADJOBS 1)[0m
+
+[01;34m/home/opam: (env OPAMERRLOGLEN 0)[0m
+
+[01;34m/home/opam: (env OPAMSOLVERTIMEOUT 500)[0m
+
+[01;34m/home/opam: (env OPAMPRECISETRACKING 1)[0m
+
+[01;34m/home/opam: (env CI true)[0m
+
+[01;34m/home/opam: (env OPAM_REPO_CI true)[0m
+
+[01;34m/home/opam: (run (shell "rm -rf opam-repository/"))[0m
+[01;2m[01;35m2024-09-11 10:46.33 ---> using "dcf9d14c2a6d6b57ff34bd7568f533d7d57262a6ed8e24b6ada35aa8404d526e" from cache[0m
+
+[01;34m/home/opam: (copy (src .) (dst opam-repository/))[0m
+[01;2m[01;35m2024-09-11 10:46.39 ---> saved as "2e65af2d56e651765f605ed3967a9872380b9fd73cce2ee4ae62bfdd75b5b640"[0m
+
+[01;34m/home/opam: (run (shell "opam repository set-url --strict default opam-repository/"))[0m
+[default] Initialised
+[01;2m[01;35m2024-09-11 10:47.01 ---> saved as "170b375b39833f8b53739836cea7cabf86dfb7a3fd05fefa59cf7bb6bcf5dc2b"[0m
+
+[01;34m/home/opam: (run (network host)
+                 (shell "opam update --depexts || true"))[0m
++ /usr/bin/sudo "apt-get" "update"
+- Hit:1 http://deb.debian.org/debian bookworm InRelease
+- Get:2 http://deb.debian.org/debian bookworm-updates InRelease [55.4 kB]
+- Get:3 http://deb.debian.org/debian-security bookworm-security InRelease [48.0 kB]
+- Get:4 http://deb.debian.org/debian bookworm-updates/main amd64 Packages.diff/Index [11.7 kB]
+- Get:5 http://deb.debian.org/debian bookworm-updates/main amd64 Packages T-2024-09-10-2011.55-F-2024-09-10-2011.55.pdiff [1116 B]
+- Get:5 http://deb.debian.org/debian bookworm-updates/main amd64 Packages T-2024-09-10-2011.55-F-2024-09-10-2011.55.pdiff [1116 B]
+- Get:6 http://deb.debian.org/debian-security bookworm-security/main amd64 Packages [179 kB]
+- Fetched 295 kB in 0s (817 kB/s)
+- Reading package lists...
+[01;2m[01;35m2024-09-11 10:47.02 ---> saved as "c346766de02e9a6e8d2f79a1bca89004891a152103d7d2e729eb2acf833c2ae9"[0m
+
+[01;34m/home/opam: (run (shell "opam pin add -k version -yn octez-shell-libs.19.1 19.1"))[0m
+octez-shell-libs is now pinned to version 19.1
+[01;2m[01;35m2024-09-11 10:47.03 ---> saved as "efd9a65f492407242e15a79f1e590b10107798025958a2d99558c539ba52fbda"[0m
+
+[01;34m/home/opam: (run (cache (opam-archives (target /home/opam/.opam/download-cache)))
+                 (network host)
+                 (shell  "opam reinstall octez-shell-libs.19.1;\
+                        \n        res=$?;\
+                        \n        test \"$res\" != 31 && exit \"$res\";\
+                        \n        export OPAMCLI=2.0;\
+                        \n        build_dir=$(opam var prefix)/.opam-switch/build;\
+                        \n        failed=$(ls \"$build_dir\");\
+                        \n        partial_fails=\"\";\
+                        \n        for pkg in $failed; do\
+                        \n          if opam show -f x-ci-accept-failures: \"$pkg\" | grep -qF \"\\\"debian-12\\\"\"; then\
+                        \n            echo \"A package failed and has been disabled for CI using the 'x-ci-accept-failures' field.\";\
+                        \n          fi;\
+                        \n          test \"$pkg\" != 'octez-shell-libs.19.1' && partial_fails=\"$partial_fails $pkg\";\
+                        \n        done;\
+                        \n        test \"${partial_fails}\" != \"\" && echo \"opam-repo-ci detected dependencies failing: ${partial_fails}\";\
+                        \n        exit 1"))[0m
+octez-shell-libs.19.1 is not installed. Install it? [Y/n] y
+[ERROR] Sorry, resolution of the request timed out.
+        Try to specify a more precise request, use a different solver, or increase the allowed time by setting OPAMSOLVERTIMEOUT to a bigger value (currently, it is set to 500.0 seconds).
+"/usr/bin/env" "bash" "-c" "opam reinstall octez-shell-libs.19.1;
+        res=$?;
+        test "$res" != 31 && exit "$res";
+        export OPAMCLI=2.0;
+        build_dir=$(opam var prefix)/.opam-switch/build;
+        failed=$(ls "$build_dir");
+        partial_fails="";
+        for pkg in $failed; do
+          if opam show -f x-ci-accept-failures: "$pkg" | grep -qF "\"debian-12\""; then
+            echo "A package failed and has been disabled for CI using the 'x-ci-accept-failures' field.";
+          fi;
+          test "$pkg" != 'octez-shell-libs.19.1' && partial_fails="$partial_fails $pkg";
+        done;
+        test "${partial_fails}" != "" && echo "opam-repo-ci detected dependencies failing: ${partial_fails}";
+        exit 1" failed with exit status 60
+2024-09-11 10:55.43: Job failed: Failed: Build failed
+2024-09-11 10:55.43: Log analysis:
+2024-09-11 10:55.43: >>> 
+[ERROR] Sorry, resolution of the request timed out.
+ (score = 20)
+2024-09-11 10:55.43: Sorry, resolution of the request timed out.

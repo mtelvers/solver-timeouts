@@ -1,0 +1,399 @@
+2024-11-24 04:44.24: New job: test js_of_ocaml-toplevel.5.9.0, using opam 2.0
+                              from https://github.com/ocaml/opam-repository.git#refs/pull/26932/head (a1cf8901a74ad6b61ef79518cd6babdf35912ede)
+                              on debian-12-ocaml-4.14/amd64
+
+To reproduce locally:
+
+cd $(mktemp -d)
+git clone --recursive "https://github.com/ocaml/opam-repository.git" && cd "opam-repository" && git fetch origin "refs/pull/26932/head" && git reset --hard a1cf8901
+git fetch origin master
+git merge --no-edit 727427c1e71db673d70869c8df4d678bf322632b
+cat > ../Dockerfile <<'END-OF-DOCKERFILE'
+[34mFROM ocaml/opam:debian-12-ocaml-4.14@sha256:3b83406bd3604cbe91e1a7499b0a6b18dd710d949d68282fb558bf3d301d3e97
+USER 1000:1000
+WORKDIR /home/opam
+RUN sudo ln -f /usr/bin/opam-2.0 /usr/bin/opam
+RUN opam init --reinit -ni
+RUN uname -rs && opam exec -- ocaml -version && opam --version
+ENV OPAMDOWNLOADJOBS="1"
+ENV OPAMERRLOGLEN="0"
+ENV OPAMSOLVERTIMEOUT="1000"
+ENV OPAMPRECISETRACKING="1"
+ENV CI="true"
+ENV OPAM_REPO_CI="true"
+RUN rm -rf opam-repository/
+COPY --chown=1000:1000 . opam-repository/
+RUN opam repository set-url --strict default opam-repository/
+RUN opam depext -u || true
+RUN opam pin add -k version -yn js_of_ocaml-toplevel.5.9.0 5.9.0
+RUN opam depext js_of_ocaml-toplevel.5.9.0 && opam reinstall js_of_ocaml-toplevel.5.9.0; \
+    res=$?; \
+    test "$res" != 31 && exit "$res"; \
+    export OPAMCLI=2.0; \
+    build_dir=$(opam var prefix)/.opam-switch/build; \
+    failed=$(ls "$build_dir"); \
+    partial_fails=""; \
+    for pkg in $failed; do \
+    if opam show -f x-ci-accept-failures: "$pkg" | grep -qF "\"debian-12\""; then \
+    echo "A package failed and has been disabled for CI using the 'x-ci-accept-failures' field."; \
+    fi; \
+    test "$pkg" != 'js_of_ocaml-toplevel.5.9.0' && partial_fails="$partial_fails $pkg"; \
+    done; \
+    test "${partial_fails}" != "" && echo "opam-repo-ci detected dependencies failing: ${partial_fails}"; \
+    exit 1
+RUN (opam depext --with-test js_of_ocaml-toplevel.5.9.0 && opam reinstall --with-test js_of_ocaml-toplevel.5.9.0) || true
+RUN opam depext --with-test js_of_ocaml-toplevel.5.9.0 && opam reinstall --with-test --verbose js_of_ocaml-toplevel.5.9.0; \
+    res=$?; \
+    test "$res" != 31 && exit "$res"; \
+    export OPAMCLI=2.0; \
+    build_dir=$(opam var prefix)/.opam-switch/build; \
+    failed=$(ls "$build_dir"); \
+    partial_fails=""; \
+    for pkg in $failed; do \
+    if opam show -f x-ci-accept-failures: "$pkg" | grep -qF "\"debian-12\""; then \
+    echo "A package failed and has been disabled for CI using the 'x-ci-accept-failures' field."; \
+    fi; \
+    test "$pkg" != 'js_of_ocaml-toplevel.5.9.0' && partial_fails="$partial_fails $pkg"; \
+    done; \
+    test "${partial_fails}" != "" && echo "opam-repo-ci detected dependencies failing: ${partial_fails}"; \
+    exit 1
+[0m
+END-OF-DOCKERFILE
+docker build -f ../Dockerfile .
+
+2024-11-24 04:44.24: Using cache hint "ocaml/opam:debian-12-ocaml-4.14@sha256:3b83406bd3604cbe91e1a7499b0a6b18dd710d949d68282fb558bf3d301d3e97-js_of_ocaml-toplevel.5.9.0-a1cf8901a74ad6b61ef79518cd6babdf35912ede"
+2024-11-24 04:44.24: Using OBuilder spec:
+((from ocaml/opam:debian-12-ocaml-4.14@sha256:3b83406bd3604cbe91e1a7499b0a6b18dd710d949d68282fb558bf3d301d3e97)
+ (user (uid 1000) (gid 1000))
+ (workdir /home/opam)
+ (run (shell "sudo ln -f /usr/bin/opam-2.0 /usr/bin/opam"))
+ (run (network host)
+      (shell "opam init --reinit --config .opamrc-sandbox -ni"))
+ (run (shell "uname -rs && opam exec -- ocaml -version && opam --version"))
+ (env OPAMDOWNLOADJOBS 1)
+ (env OPAMERRLOGLEN 0)
+ (env OPAMSOLVERTIMEOUT 1000)
+ (env OPAMPRECISETRACKING 1)
+ (env CI true)
+ (env OPAM_REPO_CI true)
+ (run (shell "rm -rf opam-repository/"))
+ (copy (src .) (dst opam-repository/))
+ (run (shell "opam repository set-url --strict default opam-repository/"))
+ (run (network host)
+      (shell "opam depext -u || true"))
+ (run (shell "opam pin add -k version -yn js_of_ocaml-toplevel.5.9.0 5.9.0"))
+ (run (cache (opam-archives (target /home/opam/.opam/download-cache)))
+      (network host)
+      (shell  "opam depext js_of_ocaml-toplevel.5.9.0 && opam reinstall js_of_ocaml-toplevel.5.9.0;\
+             \n        res=$?;\
+             \n        test \"$res\" != 31 && exit \"$res\";\
+             \n        export OPAMCLI=2.0;\
+             \n        build_dir=$(opam var prefix)/.opam-switch/build;\
+             \n        failed=$(ls \"$build_dir\");\
+             \n        partial_fails=\"\";\
+             \n        for pkg in $failed; do\
+             \n          if opam show -f x-ci-accept-failures: \"$pkg\" | grep -qF \"\\\"debian-12\\\"\"; then\
+             \n            echo \"A package failed and has been disabled for CI using the 'x-ci-accept-failures' field.\";\
+             \n          fi;\
+             \n          test \"$pkg\" != 'js_of_ocaml-toplevel.5.9.0' && partial_fails=\"$partial_fails $pkg\";\
+             \n        done;\
+             \n        test \"${partial_fails}\" != \"\" && echo \"opam-repo-ci detected dependencies failing: ${partial_fails}\";\
+             \n        exit 1"))
+ (run (network host)
+      (shell "(opam depext --with-test js_of_ocaml-toplevel.5.9.0 && opam reinstall --with-test js_of_ocaml-toplevel.5.9.0) || true"))
+ (run (shell  "opam depext --with-test js_of_ocaml-toplevel.5.9.0 && opam reinstall --with-test --verbose js_of_ocaml-toplevel.5.9.0;\
+             \n        res=$?;\
+             \n        test \"$res\" != 31 && exit \"$res\";\
+             \n        export OPAMCLI=2.0;\
+             \n        build_dir=$(opam var prefix)/.opam-switch/build;\
+             \n        failed=$(ls \"$build_dir\");\
+             \n        partial_fails=\"\";\
+             \n        for pkg in $failed; do\
+             \n          if opam show -f x-ci-accept-failures: \"$pkg\" | grep -qF \"\\\"debian-12\\\"\"; then\
+             \n            echo \"A package failed and has been disabled for CI using the 'x-ci-accept-failures' field.\";\
+             \n          fi;\
+             \n          test \"$pkg\" != 'js_of_ocaml-toplevel.5.9.0' && partial_fails=\"$partial_fails $pkg\";\
+             \n        done;\
+             \n        test \"${partial_fails}\" != \"\" && echo \"opam-repo-ci detected dependencies failing: ${partial_fails}\";\
+             \n        exit 1"))
+)
+
+2024-11-24 04:44.24: Waiting for resource in pool OCluster
+2024-11-24 04:44.24: Waiting for worker…
+2024-11-24 04:44.24: Got resource from pool OCluster
+Building on x86-bm-c7.sw.ocaml.org
+All commits already cached
+Updating files:  54% (17983/32722)Updating files:  55% (17998/32722)Updating files:  56% (18325/32722)Updating files:  57% (18652/32722)Updating files:  58% (18979/32722)Updating files:  59% (19306/32722)Updating files:  60% (19634/32722)Updating files:  61% (19961/32722)Updating files:  62% (20288/32722)Updating files:  63% (20615/32722)Updating files:  64% (20943/32722)Updating files:  65% (21270/32722)Updating files:  66% (21597/32722)Updating files:  67% (21924/32722)Updating files:  68% (22251/32722)Updating files:  69% (22579/32722)Updating files:  70% (22906/32722)Updating files:  71% (23233/32722)Updating files:  72% (23560/32722)Updating files:  73% (23888/32722)Updating files:  74% (24215/32722)Updating files:  75% (24542/32722)Updating files:  76% (24869/32722)Updating files:  77% (25196/32722)Updating files:  78% (25524/32722)Updating files:  79% (25851/32722)Updating files:  80% (26178/32722)Updating files:  81% (26505/32722)Updating files:  82% (26833/32722)Updating files:  83% (27160/32722)Updating files:  84% (27487/32722)Updating files:  85% (27814/32722)Updating files:  86% (28141/32722)Updating files:  87% (28469/32722)Updating files:  88% (28796/32722)Updating files:  89% (29123/32722)Updating files:  90% (29450/32722)Updating files:  91% (29778/32722)Updating files:  92% (30105/32722)Updating files:  93% (30432/32722)Updating files:  94% (30759/32722)Updating files:  95% (31086/32722)Updating files:  96% (31414/32722)Updating files:  97% (31741/32722)Updating files:  98% (32068/32722)Updating files:  99% (32395/32722)Updating files: 100% (32722/32722)Updating files: 100% (32722/32722), done.
+HEAD is now at 727427c1e7 Merge pull request #26934 from hhugo/alcotest-js
+Updating 727427c1e7..a1cf8901a7
+Fast-forward
+ .../js_of_ocaml-compiler.5.9.0/opam                | 56 ++++++++++++++++++++++
+ .../js_of_ocaml-lwt/js_of_ocaml-lwt.5.9.0/opam     | 48 +++++++++++++++++++
+ .../js_of_ocaml-ppx/js_of_ocaml-ppx.5.9.0/opam     | 45 +++++++++++++++++
+ .../js_of_ocaml-ppx_deriving_json.5.9.0/opam       | 45 +++++++++++++++++
+ .../js_of_ocaml-toplevel.5.9.0/opam                | 48 +++++++++++++++++++
+ .../js_of_ocaml-tyxml/js_of_ocaml-tyxml.5.9.0/opam | 49 +++++++++++++++++++
+ packages/js_of_ocaml/js_of_ocaml.5.9.0/opam        | 45 +++++++++++++++++
+ 7 files changed, 336 insertions(+)
+ create mode 100644 packages/js_of_ocaml-compiler/js_of_ocaml-compiler.5.9.0/opam
+ create mode 100644 packages/js_of_ocaml-lwt/js_of_ocaml-lwt.5.9.0/opam
+ create mode 100644 packages/js_of_ocaml-ppx/js_of_ocaml-ppx.5.9.0/opam
+ create mode 100644 packages/js_of_ocaml-ppx_deriving_json/js_of_ocaml-ppx_deriving_json.5.9.0/opam
+ create mode 100644 packages/js_of_ocaml-toplevel/js_of_ocaml-toplevel.5.9.0/opam
+ create mode 100644 packages/js_of_ocaml-tyxml/js_of_ocaml-tyxml.5.9.0/opam
+ create mode 100644 packages/js_of_ocaml/js_of_ocaml.5.9.0/opam
+
+[01;34m(from ocaml/opam:debian-12-ocaml-4.14@sha256:3b83406bd3604cbe91e1a7499b0a6b18dd710d949d68282fb558bf3d301d3e97)[0m
+[01;2m[01;35m2024-11-24 04:44.28 ---> using "16c9fc8fd763c524ae1606da9019c341fc2748b0a1d360269689e19099d4c66f" from cache[0m
+
+[01;34m/: (user (uid 1000) (gid 1000))[0m
+
+[01;34m/: (workdir /home/opam)[0m
+
+[01;34m/home/opam: (run (shell "sudo ln -f /usr/bin/opam-2.0 /usr/bin/opam"))[0m
+[01;2m[01;35m2024-11-24 04:44.28 ---> saved as "c9751d6168a449c964f7d2a72bb394b7fb2b86ef5ee4c87fac375639addbbef0"[0m
+
+[01;34m/home/opam: (run (network host)
+                 (shell "opam init --reinit --config .opamrc-sandbox -ni"))[0m
+[NOTE] Will configure from /home/opam/.opamrc-sandbox, then /home/opam/.opamrc, and finally from built-in defaults.
+Checking for available remotes: rsync and local, git.
+  - you won't be able to use mercurial repositories unless you install the hg command on your system.
+  - you won't be able to use darcs repositories unless you install the darcs command on your system.
+
+[WARNING] Recommended dependencies -- most packages rely on these:
+  - m4
+
+<><> Updating repositories ><><><><><><><><><><><><><><><><><><><><><><><><><><>
+[default] synchronised from file:///home/opam/opam-repository
+default (at file:///home/opam/opam-repository): 
+    [INFO] opam 2.1 and 2.2 include many performance and security improvements over 2.0; please consider upgrading (https://opam.ocaml.org/doc/Install.html)
+
+[01;2m[01;35m2024-11-24 04:45.14 ---> saved as "7b219d9ed35957cee6f80536e189ba75b7967b00b5978bb8bbf2a554616835f3"[0m
+
+[01;34m/home/opam: (run (shell "uname -rs && opam exec -- ocaml -version && opam --version"))[0m
+Linux 5.15.0-125-generic
+The OCaml toplevel, version 4.14.2
+2.0.10
+[01;2m[01;35m2024-11-24 04:45.14 ---> saved as "d4cc26a99dfddbbb92e5ae3cd74e92b2378d66193fd025bb2111dc7fe8a66c42"[0m
+
+[01;34m/home/opam: (env OPAMDOWNLOADJOBS 1)[0m
+
+[01;34m/home/opam: (env OPAMERRLOGLEN 0)[0m
+
+[01;34m/home/opam: (env OPAMSOLVERTIMEOUT 1000)[0m
+
+[01;34m/home/opam: (env OPAMPRECISETRACKING 1)[0m
+
+[01;34m/home/opam: (env CI true)[0m
+
+[01;34m/home/opam: (env OPAM_REPO_CI true)[0m
+
+[01;34m/home/opam: (run (shell "rm -rf opam-repository/"))[0m
+[01;2m[01;35m2024-11-24 04:45.22 ---> saved as "60ce59b7d3850e46463edcfe63b7ddcf2f4a8b8c2cc9b2cea10fcef9147715bd"[0m
+
+[01;34m/home/opam: (copy (src .) (dst opam-repository/))[0m
+[01;2m[01;35m2024-11-24 04:45.30 ---> saved as "40556144d590c8a3f6998399526204980a9d60aa51cd920fc7376aae33c39ed0"[0m
+
+[01;34m/home/opam: (run (shell "opam repository set-url --strict default opam-repository/"))[0m
+[default] Initialised
+default (at file:///home/opam/opam-repository): 
+    [INFO] opam 2.1 and 2.2 include many performance and security improvements over 2.0; please consider upgrading (https://opam.ocaml.org/doc/Install.html)
+
+[01;2m[01;35m2024-11-24 04:45.54 ---> saved as "657dfc2ea72429499c54b77477f5608b173137f2451133edf55aaf81285c6db4"[0m
+
+[01;34m/home/opam: (run (network host)
+                 (shell "opam depext -u || true"))[0m
+# Detecting depexts using vars: arch=x86_64, os=linux, os-distribution=debian, os-family=debian
+# No extra OS packages requirements found.
+# All required OS packages found.
+The following command needs to be run through "sudo":
+    apt-get update
+Hit:1 http://deb.debian.org/debian bookworm InRelease
+Get:2 http://deb.debian.org/debian bookworm-updates InRelease [55.4 kB]
+Get:3 http://deb.debian.org/debian-security bookworm-security InRelease [48.0 kB]
+Get:4 http://deb.debian.org/debian-security bookworm-security/main amd64 Packages [204 kB]
+Fetched 308 kB in 0s (1149 kB/s)
+Reading package lists...
+# OS package update successful
+[01;2m[01;35m2024-11-24 04:45.57 ---> saved as "971bbc80bb9f9e71fbae5ead8d3631e0729b2da3c337b88925cc6f211620a518"[0m
+
+[01;34m/home/opam: (run (shell "opam pin add -k version -yn js_of_ocaml-toplevel.5.9.0 5.9.0"))[0m
+js_of_ocaml-toplevel is now pinned to version 5.9.0
+[01;2m[01;35m2024-11-24 04:45.58 ---> saved as "088274a6045482cd943c39676c7af259efef4412b5830c3ac0e343b24c62f141"[0m
+
+[01;34m/home/opam: (run (cache (opam-archives (target /home/opam/.opam/download-cache)))
+                 (network host)
+                 (shell  "opam depext js_of_ocaml-toplevel.5.9.0 && opam reinstall js_of_ocaml-toplevel.5.9.0;\
+                        \n        res=$?;\
+                        \n        test \"$res\" != 31 && exit \"$res\";\
+                        \n        export OPAMCLI=2.0;\
+                        \n        build_dir=$(opam var prefix)/.opam-switch/build;\
+                        \n        failed=$(ls \"$build_dir\");\
+                        \n        partial_fails=\"\";\
+                        \n        for pkg in $failed; do\
+                        \n          if opam show -f x-ci-accept-failures: \"$pkg\" | grep -qF \"\\\"debian-12\\\"\"; then\
+                        \n            echo \"A package failed and has been disabled for CI using the 'x-ci-accept-failures' field.\";\
+                        \n          fi;\
+                        \n          test \"$pkg\" != 'js_of_ocaml-toplevel.5.9.0' && partial_fails=\"$partial_fails $pkg\";\
+                        \n        done;\
+                        \n        test \"${partial_fails}\" != \"\" && echo \"opam-repo-ci detected dependencies failing: ${partial_fails}\";\
+                        \n        exit 1"))[0m
+# Detecting depexts using vars: arch=x86_64, os=linux, os-distribution=debian, os-family=debian
+# No extra OS packages requirements found.
+# All required OS packages found.
+js_of_ocaml-toplevel.5.9.0 is not installed. Install it? [Y/n] y
+The following actions will be performed:
+  - install ocamlfind            1.9.6    [required by js_of_ocaml-toplevel]
+  - install cmdliner             1.3.0    [required by js_of_ocaml-compiler]
+  - install seq                  base     [required by yojson]
+  - install dune                 3.16.1   [required by js_of_ocaml-toplevel]
+  - install yojson               2.2.2    [required by js_of_ocaml-compiler]
+  - install stdlib-shims         0.3.0    [required by ppxlib]
+  - install sexplib0             v0.17.0  [required by ppxlib]
+  - install ppx_derivers         1.2.1    [required by ppxlib]
+  - install ocaml-compiler-libs  v0.12.4  [required by ppxlib]
+  - install menhirSdk            20230608 [required by js_of_ocaml-compiler]
+  - install menhirLib            20230608 [required by js_of_ocaml-compiler]
+  - install gen                  1.1      [required by sedlex]
+  - install ppxlib               0.33.0   [required by js_of_ocaml-toplevel]
+  - install menhir               20230608 [required by js_of_ocaml-compiler]
+  - install sedlex               3.3      [required by js_of_ocaml-compiler]
+  - install js_of_ocaml-compiler 5.9.0    [required by js_of_ocaml-toplevel]
+  - install js_of_ocaml-toplevel 5.9.0*
+===== 17 to install =====
+
+<><> Gathering sources ><><><><><><><><><><><><><><><><><><><><><><><><><><><><>
+[cmdliner.1.3.0] found in cache
+[dune.3.16.1] found in cache
+[gen.1.1] found in cache
+[js_of_ocaml-compiler.5.9.0] found in cache
+[js_of_ocaml-toplevel.5.9.0] found in cache
+[menhir.20230608] found in cache
+[menhirLib.20230608] found in cache
+[menhirSdk.20230608] found in cache
+[ocaml-compiler-libs.v0.12.4] found in cache
+[ocamlfind.1.9.6] found in cache
+[ppx_derivers.1.2.1] found in cache
+[ppxlib.0.33.0] found in cache
+[sedlex.3.3] found in cache
+[sexplib0.v0.17.0] found in cache
+[stdlib-shims.0.3.0] found in cache
+[yojson.2.2.2] found in cache
+
+<><> Processing actions <><><><><><><><><><><><><><><><><><><><><><><><><><><><>
+-> installed seq.base
+-> installed cmdliner.1.3.0
+-> installed ocamlfind.1.9.6
+-> installed dune.3.16.1
+-> installed ppx_derivers.1.2.1
+-> installed stdlib-shims.0.3.0
+-> installed menhirSdk.20230608
+-> installed sexplib0.v0.17.0
+-> installed gen.1.1
+-> installed menhirLib.20230608
+-> installed ocaml-compiler-libs.v0.12.4
+-> installed yojson.2.2.2
+-> installed menhir.20230608
+-> installed ppxlib.0.33.0
+-> installed sedlex.3.3
+-> installed js_of_ocaml-compiler.5.9.0
+-> installed js_of_ocaml-toplevel.5.9.0
+Done.
+# Run eval $(opam env) to update the current shell environment
+[01;2m[01;35m2024-11-24 04:47.23 ---> saved as "d72e60f03fd6ffcfe2c1aee77d9621042082c456d734be0468467e6e7437dbee"[0m
+
+[01;34m/home/opam: (run (network host)
+                 (shell "(opam depext --with-test js_of_ocaml-toplevel.5.9.0 && opam reinstall --with-test js_of_ocaml-toplevel.5.9.0) || true"))[0m
+# Detecting depexts using vars: arch=x86_64, os=linux, os-distribution=debian, os-family=debian
+# The following system packages are needed:
+libgmp-dev
+libssl-dev
+libx11-dev
+pkg-config
+The following command needs to be run through "sudo":
+    apt-get install -qq -yy libgmp-dev libssl-dev libx11-dev pkg-config
+debconf: delaying package configuration, since apt-utils is not installed
+Selecting previously unselected package libgmpxx4ldbl:amd64.
+(Reading database ... (Reading database ... 5%(Reading database ... 10%(Reading database ... 15%(Reading database ... 20%(Reading database ... 25%(Reading database ... 30%(Reading database ... 35%(Reading database ... 40%(Reading database ... 45%(Reading database ... 50%(Reading database ... 55%(Reading database ... 60%(Reading database ... 65%(Reading database ... 70%(Reading database ... 75%(Reading database ... 80%(Reading database ... 85%(Reading database ... 90%(Reading database ... 95%(Reading database ... 100%(Reading database ... 18745 files and directories currently installed.)
+Preparing to unpack .../0-libgmpxx4ldbl_2%3a6.2.1+dfsg1-1.1_amd64.deb ...
+Unpacking libgmpxx4ldbl:amd64 (2:6.2.1+dfsg1-1.1) ...
+Selecting previously unselected package libgmp-dev:amd64.
+Preparing to unpack .../1-libgmp-dev_2%3a6.2.1+dfsg1-1.1_amd64.deb ...
+Unpacking libgmp-dev:amd64 (2:6.2.1+dfsg1-1.1) ...
+Selecting previously unselected package libpkgconf3:amd64.
+Preparing to unpack .../2-libpkgconf3_1.8.1-1_amd64.deb ...
+Unpacking libpkgconf3:amd64 (1.8.1-1) ...
+Selecting previously unselected package libssl-dev:amd64.
+Preparing to unpack .../3-libssl-dev_3.0.15-1~deb12u1_amd64.deb ...
+Unpacking libssl-dev:amd64 (3.0.15-1~deb12u1) ...
+Selecting previously unselected package pkgconf-bin.
+Preparing to unpack .../4-pkgconf-bin_1.8.1-1_amd64.deb ...
+Unpacking pkgconf-bin (1.8.1-1) ...
+Selecting previously unselected package pkgconf:amd64.
+Preparing to unpack .../5-pkgconf_1.8.1-1_amd64.deb ...
+Unpacking pkgconf:amd64 (1.8.1-1) ...
+Selecting previously unselected package pkg-config:amd64.
+Preparing to unpack .../6-pkg-config_1.8.1-1_amd64.deb ...
+Unpacking pkg-config:amd64 (1.8.1-1) ...
+Setting up libpkgconf3:amd64 (1.8.1-1) ...
+Setting up libgmpxx4ldbl:amd64 (2:6.2.1+dfsg1-1.1) ...
+Setting up libssl-dev:amd64 (3.0.15-1~deb12u1) ...
+Setting up pkgconf-bin (1.8.1-1) ...
+Setting up libgmp-dev:amd64 (2:6.2.1+dfsg1-1.1) ...
+Setting up pkgconf:amd64 (1.8.1-1) ...
+Setting up pkg-config:amd64 (1.8.1-1) ...
+Processing triggers for libc-bin (2.36-9+deb12u9) ...
+# OS packages installation successful
+[ERROR] Sorry, resolution of the request timed out.
+        Try to specify a simpler request, use a different solver, or increase the allowed time by setting OPAMSOLVERTIMEOUT to a bigger value (currently, it is set to 1000.0 seconds).
+[01;2m[01;35m2024-11-24 05:04.30 ---> saved as "fc516d6653c6e9a01771ce39605dd1eb0078d08be0c923ae497a050fa76c5835"[0m
+
+[01;34m/home/opam: (run (shell  "opam depext --with-test js_of_ocaml-toplevel.5.9.0 && opam reinstall --with-test --verbose js_of_ocaml-toplevel.5.9.0;\
+                        \n        res=$?;\
+                        \n        test \"$res\" != 31 && exit \"$res\";\
+                        \n        export OPAMCLI=2.0;\
+                        \n        build_dir=$(opam var prefix)/.opam-switch/build;\
+                        \n        failed=$(ls \"$build_dir\");\
+                        \n        partial_fails=\"\";\
+                        \n        for pkg in $failed; do\
+                        \n          if opam show -f x-ci-accept-failures: \"$pkg\" | grep -qF \"\\\"debian-12\\\"\"; then\
+                        \n            echo \"A package failed and has been disabled for CI using the 'x-ci-accept-failures' field.\";\
+                        \n          fi;\
+                        \n          test \"$pkg\" != 'js_of_ocaml-toplevel.5.9.0' && partial_fails=\"$partial_fails $pkg\";\
+                        \n        done;\
+                        \n        test \"${partial_fails}\" != \"\" && echo \"opam-repo-ci detected dependencies failing: ${partial_fails}\";\
+                        \n        exit 1"))[0m
+# Detecting depexts using vars: arch=x86_64, os=linux, os-distribution=debian, os-family=debian
+# The following system packages are needed:
+libgmp-dev
+libssl-dev
+libx11-dev
+pkg-config
+# All required OS packages found.
+[ERROR] Sorry, resolution of the request timed out.
+        Try to specify a simpler request, use a different solver, or increase the allowed time by setting OPAMSOLVERTIMEOUT to a bigger value (currently, it is set to 1000.0 seconds).
+'opam reinstall --with-test --verbose js_of_ocaml-toplevel.5.9.0' failed.
+"/usr/bin/env" "bash" "-c" "opam depext --with-test js_of_ocaml-toplevel.5.9.0 && opam reinstall --with-test --verbose js_of_ocaml-toplevel.5.9.0;
+        res=$?;
+        test "$res" != 31 && exit "$res";
+        export OPAMCLI=2.0;
+        build_dir=$(opam var prefix)/.opam-switch/build;
+        failed=$(ls "$build_dir");
+        partial_fails="";
+        for pkg in $failed; do
+          if opam show -f x-ci-accept-failures: "$pkg" | grep -qF "\"debian-12\""; then
+            echo "A package failed and has been disabled for CI using the 'x-ci-accept-failures' field.";
+          fi;
+          test "$pkg" != 'js_of_ocaml-toplevel.5.9.0' && partial_fails="$partial_fails $pkg";
+        done;
+        test "${partial_fails}" != "" && echo "opam-repo-ci detected dependencies failing: ${partial_fails}";
+        exit 1" failed with exit status 60
+2024-11-24 05:21.35: Job failed: Failed: Build failed
+2024-11-24 05:21.35: Log analysis:
+2024-11-24 05:21.35: >>> 
+[ERROR] Sorry, resolution of the request timed out.
+ (score = 20)
+2024-11-24 05:21.35: >>> 
+[ERROR] Sorry, resolution of the request timed out.
+ (score = 20)
+2024-11-24 05:21.35: Sorry, resolution of the request timed out.

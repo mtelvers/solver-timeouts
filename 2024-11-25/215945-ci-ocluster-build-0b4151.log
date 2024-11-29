@@ -1,0 +1,441 @@
+2024-11-25 21:59.45: New job: test caldav.0.1.1, using opam 2.1
+                              from https://github.com/ocaml/opam-repository.git#refs/pull/26950/head (f83c066b82d2cc921f725d5ad7c8b3df17ee1c1a)
+                              on debian-12-ocaml-5.2/amd64
+
+To reproduce locally:
+
+cd $(mktemp -d)
+git clone --recursive "https://github.com/ocaml/opam-repository.git" && cd "opam-repository" && git fetch origin "refs/pull/26950/head" && git reset --hard f83c066b
+git fetch origin master
+git merge --no-edit e62e88dccc1d1181b3fa83b78e2bf462598afb92
+cat > ../Dockerfile <<'END-OF-DOCKERFILE'
+[34mFROM ocaml/opam:debian-12-ocaml-5.2@sha256:6df0d724516bd70a8d42ee042eb4856c32ade3e30c88abaff72556b06ff20aa7
+USER 1000:1000
+WORKDIR /home/opam
+RUN sudo ln -f /usr/bin/opam-2.1 /usr/bin/opam
+RUN opam init --reinit -ni
+RUN uname -rs && opam exec -- ocaml -version && opam --version
+ENV OPAMDOWNLOADJOBS="1"
+ENV OPAMERRLOGLEN="0"
+ENV OPAMSOLVERTIMEOUT="1000"
+ENV OPAMPRECISETRACKING="1"
+ENV CI="true"
+ENV OPAM_REPO_CI="true"
+RUN rm -rf opam-repository/
+COPY --chown=1000:1000 . opam-repository/
+RUN opam repository set-url --strict default opam-repository/
+RUN opam update --depexts || true
+RUN opam pin add -k version -yn caldav.0.1.1 0.1.1
+RUN opam reinstall caldav.0.1.1; \
+    res=$?; \
+    test "$res" != 31 && exit "$res"; \
+    export OPAMCLI=2.0; \
+    build_dir=$(opam var prefix)/.opam-switch/build; \
+    failed=$(ls "$build_dir"); \
+    partial_fails=""; \
+    for pkg in $failed; do \
+    if opam show -f x-ci-accept-failures: "$pkg" | grep -qF "\"debian-12\""; then \
+    echo "A package failed and has been disabled for CI using the 'x-ci-accept-failures' field."; \
+    fi; \
+    test "$pkg" != 'caldav.0.1.1' && partial_fails="$partial_fails $pkg"; \
+    done; \
+    test "${partial_fails}" != "" && echo "opam-repo-ci detected dependencies failing: ${partial_fails}"; \
+    exit 1
+RUN (opam reinstall --with-test caldav.0.1.1) || true
+RUN opam reinstall --with-test --verbose caldav.0.1.1; \
+    res=$?; \
+    test "$res" != 31 && exit "$res"; \
+    export OPAMCLI=2.0; \
+    build_dir=$(opam var prefix)/.opam-switch/build; \
+    failed=$(ls "$build_dir"); \
+    partial_fails=""; \
+    for pkg in $failed; do \
+    if opam show -f x-ci-accept-failures: "$pkg" | grep -qF "\"debian-12\""; then \
+    echo "A package failed and has been disabled for CI using the 'x-ci-accept-failures' field."; \
+    fi; \
+    test "$pkg" != 'caldav.0.1.1' && partial_fails="$partial_fails $pkg"; \
+    done; \
+    test "${partial_fails}" != "" && echo "opam-repo-ci detected dependencies failing: ${partial_fails}"; \
+    exit 1
+[0m
+END-OF-DOCKERFILE
+docker build -f ../Dockerfile .
+
+2024-11-25 21:59.45: Using cache hint "ocaml/opam:debian-12-ocaml-5.2@sha256:6df0d724516bd70a8d42ee042eb4856c32ade3e30c88abaff72556b06ff20aa7-caldav.0.1.1-f83c066b82d2cc921f725d5ad7c8b3df17ee1c1a"
+2024-11-25 21:59.45: Using OBuilder spec:
+((from ocaml/opam:debian-12-ocaml-5.2@sha256:6df0d724516bd70a8d42ee042eb4856c32ade3e30c88abaff72556b06ff20aa7)
+ (user (uid 1000) (gid 1000))
+ (workdir /home/opam)
+ (run (shell "sudo ln -f /usr/bin/opam-2.1 /usr/bin/opam"))
+ (run (network host)
+      (shell "opam init --reinit --config .opamrc-sandbox -ni"))
+ (run (shell "uname -rs && opam exec -- ocaml -version && opam --version"))
+ (env OPAMDOWNLOADJOBS 1)
+ (env OPAMERRLOGLEN 0)
+ (env OPAMSOLVERTIMEOUT 1000)
+ (env OPAMPRECISETRACKING 1)
+ (env CI true)
+ (env OPAM_REPO_CI true)
+ (run (shell "rm -rf opam-repository/"))
+ (copy (src .) (dst opam-repository/))
+ (run (shell "opam repository set-url --strict default opam-repository/"))
+ (run (network host)
+      (shell "opam update --depexts || true"))
+ (run (shell "opam pin add -k version -yn caldav.0.1.1 0.1.1"))
+ (run (cache (opam-archives (target /home/opam/.opam/download-cache)))
+      (network host)
+      (shell  "opam reinstall caldav.0.1.1;\
+             \n        res=$?;\
+             \n        test \"$res\" != 31 && exit \"$res\";\
+             \n        export OPAMCLI=2.0;\
+             \n        build_dir=$(opam var prefix)/.opam-switch/build;\
+             \n        failed=$(ls \"$build_dir\");\
+             \n        partial_fails=\"\";\
+             \n        for pkg in $failed; do\
+             \n          if opam show -f x-ci-accept-failures: \"$pkg\" | grep -qF \"\\\"debian-12\\\"\"; then\
+             \n            echo \"A package failed and has been disabled for CI using the 'x-ci-accept-failures' field.\";\
+             \n          fi;\
+             \n          test \"$pkg\" != 'caldav.0.1.1' && partial_fails=\"$partial_fails $pkg\";\
+             \n        done;\
+             \n        test \"${partial_fails}\" != \"\" && echo \"opam-repo-ci detected dependencies failing: ${partial_fails}\";\
+             \n        exit 1"))
+ (run (network host)
+      (shell "(opam reinstall --with-test caldav.0.1.1) || true"))
+ (run (shell  "opam reinstall --with-test --verbose caldav.0.1.1;\
+             \n        res=$?;\
+             \n        test \"$res\" != 31 && exit \"$res\";\
+             \n        export OPAMCLI=2.0;\
+             \n        build_dir=$(opam var prefix)/.opam-switch/build;\
+             \n        failed=$(ls \"$build_dir\");\
+             \n        partial_fails=\"\";\
+             \n        for pkg in $failed; do\
+             \n          if opam show -f x-ci-accept-failures: \"$pkg\" | grep -qF \"\\\"debian-12\\\"\"; then\
+             \n            echo \"A package failed and has been disabled for CI using the 'x-ci-accept-failures' field.\";\
+             \n          fi;\
+             \n          test \"$pkg\" != 'caldav.0.1.1' && partial_fails=\"$partial_fails $pkg\";\
+             \n        done;\
+             \n        test \"${partial_fails}\" != \"\" && echo \"opam-repo-ci detected dependencies failing: ${partial_fails}\";\
+             \n        exit 1"))
+)
+
+2024-11-25 21:59.45: Waiting for resource in pool OCluster
+2024-11-25 23:25.33: Waiting for worker…
+2024-11-25 23:35.47: Got resource from pool OCluster
+Building on asteria.caelum.ci.dev
+All commits already cached
+Updating files:  65% (21479/32723)Updating files:  66% (21598/32723)Updating files:  67% (21925/32723)Updating files:  68% (22252/32723)Updating files:  69% (22579/32723)Updating files:  70% (22907/32723)Updating files:  71% (23234/32723)Updating files:  72% (23561/32723)Updating files:  73% (23888/32723)Updating files:  74% (24216/32723)Updating files:  75% (24543/32723)Updating files:  76% (24870/32723)Updating files:  77% (25197/32723)Updating files:  78% (25524/32723)Updating files:  79% (25852/32723)Updating files:  80% (26179/32723)Updating files:  81% (26506/32723)Updating files:  82% (26833/32723)Updating files:  83% (27161/32723)Updating files:  84% (27488/32723)Updating files:  85% (27815/32723)Updating files:  86% (28142/32723)Updating files:  87% (28470/32723)Updating files:  88% (28797/32723)Updating files:  89% (29124/32723)Updating files:  90% (29451/32723)Updating files:  91% (29778/32723)Updating files:  92% (30106/32723)Updating files:  93% (30433/32723)Updating files:  94% (30760/32723)Updating files:  95% (31087/32723)Updating files:  96% (31415/32723)Updating files:  97% (31742/32723)Updating files:  98% (32069/32723)Updating files:  99% (32396/32723)Updating files: 100% (32723/32723)Updating files: 100% (32723/32723), done.
+HEAD is now at e62e88dccc Merge pull request #26953 from shonfeder/revert-color-0.3.0
+Merge made by the 'ort' strategy.
+ packages/caldav/caldav.0.1.0/opam                         | 2 +-
+ packages/caldav/caldav.0.1.1/opam                         | 2 +-
+ packages/caldav/caldav.0.2.0/opam                         | 2 +-
+ packages/caldav/caldav.0.2.2/opam                         | 2 +-
+ packages/caldav/caldav.0.2.3/opam                         | 2 +-
+ packages/graphql-cohttp/graphql-cohttp.0.9.0/opam         | 2 +-
+ packages/h1_parser/h1_parser.0.0.2/opam                   | 2 +-
+ packages/picos_io_cohttp/picos_io_cohttp.0.5.0/opam       | 2 +-
+ packages/picos_io_cohttp/picos_io_cohttp.0.6.0/opam       | 2 +-
+ packages/tidy_email_mailgun/tidy_email_mailgun.0.0.1/opam | 2 +-
+ packages/websocket-async/websocket-async.2.17/opam        | 2 +-
+ 11 files changed, 11 insertions(+), 11 deletions(-)
+
+[01;34m(from ocaml/opam:debian-12-ocaml-5.2@sha256:6df0d724516bd70a8d42ee042eb4856c32ade3e30c88abaff72556b06ff20aa7)[0m
+[01;2m[01;35m2024-11-25 23:35.50 ---> using "0dc330c5a204cb604177e743f55b9bd68e712252d651cfe30d04181b4490a475" from cache[0m
+
+[01;34m/: (user (uid 1000) (gid 1000))[0m
+
+[01;34m/: (workdir /home/opam)[0m
+
+[01;34m/home/opam: (run (shell "sudo ln -f /usr/bin/opam-2.1 /usr/bin/opam"))[0m
+[01;2m[01;35m2024-11-25 23:35.50 ---> using "4846d30d9a6f4b9f37b920b2b397d44f6d51145350dbdc4db4910e027f949d16" from cache[0m
+
+[01;34m/home/opam: (run (network host)
+                 (shell "opam init --reinit --config .opamrc-sandbox -ni"))[0m
+Configuring from /home/opam/.opamrc-sandbox, then /home/opam/.opamrc, and finally from built-in defaults.
+Checking for available remotes: rsync and local, git.
+  - you won't be able to use mercurial repositories unless you install the hg command on your system.
+  - you won't be able to use darcs repositories unless you install the darcs command on your system.
+
+This development version of opam requires an update to the layout of /home/opam/.opam from version 2.0 to version 2.1, which can't be reverted.
+You may want to back it up before going further.
+
+Continue? [Y/n] y
+Format upgrade done.
+
+<><> Updating repositories ><><><><><><><><><><><><><><><><><><><><><><><><><><>
+[default] synchronised from file:///home/opam/opam-repository
+[01;2m[01;35m2024-11-25 23:36.56 ---> saved as "5bc36b1d96555183acb6035ad60edf7fe707c36b02737b799fe2d5d4edc907c6"[0m
+
+[01;34m/home/opam: (run (shell "uname -rs && opam exec -- ocaml -version && opam --version"))[0m
+Linux 5.15.0-126-generic
+The OCaml toplevel, version 5.2.1
+2.1.6
+[01;2m[01;35m2024-11-25 23:36.56 ---> saved as "25ea5b9a3becd402543312b2f05dbc3431973ee80d21821491f14e13d58ba3bd"[0m
+
+[01;34m/home/opam: (env OPAMDOWNLOADJOBS 1)[0m
+
+[01;34m/home/opam: (env OPAMERRLOGLEN 0)[0m
+
+[01;34m/home/opam: (env OPAMSOLVERTIMEOUT 1000)[0m
+
+[01;34m/home/opam: (env OPAMPRECISETRACKING 1)[0m
+
+[01;34m/home/opam: (env CI true)[0m
+
+[01;34m/home/opam: (env OPAM_REPO_CI true)[0m
+
+[01;34m/home/opam: (run (shell "rm -rf opam-repository/"))[0m
+[01;2m[01;35m2024-11-25 23:37.09 ---> saved as "3968c676ca2b876b5fd5d54c332c2819ca6181428eb849e24a0f80162c45ca9a"[0m
+
+[01;34m/home/opam: (copy (src .) (dst opam-repository/))[0m
+[01;2m[01;35m2024-11-25 23:37.26 ---> saved as "22f10e28942dd02415b95ad23109e56b3d63f50ab47ae6bec3ad4d730d7122fb"[0m
+
+[01;34m/home/opam: (run (shell "opam repository set-url --strict default opam-repository/"))[0m
+[default] Initialised
+[01;2m[01;35m2024-11-25 23:37.46 ---> saved as "967aa4fa7eeb1d5dad9ea1641671e2a44db64ef5fca3bb5fea93ffc794fc22f2"[0m
+
+[01;34m/home/opam: (run (network host)
+                 (shell "opam update --depexts || true"))[0m
++ /usr/bin/sudo "apt-get" "update"
+- Hit:1 http://deb.debian.org/debian bookworm InRelease
+- Get:2 http://deb.debian.org/debian bookworm-updates InRelease [55.4 kB]
+- Get:3 http://deb.debian.org/debian-security bookworm-security InRelease [48.0 kB]
+- Get:4 http://deb.debian.org/debian-security bookworm-security/main amd64 Packages [205 kB]
+- Fetched 309 kB in 1s (587 kB/s)
+- Reading package lists...
+- 
+[01;2m[01;35m2024-11-25 23:37.47 ---> saved as "62cba0e58c6d70807ae43ce10a5738c558b44829c03368985a91fff62368c931"[0m
+
+[01;34m/home/opam: (run (shell "opam pin add -k version -yn caldav.0.1.1 0.1.1"))[0m
+caldav is now pinned to version 0.1.1
+[01;2m[01;35m2024-11-25 23:37.48 ---> saved as "1ff2c07997e76744924929761b8c9c9b3be2da52c3726c8ba79b5497a6211a9d"[0m
+
+[01;34m/home/opam: (run (cache (opam-archives (target /home/opam/.opam/download-cache)))
+                 (network host)
+                 (shell  "opam reinstall caldav.0.1.1;\
+                        \n        res=$?;\
+                        \n        test \"$res\" != 31 && exit \"$res\";\
+                        \n        export OPAMCLI=2.0;\
+                        \n        build_dir=$(opam var prefix)/.opam-switch/build;\
+                        \n        failed=$(ls \"$build_dir\");\
+                        \n        partial_fails=\"\";\
+                        \n        for pkg in $failed; do\
+                        \n          if opam show -f x-ci-accept-failures: \"$pkg\" | grep -qF \"\\\"debian-12\\\"\"; then\
+                        \n            echo \"A package failed and has been disabled for CI using the 'x-ci-accept-failures' field.\";\
+                        \n          fi;\
+                        \n          test \"$pkg\" != 'caldav.0.1.1' && partial_fails=\"$partial_fails $pkg\";\
+                        \n        done;\
+                        \n        test \"${partial_fails}\" != \"\" && echo \"opam-repo-ci detected dependencies failing: ${partial_fails}\";\
+                        \n        exit 1"))[0m
+caldav.0.1.1 is not installed. Install it? [Y/n] y
+The following actions will be performed:
+  - install ocamlbuild          0.15.0  [required by xmlm]
+  - install num                 1.5-1   [required by sexplib]
+  - install ocamlfind           1.9.6   [required by xmlm]
+  - install seq                 base    [required by tyxml]
+  - install dune                3.16.1  [required by caldav]
+  - install topkg               1.0.7   [required by xmlm]
+  - install base-bytes          base    [required by cohttp]
+  - install stringext           1.6.0   [required by cohttp]
+  - install stdlib-shims        0.3.0   [required by ppxlib]
+  - install sexplib0            v0.15.1 [required by cohttp-lwt, cohttp, sexplib]
+  - install result              1.5     [required by dispatch]
+  - install re                  1.12.0  [required by caldav]
+  - install ppx_derivers        1.2.1   [required by ppx_deriving]
+  - install ocaml-compiler-libs v0.17.0 [required by ppxlib]
+  - install mirage-clock        4.2.0   [required by caldav]
+  - install gmap                0.3.0   [required by icalendar]
+  - install duration            0.2.1   [required by mirage-crypto-rng]
+  - install dune-configurator   2.7.0   [required by mirage-crypto, mirage-crypto-rng]
+  - install cppo                1.7.0   [required by ppx_deriving]
+  - install bigstringaf         0.5.3   [required by angstrom]
+  - install base64              3.5.1   [required by caldav]
+  - install xmlm                1.4.0   [required by caldav]
+  - install uutf                1.0.3   [required by tyxml]
+  - install ptime               1.2.0   [required by caldav]
+  - install fmt                 0.9.0   [required by caldav]
+  - install dispatch            0.5.0   [required by caldav]
+  - install ppxlib              0.33.0  [required by ppx_sexp_conv, ppx_deriving]
+  - install base                v0.15.1 [required by ppx_sexp_conv, parsexp]
+  - install ocplib-endian       1.2     [required by lwt]
+  - install angstrom            0.14.1  [required by icalendar]
+  - install tyxml               4.6.0   [required by caldav]
+  - install jsonm               1.0.2   [required by cohttp]
+  - install metrics             0.4.1   [required by caldav]
+  - install cstruct             6.2.0   [required by mirage-crypto-rng, hex, mirage-crypto, mirage-random]
+  - install ppx_deriving        6.0.3   [required by caldav]
+  - install ppx_sexp_conv       v0.15.1 [required by caldav]
+  - install parsexp             v0.15.0 [required by sexplib]
+  - install lwt                 5.9.0   [required by caldav]
+  - install uri                 4.4.0   [required by caldav]
+  - install mirage-random       3.0.0   [required by caldav]
+  - install hex                 1.5.0   [required by caldav]
+  - install eqaf                0.9     [required by mirage-crypto]
+  - install sexplib             v0.15.1 [required by caldav]
+  - install mirage-kv           5.0.0   [required by caldav]
+  - install logs                0.7.0   [required by caldav]
+  - install uri-sexp            4.4.0   [required by cohttp]
+  - install icalendar           0.1.9   [required by caldav]
+  - install mirage-crypto       0.11.3  [required by caldav]
+  - install cohttp              5.3.1   [required by caldav]
+  - install mirage-crypto-rng   0.11.3  [required by caldav]
+  - install cohttp-lwt          5.3.0   [required by caldav]
+  - install caldav              0.1.1*
+===== 52 to install =====
+
+<><> Processing actions <><><><><><><><><><><><><><><><><><><><><><><><><><><><>
+-> retrieved angstrom.0.14.1  (cached)
+-> retrieved base.v0.15.1  (cached)
+-> retrieved base64.3.5.1  (cached)
+-> retrieved bigstringaf.0.5.3  (cached)
+-> retrieved caldav.0.1.1  (cached)
+-> retrieved cohttp.5.3.1  (cached)
+-> retrieved cohttp-lwt.5.3.0  (cached)
+-> retrieved cppo.1.7.0  (cached)
+-> retrieved cstruct.6.2.0  (cached)
+-> retrieved dispatch.0.5.0  (cached)
+-> retrieved dune.3.16.1  (cached)
+-> retrieved dune-configurator.2.7.0  (cached)
+-> retrieved duration.0.2.1  (cached)
+-> retrieved eqaf.0.9  (cached)
+-> retrieved fmt.0.9.0  (cached)
+-> retrieved gmap.0.3.0  (cached)
+-> retrieved hex.1.5.0  (cached)
+-> retrieved icalendar.0.1.9  (cached)
+-> retrieved jsonm.1.0.2  (cached)
+-> retrieved logs.0.7.0  (cached)
+-> retrieved lwt.5.9.0  (cached)
+-> retrieved metrics.0.4.1  (cached)
+-> retrieved mirage-clock.4.2.0  (cached)
+-> retrieved mirage-crypto.0.11.3  (cached)
+-> retrieved mirage-crypto-rng.0.11.3  (cached)
+-> retrieved mirage-kv.5.0.0  (cached)
+-> retrieved mirage-random.3.0.0  (cached)
+-> retrieved num.1.5-1  (cached)
+-> retrieved ocaml-compiler-libs.v0.17.0  (cached)
+-> retrieved ocamlbuild.0.15.0  (cached)
+-> retrieved ocamlfind.1.9.6  (cached)
+-> retrieved ocplib-endian.1.2  (cached)
+-> retrieved parsexp.v0.15.0  (cached)
+-> retrieved ppx_derivers.1.2.1  (cached)
+-> retrieved ppx_deriving.6.0.3  (cached)
+-> retrieved ppx_sexp_conv.v0.15.1  (cached)
+-> retrieved ppxlib.0.33.0  (cached)
+-> retrieved ptime.1.2.0  (cached)
+-> retrieved re.1.12.0  (cached)
+-> retrieved result.1.5  (cached)
+-> retrieved seq.base  (cached)
+-> installed seq.base
+-> retrieved sexplib.v0.15.1  (cached)
+-> retrieved sexplib0.v0.15.1  (cached)
+-> retrieved stdlib-shims.0.3.0  (cached)
+-> retrieved stringext.1.6.0  (cached)
+-> retrieved topkg.1.0.7  (cached)
+-> retrieved tyxml.4.6.0  (cached)
+-> retrieved uri.4.4.0  (cached)
+-> retrieved uri-sexp.4.4.0  (cached)
+-> retrieved uutf.1.0.3  (cached)
+-> retrieved xmlm.1.4.0  (cached)
+-> installed num.1.5-1
+-> installed ocamlfind.1.9.6
+-> installed base-bytes.base
+-> installed ocamlbuild.0.15.0
+-> installed topkg.1.0.7
+-> installed uutf.1.0.3
+-> installed fmt.0.9.0
+-> installed xmlm.1.4.0
+-> installed ptime.1.2.0
+-> installed jsonm.1.0.2
+-> installed dune.3.16.1
+-> installed bigstringaf.0.5.3
+-> installed cstruct.6.2.0
+-> installed base64.3.5.1
+-> installed duration.0.2.1
+-> installed gmap.0.3.0
+-> installed mirage-clock.4.2.0
+-> installed ppx_derivers.1.2.1
+-> installed stdlib-shims.0.3.0
+-> installed stringext.1.6.0
+-> installed metrics.0.4.1
+-> installed result.1.5
+-> installed mirage-random.3.0.0
+-> installed hex.1.5.0
+-> installed sexplib0.v0.15.1
+-> installed dispatch.0.5.0
+-> installed cppo.1.7.0
+-> installed eqaf.0.9
+-> installed angstrom.0.14.1
+-> installed dune-configurator.2.7.0
+-> installed re.1.12.0
+-> installed ocaml-compiler-libs.v0.17.0
+-> installed ocplib-endian.1.2
+-> installed uri.4.4.0
+-> installed mirage-crypto.0.11.3
+-> installed tyxml.4.6.0
+-> installed lwt.5.9.0
+-> installed mirage-kv.5.0.0
+-> installed logs.0.7.0
+-> installed base.v0.15.1
+-> installed mirage-crypto-rng.0.11.3
+-> installed parsexp.v0.15.0
+-> installed sexplib.v0.15.1
+-> installed ppxlib.0.33.0
+-> installed ppx_sexp_conv.v0.15.1
+-> installed ppx_deriving.6.0.3
+-> installed uri-sexp.4.4.0
+-> installed icalendar.0.1.9
+-> installed cohttp.5.3.1
+-> installed cohttp-lwt.5.3.0
+-> installed caldav.0.1.1
+Done.
+# Run eval $(opam env) to update the current shell environment
+[01;2m[01;35m2024-11-25 23:38.57 ---> saved as "71fc11afdff408c3c5d0a138aba7b5ba6265f6f5b6e3d27abddadd246f90818f"[0m
+
+[01;34m/home/opam: (run (network host)
+                 (shell "(opam reinstall --with-test caldav.0.1.1) || true"))[0m
+[ERROR] Sorry, resolution of the request timed out.
+        Try to specify a more precise request, use a different solver, or increase the allowed time by setting OPAMSOLVERTIMEOUT to a bigger value (currently, it is set to 1000.0 seconds).
+[01;2m[01;35m2024-11-25 23:55.49 ---> saved as "c85a7f4d7d24c9ebdc187469e82084f7cdd8d5e38d4d74344891320b855826c3"[0m
+
+[01;34m/home/opam: (run (shell  "opam reinstall --with-test --verbose caldav.0.1.1;\
+                        \n        res=$?;\
+                        \n        test \"$res\" != 31 && exit \"$res\";\
+                        \n        export OPAMCLI=2.0;\
+                        \n        build_dir=$(opam var prefix)/.opam-switch/build;\
+                        \n        failed=$(ls \"$build_dir\");\
+                        \n        partial_fails=\"\";\
+                        \n        for pkg in $failed; do\
+                        \n          if opam show -f x-ci-accept-failures: \"$pkg\" | grep -qF \"\\\"debian-12\\\"\"; then\
+                        \n            echo \"A package failed and has been disabled for CI using the 'x-ci-accept-failures' field.\";\
+                        \n          fi;\
+                        \n          test \"$pkg\" != 'caldav.0.1.1' && partial_fails=\"$partial_fails $pkg\";\
+                        \n        done;\
+                        \n        test \"${partial_fails}\" != \"\" && echo \"opam-repo-ci detected dependencies failing: ${partial_fails}\";\
+                        \n        exit 1"))[0m
+[ERROR] Sorry, resolution of the request timed out.
+        Try to specify a more precise request, use a different solver, or increase the allowed time by setting OPAMSOLVERTIMEOUT to a bigger value (currently, it is set to 1000.0 seconds).
+'opam reinstall --with-test --verbose caldav.0.1.1' failed.
+"/usr/bin/env" "bash" "-c" "opam reinstall --with-test --verbose caldav.0.1.1;
+        res=$?;
+        test "$res" != 31 && exit "$res";
+        export OPAMCLI=2.0;
+        build_dir=$(opam var prefix)/.opam-switch/build;
+        failed=$(ls "$build_dir");
+        partial_fails="";
+        for pkg in $failed; do
+          if opam show -f x-ci-accept-failures: "$pkg" | grep -qF "\"debian-12\""; then
+            echo "A package failed and has been disabled for CI using the 'x-ci-accept-failures' field.";
+          fi;
+          test "$pkg" != 'caldav.0.1.1' && partial_fails="$partial_fails $pkg";
+        done;
+        test "${partial_fails}" != "" && echo "opam-repo-ci detected dependencies failing: ${partial_fails}";
+        exit 1" failed with exit status 60
+2024-11-26 00:12.55: Job failed: Failed: Build failed
+2024-11-26 00:12.55: Log analysis:
+2024-11-26 00:12.55: >>> 
+[ERROR] Sorry, resolution of the request timed out.
+ (score = 20)
+2024-11-26 00:12.55: >>> 
+[ERROR] Sorry, resolution of the request timed out.
+ (score = 20)
+2024-11-26 00:12.55: Sorry, resolution of the request timed out.

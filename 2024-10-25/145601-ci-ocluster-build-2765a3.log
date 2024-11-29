@@ -1,0 +1,255 @@
+2024-10-25 14:56.01: New job: test sendmail-mirage.0.11.0, using opam 2.1
+                              from https://github.com/ocaml/opam-repository.git#refs/pull/26789/head (29da3c9fe8461cac1b0f2cbd63b4391a0a912a10)
+                              on debian-12-ocaml-4.14/amd64
+
+To reproduce locally:
+
+cd $(mktemp -d)
+git clone --recursive "https://github.com/ocaml/opam-repository.git" && cd "opam-repository" && git fetch origin "refs/pull/26789/head" && git reset --hard 29da3c9f
+git fetch origin master
+git merge --no-edit 19f88a00fcef3c5732457519b333b9657aa36317
+cat > ../Dockerfile <<'END-OF-DOCKERFILE'
+[34mFROM ocaml/opam:debian-12-ocaml-4.14@sha256:a229b9d0124bf445cca28c31c3f41dd25a17eb6f0bce8ac75d735e1a8a06c801
+USER 1000:1000
+WORKDIR /home/opam
+RUN sudo ln -f /usr/bin/opam-2.1 /usr/bin/opam
+RUN opam init --reinit -ni
+RUN uname -rs && opam exec -- ocaml -version && opam --version
+ENV OPAMDOWNLOADJOBS="1"
+ENV OPAMERRLOGLEN="0"
+ENV OPAMSOLVERTIMEOUT="1000"
+ENV OPAMPRECISETRACKING="1"
+ENV CI="true"
+ENV OPAM_REPO_CI="true"
+RUN rm -rf opam-repository/
+COPY --chown=1000:1000 . opam-repository/
+RUN opam repository set-url --strict default opam-repository/
+RUN opam update --depexts || true
+RUN opam pin add -k version -yn sendmail-mirage.0.11.0 0.11.0
+RUN opam reinstall sendmail-mirage.0.11.0; \
+    res=$?; \
+    test "$res" != 31 && exit "$res"; \
+    export OPAMCLI=2.0; \
+    build_dir=$(opam var prefix)/.opam-switch/build; \
+    failed=$(ls "$build_dir"); \
+    partial_fails=""; \
+    for pkg in $failed; do \
+    if opam show -f x-ci-accept-failures: "$pkg" | grep -qF "\"debian-12\""; then \
+    echo "A package failed and has been disabled for CI using the 'x-ci-accept-failures' field."; \
+    fi; \
+    test "$pkg" != 'sendmail-mirage.0.11.0' && partial_fails="$partial_fails $pkg"; \
+    done; \
+    test "${partial_fails}" != "" && echo "opam-repo-ci detected dependencies failing: ${partial_fails}"; \
+    exit 1
+RUN (opam reinstall --with-test sendmail-mirage.0.11.0) || true
+RUN opam reinstall --with-test --verbose sendmail-mirage.0.11.0; \
+    res=$?; \
+    test "$res" != 31 && exit "$res"; \
+    export OPAMCLI=2.0; \
+    build_dir=$(opam var prefix)/.opam-switch/build; \
+    failed=$(ls "$build_dir"); \
+    partial_fails=""; \
+    for pkg in $failed; do \
+    if opam show -f x-ci-accept-failures: "$pkg" | grep -qF "\"debian-12\""; then \
+    echo "A package failed and has been disabled for CI using the 'x-ci-accept-failures' field."; \
+    fi; \
+    test "$pkg" != 'sendmail-mirage.0.11.0' && partial_fails="$partial_fails $pkg"; \
+    done; \
+    test "${partial_fails}" != "" && echo "opam-repo-ci detected dependencies failing: ${partial_fails}"; \
+    exit 1
+[0m
+END-OF-DOCKERFILE
+docker build -f ../Dockerfile .
+
+2024-10-25 14:56.01: Using cache hint "ocaml/opam:debian-12-ocaml-4.14@sha256:a229b9d0124bf445cca28c31c3f41dd25a17eb6f0bce8ac75d735e1a8a06c801-sendmail-mirage.0.11.0-29da3c9fe8461cac1b0f2cbd63b4391a0a912a10"
+2024-10-25 14:56.01: Using OBuilder spec:
+((from ocaml/opam:debian-12-ocaml-4.14@sha256:a229b9d0124bf445cca28c31c3f41dd25a17eb6f0bce8ac75d735e1a8a06c801)
+ (user (uid 1000) (gid 1000))
+ (workdir /home/opam)
+ (run (shell "sudo ln -f /usr/bin/opam-2.1 /usr/bin/opam"))
+ (run (network host)
+      (shell "opam init --reinit --config .opamrc-sandbox -ni"))
+ (run (shell "uname -rs && opam exec -- ocaml -version && opam --version"))
+ (env OPAMDOWNLOADJOBS 1)
+ (env OPAMERRLOGLEN 0)
+ (env OPAMSOLVERTIMEOUT 1000)
+ (env OPAMPRECISETRACKING 1)
+ (env CI true)
+ (env OPAM_REPO_CI true)
+ (run (shell "rm -rf opam-repository/"))
+ (copy (src .) (dst opam-repository/))
+ (run (shell "opam repository set-url --strict default opam-repository/"))
+ (run (network host)
+      (shell "opam update --depexts || true"))
+ (run (shell "opam pin add -k version -yn sendmail-mirage.0.11.0 0.11.0"))
+ (run (cache (opam-archives (target /home/opam/.opam/download-cache)))
+      (network host)
+      (shell  "opam reinstall sendmail-mirage.0.11.0;\
+             \n        res=$?;\
+             \n        test \"$res\" != 31 && exit \"$res\";\
+             \n        export OPAMCLI=2.0;\
+             \n        build_dir=$(opam var prefix)/.opam-switch/build;\
+             \n        failed=$(ls \"$build_dir\");\
+             \n        partial_fails=\"\";\
+             \n        for pkg in $failed; do\
+             \n          if opam show -f x-ci-accept-failures: \"$pkg\" | grep -qF \"\\\"debian-12\\\"\"; then\
+             \n            echo \"A package failed and has been disabled for CI using the 'x-ci-accept-failures' field.\";\
+             \n          fi;\
+             \n          test \"$pkg\" != 'sendmail-mirage.0.11.0' && partial_fails=\"$partial_fails $pkg\";\
+             \n        done;\
+             \n        test \"${partial_fails}\" != \"\" && echo \"opam-repo-ci detected dependencies failing: ${partial_fails}\";\
+             \n        exit 1"))
+ (run (network host)
+      (shell "(opam reinstall --with-test sendmail-mirage.0.11.0) || true"))
+ (run (shell  "opam reinstall --with-test --verbose sendmail-mirage.0.11.0;\
+             \n        res=$?;\
+             \n        test \"$res\" != 31 && exit \"$res\";\
+             \n        export OPAMCLI=2.0;\
+             \n        build_dir=$(opam var prefix)/.opam-switch/build;\
+             \n        failed=$(ls \"$build_dir\");\
+             \n        partial_fails=\"\";\
+             \n        for pkg in $failed; do\
+             \n          if opam show -f x-ci-accept-failures: \"$pkg\" | grep -qF \"\\\"debian-12\\\"\"; then\
+             \n            echo \"A package failed and has been disabled for CI using the 'x-ci-accept-failures' field.\";\
+             \n          fi;\
+             \n          test \"$pkg\" != 'sendmail-mirage.0.11.0' && partial_fails=\"$partial_fails $pkg\";\
+             \n        done;\
+             \n        test \"${partial_fails}\" != \"\" && echo \"opam-repo-ci detected dependencies failing: ${partial_fails}\";\
+             \n        exit 1"))
+)
+
+2024-10-25 14:56.01: Waiting for resource in pool OCluster
+2024-10-25 15:08.18: Waiting for worker…
+2024-10-25 15:16.21: Got resource from pool OCluster
+Building on x86-bm-c11.sw.ocaml.org
+All commits already cached
+Updating files:  78% (25451/32527)Updating files:  79% (25697/32527)Updating files:  80% (26022/32527)Updating files:  81% (26347/32527)Updating files:  82% (26673/32527)Updating files:  83% (26998/32527)Updating files:  84% (27323/32527)Updating files:  85% (27648/32527)Updating files:  86% (27974/32527)Updating files:  87% (28299/32527)Updating files:  88% (28624/32527)Updating files:  89% (28950/32527)Updating files:  90% (29275/32527)Updating files:  91% (29600/32527)Updating files:  92% (29925/32527)Updating files:  93% (30251/32527)Updating files:  94% (30576/32527)Updating files:  95% (30901/32527)Updating files:  96% (31226/32527)Updating files:  97% (31552/32527)Updating files:  98% (31877/32527)Updating files:  99% (32202/32527)Updating files: 100% (32527/32527)Updating files: 100% (32527/32527), done.
+HEAD is now at 19f88a00fc Merge pull request #26785 from gridbugs/climate.0.2.0
+Updating 19f88a00fc..29da3c9fe8
+Fast-forward
+ packages/colombe/colombe.0.11.0/opam               | 37 +++++++++++++++++++
+ packages/received/received.0.11.0/opam             | 39 ++++++++++++++++++++
+ packages/sendmail-lwt/sendmail-lwt.0.11.0/opam     | 38 ++++++++++++++++++++
+ .../sendmail-miou-unix.0.11.0/opam                 | 36 +++++++++++++++++++
+ .../sendmail-mirage/sendmail-mirage.0.11.0/opam    | 39 ++++++++++++++++++++
+ packages/sendmail/sendmail.0.11.0/opam             | 41 ++++++++++++++++++++++
+ 6 files changed, 230 insertions(+)
+ create mode 100644 packages/colombe/colombe.0.11.0/opam
+ create mode 100644 packages/received/received.0.11.0/opam
+ create mode 100644 packages/sendmail-lwt/sendmail-lwt.0.11.0/opam
+ create mode 100644 packages/sendmail-miou-unix/sendmail-miou-unix.0.11.0/opam
+ create mode 100644 packages/sendmail-mirage/sendmail-mirage.0.11.0/opam
+ create mode 100644 packages/sendmail/sendmail.0.11.0/opam
+
+[01;34m(from ocaml/opam:debian-12-ocaml-4.14@sha256:a229b9d0124bf445cca28c31c3f41dd25a17eb6f0bce8ac75d735e1a8a06c801)[0m
+[01;2m[01;35m2024-10-25 15:16.24 ---> using "19402ee437863efb9e89ac540ced705d41d8dbf946ad648a774e5e4f8d55013f" from cache[0m
+
+[01;34m/: (user (uid 1000) (gid 1000))[0m
+
+[01;34m/: (workdir /home/opam)[0m
+
+[01;34m/home/opam: (run (shell "sudo ln -f /usr/bin/opam-2.1 /usr/bin/opam"))[0m
+[01;2m[01;35m2024-10-25 15:16.24 ---> using "28b923d3d79dee606fb99d2fa024e7707e01133b973bd65436044bfb3d57ab57" from cache[0m
+
+[01;34m/home/opam: (run (network host)
+                 (shell "opam init --reinit --config .opamrc-sandbox -ni"))[0m
+Configuring from /home/opam/.opamrc-sandbox, then /home/opam/.opamrc, and finally from built-in defaults.
+Checking for available remotes: rsync and local, git.
+  - you won't be able to use mercurial repositories unless you install the hg command on your system.
+  - you won't be able to use darcs repositories unless you install the darcs command on your system.
+
+This development version of opam requires an update to the layout of /home/opam/.opam from version 2.0 to version 2.1, which can't be reverted.
+You may want to back it up before going further.
+
+Continue? [Y/n] y
+Format upgrade done.
+
+<><> Updating repositories ><><><><><><><><><><><><><><><><><><><><><><><><><><>
+[default] synchronised from file:///home/opam/opam-repository
+[01;2m[01;35m2024-10-25 15:17.07 ---> saved as "73be539fea6a34029445e3a105f1dc59c655e70d8d0f3729a63f2489467b0ae3"[0m
+
+[01;34m/home/opam: (run (shell "uname -rs && opam exec -- ocaml -version && opam --version"))[0m
+Linux 5.15.0-122-generic
+The OCaml toplevel, version 4.14.2
+2.1.6
+[01;2m[01;35m2024-10-25 15:17.07 ---> saved as "719b993c51e53399a1bd4dcb7fdd0d4d33fc3744ba62d9be650f3f2df9c2b9a5"[0m
+
+[01;34m/home/opam: (env OPAMDOWNLOADJOBS 1)[0m
+
+[01;34m/home/opam: (env OPAMERRLOGLEN 0)[0m
+
+[01;34m/home/opam: (env OPAMSOLVERTIMEOUT 1000)[0m
+
+[01;34m/home/opam: (env OPAMPRECISETRACKING 1)[0m
+
+[01;34m/home/opam: (env CI true)[0m
+
+[01;34m/home/opam: (env OPAM_REPO_CI true)[0m
+
+[01;34m/home/opam: (run (shell "rm -rf opam-repository/"))[0m
+[01;2m[01;35m2024-10-25 15:17.15 ---> saved as "1ce2df68ac98cd0aba5187750251f16d2c5acaea5bdbb5fcd33c12ace3f7f312"[0m
+
+[01;34m/home/opam: (copy (src .) (dst opam-repository/))[0m
+[01;2m[01;35m2024-10-25 15:17.30 ---> saved as "0a220db6ec3adf05d9d39d65adbfff9ebe0736ee46206b49caa7e77f136972e0"[0m
+
+[01;34m/home/opam: (run (shell "opam repository set-url --strict default opam-repository/"))[0m
+[default] Initialised
+[01;2m[01;35m2024-10-25 15:18.03 ---> saved as "c66ed48508d205759428e1ca815dde1fe97bef0c12cf57fae62daa5533f31b5d"[0m
+
+[01;34m/home/opam: (run (network host)
+                 (shell "opam update --depexts || true"))[0m
++ /usr/bin/sudo "apt-get" "update"
+- Hit:1 http://deb.debian.org/debian bookworm InRelease
+- Get:2 http://deb.debian.org/debian bookworm-updates InRelease [55.4 kB]
+- Get:3 http://deb.debian.org/debian-security bookworm-security InRelease [48.0 kB]
+- Get:4 http://deb.debian.org/debian-security bookworm-security/main amd64 Packages [188 kB]
+- Fetched 292 kB in 0s (1000 kB/s)
+- Reading package lists...
+- 
+[01;2m[01;35m2024-10-25 15:18.04 ---> saved as "002d29e4557b7a63ace19ba76fdf57d914b474361a02577646f212076e1a32df"[0m
+
+[01;34m/home/opam: (run (shell "opam pin add -k version -yn sendmail-mirage.0.11.0 0.11.0"))[0m
+sendmail-mirage is now pinned to version 0.11.0
+[01;2m[01;35m2024-10-25 15:18.05 ---> saved as "08c57cad995bd877d41644856472bfd1f57841c6aff598d52b78063b6ce9cdbf"[0m
+
+[01;34m/home/opam: (run (cache (opam-archives (target /home/opam/.opam/download-cache)))
+                 (network host)
+                 (shell  "opam reinstall sendmail-mirage.0.11.0;\
+                        \n        res=$?;\
+                        \n        test \"$res\" != 31 && exit \"$res\";\
+                        \n        export OPAMCLI=2.0;\
+                        \n        build_dir=$(opam var prefix)/.opam-switch/build;\
+                        \n        failed=$(ls \"$build_dir\");\
+                        \n        partial_fails=\"\";\
+                        \n        for pkg in $failed; do\
+                        \n          if opam show -f x-ci-accept-failures: \"$pkg\" | grep -qF \"\\\"debian-12\\\"\"; then\
+                        \n            echo \"A package failed and has been disabled for CI using the 'x-ci-accept-failures' field.\";\
+                        \n          fi;\
+                        \n          test \"$pkg\" != 'sendmail-mirage.0.11.0' && partial_fails=\"$partial_fails $pkg\";\
+                        \n        done;\
+                        \n        test \"${partial_fails}\" != \"\" && echo \"opam-repo-ci detected dependencies failing: ${partial_fails}\";\
+                        \n        exit 1"))[0m
+sendmail-mirage.0.11.0 is not installed. Install it? [Y/n] y
+[ERROR] Sorry, resolution of the request timed out.
+        Try to specify a more precise request, use a different solver, or increase the allowed time by setting OPAMSOLVERTIMEOUT to a bigger value (currently, it is set to 1000.0 seconds).
+"/usr/bin/env" "bash" "-c" "opam reinstall sendmail-mirage.0.11.0;
+        res=$?;
+        test "$res" != 31 && exit "$res";
+        export OPAMCLI=2.0;
+        build_dir=$(opam var prefix)/.opam-switch/build;
+        failed=$(ls "$build_dir");
+        partial_fails="";
+        for pkg in $failed; do
+          if opam show -f x-ci-accept-failures: "$pkg" | grep -qF "\"debian-12\""; then
+            echo "A package failed and has been disabled for CI using the 'x-ci-accept-failures' field.";
+          fi;
+          test "$pkg" != 'sendmail-mirage.0.11.0' && partial_fails="$partial_fails $pkg";
+        done;
+        test "${partial_fails}" != "" && echo "opam-repo-ci detected dependencies failing: ${partial_fails}";
+        exit 1" failed with exit status 60
+2024-10-25 15:35.22: Job failed: Failed: Build failed
+2024-10-25 15:35.22: Log analysis:
+2024-10-25 15:35.22: >>> 
+[ERROR] Sorry, resolution of the request timed out.
+ (score = 20)
+2024-10-25 15:35.22: Sorry, resolution of the request timed out.

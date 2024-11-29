@@ -1,0 +1,293 @@
+2024-10-03 11:57.08: New job: test dblp-api.0.1.1, using opam 2.0
+                              from https://github.com/ocaml/opam-repository.git#refs/pull/26658/head (c85e14da64429af4cc24c762c6da06744981c8a2)
+                              on debian-12-ocaml-5.2/amd64
+
+To reproduce locally:
+
+cd $(mktemp -d)
+git clone --recursive "https://github.com/ocaml/opam-repository.git" && cd "opam-repository" && git fetch origin "refs/pull/26658/head" && git reset --hard c85e14da
+git fetch origin master
+git merge --no-edit f302b6aaf01995b706f9b5a0a8fc2e6bb299eae8
+cat > ../Dockerfile <<'END-OF-DOCKERFILE'
+[34mFROM ocaml/opam:debian-12-ocaml-5.2@sha256:0f780afc678452f0b77907ce9163d03fd8377880031bb2c03ca4dfc199668512
+USER 1000:1000
+WORKDIR /home/opam
+RUN sudo ln -f /usr/bin/opam-2.0 /usr/bin/opam
+RUN opam init --reinit -ni
+RUN uname -rs && opam exec -- ocaml -version && opam --version
+ENV OPAMDOWNLOADJOBS="1"
+ENV OPAMERRLOGLEN="0"
+ENV OPAMSOLVERTIMEOUT="1000"
+ENV OPAMPRECISETRACKING="1"
+ENV CI="true"
+ENV OPAM_REPO_CI="true"
+RUN rm -rf opam-repository/
+COPY --chown=1000:1000 . opam-repository/
+RUN opam repository set-url --strict default opam-repository/
+RUN opam depext -u || true
+RUN opam pin add -k version -yn dblp-api.0.1.1 0.1.1
+RUN opam depext dblp-api.0.1.1 && opam reinstall dblp-api.0.1.1; \
+    res=$?; \
+    test "$res" != 31 && exit "$res"; \
+    export OPAMCLI=2.0; \
+    build_dir=$(opam var prefix)/.opam-switch/build; \
+    failed=$(ls "$build_dir"); \
+    partial_fails=""; \
+    for pkg in $failed; do \
+    if opam show -f x-ci-accept-failures: "$pkg" | grep -qF "\"debian-12\""; then \
+    echo "A package failed and has been disabled for CI using the 'x-ci-accept-failures' field."; \
+    fi; \
+    test "$pkg" != 'dblp-api.0.1.1' && partial_fails="$partial_fails $pkg"; \
+    done; \
+    test "${partial_fails}" != "" && echo "opam-repo-ci detected dependencies failing: ${partial_fails}"; \
+    exit 1
+RUN (opam depext --with-test dblp-api.0.1.1 && opam reinstall --with-test dblp-api.0.1.1) || true
+RUN opam depext --with-test dblp-api.0.1.1 && opam reinstall --with-test --verbose dblp-api.0.1.1; \
+    res=$?; \
+    test "$res" != 31 && exit "$res"; \
+    export OPAMCLI=2.0; \
+    build_dir=$(opam var prefix)/.opam-switch/build; \
+    failed=$(ls "$build_dir"); \
+    partial_fails=""; \
+    for pkg in $failed; do \
+    if opam show -f x-ci-accept-failures: "$pkg" | grep -qF "\"debian-12\""; then \
+    echo "A package failed and has been disabled for CI using the 'x-ci-accept-failures' field."; \
+    fi; \
+    test "$pkg" != 'dblp-api.0.1.1' && partial_fails="$partial_fails $pkg"; \
+    done; \
+    test "${partial_fails}" != "" && echo "opam-repo-ci detected dependencies failing: ${partial_fails}"; \
+    exit 1
+[0m
+END-OF-DOCKERFILE
+docker build -f ../Dockerfile .
+
+2024-10-03 11:57.08: Using cache hint "ocaml/opam:debian-12-ocaml-5.2@sha256:0f780afc678452f0b77907ce9163d03fd8377880031bb2c03ca4dfc199668512-dblp-api.0.1.1-c85e14da64429af4cc24c762c6da06744981c8a2"
+2024-10-03 11:57.08: Using OBuilder spec:
+((from ocaml/opam:debian-12-ocaml-5.2@sha256:0f780afc678452f0b77907ce9163d03fd8377880031bb2c03ca4dfc199668512)
+ (user (uid 1000) (gid 1000))
+ (workdir /home/opam)
+ (run (shell "sudo ln -f /usr/bin/opam-2.0 /usr/bin/opam"))
+ (run (network host)
+      (shell "opam init --reinit --config .opamrc-sandbox -ni"))
+ (run (shell "uname -rs && opam exec -- ocaml -version && opam --version"))
+ (env OPAMDOWNLOADJOBS 1)
+ (env OPAMERRLOGLEN 0)
+ (env OPAMSOLVERTIMEOUT 1000)
+ (env OPAMPRECISETRACKING 1)
+ (env CI true)
+ (env OPAM_REPO_CI true)
+ (run (shell "rm -rf opam-repository/"))
+ (copy (src .) (dst opam-repository/))
+ (run (shell "opam repository set-url --strict default opam-repository/"))
+ (run (network host)
+      (shell "opam depext -u || true"))
+ (run (shell "opam pin add -k version -yn dblp-api.0.1.1 0.1.1"))
+ (run (cache (opam-archives (target /home/opam/.opam/download-cache)))
+      (network host)
+      (shell  "opam depext dblp-api.0.1.1 && opam reinstall dblp-api.0.1.1;\
+             \n        res=$?;\
+             \n        test \"$res\" != 31 && exit \"$res\";\
+             \n        export OPAMCLI=2.0;\
+             \n        build_dir=$(opam var prefix)/.opam-switch/build;\
+             \n        failed=$(ls \"$build_dir\");\
+             \n        partial_fails=\"\";\
+             \n        for pkg in $failed; do\
+             \n          if opam show -f x-ci-accept-failures: \"$pkg\" | grep -qF \"\\\"debian-12\\\"\"; then\
+             \n            echo \"A package failed and has been disabled for CI using the 'x-ci-accept-failures' field.\";\
+             \n          fi;\
+             \n          test \"$pkg\" != 'dblp-api.0.1.1' && partial_fails=\"$partial_fails $pkg\";\
+             \n        done;\
+             \n        test \"${partial_fails}\" != \"\" && echo \"opam-repo-ci detected dependencies failing: ${partial_fails}\";\
+             \n        exit 1"))
+ (run (network host)
+      (shell "(opam depext --with-test dblp-api.0.1.1 && opam reinstall --with-test dblp-api.0.1.1) || true"))
+ (run (shell  "opam depext --with-test dblp-api.0.1.1 && opam reinstall --with-test --verbose dblp-api.0.1.1;\
+             \n        res=$?;\
+             \n        test \"$res\" != 31 && exit \"$res\";\
+             \n        export OPAMCLI=2.0;\
+             \n        build_dir=$(opam var prefix)/.opam-switch/build;\
+             \n        failed=$(ls \"$build_dir\");\
+             \n        partial_fails=\"\";\
+             \n        for pkg in $failed; do\
+             \n          if opam show -f x-ci-accept-failures: \"$pkg\" | grep -qF \"\\\"debian-12\\\"\"; then\
+             \n            echo \"A package failed and has been disabled for CI using the 'x-ci-accept-failures' field.\";\
+             \n          fi;\
+             \n          test \"$pkg\" != 'dblp-api.0.1.1' && partial_fails=\"$partial_fails $pkg\";\
+             \n        done;\
+             \n        test \"${partial_fails}\" != \"\" && echo \"opam-repo-ci detected dependencies failing: ${partial_fails}\";\
+             \n        exit 1"))
+)
+
+2024-10-03 11:57.08: Waiting for resource in pool OCluster
+2024-10-03 11:57.09: Waiting for worker…
+2024-10-03 11:57.09: Got resource from pool OCluster
+Building on x86-bm-c4.sw.ocaml.org
+All commits already cached
+Updating files:  61% (19816/32343)Updating files:  62% (20053/32343)Updating files:  63% (20377/32343)Updating files:  64% (20700/32343)Updating files:  65% (21023/32343)Updating files:  66% (21347/32343)Updating files:  67% (21670/32343)Updating files:  68% (21994/32343)Updating files:  69% (22317/32343)Updating files:  70% (22641/32343)Updating files:  71% (22964/32343)Updating files:  72% (23287/32343)Updating files:  73% (23611/32343)Updating files:  74% (23934/32343)Updating files:  75% (24258/32343)Updating files:  76% (24581/32343)Updating files:  77% (24905/32343)Updating files:  78% (25228/32343)Updating files:  79% (25551/32343)Updating files:  80% (25875/32343)Updating files:  81% (26198/32343)Updating files:  82% (26522/32343)Updating files:  83% (26845/32343)Updating files:  84% (27169/32343)Updating files:  85% (27492/32343)Updating files:  86% (27815/32343)Updating files:  87% (28139/32343)Updating files:  88% (28462/32343)Updating files:  89% (28786/32343)Updating files:  90% (29109/32343)Updating files:  91% (29433/32343)Updating files:  92% (29756/32343)Updating files:  93% (30079/32343)Updating files:  94% (30403/32343)Updating files:  95% (30726/32343)Updating files:  96% (31050/32343)Updating files:  97% (31373/32343)Updating files:  98% (31697/32343)Updating files:  99% (32020/32343)Updating files: 100% (32343/32343)Updating files: 100% (32343/32343), done.
+HEAD is now at f302b6aaf0 Merge pull request #26653 from chetmurthy/camlp5-support-for-ocaml-5.3.0
+Updating f302b6aaf0..c85e14da64
+Fast-forward
+ packages/dblp-api/dblp-api.0.1.1/opam | 45 +++++++++++++++++++++++++++++++++++
+ packages/dblp/dblp.0.1.1/opam         | 42 ++++++++++++++++++++++++++++++++
+ 2 files changed, 87 insertions(+)
+ create mode 100644 packages/dblp-api/dblp-api.0.1.1/opam
+ create mode 100644 packages/dblp/dblp.0.1.1/opam
+
+[01;34m(from ocaml/opam:debian-12-ocaml-5.2@sha256:0f780afc678452f0b77907ce9163d03fd8377880031bb2c03ca4dfc199668512)[0m
+[01;2m[01;35m2024-10-03 11:57.57 ---> using "a2afb71ea5b1d794fe56f32262ada4390f438c97ab6e1656dd20af93122921f6" from cache[0m
+
+[01;34m/: (user (uid 1000) (gid 1000))[0m
+
+[01;34m/: (workdir /home/opam)[0m
+
+[01;34m/home/opam: (run (shell "sudo ln -f /usr/bin/opam-2.0 /usr/bin/opam"))[0m
+[01;2m[01;35m2024-10-03 11:57.57 ---> using "b116d587ca6cb7d4092fe5b2f67e9ca1c21a56345c42201d7e4a0df585a9cc66" from cache[0m
+
+[01;34m/home/opam: (run (network host)
+                 (shell "opam init --reinit --config .opamrc-sandbox -ni"))[0m
+[NOTE] Will configure from /home/opam/.opamrc-sandbox, then /home/opam/.opamrc, and finally from built-in defaults.
+Checking for available remotes: rsync and local, git.
+  - you won't be able to use mercurial repositories unless you install the hg command on your system.
+  - you won't be able to use darcs repositories unless you install the darcs command on your system.
+
+[WARNING] Recommended dependencies -- most packages rely on these:
+  - m4
+
+<><> Updating repositories ><><><><><><><><><><><><><><><><><><><><><><><><><><>
+[default] synchronised from file:///home/opam/opam-repository
+default (at file:///home/opam/opam-repository): 
+    [INFO] opam 2.1 and 2.2 include many performance and security improvements over 2.0; please consider upgrading (https://opam.ocaml.org/doc/Install.html)
+
+[01;2m[01;35m2024-10-03 11:58.40 ---> saved as "55df5fbac2469cff80edf69ced3895f7e83e0219490c151ea5a8d9f9109848b9"[0m
+
+[01;34m/home/opam: (run (shell "uname -rs && opam exec -- ocaml -version && opam --version"))[0m
+Linux 5.15.0-122-generic
+The OCaml toplevel, version 5.2.0
+2.0.10
+[01;2m[01;35m2024-10-03 11:58.41 ---> saved as "60cfda916cf90f3aff6d114db3156a7a3ba08088d14c0b2e0b72d00acfea62b8"[0m
+
+[01;34m/home/opam: (env OPAMDOWNLOADJOBS 1)[0m
+
+[01;34m/home/opam: (env OPAMERRLOGLEN 0)[0m
+
+[01;34m/home/opam: (env OPAMSOLVERTIMEOUT 1000)[0m
+
+[01;34m/home/opam: (env OPAMPRECISETRACKING 1)[0m
+
+[01;34m/home/opam: (env CI true)[0m
+
+[01;34m/home/opam: (env OPAM_REPO_CI true)[0m
+
+[01;34m/home/opam: (run (shell "rm -rf opam-repository/"))[0m
+[01;2m[01;35m2024-10-03 11:58.51 ---> saved as "81f1157a843fe8c7e01b663fcf3635d9a48cf5f0044c6beab86e8fd944297133"[0m
+
+[01;34m/home/opam: (copy (src .) (dst opam-repository/))[0m
+[01;2m[01;35m2024-10-03 11:58.59 ---> saved as "d3c25c9012dbe6713130127493b33ddbb4a8a342f2c4984bd5a974d11a724237"[0m
+
+[01;34m/home/opam: (run (shell "opam repository set-url --strict default opam-repository/"))[0m
+[default] Initialised
+default (at file:///home/opam/opam-repository): 
+    [INFO] opam 2.1 and 2.2 include many performance and security improvements over 2.0; please consider upgrading (https://opam.ocaml.org/doc/Install.html)
+
+[01;2m[01;35m2024-10-03 11:59.27 ---> saved as "df448b4e6ef5591963707818030caad29fda06c2ef228b9045c6877c38f01cd9"[0m
+
+[01;34m/home/opam: (run (network host)
+                 (shell "opam depext -u || true"))[0m
+# Detecting depexts using vars: arch=x86_64, os=linux, os-distribution=debian, os-family=debian
+# No extra OS packages requirements found.
+# All required OS packages found.
+The following command needs to be run through "sudo":
+    apt-get update
+Hit:1 http://deb.debian.org/debian bookworm InRelease
+Get:2 http://deb.debian.org/debian bookworm-updates InRelease [55.4 kB]
+Get:3 http://deb.debian.org/debian-security bookworm-security InRelease [48.0 kB]
+Get:4 http://deb.debian.org/debian-security bookworm-security/main amd64 Packages [185 kB]
+Fetched 288 kB in 1s (497 kB/s)
+Reading package lists...
+# OS package update successful
+[01;2m[01;35m2024-10-03 11:59.30 ---> saved as "92f2e3759d74a8cf953114471810ffe17be74e7fc82b2690ead3008ce4a21915"[0m
+
+[01;34m/home/opam: (run (shell "opam pin add -k version -yn dblp-api.0.1.1 0.1.1"))[0m
+dblp-api is now pinned to version 0.1.1
+[01;2m[01;35m2024-10-03 11:59.32 ---> saved as "3a1d77c8289fed8aa8d9d5da19b6827f54d6e9f39f169d11981dc7c211f217d0"[0m
+
+[01;34m/home/opam: (run (cache (opam-archives (target /home/opam/.opam/download-cache)))
+                 (network host)
+                 (shell  "opam depext dblp-api.0.1.1 && opam reinstall dblp-api.0.1.1;\
+                        \n        res=$?;\
+                        \n        test \"$res\" != 31 && exit \"$res\";\
+                        \n        export OPAMCLI=2.0;\
+                        \n        build_dir=$(opam var prefix)/.opam-switch/build;\
+                        \n        failed=$(ls \"$build_dir\");\
+                        \n        partial_fails=\"\";\
+                        \n        for pkg in $failed; do\
+                        \n          if opam show -f x-ci-accept-failures: \"$pkg\" | grep -qF \"\\\"debian-12\\\"\"; then\
+                        \n            echo \"A package failed and has been disabled for CI using the 'x-ci-accept-failures' field.\";\
+                        \n          fi;\
+                        \n          test \"$pkg\" != 'dblp-api.0.1.1' && partial_fails=\"$partial_fails $pkg\";\
+                        \n        done;\
+                        \n        test \"${partial_fails}\" != \"\" && echo \"opam-repo-ci detected dependencies failing: ${partial_fails}\";\
+                        \n        exit 1"))[0m
+# Detecting depexts using vars: arch=x86_64, os=linux, os-distribution=debian, os-family=debian
+# The following system packages are needed:
+libgmp-dev
+libssl-dev
+pkg-config
+The following command needs to be run through "sudo":
+    apt-get install -qq -yy libgmp-dev libssl-dev pkg-config
+debconf: delaying package configuration, since apt-utils is not installed
+Selecting previously unselected package libgmpxx4ldbl:amd64.
+(Reading database ... (Reading database ... 5%(Reading database ... 10%(Reading database ... 15%(Reading database ... 20%(Reading database ... 25%(Reading database ... 30%(Reading database ... 35%(Reading database ... 40%(Reading database ... 45%(Reading database ... 50%(Reading database ... 55%(Reading database ... 60%(Reading database ... 65%(Reading database ... 70%(Reading database ... 75%(Reading database ... 80%(Reading database ... 85%(Reading database ... 90%(Reading database ... 95%(Reading database ... 100%(Reading database ... 18776 files and directories currently installed.)
+Preparing to unpack .../0-libgmpxx4ldbl_2%3a6.2.1+dfsg1-1.1_amd64.deb ...
+Unpacking libgmpxx4ldbl:amd64 (2:6.2.1+dfsg1-1.1) ...
+Selecting previously unselected package libgmp-dev:amd64.
+Preparing to unpack .../1-libgmp-dev_2%3a6.2.1+dfsg1-1.1_amd64.deb ...
+Unpacking libgmp-dev:amd64 (2:6.2.1+dfsg1-1.1) ...
+Selecting previously unselected package libpkgconf3:amd64.
+Preparing to unpack .../2-libpkgconf3_1.8.1-1_amd64.deb ...
+Unpacking libpkgconf3:amd64 (1.8.1-1) ...
+Selecting previously unselected package libssl-dev:amd64.
+Preparing to unpack .../3-libssl-dev_3.0.14-1~deb12u2_amd64.deb ...
+Unpacking libssl-dev:amd64 (3.0.14-1~deb12u2) ...
+Selecting previously unselected package pkgconf-bin.
+Preparing to unpack .../4-pkgconf-bin_1.8.1-1_amd64.deb ...
+Unpacking pkgconf-bin (1.8.1-1) ...
+Selecting previously unselected package pkgconf:amd64.
+Preparing to unpack .../5-pkgconf_1.8.1-1_amd64.deb ...
+Unpacking pkgconf:amd64 (1.8.1-1) ...
+Selecting previously unselected package pkg-config:amd64.
+Preparing to unpack .../6-pkg-config_1.8.1-1_amd64.deb ...
+Unpacking pkg-config:amd64 (1.8.1-1) ...
+Setting up libpkgconf3:amd64 (1.8.1-1) ...
+Setting up libgmpxx4ldbl:amd64 (2:6.2.1+dfsg1-1.1) ...
+Setting up libssl-dev:amd64 (3.0.14-1~deb12u2) ...
+Setting up pkgconf-bin (1.8.1-1) ...
+Setting up libgmp-dev:amd64 (2:6.2.1+dfsg1-1.1) ...
+Setting up pkgconf:amd64 (1.8.1-1) ...
+Setting up pkg-config:amd64 (1.8.1-1) ...
+Processing triggers for libc-bin (2.36-9+deb12u8) ...
+# OS packages installation successful
+dblp-api.0.1.1 is not installed. Install it? [Y/n] y
+[ERROR] Sorry, resolution of the request timed out.
+        Try to specify a simpler request, use a different solver, or increase the allowed time by setting OPAMSOLVERTIMEOUT to a bigger value (currently, it is set to 1000.0 seconds).
+"/usr/bin/env" "bash" "-c" "opam depext dblp-api.0.1.1 && opam reinstall dblp-api.0.1.1;
+        res=$?;
+        test "$res" != 31 && exit "$res";
+        export OPAMCLI=2.0;
+        build_dir=$(opam var prefix)/.opam-switch/build;
+        failed=$(ls "$build_dir");
+        partial_fails="";
+        for pkg in $failed; do
+          if opam show -f x-ci-accept-failures: "$pkg" | grep -qF "\"debian-12\""; then
+            echo "A package failed and has been disabled for CI using the 'x-ci-accept-failures' field.";
+          fi;
+          test "$pkg" != 'dblp-api.0.1.1' && partial_fails="$partial_fails $pkg";
+        done;
+        test "${partial_fails}" != "" && echo "opam-repo-ci detected dependencies failing: ${partial_fails}";
+        exit 1" failed with exit status 60
+2024-10-03 12:16.37: Job failed: Failed: Build failed
+2024-10-03 12:16.37: Log analysis:
+2024-10-03 12:16.37: >>> 
+[ERROR] Sorry, resolution of the request timed out.
+ (score = 20)
+2024-10-03 12:16.37: Sorry, resolution of the request timed out.

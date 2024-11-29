@@ -1,0 +1,259 @@
+2024-09-05 10:16.01: New job: test h2-mirage.0.13.0, using opam dev
+                              from https://github.com/ocaml/opam-repository.git#refs/pull/26490/head (f4c7945d59e59ef939b8291e17e88d6fe4867a8e)
+                              on debian-12-ocaml-4.09/amd64
+
+To reproduce locally:
+
+cd $(mktemp -d)
+git clone --recursive "https://github.com/ocaml/opam-repository.git" && cd "opam-repository" && git fetch origin "refs/pull/26490/head" && git reset --hard f4c7945d
+git fetch origin master
+git merge --no-edit 1cf3e182a266058624a623bf990c956f21375b43
+cat > ../Dockerfile <<'END-OF-DOCKERFILE'
+[34mFROM ocaml/opam:debian-12-ocaml-4.09@sha256:e7f34ec45a1bf33ef4dc37e558b7ea4903de3498e310ab7f2b247922f4cb2302
+USER 1000:1000
+WORKDIR /home/opam
+RUN sudo ln -f /usr/bin/opam-dev /usr/bin/opam
+RUN opam init --reinit -ni
+RUN uname -rs && opam exec -- ocaml -version && opam --version
+ENV OPAMDOWNLOADJOBS="1"
+ENV OPAMERRLOGLEN="0"
+ENV OPAMSOLVERTIMEOUT="500"
+ENV OPAMPRECISETRACKING="1"
+ENV CI="true"
+ENV OPAM_REPO_CI="true"
+RUN rm -rf opam-repository/
+COPY --chown=1000:1000 . opam-repository/
+RUN opam repository set-url --strict default opam-repository/
+RUN opam update --depexts || true
+RUN opam pin add -k version -yn h2-mirage.0.13.0 0.13.0
+RUN opam reinstall h2-mirage.0.13.0; \
+    res=$?; \
+    test "$res" != 31 && exit "$res"; \
+    export OPAMCLI=2.0; \
+    build_dir=$(opam var prefix)/.opam-switch/build; \
+    failed=$(ls "$build_dir"); \
+    partial_fails=""; \
+    for pkg in $failed; do \
+    if opam show -f x-ci-accept-failures: "$pkg" | grep -qF "\"debian-12\""; then \
+    echo "A package failed and has been disabled for CI using the 'x-ci-accept-failures' field."; \
+    fi; \
+    test "$pkg" != 'h2-mirage.0.13.0' && partial_fails="$partial_fails $pkg"; \
+    done; \
+    test "${partial_fails}" != "" && echo "opam-repo-ci detected dependencies failing: ${partial_fails}"; \
+    exit 1
+RUN opam option solver=builtin-0install
+RUN (opam reinstall --with-test h2-mirage.0.13.0) || true
+RUN opam reinstall --with-test --verbose h2-mirage.0.13.0; \
+    res=$?; \
+    test "$res" != 31 && exit "$res"; \
+    export OPAMCLI=2.0; \
+    build_dir=$(opam var prefix)/.opam-switch/build; \
+    failed=$(ls "$build_dir"); \
+    partial_fails=""; \
+    for pkg in $failed; do \
+    if opam show -f x-ci-accept-failures: "$pkg" | grep -qF "\"debian-12\""; then \
+    echo "A package failed and has been disabled for CI using the 'x-ci-accept-failures' field."; \
+    fi; \
+    test "$pkg" != 'h2-mirage.0.13.0' && partial_fails="$partial_fails $pkg"; \
+    done; \
+    test "${partial_fails}" != "" && echo "opam-repo-ci detected dependencies failing: ${partial_fails}"; \
+    exit 1
+[0m
+END-OF-DOCKERFILE
+docker build -f ../Dockerfile .
+
+2024-09-05 10:16.01: Using cache hint "ocaml/opam:debian-12-ocaml-4.09@sha256:e7f34ec45a1bf33ef4dc37e558b7ea4903de3498e310ab7f2b247922f4cb2302-h2-mirage.0.13.0-f4c7945d59e59ef939b8291e17e88d6fe4867a8e"
+2024-09-05 10:16.01: Using OBuilder spec:
+((from ocaml/opam:debian-12-ocaml-4.09@sha256:e7f34ec45a1bf33ef4dc37e558b7ea4903de3498e310ab7f2b247922f4cb2302)
+ (user (uid 1000) (gid 1000))
+ (workdir /home/opam)
+ (run (shell "sudo ln -f /usr/bin/opam-dev /usr/bin/opam"))
+ (run (network host)
+      (shell "opam init --reinit --config .opamrc-sandbox -ni"))
+ (run (shell "uname -rs && opam exec -- ocaml -version && opam --version"))
+ (env OPAMDOWNLOADJOBS 1)
+ (env OPAMERRLOGLEN 0)
+ (env OPAMSOLVERTIMEOUT 500)
+ (env OPAMPRECISETRACKING 1)
+ (env CI true)
+ (env OPAM_REPO_CI true)
+ (run (shell "rm -rf opam-repository/"))
+ (copy (src .) (dst opam-repository/))
+ (run (shell "opam repository set-url --strict default opam-repository/"))
+ (run (network host)
+      (shell "opam update --depexts || true"))
+ (run (shell "opam pin add -k version -yn h2-mirage.0.13.0 0.13.0"))
+ (run (cache (opam-archives (target /home/opam/.opam/download-cache)))
+      (network host)
+      (shell  "opam reinstall h2-mirage.0.13.0;\
+             \n        res=$?;\
+             \n        test \"$res\" != 31 && exit \"$res\";\
+             \n        export OPAMCLI=2.0;\
+             \n        build_dir=$(opam var prefix)/.opam-switch/build;\
+             \n        failed=$(ls \"$build_dir\");\
+             \n        partial_fails=\"\";\
+             \n        for pkg in $failed; do\
+             \n          if opam show -f x-ci-accept-failures: \"$pkg\" | grep -qF \"\\\"debian-12\\\"\"; then\
+             \n            echo \"A package failed and has been disabled for CI using the 'x-ci-accept-failures' field.\";\
+             \n          fi;\
+             \n          test \"$pkg\" != 'h2-mirage.0.13.0' && partial_fails=\"$partial_fails $pkg\";\
+             \n        done;\
+             \n        test \"${partial_fails}\" != \"\" && echo \"opam-repo-ci detected dependencies failing: ${partial_fails}\";\
+             \n        exit 1"))
+ (run (shell "opam option solver=builtin-0install"))
+ (run (network host)
+      (shell "(opam reinstall --with-test h2-mirage.0.13.0) || true"))
+ (run (shell  "opam reinstall --with-test --verbose h2-mirage.0.13.0;\
+             \n        res=$?;\
+             \n        test \"$res\" != 31 && exit \"$res\";\
+             \n        export OPAMCLI=2.0;\
+             \n        build_dir=$(opam var prefix)/.opam-switch/build;\
+             \n        failed=$(ls \"$build_dir\");\
+             \n        partial_fails=\"\";\
+             \n        for pkg in $failed; do\
+             \n          if opam show -f x-ci-accept-failures: \"$pkg\" | grep -qF \"\\\"debian-12\\\"\"; then\
+             \n            echo \"A package failed and has been disabled for CI using the 'x-ci-accept-failures' field.\";\
+             \n          fi;\
+             \n          test \"$pkg\" != 'h2-mirage.0.13.0' && partial_fails=\"$partial_fails $pkg\";\
+             \n        done;\
+             \n        test \"${partial_fails}\" != \"\" && echo \"opam-repo-ci detected dependencies failing: ${partial_fails}\";\
+             \n        exit 1"))
+)
+
+2024-09-05 10:16.01: Waiting for resource in pool OCluster
+2024-09-05 10:45.23: Waiting for worker…
+2024-09-05 10:50.23: Got resource from pool OCluster
+Building on x86-bm-c15.sw.ocaml.org
+All commits already cached
+Updating files:  66% (21240/32100)Updating files:  67% (21507/32100)Updating files:  68% (21828/32100)Updating files:  69% (22149/32100)Updating files:  70% (22470/32100)Updating files:  71% (22791/32100)Updating files:  72% (23112/32100)Updating files:  73% (23433/32100)Updating files:  74% (23754/32100)Updating files:  75% (24075/32100)Updating files:  76% (24396/32100)Updating files:  77% (24717/32100)Updating files:  78% (25038/32100)Updating files:  79% (25359/32100)Updating files:  80% (25680/32100)Updating files:  81% (26001/32100)Updating files:  82% (26322/32100)Updating files:  83% (26643/32100)Updating files:  84% (26964/32100)Updating files:  85% (27285/32100)Updating files:  86% (27606/32100)Updating files:  87% (27927/32100)Updating files:  88% (28248/32100)Updating files:  89% (28569/32100)Updating files:  90% (28890/32100)Updating files:  91% (29211/32100)Updating files:  92% (29532/32100)Updating files:  93% (29853/32100)Updating files:  94% (30174/32100)Updating files:  95% (30495/32100)Updating files:  96% (30816/32100)Updating files:  97% (31137/32100)Updating files:  98% (31458/32100)Updating files:  99% (31779/32100)Updating files: 100% (32100/32100)Updating files: 100% (32100/32100), done.
+HEAD is now at 1cf3e182a2 Merge pull request #26476 from hannesm/release-tls-v1.0.2
+Merge made by the 'ort' strategy.
+ packages/h2-async/h2-async.0.13.0/opam       | 41 ++++++++++++++++++++++++
+ packages/h2-eio/h2-eio.0.13.0/opam           | 39 ++++++++++++++++++++++
+ packages/h2-lwt-unix/h2-lwt-unix.0.13.0/opam | 41 ++++++++++++++++++++++++
+ packages/h2-lwt/h2-lwt.0.13.0/opam           | 40 +++++++++++++++++++++++
+ packages/h2-mirage/h2-mirage.0.13.0/opam     | 43 +++++++++++++++++++++++++
+ packages/h2/h2.0.13.0/opam                   | 48 ++++++++++++++++++++++++++++
+ packages/hpack/hpack.0.13.0/opam             | 41 ++++++++++++++++++++++++
+ 7 files changed, 293 insertions(+)
+ create mode 100644 packages/h2-async/h2-async.0.13.0/opam
+ create mode 100644 packages/h2-eio/h2-eio.0.13.0/opam
+ create mode 100644 packages/h2-lwt-unix/h2-lwt-unix.0.13.0/opam
+ create mode 100644 packages/h2-lwt/h2-lwt.0.13.0/opam
+ create mode 100644 packages/h2-mirage/h2-mirage.0.13.0/opam
+ create mode 100644 packages/h2/h2.0.13.0/opam
+ create mode 100644 packages/hpack/hpack.0.13.0/opam
+
+[01;34m(from ocaml/opam:debian-12-ocaml-4.09@sha256:e7f34ec45a1bf33ef4dc37e558b7ea4903de3498e310ab7f2b247922f4cb2302)[0m
+[01;2m[01;35m2024-09-05 10:51.24 ---> saved as "eae2dee4e1348e5328ebe4f53d1bafa6d15e262d55865956d18e2149b0571770"[0m
+
+[01;34m/: (user (uid 1000) (gid 1000))[0m
+
+[01;34m/: (workdir /home/opam)[0m
+
+[01;34m/home/opam: (run (shell "sudo ln -f /usr/bin/opam-dev /usr/bin/opam"))[0m
+[01;2m[01;35m2024-09-05 10:51.24 ---> saved as "5f93f9282fb3cca01208470b1ad9998766e44c2e349325433105e9dbbe4d3f51"[0m
+
+[01;34m/home/opam: (run (network host)
+                 (shell "opam init --reinit --config .opamrc-sandbox -ni"))[0m
+Configuring from /home/opam/.opamrc-sandbox, then /home/opam/.opamrc, and finally from built-in defaults.
+Checking for available remotes: rsync and local, git.
+  - you won't be able to use mercurial repositories unless you install the hg command on your system.
+  - you won't be able to use darcs repositories unless you install the darcs command on your system.
+
+This development version of opam requires an update to the layout of /home/opam/.opam from version 2.0 to version 2.2, which can't be reverted.
+You may want to back it up before going further.
+
+Continue? [y/n] y
+Format upgrade done.
+
+<><> Updating repositories ><><><><><><><><><><><><><><><><><><><><><><><><><><>
+[default] synchronised from file:///home/opam/opam-repository
+[01;2m[01;35m2024-09-05 10:52.39 ---> saved as "32ee1aaaf5e8de79eeb43f2796daac1ac15854d9919bcd3a2e21c7e7f939ab79"[0m
+
+[01;34m/home/opam: (run (shell "uname -rs && opam exec -- ocaml -version && opam --version"))[0m
+Linux 5.15.0-119-generic
+The OCaml toplevel, version 4.09.1
+2.3.0~alpha~dev
+[01;2m[01;35m2024-09-05 10:52.39 ---> saved as "89c31a29be84d7b7878bc912d95ca2e251b50b6af0c03f3c26cdebf2f69ed94a"[0m
+
+[01;34m/home/opam: (env OPAMDOWNLOADJOBS 1)[0m
+
+[01;34m/home/opam: (env OPAMERRLOGLEN 0)[0m
+
+[01;34m/home/opam: (env OPAMSOLVERTIMEOUT 500)[0m
+
+[01;34m/home/opam: (env OPAMPRECISETRACKING 1)[0m
+
+[01;34m/home/opam: (env CI true)[0m
+
+[01;34m/home/opam: (env OPAM_REPO_CI true)[0m
+
+[01;34m/home/opam: (run (shell "rm -rf opam-repository/"))[0m
+[01;2m[01;35m2024-09-05 10:52.52 ---> saved as "4a197c53d6fe44ee076a994c08c2f82fd7aed4c552084e2659e0749583bc598b"[0m
+
+[01;34m/home/opam: (copy (src .) (dst opam-repository/))[0m
+[01;2m[01;35m2024-09-05 10:53.02 ---> saved as "61edf89764adaf958f8d92e8c24f2d8186c37ffdb39241226488869501278cca"[0m
+
+[01;34m/home/opam: (run (shell "opam repository set-url --strict default opam-repository/"))[0m
+[default] Initialised
+[01;2m[01;35m2024-09-05 10:53.53 ---> saved as "7124a7bbbcce660eec73fb73ee3e0bea5042a64204b9cf2405620e6b53ae2866"[0m
+
+[01;34m/home/opam: (run (network host)
+                 (shell "opam update --depexts || true"))[0m
++ /usr/bin/sudo "apt-get" "update"
+- Get:1 http://deb.debian.org/debian bookworm InRelease [151 kB]
+- Get:2 http://deb.debian.org/debian bookworm-updates InRelease [55.4 kB]
+- Get:3 http://deb.debian.org/debian-security bookworm-security InRelease [48.0 kB]
+- Get:4 http://deb.debian.org/debian bookworm/main amd64 Packages [8787 kB]
+- Get:5 http://deb.debian.org/debian-security bookworm-security/main amd64 Packages [179 kB]
+- Fetched 9221 kB in 2s (5206 kB/s)
+- Reading package lists...
+- 
+[01;2m[01;35m2024-09-05 10:53.55 ---> saved as "e3fcaf54a57b53dbc05abab9b5b87e0c92070437f229fcd1157de3e80ef7b1a2"[0m
+
+[01;34m/home/opam: (run (shell "opam pin add -k version -yn h2-mirage.0.13.0 0.13.0"))[0m
+h2-mirage is now pinned to version 0.13.0
+[01;2m[01;35m2024-09-05 10:53.56 ---> saved as "847dc63610ff92e6b7f9693771603f672dbe59146bd23ecb58457dc21c36b85c"[0m
+
+[01;34m/home/opam: (run (cache (opam-archives (target /home/opam/.opam/download-cache)))
+                 (network host)
+                 (shell  "opam reinstall h2-mirage.0.13.0;\
+                        \n        res=$?;\
+                        \n        test \"$res\" != 31 && exit \"$res\";\
+                        \n        export OPAMCLI=2.0;\
+                        \n        build_dir=$(opam var prefix)/.opam-switch/build;\
+                        \n        failed=$(ls \"$build_dir\");\
+                        \n        partial_fails=\"\";\
+                        \n        for pkg in $failed; do\
+                        \n          if opam show -f x-ci-accept-failures: \"$pkg\" | grep -qF \"\\\"debian-12\\\"\"; then\
+                        \n            echo \"A package failed and has been disabled for CI using the 'x-ci-accept-failures' field.\";\
+                        \n          fi;\
+                        \n          test \"$pkg\" != 'h2-mirage.0.13.0' && partial_fails=\"$partial_fails $pkg\";\
+                        \n        done;\
+                        \n        test \"${partial_fails}\" != \"\" && echo \"opam-repo-ci detected dependencies failing: ${partial_fails}\";\
+                        \n        exit 1"))[0m
+h2-mirage.0.13.0 is not installed. Install it? [y/n] y
+[ERROR] Sorry, resolution of the request timed out.
+        Try to specify a more precise request, use a different solver, or increase the allowed time by setting OPAMSOLVERTIMEOUT to a bigger value (currently, it is set to 500.0 seconds).
+"/usr/bin/env" "bash" "-c" "opam reinstall h2-mirage.0.13.0;
+        res=$?;
+        test "$res" != 31 && exit "$res";
+        export OPAMCLI=2.0;
+        build_dir=$(opam var prefix)/.opam-switch/build;
+        failed=$(ls "$build_dir");
+        partial_fails="";
+        for pkg in $failed; do
+          if opam show -f x-ci-accept-failures: "$pkg" | grep -qF "\"debian-12\""; then
+            echo "A package failed and has been disabled for CI using the 'x-ci-accept-failures' field.";
+          fi;
+          test "$pkg" != 'h2-mirage.0.13.0' && partial_fails="$partial_fails $pkg";
+        done;
+        test "${partial_fails}" != "" && echo "opam-repo-ci detected dependencies failing: ${partial_fails}";
+        exit 1" failed with exit status 60
+2024-09-05 11:02.35: Job failed: Failed: Build failed
+2024-09-05 11:02.35: Log analysis:
+2024-09-05 11:02.35: >>> 
+[ERROR] Sorry, resolution of the request timed out.
+ (score = 20)
+2024-09-05 11:02.35: Sorry, resolution of the request timed out.

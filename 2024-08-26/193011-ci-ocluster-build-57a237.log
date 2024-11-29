@@ -1,0 +1,292 @@
+2024-08-26 19:30.11: New job: test letsencrypt.0.2.0, using opam 2.0
+                              from https://github.com/ocaml/opam-repository.git#refs/pull/26432/head (04f2a79259aa25ad595f9f0c412c404c4603c922)
+                              on debian-12-ocaml-5.2/amd64
+
+To reproduce locally:
+
+cd $(mktemp -d)
+git clone --recursive "https://github.com/ocaml/opam-repository.git" && cd "opam-repository" && git fetch origin "refs/pull/26432/head" && git reset --hard 04f2a792
+git fetch origin master
+git merge --no-edit e89899ac28c3c15f5a5ba4b01d63a5646a1f8a5d
+cat > ../Dockerfile <<'END-OF-DOCKERFILE'
+[34mFROM ocaml/opam:debian-12-ocaml-5.2@sha256:54f900d24fd5dc5a7040e1de9dca1c37a557779cf3b647149add6ebcc71365e3
+USER 1000:1000
+WORKDIR /home/opam
+RUN sudo ln -f /usr/bin/opam-2.0 /usr/bin/opam
+RUN opam init --reinit -ni
+RUN uname -rs && opam exec -- ocaml -version && opam --version
+ENV OPAMDOWNLOADJOBS="1"
+ENV OPAMERRLOGLEN="0"
+ENV OPAMSOLVERTIMEOUT="500"
+ENV OPAMPRECISETRACKING="1"
+ENV CI="true"
+ENV OPAM_REPO_CI="true"
+RUN rm -rf opam-repository/
+COPY --chown=1000:1000 . opam-repository/
+RUN opam repository set-url --strict default opam-repository/
+RUN opam depext -u || true
+RUN opam pin add -k version -yn letsencrypt.0.2.0 0.2.0
+RUN opam depext letsencrypt.0.2.0 && opam reinstall letsencrypt.0.2.0; \
+    res=$?; \
+    test "$res" != 31 && exit "$res"; \
+    export OPAMCLI=2.0; \
+    build_dir=$(opam var prefix)/.opam-switch/build; \
+    failed=$(ls "$build_dir"); \
+    partial_fails=""; \
+    for pkg in $failed; do \
+    if opam show -f x-ci-accept-failures: "$pkg" | grep -qF "\"debian-12\""; then \
+    echo "A package failed and has been disabled for CI using the 'x-ci-accept-failures' field."; \
+    fi; \
+    test "$pkg" != 'letsencrypt.0.2.0' && partial_fails="$partial_fails $pkg"; \
+    done; \
+    test "${partial_fails}" != "" && echo "opam-repo-ci detected dependencies failing: ${partial_fails}"; \
+    exit 1
+RUN (opam depext --with-test letsencrypt.0.2.0 && opam reinstall --with-test letsencrypt.0.2.0) || true
+RUN opam depext --with-test letsencrypt.0.2.0 && opam reinstall --with-test --verbose letsencrypt.0.2.0; \
+    res=$?; \
+    test "$res" != 31 && exit "$res"; \
+    export OPAMCLI=2.0; \
+    build_dir=$(opam var prefix)/.opam-switch/build; \
+    failed=$(ls "$build_dir"); \
+    partial_fails=""; \
+    for pkg in $failed; do \
+    if opam show -f x-ci-accept-failures: "$pkg" | grep -qF "\"debian-12\""; then \
+    echo "A package failed and has been disabled for CI using the 'x-ci-accept-failures' field."; \
+    fi; \
+    test "$pkg" != 'letsencrypt.0.2.0' && partial_fails="$partial_fails $pkg"; \
+    done; \
+    test "${partial_fails}" != "" && echo "opam-repo-ci detected dependencies failing: ${partial_fails}"; \
+    exit 1
+[0m
+END-OF-DOCKERFILE
+docker build -f ../Dockerfile .
+
+2024-08-26 19:30.11: Using cache hint "ocaml/opam:debian-12-ocaml-5.2@sha256:54f900d24fd5dc5a7040e1de9dca1c37a557779cf3b647149add6ebcc71365e3-letsencrypt.0.2.0-04f2a79259aa25ad595f9f0c412c404c4603c922"
+2024-08-26 19:30.11: Using OBuilder spec:
+((from ocaml/opam:debian-12-ocaml-5.2@sha256:54f900d24fd5dc5a7040e1de9dca1c37a557779cf3b647149add6ebcc71365e3)
+ (user (uid 1000) (gid 1000))
+ (workdir /home/opam)
+ (run (shell "sudo ln -f /usr/bin/opam-2.0 /usr/bin/opam"))
+ (run (network host)
+      (shell "opam init --reinit --config .opamrc-sandbox -ni"))
+ (run (shell "uname -rs && opam exec -- ocaml -version && opam --version"))
+ (env OPAMDOWNLOADJOBS 1)
+ (env OPAMERRLOGLEN 0)
+ (env OPAMSOLVERTIMEOUT 500)
+ (env OPAMPRECISETRACKING 1)
+ (env CI true)
+ (env OPAM_REPO_CI true)
+ (run (shell "rm -rf opam-repository/"))
+ (copy (src .) (dst opam-repository/))
+ (run (shell "opam repository set-url --strict default opam-repository/"))
+ (run (network host)
+      (shell "opam depext -u || true"))
+ (run (shell "opam pin add -k version -yn letsencrypt.0.2.0 0.2.0"))
+ (run (cache (opam-archives (target /home/opam/.opam/download-cache)))
+      (network host)
+      (shell  "opam depext letsencrypt.0.2.0 && opam reinstall letsencrypt.0.2.0;\
+             \n        res=$?;\
+             \n        test \"$res\" != 31 && exit \"$res\";\
+             \n        export OPAMCLI=2.0;\
+             \n        build_dir=$(opam var prefix)/.opam-switch/build;\
+             \n        failed=$(ls \"$build_dir\");\
+             \n        partial_fails=\"\";\
+             \n        for pkg in $failed; do\
+             \n          if opam show -f x-ci-accept-failures: \"$pkg\" | grep -qF \"\\\"debian-12\\\"\"; then\
+             \n            echo \"A package failed and has been disabled for CI using the 'x-ci-accept-failures' field.\";\
+             \n          fi;\
+             \n          test \"$pkg\" != 'letsencrypt.0.2.0' && partial_fails=\"$partial_fails $pkg\";\
+             \n        done;\
+             \n        test \"${partial_fails}\" != \"\" && echo \"opam-repo-ci detected dependencies failing: ${partial_fails}\";\
+             \n        exit 1"))
+ (run (network host)
+      (shell "(opam depext --with-test letsencrypt.0.2.0 && opam reinstall --with-test letsencrypt.0.2.0) || true"))
+ (run (shell  "opam depext --with-test letsencrypt.0.2.0 && opam reinstall --with-test --verbose letsencrypt.0.2.0;\
+             \n        res=$?;\
+             \n        test \"$res\" != 31 && exit \"$res\";\
+             \n        export OPAMCLI=2.0;\
+             \n        build_dir=$(opam var prefix)/.opam-switch/build;\
+             \n        failed=$(ls \"$build_dir\");\
+             \n        partial_fails=\"\";\
+             \n        for pkg in $failed; do\
+             \n          if opam show -f x-ci-accept-failures: \"$pkg\" | grep -qF \"\\\"debian-12\\\"\"; then\
+             \n            echo \"A package failed and has been disabled for CI using the 'x-ci-accept-failures' field.\";\
+             \n          fi;\
+             \n          test \"$pkg\" != 'letsencrypt.0.2.0' && partial_fails=\"$partial_fails $pkg\";\
+             \n        done;\
+             \n        test \"${partial_fails}\" != \"\" && echo \"opam-repo-ci detected dependencies failing: ${partial_fails}\";\
+             \n        exit 1"))
+)
+
+2024-08-26 19:30.11: Waiting for resource in pool OCluster
+2024-08-26 19:37.59: Waiting for worker…
+2024-08-26 19:42.07: Got resource from pool OCluster
+Building on x86-bm-c12.sw.ocaml.org
+All commits already cached
+Updating files:  65% (21091/32028)Updating files:  66% (21139/32028)Updating files:  67% (21459/32028)Updating files:  68% (21780/32028)Updating files:  69% (22100/32028)Updating files:  70% (22420/32028)Updating files:  71% (22740/32028)Updating files:  72% (23061/32028)Updating files:  73% (23381/32028)Updating files:  74% (23701/32028)Updating files:  75% (24021/32028)Updating files:  76% (24342/32028)Updating files:  77% (24662/32028)Updating files:  78% (24982/32028)Updating files:  79% (25303/32028)Updating files:  80% (25623/32028)Updating files:  81% (25943/32028)Updating files:  82% (26263/32028)Updating files:  83% (26584/32028)Updating files:  84% (26904/32028)Updating files:  85% (27224/32028)Updating files:  86% (27545/32028)Updating files:  87% (27865/32028)Updating files:  88% (28185/32028)Updating files:  89% (28505/32028)Updating files:  90% (28826/32028)Updating files:  91% (29146/32028)Updating files:  92% (29466/32028)Updating files:  93% (29787/32028)Updating files:  94% (30107/32028)Updating files:  95% (30427/32028)Updating files:  96% (30747/32028)Updating files:  97% (31068/32028)Updating files:  98% (31388/32028)Updating files:  99% (31708/32028)Updating files: 100% (32028/32028)Updating files: 100% (32028/32028), done.
+HEAD is now at e89899ac28 Merge pull request #26428 from jonsterling/opam-publish-forester.4.3.1
+Updating e89899ac28..04f2a79259
+Fast-forward
+ packages/letsencrypt/letsencrypt.0.1.0/opam | 2 +-
+ packages/letsencrypt/letsencrypt.0.1.1/opam | 2 +-
+ packages/letsencrypt/letsencrypt.0.2.0/opam | 2 +-
+ packages/letsencrypt/letsencrypt.0.2.1/opam | 2 +-
+ packages/letsencrypt/letsencrypt.0.2.2/opam | 2 +-
+ packages/letsencrypt/letsencrypt.0.2.3/opam | 2 +-
+ packages/letsencrypt/letsencrypt.0.2.4/opam | 2 +-
+ packages/letsencrypt/letsencrypt.0.2.5/opam | 2 +-
+ 8 files changed, 8 insertions(+), 8 deletions(-)
+
+[01;34m(from ocaml/opam:debian-12-ocaml-5.2@sha256:54f900d24fd5dc5a7040e1de9dca1c37a557779cf3b647149add6ebcc71365e3)[0m
+[01;2m[01;35m2024-08-26 19:42.09 ---> using "f206e41f0aadd70080b7e09b893adf09d51a3bc582052f0aaf7df8b6e2395d1a" from cache[0m
+
+[01;34m/: (user (uid 1000) (gid 1000))[0m
+
+[01;34m/: (workdir /home/opam)[0m
+
+[01;34m/home/opam: (run (shell "sudo ln -f /usr/bin/opam-2.0 /usr/bin/opam"))[0m
+[01;2m[01;35m2024-08-26 19:42.09 ---> using "b6507bc662cf0d26c5deb329a0abc1ed85942d17a1e963f81a8f5ccd2a472a05" from cache[0m
+
+[01;34m/home/opam: (run (network host)
+                 (shell "opam init --reinit --config .opamrc-sandbox -ni"))[0m
+[NOTE] Will configure from /home/opam/.opamrc-sandbox, then /home/opam/.opamrc, and finally from built-in defaults.
+Checking for available remotes: rsync and local, git.
+  - you won't be able to use mercurial repositories unless you install the hg command on your system.
+  - you won't be able to use darcs repositories unless you install the darcs command on your system.
+
+[WARNING] Recommended dependencies -- most packages rely on these:
+  - m4
+
+<><> Updating repositories ><><><><><><><><><><><><><><><><><><><><><><><><><><>
+[default] synchronised from file:///home/opam/opam-repository
+default (at file:///home/opam/opam-repository): 
+    [INFO] opam 2.1 and 2.2 include many performance improvements over 2.0; please consider upgrading (https://opam.ocaml.org/doc/Install.html)
+
+[01;2m[01;35m2024-08-26 19:42.45 ---> saved as "51f017c0fd301b0813267f9687517a406be7513cc754a58b8e00b554fa9e7e73"[0m
+
+[01;34m/home/opam: (run (shell "uname -rs && opam exec -- ocaml -version && opam --version"))[0m
+Linux 5.15.0-119-generic
+The OCaml toplevel, version 5.2.0
+2.0.10
+[01;2m[01;35m2024-08-26 19:42.46 ---> saved as "0fca1bbd793be3ff4119eeac3a83c8996ccccab4a2c9922683a1d934e84a84c9"[0m
+
+[01;34m/home/opam: (env OPAMDOWNLOADJOBS 1)[0m
+
+[01;34m/home/opam: (env OPAMERRLOGLEN 0)[0m
+
+[01;34m/home/opam: (env OPAMSOLVERTIMEOUT 500)[0m
+
+[01;34m/home/opam: (env OPAMPRECISETRACKING 1)[0m
+
+[01;34m/home/opam: (env CI true)[0m
+
+[01;34m/home/opam: (env OPAM_REPO_CI true)[0m
+
+[01;34m/home/opam: (run (shell "rm -rf opam-repository/"))[0m
+[01;2m[01;35m2024-08-26 19:42.57 ---> saved as "376e803b32c033937e4a66be527b075d8ae3a02388e096ec986eb89b2d70958f"[0m
+
+[01;34m/home/opam: (copy (src .) (dst opam-repository/))[0m
+[01;2m[01;35m2024-08-26 19:43.07 ---> saved as "fe563da5db78894427cec691679d2923db29dba809e4df4b8a68aa6857ba7f7d"[0m
+
+[01;34m/home/opam: (run (shell "opam repository set-url --strict default opam-repository/"))[0m
+[default] Initialised
+default (at file:///home/opam/opam-repository): 
+    [INFO] opam 2.1 and 2.2 include many performance improvements over 2.0; please consider upgrading (https://opam.ocaml.org/doc/Install.html)
+
+[01;2m[01;35m2024-08-26 19:43.32 ---> saved as "ead362b394b82a67a9504fc4f698aa9115e7537af4ba4b466f309858958c319a"[0m
+
+[01;34m/home/opam: (run (network host)
+                 (shell "opam depext -u || true"))[0m
+# Detecting depexts using vars: arch=x86_64, os=linux, os-distribution=debian, os-family=debian
+# No extra OS packages requirements found.
+# All required OS packages found.
+The following command needs to be run through "sudo":
+    apt-get update
+Hit:1 http://deb.debian.org/debian bookworm InRelease
+Get:2 http://deb.debian.org/debian bookworm-updates InRelease [55.4 kB]
+Get:3 http://deb.debian.org/debian-security bookworm-security InRelease [48.0 kB]
+Get:4 http://deb.debian.org/debian-security bookworm-security/main amd64 Packages [176 kB]
+Fetched 279 kB in 0s (1100 kB/s)
+Reading package lists...
+# OS package update successful
+[01;2m[01;35m2024-08-26 19:43.34 ---> saved as "c70f7d23e863d0236a630c8e5220442367d68f69d328aed88b4ffb45dec5ae9f"[0m
+
+[01;34m/home/opam: (run (shell "opam pin add -k version -yn letsencrypt.0.2.0 0.2.0"))[0m
+letsencrypt is now pinned to version 0.2.0
+[01;2m[01;35m2024-08-26 19:43.35 ---> saved as "426a41256da00b9ce51398cb8123ab8ffa8881376c9cf64cbc0bdabf2a22d086"[0m
+
+[01;34m/home/opam: (run (cache (opam-archives (target /home/opam/.opam/download-cache)))
+                 (network host)
+                 (shell  "opam depext letsencrypt.0.2.0 && opam reinstall letsencrypt.0.2.0;\
+                        \n        res=$?;\
+                        \n        test \"$res\" != 31 && exit \"$res\";\
+                        \n        export OPAMCLI=2.0;\
+                        \n        build_dir=$(opam var prefix)/.opam-switch/build;\
+                        \n        failed=$(ls \"$build_dir\");\
+                        \n        partial_fails=\"\";\
+                        \n        for pkg in $failed; do\
+                        \n          if opam show -f x-ci-accept-failures: \"$pkg\" | grep -qF \"\\\"debian-12\\\"\"; then\
+                        \n            echo \"A package failed and has been disabled for CI using the 'x-ci-accept-failures' field.\";\
+                        \n          fi;\
+                        \n          test \"$pkg\" != 'letsencrypt.0.2.0' && partial_fails=\"$partial_fails $pkg\";\
+                        \n        done;\
+                        \n        test \"${partial_fails}\" != \"\" && echo \"opam-repo-ci detected dependencies failing: ${partial_fails}\";\
+                        \n        exit 1"))[0m
+# Detecting depexts using vars: arch=x86_64, os=linux, os-distribution=debian, os-family=debian
+# The following system packages are needed:
+libgmp-dev
+pkg-config
+The following command needs to be run through "sudo":
+    apt-get install -qq -yy libgmp-dev pkg-config
+debconf: delaying package configuration, since apt-utils is not installed
+Selecting previously unselected package libgmpxx4ldbl:amd64.
+(Reading database ... (Reading database ... 5%(Reading database ... 10%(Reading database ... 15%(Reading database ... 20%(Reading database ... 25%(Reading database ... 30%(Reading database ... 35%(Reading database ... 40%(Reading database ... 45%(Reading database ... 50%(Reading database ... 55%(Reading database ... 60%(Reading database ... 65%(Reading database ... 70%(Reading database ... 75%(Reading database ... 80%(Reading database ... 85%(Reading database ... 90%(Reading database ... 95%(Reading database ... 100%(Reading database ... 18765 files and directories currently installed.)
+Preparing to unpack .../0-libgmpxx4ldbl_2%3a6.2.1+dfsg1-1.1_amd64.deb ...
+Unpacking libgmpxx4ldbl:amd64 (2:6.2.1+dfsg1-1.1) ...
+Selecting previously unselected package libgmp-dev:amd64.
+Preparing to unpack .../1-libgmp-dev_2%3a6.2.1+dfsg1-1.1_amd64.deb ...
+Unpacking libgmp-dev:amd64 (2:6.2.1+dfsg1-1.1) ...
+Selecting previously unselected package libpkgconf3:amd64.
+Preparing to unpack .../2-libpkgconf3_1.8.1-1_amd64.deb ...
+Unpacking libpkgconf3:amd64 (1.8.1-1) ...
+Selecting previously unselected package pkgconf-bin.
+Preparing to unpack .../3-pkgconf-bin_1.8.1-1_amd64.deb ...
+Unpacking pkgconf-bin (1.8.1-1) ...
+Selecting previously unselected package pkgconf:amd64.
+Preparing to unpack .../4-pkgconf_1.8.1-1_amd64.deb ...
+Unpacking pkgconf:amd64 (1.8.1-1) ...
+Selecting previously unselected package pkg-config:amd64.
+Preparing to unpack .../5-pkg-config_1.8.1-1_amd64.deb ...
+Unpacking pkg-config:amd64 (1.8.1-1) ...
+Setting up libpkgconf3:amd64 (1.8.1-1) ...
+Setting up libgmpxx4ldbl:amd64 (2:6.2.1+dfsg1-1.1) ...
+Setting up pkgconf-bin (1.8.1-1) ...
+Setting up libgmp-dev:amd64 (2:6.2.1+dfsg1-1.1) ...
+Setting up pkgconf:amd64 (1.8.1-1) ...
+Setting up pkg-config:amd64 (1.8.1-1) ...
+Processing triggers for libc-bin (2.36-9+deb12u7) ...
+# OS packages installation successful
+letsencrypt.0.2.0 is not installed. Install it? [Y/n] y
+[ERROR] Sorry, resolution of the request timed out.
+        Try to specify a simpler request, use a different solver, or increase the allowed time by setting OPAMSOLVERTIMEOUT to a bigger value (currently, it is set to 500.0 seconds).
+"/usr/bin/env" "bash" "-c" "opam depext letsencrypt.0.2.0 && opam reinstall letsencrypt.0.2.0;
+        res=$?;
+        test "$res" != 31 && exit "$res";
+        export OPAMCLI=2.0;
+        build_dir=$(opam var prefix)/.opam-switch/build;
+        failed=$(ls "$build_dir");
+        partial_fails="";
+        for pkg in $failed; do
+          if opam show -f x-ci-accept-failures: "$pkg" | grep -qF "\"debian-12\""; then
+            echo "A package failed and has been disabled for CI using the 'x-ci-accept-failures' field.";
+          fi;
+          test "$pkg" != 'letsencrypt.0.2.0' && partial_fails="$partial_fails $pkg";
+        done;
+        test "${partial_fails}" != "" && echo "opam-repo-ci detected dependencies failing: ${partial_fails}";
+        exit 1" failed with exit status 60
+2024-08-26 19:52.21: Job failed: Failed: Build failed
+2024-08-26 19:52.21: Log analysis:
+2024-08-26 19:52.21: >>> 
+[ERROR] Sorry, resolution of the request timed out.
+ (score = 20)
+2024-08-26 19:52.21: Sorry, resolution of the request timed out.
